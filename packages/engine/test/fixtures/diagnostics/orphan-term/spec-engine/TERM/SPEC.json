@@ -1,0 +1,16 @@
+{
+  "key": "TERM",
+  "owner": null,
+  "specVersion": 1,
+  "updated": "2026-07-08",
+  "requirements": [
+    {
+      "id": "TERM-001",
+      "status": "active",
+      "statement": "Widget — a defined term that no requirement cites (glossary rot).",
+      "term": "Widget",
+      "aliases": [],
+      "section": "Core nouns"
+    }
+  ]
+}

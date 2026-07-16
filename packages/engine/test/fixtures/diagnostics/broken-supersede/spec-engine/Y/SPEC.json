@@ -1,0 +1,19 @@
+{
+  "key": "Y",
+  "owner": "drea",
+  "specVersion": 1,
+  "updated": "",
+  "requirements": [
+    {
+      "id": "Y-001",
+      "status": "superseded",
+      "statement": "This refers to a non-existent Y-999.",
+      "why": "Must trigger BROKEN_SUPERSEDE diagnostic.",
+      "supersedes": null,
+      "supersededBy": "Y-999",
+      "relates": [],
+      "livesIn": [],
+      "issues": []
+    }
+  ]
+}

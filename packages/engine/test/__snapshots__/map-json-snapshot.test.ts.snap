@@ -1,0 +1,126 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`spec map --json against canonical platform-fixture JSON shape is stable (snapshot of req_ids + repos + flags) 1`] = `
+[
+  {
+    "implemented": 0,
+    "repo": "admin",
+    "req_id": "AUTH-001",
+    "verified": 0,
+  },
+  {
+    "implemented": 0,
+    "repo": "api",
+    "req_id": "AUTH-001",
+    "verified": 0,
+  },
+  {
+    "implemented": 0,
+    "repo": "mobile",
+    "req_id": "AUTH-001",
+    "verified": 0,
+  },
+  {
+    "implemented": 0,
+    "repo": "spec-engine",
+    "req_id": "AUTH-001",
+    "verified": 0,
+  },
+  {
+    "implemented": 0,
+    "repo": "admin",
+    "req_id": "BILLING-001",
+    "verified": 0,
+  },
+  {
+    "implemented": 0,
+    "repo": "api",
+    "req_id": "BILLING-001",
+    "verified": 0,
+  },
+  {
+    "implemented": 1,
+    "repo": "mobile",
+    "req_id": "BILLING-001",
+    "verified": 0,
+  },
+  {
+    "implemented": 0,
+    "repo": "spec-engine",
+    "req_id": "BILLING-001",
+    "verified": 0,
+  },
+  {
+    "implemented": 0,
+    "repo": "admin",
+    "req_id": "BILLING-002",
+    "verified": 0,
+  },
+  {
+    "implemented": 1,
+    "repo": "api",
+    "req_id": "BILLING-002",
+    "verified": 0,
+  },
+  {
+    "implemented": 0,
+    "repo": "mobile",
+    "req_id": "BILLING-002",
+    "verified": 0,
+  },
+  {
+    "implemented": 0,
+    "repo": "spec-engine",
+    "req_id": "BILLING-002",
+    "verified": 0,
+  },
+  {
+    "implemented": 1,
+    "repo": "admin",
+    "req_id": "BILLING-007",
+    "verified": 1,
+  },
+  {
+    "implemented": 1,
+    "repo": "api",
+    "req_id": "BILLING-007",
+    "verified": 1,
+  },
+  {
+    "implemented": 1,
+    "repo": "mobile",
+    "req_id": "BILLING-007",
+    "verified": 0,
+  },
+  {
+    "implemented": 0,
+    "repo": "spec-engine",
+    "req_id": "BILLING-007",
+    "verified": 0,
+  },
+  {
+    "implemented": 0,
+    "repo": "admin",
+    "req_id": "BILLING-009",
+    "verified": 0,
+  },
+  {
+    "implemented": 1,
+    "repo": "api",
+    "req_id": "BILLING-009",
+    "verified": 1,
+  },
+  {
+    "implemented": 0,
+    "repo": "mobile",
+    "req_id": "BILLING-009",
+    "verified": 0,
+  },
+  {
+    "implemented": 0,
+    "repo": "spec-engine",
+    "req_id": "BILLING-009",
+    "verified": 0,
+  },
+]
+`;

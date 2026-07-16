@@ -1,0 +1,24 @@
+{
+  "key": "OWNER",
+  "owner": null,
+  "updated": "2026-07-08",
+  "scope": "Approval policy: who may retire or supersede a requirement (the CODEOWNERS policy). Belongs here: the CODEOWNERS approval policy only. Does not belong here: the loss-detection mechanism itself (→ GUARD). Boundary case: OWNER keeps only the CODEOWNERS approval policy while GOV-01's disappearance-detection concept lives in GUARD.",
+  "requirements": [
+    {
+      "id": "OWNER-001",
+      "status": "active",
+      "statement": "A status flip to `superseded`/`retired` requires the domain owner's approval (CODEOWNERS on the spec path); otherwise gate red.",
+      "why": "Retiring or superseding a requirement is a governance act — it needs the owner's approval, enforced via CODEOWNERS.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/check/statusflip.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    }
+  ]
+}

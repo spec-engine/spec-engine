@@ -1,0 +1,30 @@
+{
+  "key": "X",
+  "owner": "drea",
+  "specVersion": 1,
+  "updated": "",
+  "requirements": [
+    {
+      "id": "X-001",
+      "status": "active",
+      "statement": "First definition of X-001.",
+      "why": "Test DUP_ID detection.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [],
+      "issues": []
+    },
+    {
+      "id": "X-001",
+      "status": "active",
+      "statement": "Second (duplicate) definition of X-001.",
+      "why": "Must trigger DUP_ID diagnostic.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [],
+      "issues": []
+    }
+  ]
+}

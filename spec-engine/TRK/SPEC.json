@@ -1,0 +1,56 @@
+{
+  "key": "TRK",
+  "owner": null,
+  "updated": "2026-07-08",
+  "scope": "The @spec-engine/tracker package: the offline-default adapter and the optional Linear read integration that resolves an opaque issue_id to a title/URL for display. Belongs here: the adapter interface + offline noop adapter; the single read query to the tracker; the SPEC_TRACKER_TOKEN auth + no-token short-circuit; the sidecar cache; the engine-isolation boundary (engine internals never import the tracker; no external network from the derivation path). Does not belong here: the provenance matrix + issue-id opacity model itself (→ PROV); any write back to the tracker (forbidden — the integration is one-way/read-only). Boundary case: resolving an issue_id to a title is a TRK concern, but the opacity of that id inside the engine's index stays a PROV promise.",
+  "requirements": [
+    {
+      "id": "TRK-001",
+      "status": "active",
+      "statement": "The spec engine internals never import @spec-engine/tracker and emit no external-network host literal, so the derived index is built fully offline.",
+      "why": "If the derivation path reached the network or the tracker, spec index and spec check could hang, leak, or vary by network state — breaking the offline-deterministic guarantee adopters depend on.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@scripts/arch-fences.sh"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "TRK-002",
+      "status": "active",
+      "statement": "The tracker adapter sends only a GraphQL read query to the issue tracker — never a mutation — so requirement state is looked up but never written back (one-way truth).",
+      "why": "A mutation path would let the tool modify tracker state as a side effect of a read — turning a lookup into an unaudited write and violating the one-way-truth boundary.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/tracker/src/linear.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "TRK-003",
+      "status": "active",
+      "statement": "The tracker adapter reads SPEC_TRACKER_TOKEN once from the environment, sends it only as the raw Authorization header, and never writes it to a console.* call, so the credential cannot leak into logs.",
+      "why": "A token written to a log line would leak a live credential into CI output or a developer's terminal scrollback — a credential-exposure incident from a debug print.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/tracker/src/linear.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    }
+  ]
+}

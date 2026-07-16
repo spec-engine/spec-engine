@@ -1,0 +1,86 @@
+{
+  "key": "INDX",
+  "owner": null,
+  "updated": "2026-07-08",
+  "scope": "The derivation pipeline and index lifecycle: cold-rebuild identity, build_id determinism, structural integrity at index time, and spec index. Belongs here: cold-rebuild equivalence (delete .spec-engine/ yields an identical result); build_id determinism for identical inputs; the index-time structural integrity checks; spec index itself. Does not belong here: spec check's diagnostic severity semantics (→ CHCK) or the SPEC.json envelope shape (→ SCHM). Boundary case: cold-rebuild identity is an INDX promise even though the model it rebuilds is defined in SCHM.",
+  "requirements": [
+    {
+      "id": "INDX-001",
+      "status": "active",
+      "statement": "Deleting the derived index and rebuilding from the spec location plus repo tags produces an identical result; nothing lives only in the DB.",
+      "why": "Canonical truth is the git spec location — the DB is derived and owns nothing.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/indexer/pipeline.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INDX-002",
+      "status": "active",
+      "statement": "Structural integrity (DUP_ID, BROKEN_SUPERSEDE, BAD_STATUS) is validated against the parsed spec at index time, never enforced as DB constraints.",
+      "why": "The DB is not the source of truth; constraints there would imply it owns the spec.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/indexer/diagnostics.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INDX-003",
+      "status": "active",
+      "statement": "spec index walks the spec location plus member repos and (re)builds the derived SQLite index, reporting build_id and row counts.",
+      "why": "Local multi-repo indexing is the substrate every other command reads.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/index.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INDX-004",
+      "status": "active",
+      "statement": "The tag scanner finds @spec tags anywhere in a line, derives implements/verifies from the file path, and recognizes the optional unit/integration/e2e level token.",
+      "why": "Tags are how code claims a requirement; kind-by-path keeps tags one token long.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/scanner/tags.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INDX-005",
+      "status": "active",
+      "statement": "The indexer flattens a requirement's cites field into term_citations edges and resolves each citation by TERM id or by exact term name/alias via term_aliases, landing an unresolvable citation with a null term_id.",
+      "why": "Requirements should cite canonical glossary terms; resolution reuses the verified relates pipeline (flatten to a derived edge table, resolve names via the aggregate alias map, no FK).",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    }
+  ]
+}

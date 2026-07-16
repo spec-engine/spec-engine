@@ -1,0 +1,16 @@
+{
+  "key": "AUTH",
+  "owner": "drea",
+  "specVersion": 2,
+  "updated": "2026-06-02",
+  "requirements": [
+    {
+      "id": "AUTH-001",
+      "status": "active",
+      "statement": "A session expires 30 days after last activity.",
+      "why": "Security.",
+      "livesIn": ["session.ts"],
+      "issues": [{ "role": "created", "id": "BILLING-001" }]
+    }
+  ]
+}

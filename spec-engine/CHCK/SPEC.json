@@ -1,0 +1,100 @@
+{
+  "key": "CHCK",
+  "owner": null,
+  "updated": "2026-07-08",
+  "scope": "spec check diagnostics and CI-gate semantics: the diagnostic codes and their severities, the --ci cold-rebuild gate, and which severity drives exit 1. Belongs here: the diagnostic codes and severities; the --ci gate; the exit-1 contract. Does not belong here: membership discovery itself (→ INIT). Boundary case: check-severity semantics stay in CHCK even when the discovery path (INIT) emits the diagnostic, as with the NO_SPEC_CONFIG finding.",
+  "requirements": [
+    {
+      "id": "CHCK-001",
+      "status": "active",
+      "statement": "spec check reports cross-repo integrity diagnostics (dangling, superseded-referenced, orphan, unverified, drift) and exits non-zero on error-severity rows under --ci.",
+      "why": "The gate; it catches all the planted mess.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/check.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-002",
+      "status": "active",
+      "statement": "spec check --ci builds fresh and is correct without trusting any cached or warm index.",
+      "why": "Speed optimizations must never make correctness depend on a stale index.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/check.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-003",
+      "status": "active",
+      "statement": "NO_SPEC_CONFIG is warning severity: spec check --ci does not fail on it.",
+      "why": "A user may legitimately keep unrelated sibling repos in the same parent directory.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/check.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-004",
+      "status": "active",
+      "statement": "spec check reports UNDEFINED_TERM (error) when a requirement's cites entry resolves to no term and ORPHAN_TERM (warning) for an Active term that no requirement cites",
+      "why": "the only-allowed-jargon rule becomes mechanically checkable and glossary rot is surfaced, without a freshly-migrated uncited term redding the gate (ORPHAN_TERM is warning-only)",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-005",
+      "status": "active",
+      "statement": "spec check reports TERM_DRIFT (warning) when a requirement's cites pin lags the cited term's current version after an in-place spec term revise, and SUPERSEDED_TERM_REFERENCED (error) when a citation references a superseded term id, until re-confirmed via spec term confirm (which re-pins, and re-points to the successor on supersession).",
+      "why": "term drift is the member-pin drift model replayed one level up (req to term): a citation implicitly pins the term version it was confirmed against; re-confirmation is explicit via spec term confirm, and the term_drift VIEW clones the drift VIEW predicate so there is one predicate in one place.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-006",
+      "status": "active",
+      "statement": "GLOSSARY.md is migrated into TERM-001..N and then generated from the term store byte-stably, and a CI fence fails if the committed GLOSSARY.md diverges from the generated output.",
+      "why": "The human view of the glossary must not drift from the canonical terms — generation is a deterministic projection of the store, fenced in CI.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/glossary.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    }
+  ]
+}

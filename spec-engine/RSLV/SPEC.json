@@ -1,0 +1,40 @@
+{
+  "key": "RSLV",
+  "owner": null,
+  "updated": "2026-07-08",
+  "scope": "The spec resolve files→requirements command and its --req reverse query. Belongs here: file→requirement mapping; the --req reverse tag-site query; path-containment normalization. Does not belong here: full-text search (→ QURY). Boundary case: an absolute path resolving outside platformDir is an RSLV exit-2 contract, never a silent [].",
+  "requirements": [
+    {
+      "id": "RSLV-001",
+      "status": "active",
+      "statement": "spec resolve maps file paths to the requirements tagged in them, with coverage.",
+      "why": "Routes a task to its requirements (agent routing).",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/resolve.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "RSLV-002",
+      "status": "active",
+      "statement": "spec resolve --json emits byte-identical output across consecutive invocations on an unchanged tree (deterministic ordering).",
+      "why": "Non-deterministic output would break diff/snapshot consumers and the CI gates that compare it.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/resolve/format.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    }
+  ]
+}

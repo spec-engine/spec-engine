@@ -1,0 +1,24 @@
+{
+  "key": "PROV",
+  "owner": null,
+  "updated": "2026-07-08",
+  "scope": "The spec provenance matrix and the issue-link provenance model, with issue_id held as an opaque external payload. Belongs here: the provenance matrix rows and their sort/render; the **Issues:** role:ID parse into (req_id, issue_id, role); the doctrine that issue_id is opaque — projected only, never a PK/FK/UNIQUE/index/JOIN key. Does not belong here: the tracker fetch/cache that resolves an issue id to a title (→ TRK); requirement identity/routing (issue ids are provenance, never identity). Boundary case: a KEY-NNN-shaped issue id stays an opaque string in PROV and is never resolved against the requirements table.",
+  "requirements": [
+    {
+      "id": "PROV-001",
+      "status": "active",
+      "statement": "spec provenance treats every issue_id as an opaque payload — never a PK, FK, UNIQUE, index, or JOIN key — so an issue link can never silently become an identity or routing construct.",
+      "why": "If an issue id became a join or routing key, an issue-link collision would silently reroute a requirement's provenance to the wrong requirement — corrupting the audit trail the provenance matrix exists to preserve.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/shared/src/schema.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    }
+  ]
+}

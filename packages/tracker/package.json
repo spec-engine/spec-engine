@@ -1,0 +1,9 @@
+{
+  "name": "@spec-engine/tracker",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

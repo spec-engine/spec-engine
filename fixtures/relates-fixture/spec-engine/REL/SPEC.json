@@ -1,0 +1,51 @@
+{
+  "key": "REL",
+  "owner": "drea",
+  "specVersion": 1,
+  "updated": "2026-06-06",
+  "requirements": [
+    {
+      "id": "REL-001",
+      "status": "active",
+      "statement": "Orders reserve inventory before payment is captured.",
+      "why": "Overselling reserved stock is a refund storm.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [
+        "REL-003",
+        "REL-001"
+      ],
+      "livesIn": [
+        "app/src/app.ts"
+      ],
+      "issues": []
+    },
+    {
+      "id": "REL-002",
+      "status": "superseded",
+      "statement": "Inventory reservations expire after a fixed 15 minutes.",
+      "why": "Predecessor of the adaptive expiry; kept for history.",
+      "supersedes": null,
+      "supersededBy": "REL-003",
+      "relates": [],
+      "livesIn": [],
+      "issues": []
+    },
+    {
+      "id": "REL-003",
+      "status": "active",
+      "statement": "Inventory reservations expire adaptively based on checkout load.",
+      "why": "Fixed expiry punished slow-but-real buyers at peak.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [
+        "REL-002",
+        "REL-999"
+      ],
+      "livesIn": [
+        "app/src/app.ts"
+      ],
+      "issues": []
+    }
+  ]
+}

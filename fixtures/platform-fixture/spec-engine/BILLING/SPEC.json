@@ -1,0 +1,87 @@
+{
+  "key": "BILLING",
+  "owner": "drea",
+  "specVersion": 2,
+  "updated": "2026-06-02",
+  "requirements": [
+    {
+      "id": "BILLING-001",
+      "status": "superseded",
+      "statement": "When a subscription renews, charge the saved payment method at the current plan price.",
+      "why": "Revenue path.",
+      "supersedes": null,
+      "supersededBy": "BILLING-009",
+      "relates": [],
+      "livesIn": [
+        "renew.ts"
+      ],
+      "issues": [
+        {
+          "role": "created",
+          "id": "ENG-1100"
+        }
+      ]
+    },
+    {
+      "id": "BILLING-009",
+      "status": "active",
+      "statement": "When a subscription renews, charge the saved payment method at the current plan price, prorating mid-cycle plan changes.",
+      "why": "Revenue path; proration was the gap that drove the supersession.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "renew.ts"
+      ],
+      "issues": [
+        {
+          "role": "created",
+          "id": "ENG-1432"
+        },
+        {
+          "role": "supersedes-via",
+          "id": "ENG-1781"
+        }
+      ]
+    },
+    {
+      "id": "BILLING-002",
+      "status": "active",
+      "statement": "When a charge fails, retry on a schedule and notify the customer.",
+      "why": "Dunning; silent failure churns the customer.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "charge.ts"
+      ],
+      "issues": [
+        {
+          "role": "created",
+          "id": "ENG-1"
+        },
+        {
+          "role": "supersedes-via",
+          "id": "ENG-2"
+        },
+        {
+          "role": "bogus-no-colon",
+          "id": "-"
+        }
+      ]
+    },
+    {
+      "id": "BILLING-007",
+      "status": "active",
+      "statement": "When a charge is made, compute tax per region at charge time.",
+      "why": "Compliance.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "tax.ts"
+      ],
+      "issues": []
+    }
+  ]
+}

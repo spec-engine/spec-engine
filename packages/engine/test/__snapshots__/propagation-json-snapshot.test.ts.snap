@@ -1,0 +1,24 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`spec propagation BILLING-009 --json against canonical platform-fixture JSON shape is stable (snapshot of full PropagationRow projection) 1`] = `
+[
+  {
+    "drifted": false,
+    "repo": "admin",
+    "state": "ON_OTHER_DOMAIN_REQ",
+    "via_req_id": "BILLING-007",
+  },
+  {
+    "drifted": false,
+    "repo": "api",
+    "state": "MIGRATED_VERIFIED",
+    "via_req_id": null,
+  },
+  {
+    "drifted": true,
+    "repo": "mobile",
+    "state": "ON_PREDECESSOR",
+    "via_req_id": "BILLING-001",
+  },
+]
+`;

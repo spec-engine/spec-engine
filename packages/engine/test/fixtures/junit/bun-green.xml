@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="bun test" tests="3" failures="0" skipped="0" time="0.012">
+  <testsuite name="packages/api/test/billing.test.ts" file="packages/api/test/billing.test.ts" line="1" tests="3" failures="0" skipped="0" time="0.012">
+    <testcase name="charges on renewal" classname="" time="0.001" file="packages/api/test/billing.test.ts" line="2" assertions="1" />
+    <!-- nested <testsuite> per describe block, with its own file+line -->
+    <testsuite name="renewal" file="packages/api/test/billing.test.ts" line="5" tests="2" failures="0" skipped="0" time="0.006">
+      <testcase name="applies proration" classname="renewal" time="0.001" file="packages/api/test/billing.test.ts" line="6" assertions="1" />
+      <testcase name="&lt;&gt;&amp;&quot;&apos;" classname="renewal" time="0.001" file="packages/api/test/billing.test.ts" line="9" assertions="1" />
+    </testsuite>
+  </testsuite>
+</testsuites>

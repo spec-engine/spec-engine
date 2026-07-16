@@ -1,0 +1,121 @@
+{
+  "key": "PROOF",
+  "owner": null,
+  "updated": "2026-07-16",
+  "scope": "Trusted-red: JUnit ingestion, the PROVEN/UNPROVEN determination, and rule-reproof under --ci. Belongs here: --results <junit.xml> ingestion; the PROVEN/UNPROVEN status; proof-of-passing enforcement under --ci. Does not belong here: the bare structural gate with no results file (→ CHCK's plain diagnostic path). Boundary case: an active requirement with a verifying tag but no results file is CHCK's structural check, not a PROOF proof.",
+  "requirements": [
+    {
+      "id": "PROOF-001",
+      "status": "active",
+      "statement": "`spec check` ingests a JUnit XML results file (one reader, no per-runner adapter) and marks each verifying `@spec` tag PASS/FAIL by correlating test cases to tags by file + test name/line.",
+      "why": "One reader, runner owns the export — the trusted-red gate must read real test outcomes, not trust presence.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/results/junit.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "PROOF-002",
+      "status": "active",
+      "statement": "An active requirement is PROVEN only if it has ≥1 verifying tag whose test PASSED in the latest results; absent or failing proof → gate red.",
+      "why": "Presence is not proof — a requirement is only trusted when its verifying test actually passed.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/check/proven.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "PROOF-003",
+      "status": "active",
+      "statement": "Green-suite-hides-removal — if a requirement's implementing code and its verifying test are both removed, `check` fails (the requirement is now unproven) even though the remaining suite is green.",
+      "why": "A green suite must not hide a silently deleted proof; removal makes the requirement unproven.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/check.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "PROOF-004",
+      "status": "active",
+      "statement": "`spec check --ci` consumes results and exits non-zero if any active requirement is unproven; cold-build correctness is preserved (no trust in a warm index).",
+      "why": "The CI gate must be correct from a fresh build — speed never trades away trusted-red correctness (CHCK-002).",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/check.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "PROOF-005",
+      "status": "active",
+      "statement": "spec check run without a --results file evaluates coverage in presence-only mode — a verifying @spec tag counts as covered without a passing test — and emits the warning-severity PROOFS_UNCONFIRMED diagnostic so a team can adopt the gate before wiring test results.",
+      "why": "Without a presence-only fallback every team that has not yet exported JUnit results would hit a red gate on day one; the warning keeps proof-of-passing opt-in while signalling that presence is not proof.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/check.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "PROOF-006",
+      "status": "superseded",
+      "statement": "`spec check` surfaces PARTIAL_PROPAGATION when an active rule whose statement or changedAtVersion differs from the base ref has at least two verifying-tagged sites and only some of them re-prove green in the supplied test results — a mixed pass/fail across its bound sites. All-pass is silent (fully propagated); all-fail or all-absent is left to UNPROVEN_REQ.",
+      "why": "Propagation has teeth — an in-place rule change is not done until every one of its bound sites re-proves green; a partial update where some sites pass and some fail (or lack a correlated test) must fail the gate rather than pass silently.",
+      "supersedes": null,
+      "supersededBy": "PROOF-007",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/check/propagation-teeth.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "supersededAtVersion": 2,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "PROOF-007",
+      "status": "active",
+      "statement": "spec check surfaces PARTIAL_PROPAGATION when an active rule whose recorded content changed between the base ref and the working tree has at least two verifying-tagged sites and only some of them re-prove green in the supplied test results — a mixed pass/fail across its bound sites. All-pass is silent (fully propagated); all-fail or all-absent is left to UNPROVEN_REQ.",
+      "why": "Propagation has teeth — a rule change is not done until every one of its bound sites re-proves green; a partial update where some sites pass and some fail (or lack a correlated test) must fail the gate rather than pass silently.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/check/propagation-teeth.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    }
+  ]
+}

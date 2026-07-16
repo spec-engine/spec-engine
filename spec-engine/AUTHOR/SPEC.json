@@ -1,0 +1,57 @@
+{
+  "key": "AUTHOR",
+  "owner": null,
+  "updated": "2026-07-08",
+  "scope": "The brief→mint authoring pipeline: the three surfaces that turn a vague brief/ticket into well-formed requirements — the AGENTS.md authoring playbook (AUTHOR-001), the .claude/skills/req-author skill (AUTHOR-002), and the spec mcp author_requirements MCP prompt template (AUTHOR-003) — plus the hard constraint that the engine stays LLM-free. Belongs here: the authoring-workflow surfaces (playbook doc, skill, MCP prompt template) and the LLM-free engine fence. Does not belong here: the requirement-lifecycle mechanics themselves (spec req/supersede/amend → REQ), the domain scaffold (spec domain new → DOMAIN), and the charter/authoring-standard doc (→ CHRT). Boundary case: the MCP prompt is engine CODE, but it owns the authoring template text only, never the mint — the actual requirement write is REQ's promise.",
+  "requirements": [
+    {
+      "id": "AUTHOR-001",
+      "status": "active",
+      "statement": "AGENTS.md carries a brief-to-mint authoring playbook — one requirement per testable promise, charter placement via spec domain list, spec query dedup, GUARD-template draft, mint via spec req, and the originating ticket recorded as issue provenance only — that cross-references the TAXONOMY.md 4.10 authoring standard rather than restating it, when a requirement is authored from a brief",
+      "why": "Without a written mint procedure that single-sources the 4.10 standard, cold-read-failing or one-per-ticket requirements get authored the moment work arrives as a vague ticket, and the corpus silently accumulates non-standalone entries",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@AGENTS.md"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHOR-002",
+      "status": "active",
+      "statement": "The req-author skill wraps the authoring playbook with real spec CLI calls, self-checks each drafted statement against the TAXONOMY.md 4.10 cold-read rubric, and presents the drafted batch for human approval before any requirement is written to the corpus, when a brief is turned into requirements",
+      "why": "Without an approval gate an unattended drafter would mint unreviewed, non-standalone requirements straight into the corpus, and a reimplementation of minting would drift from the one shared schema spec req validates against",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@.claude/skills/req-author/SKILL.md"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHOR-003",
+      "status": "active",
+      "statement": "spec mcp advertises an author_requirements MCP prompt whose prompts/get returns a static playbook template — the brief substituted verbatim and, when a target domain is supplied, that domain's charter/scope injected via a pure filesystem read — with no model call, no inference, and no index build in the engine, when an authoring brief is turned into requirements",
+      "why": "Without a shipped, LLM-free authoring prompt every adopter re-derives the mint procedure by hand and cold-read-failing statements get written at authoring time; and any model call slipped into the engine would break the LLM-free guarantee the fence protects",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/server/mcp.ts",
+        "@packages/engine/src/server/authorPrompt.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    }
+  ]
+}

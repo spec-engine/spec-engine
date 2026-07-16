@@ -1,0 +1,19 @@
+{
+  "key": "Z",
+  "owner": "drea",
+  "specVersion": 1,
+  "updated": "",
+  "requirements": [
+    {
+      "id": "Z-001",
+      "status": "drft",
+      "statement": "Typo'd status (should be Draft).",
+      "why": "Must trigger BAD_STATUS diagnostic.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [],
+      "issues": []
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  // The engine's `serve.ts` imports `mountWebapp` from `@spec-engine/webapp/server`,
+  // which transitively type-checks `packages/webapp/src/pages/*.ts`. Those
+  // pages embed CSS via `import styleSheet from "./styles.css" with { type: "text" }`.
+  // The ambient `*.css` declaration that teaches TS this import resolves to
+  // `string` lives in `packages/webapp/src/assets.d.ts`. Engine's
+  // `include` doesn't reach that file by default, so we add it explicitly.
+  // Without this, `tsc -p packages/engine/tsconfig.json` reports 4 spurious
+  // TS2307 errors against the webapp pages. (Plan 05-06 deviation #1.)
+  "include": ["src/**/*", "test/**/*", "../webapp/src/assets.d.ts"]
+}

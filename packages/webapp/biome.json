@@ -1,0 +1,69 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.16/schema.json",
+  "root": false,
+  "extends": ["../../biome.json"],
+  "overrides": [
+    {
+      "includes": ["src/**/*.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "bun:sqlite": {
+                    "message": "webapp must not import bun:sqlite (D-09 / WORK-04 / Invariant #5)"
+                  },
+                  "node:fs": {
+                    "message": "webapp must not touch the filesystem (D-09 / WORK-04 / Invariant #5)"
+                  },
+                  "fs": {
+                    "message": "webapp must not touch the filesystem (D-09 / WORK-04 / Invariant #5)"
+                  },
+                  "bun": {
+                    "message": "webapp must not use Bun runtime APIs directly (D-09 / WORK-04 / Invariant #5)"
+                  },
+                  "node:path": {
+                    "message": "webapp must not use node:path; route through @spec-engine/shared if needed (D-09 / WORK-04 / Invariant #5)"
+                  }
+                },
+                "patterns": [
+                  {
+                    "group": [
+                      "@spec-engine/spec-check",
+                      "@spec-engine/spec-check/**",
+                      "../engine/**"
+                    ],
+                    "message": "webapp must only depend on @spec-engine/shared (D-09 / WORK-04 / Invariant #5)"
+                  },
+                  {
+                    "group": ["@spec-engine/tracker", "@spec-engine/tracker/**"],
+                    "message": "webapp must not import @spec-engine/tracker — resolution is engine-side (D-09 / Phase 16); the page reads decorated text over /api/provenance?resolve=1"
+                  },
+                  {
+                    "group": [
+                      "node:fs/**",
+                      "node:path/**",
+                      "node:os",
+                      "node:os/**",
+                      "node:crypto",
+                      "node:crypto/**",
+                      "node:child_process",
+                      "node:child_process/**",
+                      "node:net",
+                      "node:net/**",
+                      "node:http",
+                      "node:http/**"
+                    ],
+                    "message": "webapp must not touch node:* runtime modules or their subpaths (D-09 / WORK-04 / Invariant #5)"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

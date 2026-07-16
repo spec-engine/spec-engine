@@ -1,0 +1,20 @@
+{
+  "key": "BILLING",
+  "owner": "drea",
+  "specVersion": 1,
+  "updated": "2026-07-08",
+  "requirements": [
+    {
+      "id": "BILLING-001",
+      "status": "draft",
+      "statement": "A charge belongs to exactly one billing Domain.",
+      "cites": [{ "term": "TERM-001", "pinned": 1 }]
+    },
+    {
+      "id": "BILLING-002",
+      "status": "draft",
+      "statement": "A refund cites a Ghost term nobody defined — the left-to-interpretation defect.",
+      "cites": [{ "term": "Ghost", "pinned": 1 }]
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "key": "BILLING",
+  "owner": "dustin",
+  "updated": "2026-07-16",
+  "scope": "Charging, dunning, and tax for subscription revenue. Plan modeling and entitlements live elsewhere.",
+  "requirements": [
+    {
+      "id": "BILLING-001",
+      "status": "active",
+      "statement": "When a subscription renews, the billing service charges the saved payment method at the plan's current price.",
+      "why": "This is the revenue path: a silent failure loses money with no visible error.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": ["@lib-billing/renew.ts"],
+      "issues": [{ "role": "created", "id": "ACME-412" }],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "BILLING-002",
+      "status": "active",
+      "statement": "When a charge fails, the billing service retries on a 1/3/7 day schedule before marking the subscription past-due.",
+      "why": "Retrying too fast or giving up too early both drive churn: the cadence is the difference between recovering a payment and losing the customer.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": ["BILLING-001"],
+      "livesIn": ["@lib-billing/dunning.ts"],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "BILLING-003",
+      "status": "superseded",
+      "statement": "The billing service computes tax once, at signup, and stores it on the subscription.",
+      "why": "Superseded: a tax rate captured at signup goes stale when regional rules change, so long-lived subscriptions bill the wrong amount.",
+      "supersedes": null,
+      "supersededBy": "BILLING-007",
+      "relates": [],
+      "livesIn": [],
+      "issues": [],
+      "supersededAtVersion": 2,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "BILLING-007",
+      "status": "active",
+      "statement": "When a charge is made, the billing service computes tax for the customer's region at charge time rather than reusing a rate stored earlier.",
+      "why": "Regional tax rules change after signup; billing a stale rate under-collects or over-collects and creates a compliance liability.",
+      "supersedes": "BILLING-003",
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": ["@lib-billing/tax.ts"],
+      "issues": [{ "role": "created", "id": "ACME-588" }],
+      "aliases": [],
+      "cites": []
+    }
+  ]
+}

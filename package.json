@@ -1,0 +1,32 @@
+{
+  "name": "spec-check",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "bun": ">=1.3.0"
+  },
+  "scripts": {
+    "check": "biome check .",
+    "check:fix": "biome check --write .",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "typecheck": "tsc -p packages/shared/tsconfig.json --noEmit && tsc -p packages/engine/tsconfig.json --noEmit && tsc -p packages/webapp/tsconfig.json --noEmit && tsc -p packages/tracker/tsconfig.json --noEmit",
+    "test": "bun test",
+    "gate": "bun packages/engine/src/cli.ts check . --ci",
+    "build:cli": "bun build --compile --minify --target=${BUN_TARGET:-bun-darwin-arm64} packages/engine/src/cli.ts --outfile=dist/spec",
+    "build:site": "bun --filter @spec-engine/site build",
+    "ci": "bun run check && bun run typecheck && bun run test",
+    "prepare": "lefthook install"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.16",
+    "@types/bun": "1.3.14",
+    "lefthook": "2.1.9",
+    "typescript": "5.9.3"
+  }
+}

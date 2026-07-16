@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="3" failures="0" time="1.53">
+  <testsuite name="Checkout" file="packages/web/src/checkout.test.js" tests="2" failures="0" time="1.10">
+    <testcase name="renders total" classname="Checkout" time="0.51" />
+    <testcase name="applies coupon" classname="Checkout" time="0.30" />
+  </testsuite>
+  <testsuite name="packages/web/src/cart.test.js" tests="1" failures="0" time="0.43">
+    <testcase name="adds line item" classname="cart adds line item" time="0.12" />
+  </testsuite>
+</testsuites>

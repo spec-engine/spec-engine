@@ -1,0 +1,71 @@
+# RED-90 — publish the docs site (packages/site) to docs.spec-engine.dev on
+# merge to main, via GitHub Pages (host decision + human setup steps are
+# documented in packages/site/README.md).
+#
+# GATED until launch: GitHub Pages serves free only from PUBLIC repos, and
+# this repo stays private until M3 — so the whole pipeline sits behind the
+# repository variable DEPLOY_DOCS. Until an admin sets DEPLOY_DOCS=true
+# (Settings → Secrets and variables → Actions → Variables), pushes to main
+# skip both jobs; nothing goes red on a private repo.
+#
+# PR previews (RED-90 AC3, nice-to-have): SKIPPED — GitHub Pages has no
+# native per-PR preview deploys; simulating them (branch-per-preview or a
+# second host) costs more than the nice-to-have is worth. Revisit only if
+# the site moves to a host with built-in previews.
+
+name: deploy-docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/site/**"
+      - ".github/workflows/deploy-docs.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time; a newer push supersedes an in-flight one.
+concurrency:
+  group: deploy-docs
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: build site (astro)
+    if: vars.DEPLOY_DOCS == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: setup Bun (reads .bun-version)
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: ".bun-version"
+
+      - name: install (frozen lockfile)
+        run: bun install --frozen-lockfile
+
+      - name: build packages/site
+        run: bun run build:site
+
+      - name: upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: packages/site/dist
+
+  deploy:
+    name: deploy to GitHub Pages
+    if: vars.DEPLOY_DOCS == 'true'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,77 @@
+# Dependencies
+node_modules/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.fuse_hidden*
+.Trash-*
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Caches
+.cache/
+.npm/
+.eslintcache
+
+# Local agent / tool config (never ship in the public build)
+# Exception: .claude/skills/ holds shipped, versioned skills (e.g. req-author,
+# AUTHOR-002's livesIn target) and the repo .mcp.json registers the spec mcp
+# server — both are deliverables, not local state, so they are tracked.
+.claude/*
+!.claude/skills/
+.codex/
+.agents/
+.factory/
+.factory-debug/
+.serena/
+
+# spec-check derived index (disposable — rebuilt from spec-engine/ on demand)
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+.spec-engine/
+
+# Test fixtures that intentionally include "ignored" paths
+# (the scanner's IGNORE_SUBSTR filter must filter them at scan time —
+# but the files themselves must be checked in so the test exercises the filter).
+!packages/engine/test/fixtures/**/node_modules/
+!packages/engine/test/fixtures/**/node_modules/**
+!packages/engine/test/fixtures/**/dist/
+!packages/engine/test/fixtures/**/dist/**
+

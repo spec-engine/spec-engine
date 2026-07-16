@@ -1,0 +1,18 @@
+{
+  "name": "@spec-engine/spec-check",
+  "version": "0.0.6",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "spec": "./src/cli.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "@spec-engine/shared": "workspace:*",
+    "@spec-engine/tracker": "workspace:*",
+    "@spec-engine/webapp": "workspace:*",
+    "citty": "0.2.2",
+    "hono": "4.12.27",
+    "zod": "3.25.76"
+  }
+}

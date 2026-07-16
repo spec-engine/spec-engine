@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="bun test" tests="5" failures="2" skipped="2" time="0.021">
+  <testsuite name="packages/api/test/renew.test.ts" file="packages/api/test/renew.test.ts" line="1" tests="5" failures="2" skipped="2" time="0.021">
+    <testcase name="passing case" classname="" time="0.001" file="packages/api/test/renew.test.ts" line="2" assertions="1" />
+    <testcase name="failing case" classname="renew" time="0.001" file="packages/api/test/renew.test.ts" line="3" assertions="1">
+      <failure type="AssertionError" />
+    </testcase>
+    <testcase name="skipped case" classname="" time="0" file="packages/api/test/renew.test.ts" line="4"><skipped /></testcase>
+    <testcase name="todo case" classname="" time="0" file="packages/api/test/renew.test.ts" line="5"><skipped message="TODO" /></testcase>
+    <testcase name="erroring case" classname="renew" time="0.002" file="packages/api/test/renew.test.ts" line="7" assertions="0">
+      <error message="ReferenceError: boom is not defined" />
+    </testcase>
+  </testsuite>
+</testsuites>

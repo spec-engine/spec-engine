@@ -1,0 +1,263 @@
+{
+  "key": "POC",
+  "owner": "drea",
+  "updated": "2026-07-08",
+  "scope": null,
+  "requirements": [
+    {
+      "id": "POC-001",
+      "status": "superseded",
+      "statement": "Deleting the derived index and rebuilding from the spec location plus repo tags produces an identical result; nothing lives only in the DB.",
+      "why": "Canonical truth is the git spec location — the DB is derived and owns nothing (Invariant #1).",
+      "supersedes": null,
+      "supersededBy": "INDX-001",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/indexer/pipeline.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "POC-002",
+      "status": "superseded",
+      "statement": "Coverage is a SQL VIEW projected from tags — never authored, never materialized.",
+      "why": "A projection cannot drift from the tags it describes (Invariant #3).",
+      "supersedes": null,
+      "supersededBy": "SCHM-001",
+      "relates": [],
+      "livesIn": [
+        "@packages/shared/src/schema.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "POC-003",
+      "status": "superseded",
+      "statement": "Structural integrity (DUP_ID, BROKEN_SUPERSEDE, BAD_STATUS) is validated against the parsed spec at index time, never enforced as DB constraints.",
+      "why": "The DB is not the source of truth; constraints there would imply it owns the spec (Invariant #4).",
+      "supersedes": null,
+      "supersededBy": "INDX-002",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/indexer/diagnostics.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "POC-004",
+      "status": "superseded",
+      "statement": "CLI and webapp read through one shared storage interface and schema types; the webapp never opens the DB or the filesystem itself.",
+      "why": "One engine, not two — forked logic drifts between surfaces (Invariant #5).",
+      "supersedes": null,
+      "supersededBy": "SCHM-002",
+      "relates": [],
+      "livesIn": [
+        "@packages/shared/src/storage.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "POC-005",
+      "status": "superseded",
+      "statement": "A repo is drifted only when it is pinned to a spec version older than the version in which a requirement it actually references changed; behind-but-unaffected is not drift.",
+      "why": "Drift must be precise or the gate cries wolf (Invariant #6).",
+      "supersedes": null,
+      "supersededBy": "PROP-002",
+      "relates": [],
+      "livesIn": [
+        "@packages/shared/src/schema.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "POC-006",
+      "status": "superseded",
+      "statement": "spec index walks the spec location plus member repos and (re)builds the derived SQLite index, reporting build_id and row counts.",
+      "why": "Local multi-repo indexing is the substrate every other command reads.",
+      "supersedes": null,
+      "supersededBy": "INDX-003",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/index.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "POC-007",
+      "status": "superseded",
+      "statement": "spec check reports cross-repo integrity diagnostics (dangling, superseded-referenced, orphan, unverified, drift) and exits non-zero on error-severity rows under --ci.",
+      "why": "The gate; it catches all the planted mess.",
+      "supersedes": null,
+      "supersededBy": "CHCK-001",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/check.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "POC-008",
+      "status": "superseded",
+      "statement": "spec map renders the cross-repo requirement-to-repo coverage matrix derived from tags, with per-cell src/test/src+test states.",
+      "why": "The platform coverage view a single-repo scan cannot give.",
+      "supersedes": null,
+      "supersededBy": "MAP-001",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/map.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "POC-009",
+      "status": "superseded",
+      "statement": "spec propagation shows, for a superseded requirement, which repos migrated to the successor and which are still pinned behind.",
+      "why": "The value moment — BILLING-009 shipped: api migrated, mobile still on BILLING-001.",
+      "supersedes": null,
+      "supersededBy": "PROP-003",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/propagation.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "POC-010",
+      "status": "superseded",
+      "statement": "spec query answers full-text retrieval over requirement text and rationale via FTS5.",
+      "why": "Rung-1 agent retrieval — a semantic-ish hit a plain grep for the id would miss.",
+      "supersedes": null,
+      "supersededBy": "QURY-001",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/query.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "POC-011",
+      "status": "superseded",
+      "statement": "spec resolve maps file paths to the requirements tagged in them, with coverage.",
+      "why": "Routes a task to its requirements (agent routing).",
+      "supersedes": null,
+      "supersededBy": "RSLV-001",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/resolve.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "POC-012",
+      "status": "superseded",
+      "statement": "spec serve launches the local webapp over the derived index, bound to loopback only.",
+      "why": "CLI + DB + local webapp shape; loopback is the T-1-01 security posture.",
+      "supersedes": null,
+      "supersededBy": "SERV-001",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/serve.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "POC-013",
+      "status": "superseded",
+      "statement": "spec gate passes only when the referenced requirement is approved (Active) in the spec location and the member's pin covers its changed_at_version; failures exit 1 with a typed reason.",
+      "why": "The rung-3 approval primitive — the spec merge is the approval, the PR check is the enforcement.",
+      "supersedes": null,
+      "supersededBy": "GATE-006",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/gate.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "POC-014",
+      "status": "superseded",
+      "statement": "SPEC.json parses as a domain envelope of requirements with typed statuses (active, superseded, draft, retired); malformed statuses and structurally-invalid files surface as BAD_STATUS / INVALID_DOMAIN_FILE rather than crashes.",
+      "why": "The authoring and interchange format the engine ingests; silent misparses lose requirements.",
+      "supersedes": null,
+      "supersededBy": "SCHM-003",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/parser/domainJson.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "POC-015",
+      "status": "superseded",
+      "statement": "The tag scanner finds @spec tags anywhere in a line, derives implements/verifies from the file path, and recognizes the optional unit/integration/e2e level token.",
+      "why": "Tags are how code claims a requirement; kind-by-path keeps tags one token long.",
+      "supersedes": null,
+      "supersededBy": "INDX-004",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/scanner/tags.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "POC-016",
+      "status": "superseded",
+      "statement": "spec check --ci builds fresh and is correct without trusting any cached or warm index.",
+      "why": "Speed optimizations must never make correctness depend on a stale index (Invariant #2).",
+      "supersedes": null,
+      "supersededBy": "CHCK-002",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/check.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "POC-017",
+      "status": "superseded",
+      "statement": "All three adoption rungs run end to end: a lone repo self-consumes (rung 1), check --ci gates tags-bind-tests (rung 2), and the approval gate blocks superseded references (rung 3).",
+      "why": "The Linear-model adoption story is the product thesis; each rung must stay demonstrable.",
+      "supersedes": null,
+      "supersededBy": "INIT-010",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/cli.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    }
+  ]
+}

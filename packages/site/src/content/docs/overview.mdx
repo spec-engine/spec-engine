@@ -1,0 +1,52 @@
+---
+title: Overview
+description: What spec-check is and why it exists
+---
+
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+<Tabs>
+<TabItem label="👤 Human">
+**Start here.** Read [Getting Started](/getting-started/) for a walkthrough, then explore [Architecture](/architecture/), [Commands](/commands/), and the [Guides](/guides/adoption/).
+
+These docs are written in narrative style with rationale, examples, and context.
+</TabItem>
+<TabItem label="🤖 Agent">
+**You're told to "use spec-check."** Go straight to the [Agent Reference](/agent-reference/) — it has the exact CLI contracts, exit codes, JSON shapes, and the route → tag → check loop in as few tokens as possible. That page is optimized for agents, not humans.
+</TabItem>
+</Tabs>
+
+spec-check is a cross-repo spec engine. It manages durable domain requirements that survive past production, addressed by permanent ID, bound to code, and checkable in CI.
+
+A **spec-check** is the standing specification of one domain. Requirements carry permanent IDs (`KEY-NNN`); code points back at them with a `// @spec KEY-NNN` tag. From that one convention you get three things:
+
+1. An agent can be routed to exactly the requirements a task touches
+2. Integrity can be checked mechanically
+3. A requirement's history survives every refactor because IDs are permanent and changes supersede rather than overwrite
+
+## Why it exists
+
+Feature-generation tools (Spec Kit, Kiro, GSD/DFC) are keyed to the change you are about to make; their specs are per-feature and end at "implemented." spec-check is keyed to the **domain**, which outlives every feature. Its first-class operation is **life after production**: superseding established truth, not generating new work.
+
+When AI agents produce more code in an afternoon than a person can carefully read in a week, spec-check answers by making the mission-critical path defend itself: `spec check` runs on every change and reports whether a load-bearing requirement was broken, orphaned, or left unverified.
+
+## Provenance — the external join
+
+A requirement can also carry an optional **`Issues:`** field linking it back to the tracker where the *why* lives, by role (`created`, `supersedes-via`, `amends-via`). `spec provenance` widens the coverage matrix into a provenance matrix: per requirement, the issue that birthed it, the issues that revised or retired it, and the tests backing it. The engine treats issue IDs as opaque strings and never makes a network call; an optional tracker adapter resolves them to titles and URLs. See [SPEC.json Format](/format/) and [Commands](/commands/).
+
+## Deployment tiers
+
+| Tier | Form | Scope | Price |
+| --- | --- | --- | --- |
+| Local platform | CLI + SQLite + local webapp | repos on this machine | free |
+| Cloud service | same, hosted | the org's complete repo set, always-on, CI-wired | paid |
+| On-prem / air-gapped | the service in their infra | same as cloud, self-run | enterprise |
+
+Same CLI, same schema, same webapp the whole way up.
+
+## The four moves
+
+- **Author** — write a requirement before code. Agent drafts, human merges.
+- **Route** — `spec resolve` / `spec query` to load the requirements a task touches.
+- **Tag** — add `@spec KEY-NNN` in code as you satisfy a requirement.
+- **Check** — `spec check --ci` as a gate.

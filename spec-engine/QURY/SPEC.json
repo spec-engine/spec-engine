@@ -1,0 +1,54 @@
+{
+  "key": "QURY",
+  "owner": null,
+  "updated": "2026-07-08",
+  "scope": "The spec query full-text retrieval command. Belongs here: FTS5 MATCH semantics; rank-ascending results; superseded exclusion; --limit bounds. Does not belong here: file→requirement resolution (→ RSLV). Boundary case: a bare AND OR FTS5 grammar error is a QURY usage-error (exit 2) contract.",
+  "requirements": [
+    {
+      "id": "QURY-001",
+      "status": "active",
+      "statement": "spec query answers full-text retrieval over requirement text and rationale via FTS5.",
+      "why": "Rung-1 agent retrieval — a semantic-ish hit a plain grep for the id would miss.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/query.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "QURY-002",
+      "status": "active",
+      "statement": "spec query matches porter-stemmed forms of the search text, so querying 'renewal charge' returns a requirement whose text says 'renews'.",
+      "why": "Without stemming, agents must guess the author's exact wording; the headline find-the-requirement-by-the-value-moment retrieval promise silently fails.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/storage/sqlite.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "QURY-003",
+      "status": "active",
+      "statement": "spec query returns TERM-domain glossary definitions in a Terms group beside requirement hits, discriminated by the FtsHit key so a term hit is distinguishable from a requirement hit, while terms stay excluded from the coverage matrix",
+      "why": "the glossary becomes searchable at query time — the only-allowed-jargon payoff of §4.11 is visible where an author is already looking, without leaking terms into coverage obligations",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "key": "GATE",
+  "owner": "drea",
+  "updated": "2026-07-08",
+  "scope": "The `spec gate` approval command: the pass/fail decision order (NOT_FOUND → DRAFT → SUPERSEDED → VERSION_PIN → PASS), pin-equality passing. Belongs here: the approval decision. Does not belong here: proof-of-passing → PROOF; loss detection → GUARD.",
+  "requirements": [
+    {
+      "id": "GATE-01",
+      "status": "superseded",
+      "statement": "`spec check` ingests a JUnit XML results file (one reader, no per-runner adapter) and marks each verifying `@spec` tag PASS/FAIL by correlating test cases to tags by file + test name/line.",
+      "why": "One reader, runner owns the export — the trusted-red gate must read real test outcomes, not trust presence.",
+      "supersedes": null,
+      "supersededBy": "PROOF-001",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/results/junit.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GATE-02",
+      "status": "superseded",
+      "statement": "An active requirement is PROVEN only if it has ≥1 verifying tag whose test PASSED in the latest results; absent or failing proof → gate red.",
+      "why": "Presence is not proof — a requirement is only trusted when its verifying test actually passed.",
+      "supersedes": null,
+      "supersededBy": "PROOF-002",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/check/proven.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GATE-03",
+      "status": "superseded",
+      "statement": "Green-suite-hides-removal — if a requirement's implementing code and its verifying test are both removed, `check` fails (the requirement is now unproven) even though the remaining suite is green.",
+      "why": "A green suite must not hide a silently deleted proof; removal makes the requirement unproven.",
+      "supersedes": null,
+      "supersededBy": "PROOF-003",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/check.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GATE-04",
+      "status": "superseded",
+      "statement": "`spec check --ci` consumes results and exits non-zero if any active requirement is unproven; cold-build correctness is preserved (no trust in a warm index).",
+      "why": "The CI gate must be correct from a fresh build — speed never trades away trusted-red correctness (Invariant #2).",
+      "supersedes": null,
+      "supersededBy": "PROOF-004",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/check.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GATE-05",
+      "status": "superseded",
+      "statement": "No results supplied → `check` runs in presence-only mode (today's behavior) and warns that proofs are unconfirmed (enables gradual adoption).",
+      "why": "Gradual adoption — presence-only mode with a PROOFS_UNCONFIRMED warning lets teams onboard before wiring results.",
+      "supersedes": null,
+      "supersededBy": "PROOF-005",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/check.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GATE-006",
+      "status": "active",
+      "statement": "spec gate passes only when the referenced requirement is approved (Active) in the spec location and the member's pin covers its changed_at_version; failures exit 1 with a typed reason.",
+      "why": "The rung-3 approval primitive — the spec merge is the approval, the PR check is the enforcement.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/gate.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    }
+  ]
+}

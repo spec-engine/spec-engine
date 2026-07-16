@@ -1,0 +1,36 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`spec provenance --json against canonical platform-fixture full-matrix JSON shape is stable (snapshot of req_id + role + issue_id) 1`] = `
+[
+  {
+    "issue_id": "BILLING-001",
+    "req_id": "AUTH-001",
+    "role": "created",
+  },
+  {
+    "issue_id": "ENG-1100",
+    "req_id": "BILLING-001",
+    "role": "created",
+  },
+  {
+    "issue_id": "ENG-1",
+    "req_id": "BILLING-002",
+    "role": "created",
+  },
+  {
+    "issue_id": "ENG-2",
+    "req_id": "BILLING-002",
+    "role": "supersedes-via",
+  },
+  {
+    "issue_id": "ENG-1432",
+    "req_id": "BILLING-009",
+    "role": "created",
+  },
+  {
+    "issue_id": "ENG-1781",
+    "req_id": "BILLING-009",
+    "role": "supersedes-via",
+  },
+]
+`;

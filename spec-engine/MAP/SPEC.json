@@ -1,0 +1,24 @@
+{
+  "key": "MAP",
+  "owner": null,
+  "updated": "2026-07-08",
+  "scope": "The spec map requirement × repo coverage matrix. Belongs here: the matrix rows; the src / test / src+test / — rendering; the future webapp matrix-view requirements. Does not belong here: FTS retrieval (→ QURY). Boundary case: MAP stays a separate domain rather than folding into a generic read domain because it will accrue the webapp matrix-view requirements.",
+  "requirements": [
+    {
+      "id": "MAP-001",
+      "status": "active",
+      "statement": "spec map renders the cross-repo requirement-to-repo coverage matrix derived from tags, with per-cell src/test/src+test states.",
+      "why": "The platform coverage view a single-repo scan cannot give.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/map.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    }
+  ]
+}

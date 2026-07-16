@@ -1,0 +1,30 @@
+/* Starlight theme — matches Astro marketing site (https://astro.build) */
+
+:root {
+  --sl-color-accent-low: #28115e;
+  --sl-color-accent: #8d46e7;
+  --sl-color-accent-high: #d2b8fc;
+  --sl-color-white: #f2f6fa;
+  --sl-color-gray-1: #e2e6ee;
+  --sl-color-gray-2: #bfc1c9;
+  --sl-color-gray-3: #858b98;
+  --sl-color-gray-4: #545864;
+  --sl-color-gray-5: #2c2f36;
+  --sl-color-gray-6: #1a1c23;
+  --sl-color-black: #0d0f14;
+  --sl-content-width: 50rem;
+}
+
+:root[data-theme="light"] {
+  --sl-color-accent-low: #d9d1ff;
+  --sl-color-accent: #7c3aed;
+  --sl-color-accent-high: #3b0764;
+  --sl-color-white: #0d0f14;
+  --sl-color-gray-1: #1a1c23;
+  --sl-color-gray-2: #2c2f36;
+  --sl-color-gray-3: #545864;
+  --sl-color-gray-4: #858b98;
+  --sl-color-gray-5: #bfc1c9;
+  --sl-color-gray-6: #e2e6ee;
+  --sl-color-black: #fafafa;
+}

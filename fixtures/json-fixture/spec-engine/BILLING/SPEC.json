@@ -1,0 +1,47 @@
+{
+  "key": "BILLING",
+  "owner": "drea",
+  "specVersion": 2,
+  "updated": "2026-06-02",
+  "requirements": [
+    {
+      "id": "BILLING-001",
+      "status": "superseded",
+      "statement": "When a subscription renews, charge the saved payment method at the current plan price.",
+      "why": "Revenue path.",
+      "supersededBy": "BILLING-009",
+      "livesIn": ["renew.ts"],
+      "issues": [{ "role": "created", "id": "ENG-1100" }]
+    },
+    {
+      "id": "BILLING-009",
+      "status": "active",
+      "statement": "When a subscription renews, charge the saved payment method at the current plan price, prorating mid-cycle plan changes.",
+      "why": "Revenue path; proration was the gap that drove the supersession.",
+      "livesIn": ["renew.ts"],
+      "issues": [
+        { "role": "created", "id": "ENG-1432" },
+        { "role": "supersedes-via", "id": "ENG-1781" }
+      ]
+    },
+    {
+      "id": "BILLING-002",
+      "status": "active",
+      "statement": "When a charge fails, retry on a schedule and notify the customer.",
+      "why": "Dunning; silent failure churns the customer.",
+      "livesIn": ["charge.ts"],
+      "issues": [
+        { "role": "created", "id": "ENG-1" },
+        { "role": "bogus-role", "id": "ENG-9" },
+        { "role": "supersedes-via", "id": "ENG-2" }
+      ]
+    },
+    {
+      "id": "BILLING-007",
+      "status": "active",
+      "statement": "When a charge is made, compute tax per region at charge time.",
+      "why": "Compliance.",
+      "livesIn": ["tax.ts"]
+    }
+  ]
+}

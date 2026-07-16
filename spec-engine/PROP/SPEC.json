@@ -1,0 +1,55 @@
+{
+  "key": "PROP",
+  "owner": "drea",
+  "updated": "2026-07-08",
+  "scope": "Propagation and migration state, including the drift definition. Belongs here: the per-repo migrated/drifted state; spec propagation; the drift definition itself. Does not belong here: the SPEC.json model shape (→ SCHM). Boundary case: the drift definition lands in PROP, not SCHM — it is the propagation contract, and the SQL view computing it is merely enforcement.",
+  "requirements": [
+    {
+      "id": "PROP-01",
+      "status": "superseded",
+      "statement": "A rule change requires every bound site to re-prove green (GATE-02 applied across all tagged sites), so a partial update (cart fixed, invoice not) fails the gate.",
+      "why": "Propagation has teeth — a rule change is not done until every bound site re-proves green; a partial update fails.",
+      "supersedes": null,
+      "supersededBy": "PROOF-006",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/check/propagation-teeth.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "PROP-002",
+      "status": "active",
+      "statement": "A repo is drifted only when it is pinned to a spec version older than the version in which a requirement it actually references changed; behind-but-unaffected is not drift.",
+      "why": "Drift must be precise or the gate cries wolf.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/shared/src/schema.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "PROP-003",
+      "status": "active",
+      "statement": "spec propagation shows, for a superseded requirement, which repos migrated to the successor and which are still pinned behind.",
+      "why": "The value moment — BILLING-009 shipped: api migrated, mobile still on BILLING-001.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/propagation.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    }
+  ]
+}

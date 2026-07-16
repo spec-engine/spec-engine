@@ -1,0 +1,1448 @@
+/* packages/webapp/src/pages/styles.css
+ *
+ * The Spec Engine workspace design system, translated from the Spec Engine
+ * brand kit's token layer (design_handoff / globals.css) into plain CSS.
+ * The workspace is the brand's charcoal ("dark") theme with the amber
+ * accent — one theme, applied at :root so every SSR page inherits it.
+ *
+ * Embedded into each page's <head> via
+ *   `import styleSheet from "./styles.css" with { type: "text" }`
+ * (Shared 5 / D-14 / SERV-04). Growing this file does NOT change that
+ * contract: it is still a build-time text asset inlined into the compiled
+ * binary — no runtime file read, no network fetch for CSS.
+ *
+ * Fonts load progressively from Google Fonts (Archivo / IBM Plex), the same
+ * degrade-gracefully escalation the /relations mermaid CDN uses: offline the
+ * page falls back to the system stack in each --font-* token. Class names the
+ * page handlers emit (.spec-chart, .rib-impl, .error, .nav, …) are contract —
+ * they are styled here, never renamed.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap");
+
+/* ---------- token layer (charcoal workspace, amber accent) ---------- */
+:root {
+  --bg: #0e1113;
+  --panel: #14181b;
+  --panel-2: #191f23;
+  --elev: #1e262b;
+
+  --line: rgba(255, 255, 255, 0.075);
+  --line-2: rgba(255, 255, 255, 0.14);
+
+  --fg: #e7e4db;
+  --fg-dim: #a7acb0;
+  --fg-mute: #6e767d;
+
+  /* the single swappable accent pair */
+  --brand: #f6a02c;
+  --brand-2: #ff7a3c;
+  --brand-ink: #0e1113;
+  --brand-soft: color-mix(in srgb, var(--brand) 15%, transparent);
+  --brand-line: color-mix(in srgb, var(--brand) 42%, transparent);
+
+  /* status system (theme-independent) */
+  --verified: #c4f135;
+  --verified-soft: color-mix(in srgb, var(--verified) 13%, transparent);
+  --verified-line: color-mix(in srgb, var(--verified) 50%, transparent);
+  --drift: #e8a317;
+  --broken: #f0472e;
+  --unbound: #868d94;
+  --superseded: #68aecb;
+
+  --radius: 7px;
+  --radius-sm: 5px;
+
+  --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;
+}
+
+/* opt into the Spec Engine lime accent (the amber<->lime A/B from the kit) */
+.theme-lime {
+  --brand: #c4f135;
+  --brand-2: #9be60f;
+  --brand-ink: #0f1214;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+}
+
+:root {
+  --sidebar-w: 240px;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--fg);
+  background: var(--bg);
+  margin: 0 0 0 var(--sidebar-w);
+  max-width: 1400px;
+  padding: 28px 40px 80px;
+  line-height: 1.55;
+}
+
+::selection {
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+
+/* ---------- type ---------- */
+h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.9rem;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  margin: 0 0 0.5rem;
+  color: var(--fg);
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: -0.01em;
+  margin: 1.75rem 0 0.75rem;
+  color: var(--fg);
+}
+
+/* mono eyebrow (kit motif: "/ COVERAGE MATRIX") — a sibling above each <h1> */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--brand);
+  margin: 0.25rem 0 0.6rem;
+}
+
+/* lede paragraph under the title */
+.lede {
+  font-size: 0.95rem;
+  color: var(--fg-dim);
+  max-width: 60ch;
+  margin: 0 0 1.5rem;
+}
+
+a {
+  color: var(--brand);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--elev);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.05em 0.35em;
+  color: var(--fg);
+}
+
+/* the stamped spec-id motif — mono, accent */
+.spec-id {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--brand);
+}
+
+/* ---------- workspace sidebar (nav.ts) ---------- */
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--sidebar-w);
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  z-index: 20;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 1rem 1.1rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+  border-bottom: 1px solid var(--line);
+}
+
+.sidebar-brand:hover {
+  text-decoration: none;
+}
+
+.sidebar-brand svg {
+  flex: none;
+  display: block;
+}
+
+.sidebar-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.4rem 0.65rem 1rem;
+}
+
+.sidebar-group {
+  margin-top: 0.5rem;
+}
+
+.sidebar-group-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  padding: 0.9rem 0.65rem 0.4rem;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  color: var(--fg-dim);
+}
+
+.sidebar-link:hover {
+  background: var(--elev);
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.sidebar-link .sidebar-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1px solid var(--fg-mute);
+  flex: none;
+}
+
+.sidebar-link.active {
+  background: var(--elev);
+  color: var(--fg);
+  font-weight: 500;
+}
+
+.sidebar-link.active .sidebar-dot {
+  background: var(--brand);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+
+/* disabled ("coming soon") sidebar item — not a link */
+.sidebar-link.disabled {
+  color: var(--fg-mute);
+  cursor: default;
+  align-items: flex-start;
+}
+
+.sidebar-link.disabled:hover {
+  background: none;
+  color: var(--fg-mute);
+}
+
+.sidebar-link.disabled .sidebar-dot {
+  margin-top: 0.35rem;
+  border-style: dashed;
+}
+
+.sidebar-label {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.sidebar-label .soon {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  opacity: 0.85;
+}
+
+/* coming-soon page notice */
+.coming-soon {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  font-size: 0.92rem;
+  color: var(--fg-dim);
+}
+
+.sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.85rem 1.1rem;
+  border-top: 1px solid var(--line);
+}
+
+.sidebar-footer .conn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--fg-mute);
+}
+
+.sidebar-footer .conn-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+  flex: none;
+}
+
+.sidebar-footer .read-only {
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  color: var(--fg-dim);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  padding: 0.15rem 0.5rem;
+}
+
+/* narrow screens: collapse the fixed sidebar into a top strip */
+@media (max-width: 900px) {
+  body {
+    margin-left: 0;
+    padding: 1rem 1.25rem 60px;
+  }
+  .sidebar {
+    position: static;
+    width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+    margin: -1rem -1.25rem 1.25rem;
+    padding: 0.6rem 1.25rem;
+  }
+  .sidebar-brand {
+    border-bottom: none;
+    padding: 0;
+  }
+  .sidebar-scroll {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 0.5rem;
+    padding: 0;
+    overflow: visible;
+  }
+  .sidebar-group {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+    margin: 0;
+  }
+  .sidebar-group-label,
+  .sidebar-footer {
+    display: none;
+  }
+}
+
+/* ---------- summary stat strip ---------- */
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin: 0 0 1.5rem;
+}
+
+.stat {
+  background: var(--panel);
+  padding: 0.85rem 1.35rem;
+  min-width: 120px;
+}
+
+.stat .num {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--fg);
+}
+
+.stat .num.accent {
+  color: var(--brand);
+}
+
+.stat .label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  margin-top: 0.4rem;
+}
+
+/* ---------- tables (matrix / report / propagation) ---------- */
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0.5rem 0 1.5rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  font-size: 0.85rem;
+}
+
+thead th {
+  background: var(--panel-2);
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.66rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  text-align: left;
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid var(--line-2);
+}
+
+tbody td {
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--fg);
+  vertical-align: middle;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr:hover td {
+  background: color-mix(in srgb, var(--elev) 55%, transparent);
+}
+
+/* mono, dimmed numeric cells read as data */
+td.num {
+  font-family: var(--font-mono);
+  color: var(--fg-dim);
+  text-align: right;
+}
+
+td.pct {
+  font-family: var(--font-mono);
+  color: var(--brand);
+  text-align: right;
+}
+
+/* ---------- canonical coverage matrix ---------- */
+.matrix-wrap {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow-x: auto;
+  background: var(--panel);
+  margin: 0.5rem 0 1rem;
+}
+
+table.matrix {
+  border: none;
+  border-radius: 0;
+  margin: 0;
+  min-width: 720px;
+}
+
+table.matrix thead th {
+  background: var(--panel-2);
+}
+
+table.matrix th.repo-col {
+  text-align: center;
+  color: var(--fg-dim);
+  border-left: 1px solid var(--line);
+}
+
+table.matrix th.rollup-col,
+table.matrix td.rollup-col {
+  text-align: right;
+  border-left: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+table.matrix td.matrix-cell {
+  text-align: center;
+  border-left: 1px solid var(--line);
+  padding: 0.55rem 0.4rem;
+}
+
+/* domain group header row — click to collapse/expand its requirement rows */
+tr.domain-row {
+  cursor: pointer;
+}
+tr.domain-row td {
+  background: var(--elev);
+  border-bottom: 1px solid var(--line);
+  padding: 0.5rem 0.85rem;
+}
+tr.domain-row:hover td {
+  background: color-mix(in srgb, var(--brand) 12%, var(--elev));
+}
+
+/* chevron points down when the group is open, right when collapsed */
+tr.domain-row .matrix-chevron {
+  color: var(--fg-mute);
+  margin-right: 0.5rem;
+  vertical-align: middle;
+  transition: transform 120ms ease;
+}
+tbody.domain-group:not(.collapsed) tr.domain-row .matrix-chevron {
+  transform: rotate(90deg);
+}
+
+/* collapsed group: hide the requirement rows, keep the header */
+tbody.domain-group.collapsed tr.req-row {
+  display: none;
+}
+
+.domain-key {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  color: var(--brand);
+}
+
+.domain-meta {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--fg-mute);
+  margin-left: 0.75rem;
+}
+
+/* per-domain implemented/verified rollup, right-aligned on the header row —
+   the amber/green split comes from the same .rollup-impl / .rollup-verif
+   spans the requirement rows use. */
+tr.domain-row .domain-rollup {
+  float: right;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+/* requirement + domain-header rows — the first cell STAYS a table cell (a
+   flexed td leaves table layout, so the first column stops negotiating row
+   heights and drifts out of alignment with the member columns); the inner
+   .req-cell wrapper carries the flex track: badge · id · title. */
+td.req-col {
+  white-space: nowrap;
+}
+
+.req-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.req-title {
+  color: var(--fg);
+  font-size: 0.82rem;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+tr.req-row.superseded {
+  opacity: 0.5;
+}
+
+tr.req-row:hover td {
+  background: color-mix(in srgb, var(--elev) 55%, transparent);
+}
+
+/* rollup: implemented / verified */
+.rollup-impl {
+  font-family: var(--font-mono);
+  color: var(--brand);
+}
+.rollup-slash {
+  font-family: var(--font-mono);
+  color: var(--fg-mute);
+  margin: 0 0.3rem;
+}
+.rollup-verif {
+  font-family: var(--font-mono);
+  color: var(--verified);
+}
+/* null-req rollup placeholder — a superseded/retired req no longer tracks coverage */
+.rollup-null {
+  font-family: var(--font-mono);
+  color: var(--fg-mute);
+  opacity: 0.6;
+}
+
+/* the per-repo bind-state glyph — colorblind-safe: a letter/check + colour,
+   never colour alone (the brand kit's default coverage mode). */
+.glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  vertical-align: middle;
+  border: 1px solid var(--line-2);
+}
+.glyph.both {
+  color: var(--verified);
+  background: var(--verified-soft);
+  border-color: var(--verified-line);
+}
+.glyph.impl {
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-color: var(--brand-line);
+}
+.glyph.test {
+  color: var(--brand);
+  background: transparent;
+  border-color: var(--brand-line);
+}
+.glyph.none {
+  background: transparent;
+  border-color: var(--line-2);
+}
+
+/* the matrix legend (distinct from the report's .legend text paragraph) */
+.matrix-legend {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  flex-wrap: wrap;
+  margin: 0 0 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--fg-dim);
+}
+
+.matrix-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.matrix-legend .glyph {
+  width: 17px;
+  height: 17px;
+  font-size: 10px;
+}
+
+.matrix-legend .legend-sep {
+  width: 1px;
+  height: 14px;
+  background: var(--line-2);
+}
+
+/* ---------- data tables (report rollup, setup repos) ---------- */
+table.data-table {
+  border: none;
+  border-radius: 0;
+  margin: 0;
+  min-width: 640px;
+}
+
+table.data-table thead th {
+  background: var(--panel-2);
+}
+
+table.data-table .path {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--fg-dim);
+}
+
+/* ---------- setup page ---------- */
+.setup-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+  margin: 0 0 1.75rem;
+}
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 1.1rem 1.25rem;
+}
+
+.card-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  margin-bottom: 0.9rem;
+}
+
+.mode-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.mode-tile {
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 0.75rem;
+  background: var(--panel-2);
+}
+
+.mode-tile.active {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+}
+
+.mode-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--fg);
+}
+
+.mode-tile.active .mode-name {
+  color: var(--brand);
+}
+
+.mode-desc {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  color: var(--fg-mute);
+  margin-top: 0.3rem;
+  line-height: 1.4;
+}
+
+.mode-note {
+  font-size: 0.85rem;
+  color: var(--fg-dim);
+  margin: 0.9rem 0 0;
+}
+
+.mode-note strong {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.section-label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  margin: 1.5rem 0 0.6rem;
+}
+
+.section-meta {
+  color: var(--fg-dim);
+  letter-spacing: 0.04em;
+}
+
+/* ---------- status badges (tokenized "component") ---------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.2em 0.55em;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-2);
+  color: var(--fg-dim);
+  white-space: nowrap;
+}
+
+.badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.badge.nodot::before {
+  display: none;
+}
+
+/* status vocab — canonical spec states */
+.badge.verified {
+  color: var(--verified);
+  border-color: color-mix(in srgb, var(--verified) 40%, transparent);
+  background: color-mix(in srgb, var(--verified) 12%, transparent);
+}
+.badge.drift {
+  color: var(--drift);
+  border-color: color-mix(in srgb, var(--drift) 40%, transparent);
+  background: color-mix(in srgb, var(--drift) 12%, transparent);
+}
+.badge.broken {
+  color: var(--broken);
+  border-color: color-mix(in srgb, var(--broken) 42%, transparent);
+  background: color-mix(in srgb, var(--broken) 12%, transparent);
+}
+.badge.unbound {
+  color: var(--unbound);
+}
+.badge.superseded {
+  color: var(--superseded);
+  border-color: color-mix(in srgb, var(--superseded) 40%, transparent);
+  background: color-mix(in srgb, var(--superseded) 12%, transparent);
+}
+/* requirement-status vocab (Active / Draft / Retired reuse the palette) */
+.badge.active {
+  color: var(--verified);
+  border-color: color-mix(in srgb, var(--verified) 40%, transparent);
+  background: color-mix(in srgb, var(--verified) 12%, transparent);
+}
+.badge.draft {
+  color: var(--drift);
+  border-color: color-mix(in srgb, var(--drift) 40%, transparent);
+  background: color-mix(in srgb, var(--drift) 12%, transparent);
+}
+.badge.retired {
+  color: var(--unbound);
+}
+
+/* ---------- definition list (requirement detail) ---------- */
+dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.1rem 1.25rem;
+  margin: 1rem 0 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 1rem 1.25rem;
+}
+
+dl dt {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  padding: 0.3rem 0;
+  align-self: start;
+}
+
+dl dd {
+  margin: 0;
+  padding: 0.3rem 0;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--fg);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* the setup page's key/value list — a bare <dl class="kv"> (no card chrome) */
+.kv {
+  grid-template-columns: max-content 1fr;
+  gap: 0.35rem 1rem;
+  margin: 0;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+.kv dt {
+  font-size: 0.72rem;
+  text-transform: none;
+  letter-spacing: 0;
+  padding: 0;
+}
+
+.kv dd {
+  font-size: 0.82rem;
+  padding: 0;
+  white-space: normal;
+}
+
+/* ---------- requirement / result lists ---------- */
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--panel);
+}
+
+ul li {
+  padding: 0.65rem 0.95rem;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  color: var(--fg-dim);
+}
+
+ul li:last-child {
+  border-bottom: none;
+}
+
+ul li:hover {
+  background: color-mix(in srgb, var(--elev) 55%, transparent);
+}
+
+/* keep prose lists (inside cards / dd) from inheriting the card chrome */
+dd ul,
+.prose ul {
+  border: none;
+  background: none;
+  margin: 0;
+  padding-left: 1.1rem;
+  list-style: disc;
+}
+
+dd ul li,
+.prose ul li {
+  display: list-item;
+  padding: 0.15rem 0;
+  border: none;
+}
+
+/* ---------- forms (query / editor) ---------- */
+form {
+  margin: 0.5rem 0 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 640px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+}
+
+input[type="text"],
+textarea {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  color: var(--fg);
+  background: var(--panel-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.7rem;
+  width: 100%;
+}
+
+input[type="text"]:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+
+input[name="q"] {
+  max-width: 28rem;
+}
+
+/* the query form is a single row: field + button */
+form[action="/query"] {
+  flex-direction: row;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+form[action="/query"] label {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.6rem;
+  text-transform: none;
+  color: var(--fg-dim);
+}
+
+button {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--brand-ink);
+  background: var(--brand);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 1.1rem;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+button:hover {
+  background: var(--brand-2);
+}
+
+/* ---------- states ---------- */
+.error {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--broken);
+  background: color-mix(in srgb, var(--broken) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--broken) 40%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.85rem;
+  margin: 0.75rem 0;
+}
+
+.success {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--verified);
+  background: color-mix(in srgb, var(--verified) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--verified) 40%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.85rem;
+  margin: 0.75rem 0;
+}
+
+/* ---------- preformatted seams (provenance text / mermaid source) ---------- */
+pre.provenance,
+pre.mermaid {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--fg);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+pre.mermaid {
+  text-align: center;
+}
+
+/* ---------- platform-health heat cubes (coverage domain rows) ---------- */
+/* The SAME cube as the requirement rows' bind glyphs (.glyph), carrying the
+   implemented COUNT instead of a letter — width flexes for multi-digit
+   counts, tint encodes the share of the domain the member covers. The
+   domain header rows grow slightly to seat the full-size cube. */
+.glyph.heat {
+  width: auto;
+  min-width: 22px;
+  padding: 0 4px;
+  color: var(--fg);
+}
+
+/* bright cubes (member covers most of the domain) get dark ink for contrast */
+.glyph.heat.hot {
+  color: var(--brand-ink);
+  border-color: transparent;
+}
+
+.legend,
+.totals {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--fg-mute);
+  margin: 0.25rem 0 1.5rem;
+  line-height: 1.7;
+}
+
+/* =========================================================================
+   /requirements — domain accordion + sticky detail panel
+   (brand kit "Spec Check Dashboard" VIEW 3; tokens map onto this workspace's
+   charcoal/amber layer: --acc→--brand, --f-mono→--font-mono, --warn→--drift).
+   ========================================================================= */
+
+.req-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.req-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.req-btn {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--fg-dim);
+  background: transparent;
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+}
+.req-btn:hover {
+  background: var(--elev);
+  color: var(--fg);
+}
+
+/* RED-99: the status toggle is an <a> reusing the .req-btn look — keep it
+   reading as a control, not a link. */
+a.req-btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* two-column: accordion left, sticky detail right */
+.req-layout {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 1.4rem;
+  align-items: start;
+  margin-top: 1.25rem;
+}
+
+@media (max-width: 900px) {
+  .req-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- accordion --- */
+.req-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.domain-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--panel);
+}
+
+.domain-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.75rem 0.95rem;
+  background: var(--panel-2);
+  cursor: pointer;
+  list-style: none;
+  color: var(--fg-mute);
+}
+.domain-summary::-webkit-details-marker {
+  display: none;
+}
+.domain-summary:hover {
+  background: var(--elev);
+}
+
+.domain-chevron {
+  flex: none;
+  transition: transform 120ms ease;
+}
+details[open] > .domain-summary .domain-chevron {
+  transform: rotate(90deg);
+}
+
+.panel-spacer {
+  flex: 1;
+}
+
+.seg-bar {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+}
+.seg {
+  height: 6px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.seg.active {
+  background: var(--brand);
+}
+.seg.sup {
+  background: var(--drift);
+}
+
+.dom-rollup {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--verified);
+  flex: none;
+}
+
+.domain-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+/* one requirement row (an anchor — no-JS falls back to the detail page) */
+.req-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.65rem 0.9rem;
+  border-top: 1px solid var(--line);
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+.req-item:hover {
+  background: color-mix(in srgb, var(--elev) 55%, transparent);
+}
+.req-item.selected {
+  background: var(--brand-soft);
+}
+
+.req-item-title {
+  flex: 1;
+  min-width: 0;
+  color: var(--fg);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.req-item-cov {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--fg-mute);
+  flex: none;
+}
+
+.ver-pill {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--fg-mute);
+  border: 1px solid var(--line);
+}
+.ver-pill.versioned {
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-color: var(--brand-line);
+}
+
+/* --- sticky detail panel --- */
+.req-aside {
+  position: sticky;
+  top: 1.5rem;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  overflow: hidden;
+}
+
+/* only the selected panel shows; the rest are server-rendered but hidden */
+.req-panel {
+  display: none;
+}
+.req-panel.is-open {
+  display: block;
+}
+
+.panel-head {
+  padding: 1.05rem 1.15rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-2);
+}
+.panel-id-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+.panel-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1.3;
+  color: var(--fg);
+}
+
+.panel-body {
+  padding: 1.05rem 1.15rem;
+}
+.panel-why {
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--fg-dim);
+  margin: 0 0 1rem;
+}
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  margin: 0 0 0.6rem;
+}
+
+/* version chain (real supersession lineage — not the mock audit trail) */
+.version-chain {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0 0 1.4rem;
+}
+.chain-node {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  opacity: 0.62;
+}
+.chain-node.current {
+  opacity: 1;
+}
+.chain-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  flex: none;
+  border: 1.5px solid var(--fg-mute);
+}
+.chain-node.current .chain-dot {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+.chain-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.chain-ver {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--fg-mute);
+}
+.chain-ver.muted {
+  opacity: 0.6;
+  font-style: italic;
+}
+.chain-ver.current-ver {
+  color: var(--verified);
+}
+
+.single-version {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--elev);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+  margin: 0 0 1.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--fg-dim);
+}
+.single-version .chain-dot {
+  border-radius: 50%;
+}
+
+/* bound files */
+.bound-files {
+  display: flex;
+  flex-direction: column;
+}
+.bound-file {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+}
+.file-tag {
+  flex: none;
+  font-size: 0.62rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--line-2);
+  color: var(--fg-mute);
+}
+.file-tag.implements {
+  color: var(--brand);
+  border-color: var(--brand-line);
+}
+.file-tag.verifies {
+  color: var(--verified);
+  border-color: var(--verified-line);
+}
+.file-path {
+  flex: 1;
+  min-width: 0;
+  color: var(--fg-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-line {
+  color: var(--fg-mute);
+  flex: none;
+  margin-left: auto;
+}
+.no-files {
+  font-size: 0.8rem;
+  color: var(--fg-mute);
+  margin: 0;
+}

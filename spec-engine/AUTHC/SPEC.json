@@ -1,0 +1,368 @@
+{
+  "key": "AUTHC",
+  "owner": "drea",
+  "updated": "2026-07-08",
+  "scope": null,
+  "requirements": [
+    {
+      "id": "AUTHC-001",
+      "status": "superseded",
+      "statement": "Domain-name input is normalized before validation — uppercase plus strip ALL whitespace; spaces are never converted to dashes.",
+      "why": "A dash is HEAD_RE's key/seq separator; a dashed key scaffolds a spec that silently parses to zero requirements.",
+      "supersedes": null,
+      "supersededBy": "DOMAIN-001",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/authoring/domains.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-002",
+      "status": "superseded",
+      "statement": "When normalization changed the input, spec domain new prints exactly one normalized \"<raw>\" → <KEY> line; canonical input prints none.",
+      "why": "The user must see the transformation that was applied on their behalf.",
+      "supersedes": null,
+      "supersededBy": "DOMAIN-002",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/domain.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-003",
+      "status": "superseded",
+      "statement": "The post-normalization key must match KEY_RE /^[A-Z][A-Z0-9]*$/; failure prints to stderr and exits 2.",
+      "why": "Only KEY_RE-clean keys produce headings the parser can bind.",
+      "supersedes": null,
+      "supersededBy": "DOMAIN-003",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/domain.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-004",
+      "status": "superseded",
+      "statement": "spec domain new <KEY> creates spec-engine/<KEY>/SPEC.json as a complete, valid domain envelope — key, owner null, specVersion 1, and the current date in the author's local timezone — so spec index ingests the new domain immediately with zero diagnostics.",
+      "why": "A scaffold must be born valid: a file the indexer cannot parse yields a domain with zero requirements and no error, and a UTC-computed date stamps evening authors with tomorrow.",
+      "supersedes": null,
+      "supersededBy": "DOMAIN-004",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/domain.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-005",
+      "status": "superseded",
+      "statement": "spec domain new <KEY> refuses to overwrite an existing spec-engine/<KEY>/SPEC.json — it prints an error to stderr and exits 2.",
+      "why": "Never clobber an authored spec.",
+      "supersedes": null,
+      "supersededBy": "DOMAIN-005",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/domain.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-006",
+      "status": "superseded",
+      "statement": "The resolved scaffold destination must stay inside the platform directory; violation exits 2.",
+      "why": "Path-containment defense in depth even though KEY_RE already blocks traversal characters.",
+      "supersedes": null,
+      "supersededBy": "DOMAIN-006",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/domain.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-007",
+      "status": "superseded",
+      "statement": "A domain is a child directory of spec-engine/ containing a SPEC.json, enumerated from the filesystem — never from the derived index or a cache file.",
+      "why": "Canonical truth is the git spec location; a second derived store would violate the derived-DB constraint.",
+      "supersedes": null,
+      "supersededBy": "DOMAIN-007",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/authoring/domains.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-008",
+      "status": "superseded",
+      "statement": "spec domain list prints the keys sorted lexicographically, one per line, exit 0; zero domains produce empty output and still exit 0.",
+      "why": "Authors need to see what exists; prefix resolution builds on this listing.",
+      "supersedes": null,
+      "supersededBy": "DOMAIN-008",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/domain.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-009",
+      "status": "superseded",
+      "statement": "spec domain list on a missing or non-directory spec-engine/ prints the friendly not-a-platform message and exits 2.",
+      "why": "Same command-boundary pattern as map/index/check.",
+      "supersedes": null,
+      "supersededBy": "DOMAIN-009",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/domain.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-010",
+      "status": "superseded",
+      "statement": "spec req matches its domain prefix case-insensitively against the filesystem domain listing, via the same normalization as domain new.",
+      "why": "Removes the exact-uppercase-key friction from next-id lookup.",
+      "supersedes": null,
+      "supersededBy": "REQ-001",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-011",
+      "status": "superseded",
+      "statement": "An exact domain match wins over longer prefix matches; otherwise a unique prefix resolves.",
+      "why": "auth must resolve to AUTH even when AUTHX exists.",
+      "supersedes": null,
+      "supersededBy": "REQ-002",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-012",
+      "status": "superseded",
+      "statement": "An ambiguous prefix prints the candidate list to stderr and exits 2.",
+      "why": "Guessing between BILLING and BOOKING would author into the wrong domain.",
+      "supersedes": null,
+      "supersededBy": "REQ-003",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-013",
+      "status": "superseded",
+      "statement": "A no-match prefix prints the available domains to stderr and exits 2; a nonexistent domain no longer mints a <KEY>-001 id.",
+      "why": "Resolution runs against existing domains only — spec domain new is the way to create one.",
+      "supersedes": null,
+      "supersededBy": "REQ-004",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-014",
+      "status": "superseded",
+      "statement": "spec req <domain-prefix>, run non-interactively with piped stdin, prints the next unused id — the domain's SPEC.json max sequence + 1, padded to three digits, as <KEY>-<NNN> on stdout — and exits 0.",
+      "why": "IDs are never reused; the id query must agree with the domain envelope's requirements, not a regex approximation.",
+      "supersedes": null,
+      "supersededBy": "REQ-005",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/authoring/domains.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-015",
+      "status": "superseded",
+      "statement": "spec req on a non-platform directory prints the friendly not-a-platform message and exits 2.",
+      "why": "Same boundary contract as AUTHC-009.",
+      "supersedes": null,
+      "supersededBy": "REQ-006",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-016",
+      "status": "superseded",
+      "statement": "Exit codes across the authoring surfaces are 0 and 2 only; exit 1 stays reserved for spec check --ci semantic failures.",
+      "why": "CI must be able to distinguish gate failures from authoring/usage errors.",
+      "supersedes": null,
+      "supersededBy": "REQ-007",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-018",
+      "status": "retired",
+      "statement": "spec new and spec id are removed entirely — no cli.ts entries, absent from --help, no aliases, and invoking them has no scaffold or next-id side effect.",
+      "why": "Nothing is published, so back-compat shims carry no value and would re-open the dash trap.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/cli.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-019",
+      "status": "superseded",
+      "statement": "When stdin is a TTY, spec req enters the interactive per-field prompt flow with prompts rendered to stderr; the allocated id and Active status are displayed but not editable.",
+      "why": "stdout stays machine-parseable while humans author interactively.",
+      "supersedes": null,
+      "supersededBy": "REQ-008",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-020",
+      "status": "superseded",
+      "statement": "When stdin is not a TTY, spec req prints the next unused id and exits 0 — no prompts, no writes, no readline.",
+      "why": "The composable id query for scripts and agents is preserved byte-for-byte.",
+      "supersedes": null,
+      "supersededBy": "REQ-009",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-021",
+      "status": "superseded",
+      "statement": "An empty Requirement answer aborts with a stderr notice and exit 0, writing zero bytes.",
+      "why": "Git editor-abort tradition — an abandoned edit is not an error.",
+      "supersedes": null,
+      "supersededBy": "REQ-010",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-022",
+      "status": "superseded",
+      "statement": "spec req <KEY> --text appends a new Active requirement to the domain's SPEC.json — status active, the given statement, why null, empty relates/livesIn/issues, changedAtVersion 1 — and bumps the envelope's updated to the local date, such that the appended entry re-indexes with zero diagnostics.",
+      "why": "Authoring must produce exactly what the indexer ingests, or authored requirements silently vanish.",
+      "supersedes": null,
+      "supersededBy": "REQ-011",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-023",
+      "status": "superseded",
+      "statement": "An @-ref is @<relative/path> preceded by start-of-string or whitespace, containing at least one slash, resolved against the platform root; emails, @spec tags, and version pins never match.",
+      "why": "Requirement text points at code without false positives on everyday @ usage.",
+      "supersedes": null,
+      "supersededBy": "REQ-012",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/authoring/filerefs.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-024",
+      "status": "superseded",
+      "statement": "At authoring time each field answer is scanned for @-refs; an unresolvable ref warns on stderr and never blocks the save.",
+      "why": "A requirement may legitimately point at code that does not exist yet.",
+      "supersedes": null,
+      "supersededBy": "REQ-013",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHC-025",
+      "status": "retired",
+      "statement": "At index time, each @-ref in requirement field lines that does not resolve to a file under the platform root emits one warning-severity BROKEN_FILE_REF diagnostic with platform-relative source, real line, and enclosing requirement id; traversal outside the root is broken regardless of existence.",
+      "why": "Containment before existence — defense in depth; stale refs surface without failing the build.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/indexer/pipeline.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    }
+  ]
+}

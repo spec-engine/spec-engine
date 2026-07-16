@@ -1,0 +1,53 @@
+---
+title: spec-check
+description: Durable domain requirements that survive past production, addressed by permanent ID, bound to code, and checkable in CI.
+template: splash
+hero:
+  tagline: A cross-repo spec engine. Durable domain requirements that survive past production — addressed by permanent ID, bound to code, and checkable in CI.
+  image:
+    dark: ../../assets/spec-check-logo-dark.svg
+    light: ../../assets/spec-check-logo-light.svg
+  actions:
+    - text: Get Started
+      link: /getting-started/
+      icon: right-arrow
+      variant: primary
+    - text: Agent Reference
+      link: /agent-reference/
+      icon: open-book
+      variant: minimal
+    - text: View on GitHub
+      link: https://github.com/spec-engine/spec-engine
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+## Why spec-check
+
+<CardGrid>
+  <Card title="Keyed to the domain, not the feature" icon="seti:notebook">
+    Feature-generation tools end at "implemented." spec-check is keyed to the domain, which outlives every feature. Its first-class operation is **life after production** — superseding established truth, not generating new work.
+  </Card>
+  <Card title="Permanent IDs, mechanical integrity" icon="approve-check">
+    Requirements carry permanent `KEY-NNN` IDs; code points back with `// @spec KEY-NNN`. From that one convention, an agent can be routed to exactly what a task touches, and `spec check` reports anything broken, orphaned, or unverified.
+  </Card>
+  <Card title="Cross-repo drift detection" icon="random">
+    The new thing a single-repo file scan can't do: catch drift and propagation across version-pinned members in one local command — who migrated, who's still pinned behind, what's unverified.
+  </Card>
+  <Card title="Derived index that owns nothing" icon="setting">
+    Canonical truth lives in git. The `bun:sqlite` index is rebuildable at any time and exists purely for speed and cross-repo queries — delete it and rebuild to an identical result.
+  </Card>
+</CardGrid>
+
+## Start here
+
+<CardGrid>
+  <LinkCard title="Getting Started" href="/getting-started/" description="Set up and run spec-check in under a minute, against the bundled fixture." />
+  <LinkCard title="Commands" href="/commands/" description="The complete CLI reference — every command, flag, and exit code." />
+  <LinkCard title="SPEC.json Format" href="/format/" description="The authoring format: the domain envelope, requirement fields, provenance, and lifecycle." />
+  <LinkCard title="Architecture" href="/architecture/" description="Canonical git, the derived index, and the offline-engine / online-adapter seam." />
+  <LinkCard title="Integrity Checks" href="/checks/" description="Every diagnostic code spec check emits, and what drives the exit code." />
+  <LinkCard title="Agent Reference" href="/agent-reference/" description="Token-tight CLI contracts and the route → tag → check loop, for coding agents." />
+</CardGrid>

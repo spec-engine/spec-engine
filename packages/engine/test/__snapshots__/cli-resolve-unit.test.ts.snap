@@ -1,0 +1,18 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`spec resolve (in-process) RSLV-02 snapshot lock: canonical files produce stable row projection 1`] = `
+[
+  {
+    "id": "BILLING-002",
+    "key": "BILLING",
+    "seq": 2,
+    "status": "Active",
+  },
+  {
+    "id": "BILLING-009",
+    "key": "BILLING",
+    "seq": 9,
+    "status": "Active",
+  },
+]
+`;

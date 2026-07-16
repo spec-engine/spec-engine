@@ -1,0 +1,24 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.16/schema.json",
+  "root": false,
+  "extends": ["../../biome.json"],
+  "linter": {
+    "rules": {
+      "style": {
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "bun:sqlite": { "message": "@spec-engine/shared is runtime-free (D-10 / WORK-02)" },
+              "node:fs": { "message": "@spec-engine/shared is runtime-free (D-10 / WORK-02)" },
+              "fs": { "message": "@spec-engine/shared is runtime-free (D-10 / WORK-02)" },
+              "bun": {
+                "message": "@spec-engine/shared must not use Bun runtime APIs (D-10 / WORK-02)"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

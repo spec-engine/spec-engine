@@ -1,0 +1,148 @@
+{
+  "key": "SCHM",
+  "owner": null,
+  "updated": "2026-07-16",
+  "scope": "The shared data model: the SPEC.json envelope, the DDL, the coverage view, and the one-model-one-seam promise (CLI, webapp, and MCP can never disagree — one model, one storage seam). Belongs here: the @spec-engine/shared schema every read/write surface shares; the DDL; the coverage SQL view; the one-model-one-seam promise. Does not belong here: the drift definition (→ PROP), cold-rebuild identity (→ INDX), or loopback-only binding (→ SERV). Boundary case: one-model-one-seam is restated here as a promise, but cold-rebuild identity stays an INDX promise and loopback-only stays a SERV promise.",
+  "requirements": [
+    {
+      "id": "SCHM-001",
+      "status": "active",
+      "statement": "Coverage is a SQL VIEW projected from tags — never authored, never materialized.",
+      "why": "A projection cannot drift from the tags it describes.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/shared/src/schema.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-002",
+      "status": "active",
+      "statement": "CLI and webapp read through one shared storage interface and schema types; the webapp never opens the DB or the filesystem itself.",
+      "why": "One engine, not two — forked logic drifts between surfaces.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/shared/src/storage.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-003",
+      "status": "active",
+      "statement": "SPEC.json parses as a domain envelope of requirements with typed statuses (active, superseded, draft, retired); malformed statuses and structurally-invalid files surface as BAD_STATUS / INVALID_DOMAIN_FILE rather than crashes.",
+      "why": "The authoring and interchange format the engine ingests; silent misparses lose requirements.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/parser/domainJson.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-004",
+      "status": "active",
+      "statement": "spec writes every domain envelope through the single validateAndWrite seam, so a schema-invalid or partially-applied write (for example a rejected cross-domain move) never persists to a SPEC.json file.",
+      "why": "If a write bypassed the seam, a malformed or half-written envelope could land on disk and corrupt the derived index — the exact drift the tool exists to prevent.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/shared/src/domain.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-005",
+      "status": "active",
+      "statement": "Glossary-term fields (term, aliases, cites, section) round-trip through the one shared SPEC.json schema and the orderDomain serialization whitelist without being stripped, SCHEMA_VERSION is 9, and requirements in the reserved TERM domain are excluded from the code-coverage surfaces (the coverage view and the ORPHAN_REQ / UNVERIFIED_REQ checks) so a glossary term never fires a coverage error.",
+      "why": "Terms are requirement-like data reusing the one model, not code-coverage obligations; an unwhitelisted schema field is silently stripped on write and an unexcluded term reds the self-gate as a false ORPHAN_REQ.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-006",
+      "status": "active",
+      "statement": "A requirement's version is derived from its position in its supersede chain — the number of supersededBy links from the domain's original entry to it — and is never read from an authored per-entry or per-envelope counter; the authored specVersion / changedAtVersion / supersededAtVersion fields are retired as sources of truth.",
+      "why": "An authored counter can be hand-edited to disagree with the actual supersede history, so a displayed version would lie about how many times a requirement has really been superseded — and the derived index would no longer be reconstructible from SPEC.json + tags alone.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/shared/src/schema.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-007",
+      "status": "active",
+      "statement": "A domain's version is derived as a projection over its requirements' supersede chains and only ever increases as requirements supersede, so a member pin (spec-engine@N), the drift check, and spec gate resolve against a stable, monotonic anchor.",
+      "why": "Member pins, drift, and gate all compare against the domain version; if the derived number could decrease or jump non-monotonically, a previously-valid pin would silently start failing (or a stale pin silently pass), corrupting the approval and drift contracts.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/shared/src/schema.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-008",
+      "status": "active",
+      "statement": "A requirement (non-TERM) domain's SPEC.json envelope carries no authored specVersion — its version is the DAG-derived projection (SCHM-007) — and a deterministic gate fails the build when an authored specVersion is reintroduced on any non-TERM domain; only the reserved TERM domain carries one, as the pin its term-drift is measured against.",
+      "why": "While a requirement domain carries both an authored specVersion and the DAG-derived domain version, the two can silently disagree; a hand-edited authored counter then misreports the supersede history, and a member pin can resolve against a number nothing else honors.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@scripts/arch-fences.sh"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-009",
+      "status": "active",
+      "statement": "The platform version is derived as the maximum of the domains' DAG-derived versions across spec-engine/*/SPEC.json (default 1 when no domain parses); no authored platform-wide version counter exists — a stray spec-engine.platform.json manifest is ignored, never parsed, with a stderr warning naming the derived version.",
+      "why": "An authored platform counter beside derived domain versions is two sources of truth: nothing bumps it, so init default pins, the canonical row, and the self-member silently anchor to a number the domains have long derived past.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/indexer/discover.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    }
+  ]
+}

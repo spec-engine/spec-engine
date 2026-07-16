@@ -1,0 +1,1131 @@
+name: CI
+
+on:
+  pull_request: {}
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# 2.2: cancel superseded runs on the same ref so a rapid push sequence doesn't
+# run stale commits to completion on the 10x-priced macOS runner. `main` pushes
+# and PR updates each get their own group keyed by ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-smoke:
+    name: build & smoke (darwin-arm64)
+    runs-on: macos-14  # Apple Silicon runner — matches D-13 target
+    timeout-minutes: 20  # 2.2: cap a hung background `spec serve` smoke (default is 6h)
+    # 2.1 / 2.2: this job now does ONLY what needs the darwin-arm64 compiled
+    # binary — build:cli + the compiled-binary smokes + secret-scan. Lint,
+    # type-check, the unit suite, and the source-grep architecture fences (now
+    # scripts/arch-fences.sh, run by architecture-fences.test.ts) are all
+    # platform-independent and run once on the ubuntu `test-linux` job.
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: setup Bun (reads .bun-version)
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: '.bun-version'
+
+      - name: assert Bun pin matches
+        run: |
+          pinned=$(cat .bun-version)
+          installed=$(bun --version)
+          test "$pinned" = "$installed" || { echo "Bun mismatch: pinned=$pinned installed=$installed"; exit 1; }
+
+      - name: install (frozen lockfile)
+        run: bun install --frozen-lockfile
+
+      - name: build compiled binary
+        run: bun run build:cli
+        # Post-Phase-18 (STOR-04 / D2): the shipped binary indexes SPEC.json
+        # ONLY — the Markdown parse path is deleted. Smokes 6/6b/7 below drive
+        # `spec index` + `spec check` over fixtures/platform-fixture (now
+        # JSON-only after 18-03), so they exercise the JSON reader end-to-end
+        # in the compiled artifact, proving the cutover in the real binary.
+
+      - name: upload compiled binary (2.2 — reproduce a red smoke against the exact artifact)
+        if: always()  # upload even when a later smoke fails — that's when you need it
+        uses: actions/upload-artifact@v4
+        with:
+          name: spec-darwin-arm64
+          path: dist/spec
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: smoke 1 — --help exits 0 and prints usage
+        run: |
+          test -x dist/spec
+          ./dist/spec --help | grep -q "spec"
+
+      - name: smoke 2 — --version exits 0 and prints semver
+        run: |
+          ./dist/spec --version | grep -E '^[0-9]+\.[0-9]+\.[0-9]+'
+
+      - name: smoke 3 — open fresh DB, assert schema shape
+        run: ./dist/spec __schema-smoke /tmp/spec-smoke.sqlite
+
+      - name: smoke 4 — schema-version mismatch triggers silent rebuild
+        run: ./dist/spec __schema-mismatch-smoke /tmp/spec-smoke.sqlite
+
+      - name: smoke 5 — compiled binary serves embedded webapp HTML
+        run: ./dist/spec serve --probe
+
+      - name: smoke 6 — cold-rebuild build_id equivalence (CI-02 / INDX-03)
+        run: |
+          set -euo pipefail
+          FIXTURE=fixtures/platform-fixture
+          DB="$FIXTURE/.spec-engine/index.sqlite"
+          # Run 1 — warm (creates DB)
+          H1=$(./dist/spec index "$FIXTURE" --json | bun -e 'const r=JSON.parse(require("node:fs").readFileSync(0,"utf8")); process.stdout.write(r.build_id)')
+          # Run 2 — warm re-index (reuses the DB)
+          H2=$(./dist/spec index "$FIXTURE" --json | bun -e 'const r=JSON.parse(require("node:fs").readFileSync(0,"utf8")); process.stdout.write(r.build_id)')
+          # Cold rebuild — remove DB + WAL + SHM siblings, re-index from scratch.
+          # CI-02 / INDX-03: `spec check --ci` correctness must NOT depend on a
+          # warm/cached index. Inverted CI assertion: the cold rebuild MUST
+          # produce a byte-identical build_id.
+          rm -f "$DB" "$DB-wal" "$DB-shm"
+          H3=$(./dist/spec index "$FIXTURE" --json | bun -e 'const r=JSON.parse(require("node:fs").readFileSync(0,"utf8")); process.stdout.write(r.build_id)')
+          echo "H1=$H1"
+          echo "H2=$H2"
+          echo "H3=$H3"
+          echo "$H1" | grep -qE '^[0-9a-f]{64}$' || { echo "FAIL: H1 is not 64-char hex"; exit 1; }
+          test "$H1" = "$H2" || { echo "FAIL: warm re-index diverged: $H1 != $H2"; exit 1; }
+          test "$H1" = "$H3" || { echo "FAIL: cold rebuild diverged: $H1 != $H3"; exit 1; }
+          echo "cold-rebuild build_id stable: $H1"
+
+      - name: smoke 6b — cold-rebuild build_id byte-stable WITH skipped sibling (BUILD-01)
+        run: |
+          set -euo pipefail
+          # BUILD-01: prove that Phase 8's NO_SPEC_CONFIG warning rows do NOT
+          # destabilize the cold-rebuild invariant. Smoke 6 above locks this
+          # against the canonical fixture (zero NO_SPEC_CONFIG rows); smoke 6b
+          # locks it against a tmp clone with ONE stray sibling — so the new
+          # warning row participates in the build_id projection's
+          # parse_diagnostics section (sqlite.ts:910-918) on every cold run.
+          TMP=$(mktemp -d)
+          trap 'rm -rf "$TMP"' EXIT
+          cp -R fixtures/platform-fixture/. "$TMP/"
+          mkdir -p "$TMP/strangers"
+          # The stray sibling must look like a repo root for discover to treat it
+          # as an unwired member (repo-root signal: .git/package.json). A bare
+          # marker-less folder is part of no platform and is ignored — see
+          # discover.ts looksLikeRepoRoot.
+          echo '{"name":"strangers","private":true}' > "$TMP/strangers/package.json"
+          DB="$TMP/.spec-engine/index.sqlite"
+          H1=$(./dist/spec index "$TMP" --json | bun -e 'const r=JSON.parse(require("node:fs").readFileSync(0,"utf8")); process.stdout.write(r.build_id)')
+          H2=$(./dist/spec index "$TMP" --json | bun -e 'const r=JSON.parse(require("node:fs").readFileSync(0,"utf8")); process.stdout.write(r.build_id)')
+          rm -f "$DB" "$DB-wal" "$DB-shm"
+          H3=$(./dist/spec index "$TMP" --json | bun -e 'const r=JSON.parse(require("node:fs").readFileSync(0,"utf8")); process.stdout.write(r.build_id)')
+          echo "H1=$H1"
+          echo "H2=$H2"
+          echo "H3=$H3"
+          echo "$H1" | grep -qE '^[0-9a-f]{64}$' || { echo "FAIL: H1 is not 64-char hex"; exit 1; }
+          test "$H1" = "$H2" || { echo "FAIL: warm re-index diverged (with stray sibling): $H1 != $H2"; exit 1; }
+          test "$H1" = "$H3" || { echo "FAIL: cold rebuild diverged (with stray sibling): $H1 != $H3"; exit 1; }
+          # Belt-and-suspenders: assert the JSON output reports exactly 2
+          # parse_diagnostics. This is the `spec index --json .diagnostics`
+          # field — parse-layer count only, NOT the check-layer
+          # cross-checking count (which would also pick up the 5 planted
+          # defects in fixtures/platform-fixture/). The two parse-layer rows:
+          #   1. NO_SPEC_CONFIG — the unwired `strangers/` sibling (Phase 8).
+          #   2. UNKNOWN_ROLE — the PFIX-01 seeded malformed `**Issues:**` token
+          #      on BILLING-002 in the cloned canonical fixture (Phase 12).
+          DCNT=$(./dist/spec index "$TMP" --json | bun -e 'const r=JSON.parse(require("node:fs").readFileSync(0,"utf8")); process.stdout.write(String(r.diagnostics))')
+          test "$DCNT" = "2" || { echo "FAIL: expected exactly 2 parse diagnostics against tmp+stranger (NO_SPEC_CONFIG + UNKNOWN_ROLE), got $DCNT"; exit 1; }
+          # NOTE: the planned `spec check --ci` exit-0 defense-in-depth
+          # assertion was dropped (Plan 08-03 deviation, Rule 1) — the
+          # tmp clone of fixtures/platform-fixture/ inherits the 5
+          # planted defects, so `spec check --ci` correctly exits 1
+          # (it's not a "warning-only" platform once the planted defects
+          # are in the mix). The DIAG-02 source-layer contract is
+          # already locked by 2 tests in Plan 08-02's cli-check-unit.test.ts.
+          echo "cold-rebuild build_id stable WITH stray sibling: $H1"
+
+      - name: smoke 7 — inverted CI assertion (CHCK-04 / CI-03)
+        run: |
+          set -euo pipefail
+          # Force a cold rebuild via --ci, capture JSON output, and capture exit
+          # code separately (set +e prevents pipefail from killing us on the
+          # expected exit 1).
+          set +e
+          OUT=$(./dist/spec check --ci fixtures/platform-fixture --json)
+          EXIT=$?
+          set -e
+
+          test "$EXIT" = "1" || { echo "FAIL: spec check --ci should exit 1, got $EXIT"; exit 1; }
+
+          # Project the JSON output to comparable string keys per row:
+          #   <CODE>\t<repo or empty>\t<req_id or empty>
+          # then sort. The sort makes the comparison order-insensitive.
+          GOT=$(echo "$OUT" | bun -e '
+            const data = require("node:fs").readFileSync(0, "utf8");
+            const rows = JSON.parse(data);
+            const keys = rows.map(d => `${d.code}\t${d.repo ?? ""}\t${d.req_id ?? ""}`).sort().join("\n");
+            process.stdout.write(keys);
+          ')
+
+          # Expected planted set per CHCK-04. Source of truth lives in
+          # packages/engine/test/check-ci.test.ts::EXPECTED_DIAGNOSTICS;
+          # this is intentional defense-in-depth duplication (any drift
+          # between the two surfaces as a CI failure).
+          #
+          # NOTE: `printf "%b"` (not `%s`) interprets the `\t` escape inside
+          # each argument as a real TAB; `%s` would leave them as literal
+          # backslash-t (2 chars) and the byte-equality check would never
+          # match against the real tabs in $GOT.
+          # PFIX-01 (Phase 12, Plan 12-04): the canonical fixture seeds a
+          # malformed `**Issues:** ... bogus-no-colon ...` token on BILLING-002,
+          # which the provenance parser surfaces as a warning-severity
+          # UNKNOWN_ROLE diagnostic (PROV-05: surfaced at parse time AND dropped).
+          # It joins the planted-mess baseline, so the inverted CI set is 6 rows.
+          # Source of truth duplicated from check-ci.test.ts::EXPECTED_DIAGNOSTICS.
+          EXPECTED=$(printf "%b\n%b\n%b\n%b\n%b\n%b" \
+            "DANGLING_TAG\tadmin\tBILLING-999" \
+            "DRIFT\tmobile\tBILLING-001" \
+            "ORPHAN_REQ\t\tAUTH-001" \
+            "SUPERSEDED_REFERENCED\tmobile\tBILLING-001" \
+            "UNKNOWN_ROLE\t\tBILLING-002" \
+            "UNVERIFIED_REQ\t\tBILLING-002" \
+          )
+
+          test "$GOT" = "$EXPECTED" || {
+            echo "FAIL: diagnostic set drift (CHCK-04 inverted CI assertion)"
+            echo "--- GOT ---"
+            echo "$GOT"
+            echo "--- EXPECTED ---"
+            echo "$EXPECTED"
+            echo "--- DIFF ---"
+            diff <(echo "$GOT") <(echo "$EXPECTED") || true
+            exit 1
+          }
+          echo "inverted CI assertion: OK"
+
+      - name: smoke 8 — spec propagation against fixture (compiled binary) [PROP-03]
+        run: |
+          set -euo pipefail
+          # PROP-03 / Phase 4: the BILLING-009 5-state classification is locked
+          # at the storage seam (propagation.test.ts), the CLI surface
+          # (cli-propagation-unit.test.ts), and a JSON snapshot
+          # (propagation-json-snapshot.test.ts.snap). This smoke is the final
+          # defense-in-depth layer: the COMPILED binary against the canonical
+          # fixture must emit the same 3-row JSON shape. Any regression in
+          # `bun build --compile` (lazy-import wiring, asset embedding, citty
+          # cold-start) surfaces here, not at user-install time.
+          OUT=$(./dist/spec propagation BILLING-009 fixtures/platform-fixture --json)
+          echo "$OUT" | jq .
+          test "$(echo "$OUT" | jq 'length')" = "3" || {
+            echo "FAIL: expected 3 rows (admin, api, mobile); got $(echo "$OUT" | jq 'length')"
+            echo "$OUT"; exit 1;
+          }
+          # api: MIGRATED_VERIFIED, via_req_id null, not drifted
+          test "$(echo "$OUT" | jq -r 'map(select(.repo=="api")) | .[0].state')" = "MIGRATED_VERIFIED" || {
+            echo "FAIL: api.state should be MIGRATED_VERIFIED"; echo "$OUT"; exit 1;
+          }
+          test "$(echo "$OUT" | jq -r 'map(select(.repo=="api")) | .[0].via_req_id')" = "null" || {
+            echo "FAIL: api.via_req_id should be null"; echo "$OUT"; exit 1;
+          }
+          # mobile: ON_PREDECESSOR via BILLING-001, drifted (pinned @1)
+          test "$(echo "$OUT" | jq -r 'map(select(.repo=="mobile")) | .[0].state')" = "ON_PREDECESSOR" || {
+            echo "FAIL: mobile.state should be ON_PREDECESSOR"; echo "$OUT"; exit 1;
+          }
+          test "$(echo "$OUT" | jq -r 'map(select(.repo=="mobile")) | .[0].via_req_id')" = "BILLING-001" || {
+            echo "FAIL: mobile.via_req_id should be BILLING-001"; echo "$OUT"; exit 1;
+          }
+          test "$(echo "$OUT" | jq -r 'map(select(.repo=="mobile")) | .[0].drifted')" = "true" || {
+            echo "FAIL: mobile.drifted should be true"; echo "$OUT"; exit 1;
+          }
+          # admin: ON_OTHER_DOMAIN_REQ via BILLING-007, not drifted (pinned @2)
+          # (RESEARCH Open Q1 resolution; admin tags BILLING-007 which shares
+          # the BILLING domain key with BILLING-009 but is not the target nor
+          # an ancestor — PROP-02 5-state ladder classifies as ON_OTHER_DOMAIN_REQ.)
+          test "$(echo "$OUT" | jq -r 'map(select(.repo=="admin")) | .[0].state')" = "ON_OTHER_DOMAIN_REQ" || {
+            echo "FAIL: admin.state should be ON_OTHER_DOMAIN_REQ"; echo "$OUT"; exit 1;
+          }
+          test "$(echo "$OUT" | jq -r 'map(select(.repo=="admin")) | .[0].via_req_id')" = "BILLING-007" || {
+            echo "FAIL: admin.via_req_id should be BILLING-007"; echo "$OUT"; exit 1;
+          }
+          test "$(echo "$OUT" | jq -r 'map(select(.repo=="admin")) | .[0].drifted')" = "false" || {
+            echo "FAIL: admin.drifted should be false"; echo "$OUT"; exit 1;
+          }
+          echo "spec propagation BILLING-009 (compiled binary): OK"
+
+      - name: smoke 9 — spec query against fixture (compiled binary) [QURY-02]
+        run: |
+          set -euo pipefail
+          # QURY-02 / Phase 4: the porter-stemming FTS5 retrieval is locked at
+          # the storage seam (fts.test.ts) and the CLI surface
+          # (cli-query-unit.test.ts), plus the cold-rebuild Pitfall-2 invariant
+          # (query-cold-rebuild.test.ts). This smoke ratifies the headline
+          # retrieval moment ("renewal charge" → BILLING-009) against the
+          # COMPILED binary — proving porter unicode61 tokenizer + bm25
+          # column-weight tuning survive `bun build --compile`.
+          OUT=$(./dist/spec query "renewal charge" fixtures/platform-fixture --json)
+          echo "$OUT" | jq .
+          LEN=$(echo "$OUT" | jq 'length')
+          test "$LEN" -ge 1 || {
+            echo "FAIL: expected at least 1 hit, got $LEN"; echo "$OUT"; exit 1;
+          }
+          TOP=$(echo "$OUT" | jq -r '.[0].req_id')
+          test "$TOP" = "BILLING-009" || {
+            echo "FAIL: expected top hit BILLING-009, got $TOP"; echo "$OUT"; exit 1;
+          }
+          echo "spec query \"renewal charge\" (compiled binary): OK"
+
+      - name: "smoke 10 — spec resolve against fixture (compiled binary) [RSLV-01 / RSLV-02]"
+        run: |
+          set -euo pipefail
+          # RSLV-01 / RSLV-02 / Phase 5: the storage seam (storage-resolve.test.ts),
+          # the CLI surface (cli-resolve-unit.test.ts), and a JSON snapshot
+          # (__snapshots__/cli-resolve-unit.test.ts.snap) all lock this against
+          # source builds. This smoke is the final compiled-binary defense:
+          # `bun build --compile` must produce a binary whose `spec resolve`
+          # join returns BILLING-009 + BILLING-002 for the two canonical
+          # fixture files (api/src/renew.ts + api/src/charge.ts).
+          OUT=$(./dist/spec resolve api/src/renew.ts api/src/charge.ts fixtures/platform-fixture --json)
+          echo "$OUT" | jq .
+          test "$(echo "$OUT" | jq 'length')" = "2" || {
+            echo "FAIL: expected 2 items, got $(echo "$OUT" | jq 'length')"
+            echo "$OUT"; exit 1;
+          }
+          IDS=$(echo "$OUT" | jq -r '.[].id' | sort | tr '\n' ',' | sed 's/,$//')
+          test "$IDS" = "BILLING-002,BILLING-009" || {
+            echo "FAIL: expected sorted IDs BILLING-002,BILLING-009 — got $IDS"
+            echo "$OUT"; exit 1;
+          }
+          # Every row's key === "BILLING"
+          test "$(echo "$OUT" | jq -r '[.[].key] | unique | length')" = "1" || {
+            echo "FAIL: expected all rows to share key=BILLING"
+            echo "$OUT"; exit 1;
+          }
+          test "$(echo "$OUT" | jq -r '[.[].key] | unique | .[0]')" = "BILLING" || {
+            echo "FAIL: expected unique key BILLING"
+            echo "$OUT"; exit 1;
+          }
+          # Every row's status is one of the 4 valid spec status literals.
+          INVALID=$(echo "$OUT" | jq -r '.[] | select((.status | IN("Active","Superseded","Draft","Retired")) | not) | .id')
+          test -z "$INVALID" || {
+            echo "FAIL: rows with invalid status: $INVALID"
+            echo "$OUT"; exit 1;
+          }
+          echo "spec resolve (compiled binary): OK"
+
+      - name: "smoke 11 — spec serve compiled binary serves /api/coverage + / (SERV-01 / SERV-04)"
+        run: |
+          set -euo pipefail
+          # SERV-01 / SERV-04 / Phase 5: --probe (smoke 5) already proves the
+          # HTML asset embedding survives --compile, but it never exercises
+          # the real serve composition (mountApi + mountWebapp on a single
+          # Hono app bound to 127.0.0.1:${port} with a real DB-backed
+          # Storage). This smoke binds the real server in the background,
+          # hits /api/coverage, /, and /api/resolve, then cleans up.
+          # Combined with smokes 5 (probe) + 10 (resolve), the full Phase 5
+          # CLI surface is ratified at the compiled-binary layer.
+          rm -f /tmp/spec-serve.log
+          ./dist/spec serve fixtures/platform-fixture --port 0 > /tmp/spec-serve.log 2>&1 &
+          SERVE_PID=$!
+          # Cleanup on every exit path — success OR failure.
+          trap 'kill $SERVE_PID 2>/dev/null || true; sleep 1' EXIT
+          # Wait up to 10 seconds for the readiness line.
+          PORT=""
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            sleep 1
+            if grep -q 'spec: serving on http://127.0.0.1:' /tmp/spec-serve.log 2>/dev/null; then
+              PORT=$(grep -oE 'http://127.0.0.1:[0-9]+' /tmp/spec-serve.log | head -1 | grep -oE '[0-9]+$')
+              break
+            fi
+          done
+          test -n "$PORT" || {
+            echo "FAIL: server did not print ready line within 10s"
+            echo "--- /tmp/spec-serve.log ---"
+            cat /tmp/spec-serve.log || true
+            exit 1;
+          }
+          echo "spec serve bound to 127.0.0.1:$PORT"
+          # /api/coverage — JSON array, length >= 1.
+          curl -sf "http://127.0.0.1:$PORT/api/coverage" > /tmp/coverage.json || {
+            echo "FAIL: /api/coverage curl failed"; exit 1;
+          }
+          COV_LEN=$(jq -r 'length' /tmp/coverage.json)
+          test "$COV_LEN" -ge 1 || {
+            echo "FAIL: /api/coverage returned $COV_LEN rows (expected >= 1)"
+            cat /tmp/coverage.json; exit 1;
+          }
+          # / — SSR coverage HTML, contains "Coverage" (case-insensitive).
+          curl -sf "http://127.0.0.1:$PORT/" > /tmp/coverage.html || {
+            echo "FAIL: GET / curl failed"; exit 1;
+          }
+          grep -qi 'coverage' /tmp/coverage.html || {
+            echo "FAIL: GET / body did not contain 'Coverage'"
+            head -c 1000 /tmp/coverage.html; exit 1;
+          }
+          # /api/resolve — JSON array, length === 2 (RSLV-01/02 via real serve).
+          curl -sfG "http://127.0.0.1:$PORT/api/resolve" \
+            --data-urlencode 'files=api/src/renew.ts' \
+            --data-urlencode 'files=api/src/charge.ts' \
+            > /tmp/resolve.json || {
+            echo "FAIL: /api/resolve curl failed"; exit 1;
+          }
+          RES_LEN=$(jq -r 'length' /tmp/resolve.json)
+          test "$RES_LEN" = "2" || {
+            echo "FAIL: /api/resolve returned $RES_LEN items (expected 2)"
+            cat /tmp/resolve.json; exit 1;
+          }
+          echo "spec serve (compiled binary): OK"
+
+      - name: "smoke 12 — spec gate PASS against fixture (compiled binary) [GATE-01]"
+        run: |
+          set -euo pipefail
+          # GATE-01 / Phase 6 Success Criterion #1: the rung-3 approval primitive
+          # is locked at the classifier seam (gate-classify.test.ts), the CLI
+          # surface (cli-gate-unit.test.ts), and the rung-3 demonstration
+          # (gate-rung3.test.ts). This smoke is the final defense-in-depth
+          # layer: the COMPILED binary against the canonical fixture must
+          # emit exit 0 + reason=PASS for api/BILLING-009. Any regression in
+          # `bun build --compile` (lazy-import wiring, citty cold-start,
+          # asset embedding) surfaces here, not at user-install time. Matches
+          # smokes 8 + 10 + 11 (one compiled-binary smoke per phase verb).
+          set +e
+          OUT=$(./dist/spec gate api BILLING-009 fixtures/platform-fixture --json)
+          EXIT=$?
+          set -e
+          test "$EXIT" = "0" || {
+            echo "FAIL: spec gate api BILLING-009 expected exit 0 (PASS), got $EXIT"
+            echo "$OUT"; exit 1;
+          }
+          # Parse the single GateOutcome JSON object and assert the four
+          # contract fields (reason, repo, req_id, pinned_spec_version).
+          # Expected JSON substring: "reason":"PASS"
+          PARSED=$(echo "$OUT" | bun -e '
+            const data = require("node:fs").readFileSync(0, "utf8");
+            const r = JSON.parse(data);
+            process.stdout.write(`${r.reason}\t${r.repo}\t${r.req_id}\t${r.pinned_spec_version}`);
+          ')
+          EXPECTED=$(printf "%b" "PASS\tapi\tBILLING-009\t2")
+          test "$PARSED" = "$EXPECTED" || {
+            echo "FAIL: spec gate JSON shape drift"
+            echo "--- GOT ---"
+            echo "$PARSED"
+            echo "--- EXPECTED ---"
+            echo "$EXPECTED"
+            echo "--- RAW ---"
+            echo "$OUT"
+            exit 1;
+          }
+          echo "smoke 12: spec gate PASS OK ($OUT)"
+
+      - name: "smoke 13 — spec gate distinct failure reasons (compiled binary) [GATE-02]"
+        run: |
+          set -euo pipefail
+          # GATE-02 / Phase 6 Success Criterion #1's SUPERSEDED requirement +
+          # Pitfall 8's NOT_FOUND-vs-unknown-repo distinction. Two assertions
+          # in one step block follows the smoke 8 convention (one step,
+          # multiple jq assertions). The two sub-assertions ratify that the
+          # compiled binary distinguishes SUPERSEDED from NOT_FOUND via JSON
+          # .reason — the public reason taxonomy that webapps and CI shells
+          # parse to branch on.
+          #
+          # NOTE on the NOT_FOUND id: COMPLETELY-NONEXISTENT-9999 is used
+          # rather than BILLING-999 because BILLING-999 is reserved as the
+          # planted DANGLING_TAG bait at admin/src/reports.ts:2 and CHCK-04's
+          # inverted CI assertion (smoke 7) depends on its specific role. Any
+          # id guaranteed not to be in the fixture works for gate's NOT_FOUND
+          # path; the long, deliberately-bogus form avoids coupling Phase 3
+          # and Phase 6 fixture meanings.
+          #
+          # Sub-assertion A — SUPERSEDED — expected JSON substring: "reason":"SUPERSEDED"
+          set +e
+          OUT_A=$(./dist/spec gate mobile BILLING-001 fixtures/platform-fixture --json)
+          EXIT_A=$?
+          set -e
+          test "$EXIT_A" = "1" || {
+            echo "FAIL: spec gate mobile BILLING-001 expected exit 1 (SUPERSEDED), got $EXIT_A"
+            echo "$OUT_A"; exit 1;
+          }
+          REASON_A=$(echo "$OUT_A" | bun -e '
+            const data = require("node:fs").readFileSync(0, "utf8");
+            process.stdout.write(JSON.parse(data).reason);
+          ')
+          test "$REASON_A" = "SUPERSEDED" || {
+            echo "FAIL: expected reason SUPERSEDED, got $REASON_A"
+            echo "$OUT_A"; exit 1;
+          }
+          # Sub-assertion B — NOT_FOUND — expected JSON substring: "reason":"NOT_FOUND"
+          set +e
+          OUT_B=$(./dist/spec gate api COMPLETELY-NONEXISTENT-9999 fixtures/platform-fixture --json)
+          EXIT_B=$?
+          set -e
+          test "$EXIT_B" = "1" || {
+            echo "FAIL: spec gate api COMPLETELY-NONEXISTENT-9999 expected exit 1 (NOT_FOUND), got $EXIT_B"
+            echo "$OUT_B"; exit 1;
+          }
+          REASON_B=$(echo "$OUT_B" | bun -e '
+            const data = require("node:fs").readFileSync(0, "utf8");
+            process.stdout.write(JSON.parse(data).reason);
+          ')
+          test "$REASON_B" = "NOT_FOUND" || {
+            echo "FAIL: expected reason NOT_FOUND, got $REASON_B"
+            echo "$OUT_B"; exit 1;
+          }
+          echo "smoke 13: spec gate distinct reasons OK (SUPERSEDED + NOT_FOUND)"
+
+      - name: smoke 14 — spec init scaffolds in tmp + idempotent (CI-04 / INIT-09 / INIT-10)
+        run: |
+          set -euo pipefail
+          # CI-04 / Phase 11: smoke 14 is the compiled-binary defense-in-depth lock
+          # for spec init. Helper-level coverage (21 cli-init.test.ts tests, Plan
+          # 09-02) locks the source-mode behavior; --help smoke (Plan 09-03) locks
+          # the registration; this smoke locks the end-to-end flow against
+          # ./dist/spec in an ad-hoc tmp platform.
+          TMP=$(mktemp -d)
+          trap 'rm -rf "$TMP"' EXIT
+          mkdir -p "$TMP/spec-engine" "$TMP/member"
+          # Run 1 — write the config.
+          ./dist/spec init "$TMP/member"
+          CFG="$TMP/member/spec-engine.member.json"
+          test -f "$CFG" || { echo "FAIL: spec init did not write $CFG"; exit 1; }
+          # Sanity: JSON has a top-level `specs` key (string).
+          PIN=$(bun -e '
+            const fs = require("node:fs");
+            const r = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+            if (typeof r.specs !== "string") { console.error("missing specs key"); process.exit(1); }
+            process.stdout.write(r.specs);
+          ' "$CFG")
+          echo "smoke 14: wrote $CFG with pin=$PIN"
+          # Idempotency check: bytes before, run init again, bytes after, compare.
+          BEFORE=$(cat "$CFG")
+          ./dist/spec init "$TMP/member"
+          AFTER=$(cat "$CFG")
+          test "$BEFORE" = "$AFTER" || {
+            echo "FAIL: spec init not idempotent — file bytes differ across re-run"
+            echo "--- BEFORE ---"
+            echo "$BEFORE"
+            echo "--- AFTER ---"
+            echo "$AFTER"
+            exit 1;
+          }
+          echo "smoke 14: idempotent re-run OK"
+
+      - name: smoke 14b — fixture unchanged after spec init smokes (CI-04 / WR-06 belt-and-suspenders)
+        run: |
+          set -euo pipefail
+          # Belt-and-suspenders: prove that smoke 14 (and any prior smoke) did NOT
+          # mutate any tracked file under fixtures/platform-fixture/. The fixture
+          # is the planted-mess source of truth (CLAUDE.md: "Discipline: keep the
+          # planted mess in fixtures") and CHCK-04's inverted CI assertion (smoke
+          # 7) depends on it being byte-stable.
+          # Note: git diff ignores gitignored siblings like fixtures/platform-fixture/.spec-engine/
+          # which smoke 6 / 6b deliberately produce — that's correct behavior.
+          git diff --exit-code -- fixtures/platform-fixture/ || {
+            echo "FAIL: fixtures/platform-fixture/ was mutated during CI"
+            git diff -- fixtures/platform-fixture/
+            exit 1;
+          }
+          echo "smoke 14b: fixtures/platform-fixture/ unchanged: OK"
+
+      - name: smoke 15 — NO_SPEC_CONFIG end-to-end on ad-hoc tmp platform (CI-04 / DISC-03 / DIAG-02)
+        run: |
+          set -euo pipefail
+          # CI-04 / Phase 11: smoke 15 is the v1.1 headline-value lock. Builds
+          # a minimal ad-hoc platform (one spec-engine/ + one sibling-without-
+          # config), runs `./dist/spec index --json`, and asserts:
+          #   - r.diagnostics === 1 (one warning row at the parse layer)
+          #   - the diagnostic code is exactly "NO_SPEC_CONFIG"
+          # This is the compiled-binary end-to-end ratification of the v1.1
+          # member-onboarding silent-failure fix.
+          # Source-mode coverage: pipeline.test.ts (Plan 08-01) locks emission shape;
+          # cli-check-unit.test.ts (Plan 08-02) locks the warning-only exit-0 path;
+          # cli-prompt.test.ts (Plan 10-02) locks the prompt fanout. Smoke 15 is the
+          # binary-layer headline.
+          TMP=$(mktemp -d)
+          trap 'rm -rf "$TMP"' EXIT
+          mkdir -p "$TMP/spec-engine" "$TMP/strangers"
+          # The spec-engine/ dir alone mounts the platform (RED-85: the
+          # spec-engine.platform.json manifest is retired — version is derived).
+          # The unwired member must look like a repo root (repo-root signal:
+          # .git/package.json) for discover to flag it NO_SPEC_CONFIG — a real
+          # member repo (the v1.1 product-monorepo scenario) always has one.
+          # A bare marker-less folder is not a sibling repo and is ignored.
+          echo '{"name":"strangers","private":true}' > "$TMP/strangers/package.json"
+          # Parse-layer count via spec index --json.
+          DCNT=$(./dist/spec index "$TMP" --json | bun -e '
+            const r = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
+            process.stdout.write(String(r.diagnostics));
+          ')
+          test "$DCNT" = "1" || {
+            echo "FAIL: expected exactly 1 diagnostic (NO_SPEC_CONFIG), got $DCNT"
+            ./dist/spec index "$TMP" --json
+            exit 1;
+          }
+          # Diagnostic code via spec check --json (returns the array shape).
+          # NO_SPEC_CONFIG is severity=warning so check --ci would exit 0 (DIAG-02);
+          # we omit --ci here and use --json to surface the row contents directly.
+          CODE=$(./dist/spec check "$TMP" --json | bun -e '
+            const rows = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
+            if (!Array.isArray(rows) || rows.length !== 1) {
+              console.error(`expected 1 row, got ${JSON.stringify(rows)}`);
+              process.exit(1);
+            }
+            process.stdout.write(rows[0].code);
+          ')
+          test "$CODE" = "NO_SPEC_CONFIG" || {
+            echo "FAIL: expected code NO_SPEC_CONFIG, got $CODE"
+            ./dist/spec check "$TMP" --json
+            exit 1;
+          }
+          echo "smoke 15: NO_SPEC_CONFIG end-to-end OK (diagnostics=$DCNT, code=$CODE)"
+
+      - name: smoke 16 — dogfood self-gate, trusted-red (spec on spec, rung 2)
+        run: |
+          set -euo pipefail
+          # This repo self-consumes (rung 1): root spec-engine/ holds the
+          # POC/AUTHC/INIT/GATE/GOV/PROP requirements worked backwards from
+          # specs/, bound by @spec tags in packages/. The gate keeps the
+          # connection live — an orphaned/unverified requirement, a dangling
+          # tag, or planted-fixture leakage into the self-scan fails this step.
+          #
+          # TRUSTED-RED (Phase 21 / MA-2): the self-gate now runs with the
+          # repo's OWN JUnit results ingested. A bare `check . --ci` proves
+          # only structure; trusted-red additionally enforces that every active
+          # requirement with verifying tags correlates to a PASSING testcase
+          # (an UNPROVEN_REQ otherwise fails --ci). Generate the JUnit first,
+          # then feed it via --results. The repo root IS the platform dir, so
+          # `.spec-engine/results.xml` is platform-relative and V12-contained
+          # (check.ts resolves --results against platformDir; .spec-engine/ is
+          # git-ignored so the transient results file is never committed).
+          # Results are decoration ingested AFTER runIndex — never hashed into
+          # build_id (GATE-04, smoke 21) — so cold-build correctness is intact.
+          mkdir -p .spec-engine
+          bun test --reporter=junit --reporter-outfile=.spec-engine/results.xml
+          ./dist/spec check . --ci --results .spec-engine/results.xml
+          echo "smoke 16: dogfood self-gate trusted-red OK (exit 0 with repo JUnit ingested)"
+
+      - name: "smoke 17 — spec provenance against fixture (compiled binary) [PMAT-01/02/03]"
+        run: |
+          set -euo pipefail
+          # PMAT-01/02/03 / Phase 13: the per-requirement provenance matrix is
+          # locked at the formatter (provenance-format.test.ts), the CLI surface
+          # (cli-provenance-unit.test.ts), and the two-cold-runs byte-identity
+          # snapshot (provenance-json-snapshot.test.ts). This smoke is the final
+          # defense-in-depth layer: the COMPILED binary must emit the same
+          # deterministic --json shape AND honour the ENG-1432 reverse lookup.
+          # Any regression in `bun build --compile` (lazy-import wiring of
+          # commands/provenance.ts, citty cold-start) surfaces here, not at
+          # user-install time.
+          # (1) full matrix --json is valid, non-empty JSON.
+          OUT=$(./dist/spec provenance fixtures/platform-fixture --json)
+          echo "$OUT" | jq .
+          test "$(echo "$OUT" | jq 'length')" -ge 1 || {
+            echo "FAIL: provenance --json should have >= 1 row"; echo "$OUT"; exit 1;
+          }
+          # (2) PMAT-02 determinism: a cold-rebuild (--fresh) run is byte-equal.
+          OUT2=$(./dist/spec provenance fixtures/platform-fixture --fresh --json)
+          test "$OUT" = "$OUT2" || {
+            echo "FAIL: provenance --json not deterministic across cold rebuild"
+            diff <(echo "$OUT") <(echo "$OUT2") || true
+            exit 1;
+          }
+          # (3) PMAT-03 reverse lookup: ENG-1432 is non-empty and exact-filtered.
+          REV=$(./dist/spec provenance ENG-1432 fixtures/platform-fixture --json)
+          echo "$REV" | jq .
+          test "$(echo "$REV" | jq 'length')" -ge 1 || {
+            echo "FAIL: reverse lookup ENG-1432 empty"; echo "$REV"; exit 1;
+          }
+          test "$(echo "$REV" | jq -r 'all(.[]; .issue_id=="ENG-1432")')" = "true" || {
+            echo "FAIL: reverse lookup returned rows whose issue_id != ENG-1432"; echo "$REV"; exit 1;
+          }
+          echo "smoke 17: spec provenance (compiled binary) OK"
+
+      - name: "smoke 18 — UNSOURCED_CHANGE off-by-default + flagged set (compiled binary) [USRC-02/04]"
+        run: |
+          set -euo pipefail
+          # USRC-02 / USRC-04 / Phase 14: the --unsourced-change off-by-default
+          # guarantee is locked in-process at the detector (unsourced.test.ts) and
+          # the CLI surface (cli-check-unit.test.ts). This smoke is the final
+          # defense-in-depth layer mirroring smoke 7: the COMPILED binary must
+          # (A) emit ZERO UNSOURCED_CHANGE rows WITHOUT the flag — byte-identical
+          #     to smoke 7's 6-row inverted-CI baseline (off-by-default survives
+          #     `bun build --compile`), and
+          # (B) emit exactly the 6 + 1 {UNSOURCED_CHANGE, BILLING-001} set WITH
+          #     --unsourced-change — proving citty's flag is wired through the
+          #     `--compile` lazy-import boundary.
+          # Like smoke 7, `spec check --ci` exits 1 here because the canonical
+          # fixture carries 5 ERROR-severity planted defects; the new
+          # UNSOURCED_CHANGE row is WARNING and must NOT change that exit code.
+          # We assert on the diagnostic SET (not exit 0), capturing exit via
+          # `set +e` so pipefail does not kill us on the expected exit 1.
+
+          # Projection helper (identical to smoke 7): JSON -> sorted
+          #   <CODE>\t<repo or empty>\t<req_id or empty>
+          # The shared bun -e one-liner keeps both parts order-insensitive.
+          PROJECT='
+            const data = require("node:fs").readFileSync(0, "utf8");
+            const rows = JSON.parse(data);
+            const keys = rows.map(d => `${d.code}\t${d.repo ?? ""}\t${d.req_id ?? ""}`).sort().join("\n");
+            process.stdout.write(keys);
+          '
+
+          # The same 6-row planted baseline smoke 7 asserts (source of truth:
+          # packages/engine/test/check-ci.test.ts::EXPECTED_DIAGNOSTICS).
+          # `printf "%b"` (NOT `%s`) so the `\t` escapes become real TABs that
+          # match the tabs $GOT carries; `%s` would leave literal backslash-t.
+          EXPECTED_NOFLAG=$(printf "%b\n%b\n%b\n%b\n%b\n%b" \
+            "DANGLING_TAG\tadmin\tBILLING-999" \
+            "DRIFT\tmobile\tBILLING-001" \
+            "ORPHAN_REQ\t\tAUTH-001" \
+            "SUPERSEDED_REFERENCED\tmobile\tBILLING-001" \
+            "UNKNOWN_ROLE\t\tBILLING-002" \
+            "UNVERIFIED_REQ\t\tBILLING-002" \
+          )
+
+          # Part A — NO flag: must equal smoke 7's 6-row set byte-identically
+          # (off-by-default at the dist layer; zero UNSOURCED_CHANGE rows).
+          set +e
+          OUT_A=$(./dist/spec check --ci fixtures/platform-fixture --json)
+          EXIT_A=$?
+          set -e
+          test "$EXIT_A" = "1" || { echo "FAIL: no-flag run should exit 1 (planted errors), got $EXIT_A"; exit 1; }
+          GOT_A=$(echo "$OUT_A" | bun -e "$PROJECT")
+          test "$GOT_A" = "$EXPECTED_NOFLAG" || {
+            echo "FAIL: no-flag diagnostic set drift (UNSOURCED_CHANGE leaked at dist layer? USRC-02)"
+            echo "--- GOT ---"
+            echo "$GOT_A"
+            echo "--- EXPECTED ---"
+            echo "$EXPECTED_NOFLAG"
+            echo "--- DIFF ---"
+            diff <(echo "$GOT_A") <(echo "$EXPECTED_NOFLAG") || true
+            exit 1
+          }
+
+          # The 6 + 1 flagged set: the same 6 PLUS one
+          #   UNSOURCED_CHANGE\t\tBILLING-001  (repo empty, req_id BILLING-001)
+          # which sorts after UNKNOWN_ROLE and before UNVERIFIED_REQ.
+          EXPECTED_FLAG=$(printf "%b\n%b\n%b\n%b\n%b\n%b\n%b" \
+            "DANGLING_TAG\tadmin\tBILLING-999" \
+            "DRIFT\tmobile\tBILLING-001" \
+            "ORPHAN_REQ\t\tAUTH-001" \
+            "SUPERSEDED_REFERENCED\tmobile\tBILLING-001" \
+            "UNKNOWN_ROLE\t\tBILLING-002" \
+            "UNSOURCED_CHANGE\t\tBILLING-001" \
+            "UNVERIFIED_REQ\t\tBILLING-002" \
+          )
+
+          # Part B — WITH --unsourced-change: must equal the exact 6+1 set.
+          set +e
+          OUT_B=$(./dist/spec check --ci fixtures/platform-fixture --json --unsourced-change)
+          EXIT_B=$?
+          set -e
+          test "$EXIT_B" = "1" || { echo "FAIL: flagged run should still exit 1 (warning never flips exit), got $EXIT_B"; exit 1; }
+          GOT_B=$(echo "$OUT_B" | bun -e "$PROJECT")
+          test "$GOT_B" = "$EXPECTED_FLAG" || {
+            echo "FAIL: flagged diagnostic set drift (expected exactly 6+1 set; USRC-04)"
+            echo "--- GOT ---"
+            echo "$GOT_B"
+            echo "--- EXPECTED ---"
+            echo "$EXPECTED_FLAG"
+            echo "--- DIFF ---"
+            diff <(echo "$GOT_B") <(echo "$EXPECTED_FLAG") || true
+            exit 1
+          }
+          echo "smoke 18: UNSOURCED_CHANGE off-by-default + flagged set OK"
+
+      - name: "smoke 19 — tracker build_id parity (TRK-07 — build_id independent of tracker reachability)"
+        run: |
+          set -euo pipefail
+          # TRK-07 / Phase 15: the derived index build_id MUST be byte-identical
+          # whether SPEC_TRACKER_TOKEN is set or unset, with the network disabled.
+          # The token's mere presence must NOT perturb build_id — the tracker
+          # sidecar is NEVER hashed into the index (computeBuildId enumerates a
+          # FIXED list of index tables; the sidecar is a non-table file, excluded
+          # by construction — sqlite.ts:1130-1195 / Pitfall 4). This smoke is the
+          # dynamic backstop: if the sidecar were ever accidentally hashed, the
+          # token-set vs token-unset hashes would diverge here.
+          #
+          # Clones smoke 6's build_id extraction + cold-rebuild shape. CI has no
+          # Linear connectivity and Phase 15 ships no decoration (nothing in
+          # `spec index` resolves issues), so the network is effectively disabled
+          # in both runs regardless of the dummy token.
+          FIXTURE=fixtures/platform-fixture
+          DB="$FIXTURE/.spec-engine/index.sqlite"
+          # Run 1 — token UNSET (env -u guarantees the var is absent for the child).
+          rm -f "$DB" "$DB-wal" "$DB-shm"
+          H_UNSET=$(env -u SPEC_TRACKER_TOKEN ./dist/spec index "$FIXTURE" --json \
+            | bun -e 'const r=JSON.parse(require("node:fs").readFileSync(0,"utf8")); process.stdout.write(r.build_id)')
+          # Cold rebuild between runs — remove DB + WAL + SHM siblings (smoke 6).
+          rm -f "$DB" "$DB-wal" "$DB-shm"
+          # Run 2 — token SET to a dummy value. No network call is made; the dummy
+          # token simply proves its PRESENCE does not change the hash.
+          H_SET=$(SPEC_TRACKER_TOKEN=lin_api_dummy ./dist/spec index "$FIXTURE" --json \
+            | bun -e 'const r=JSON.parse(require("node:fs").readFileSync(0,"utf8")); process.stdout.write(r.build_id)')
+          echo "H_UNSET=$H_UNSET"
+          echo "H_SET=$H_SET"
+          echo "$H_UNSET" | grep -qE '^[0-9a-f]{64}$' || { echo "FAIL: H_UNSET is not 64-char hex"; exit 1; }
+          test "$H_UNSET" = "$H_SET" || {
+            echo "FAIL: build_id diverged token-set vs token-unset (sidecar hashed? TRK-07): $H_UNSET != $H_SET"
+            exit 1;
+          }
+          echo "smoke 19: tracker build_id parity OK (token set vs unset byte-identical): $H_UNSET"
+
+      - name: "smoke 20 — provenance --resolve-issues degraded + /provenance served (compiled binary) [PWEB-01/02/03]"
+        run: |
+          set -euo pipefail
+          # PWEB-01/02/03 / Phase 16: the decorated provenance surface is locked
+          # in-process at the decorator (provenance-decorate.test.ts), the resolve
+          # seam (provenance-resolve.test.ts), the API plane (server-provenance.test.ts),
+          # the CLI<->webapp parity test (provenance-parity.test.ts), and the SSR
+          # page (pages.test.ts). This smoke is the final defense-in-depth layer:
+          # the COMPILED binary must embed BOTH the --resolve-issues CLI path AND
+          # the /provenance page + /api/provenance routes (Pitfall 5 — `bun build
+          # --compile` must bundle the adapter seam and the embedded webapp). Any
+          # regression in the lazy-import / asset-embedding wiring surfaces here,
+          # not at user-install time. PURELY ADDITIVE — smokes 1-19 are unchanged.
+          FIXTURE=fixtures/platform-fixture
+          # (1) PWEB-03 degraded path: with SPEC_TRACKER_TOKEN UNSET (env -u), the
+          # decorated CLI render must contain the bare opaque ids AND the
+          # "set SPEC_TRACKER_TOKEN" hint — no network, graceful degradation.
+          OUT=$(env -u SPEC_TRACKER_TOKEN ./dist/spec provenance "$FIXTURE" --resolve-issues)
+          echo "$OUT" | grep -q "ENG-1432" || {
+            echo "FAIL: degraded --resolve-issues missing bare opaque id ENG-1432"; echo "$OUT"; exit 1;
+          }
+          echo "$OUT" | grep -q "set SPEC_TRACKER_TOKEN" || {
+            echo "FAIL: degraded --resolve-issues missing 'set SPEC_TRACKER_TOKEN' hint (PWEB-03)"; echo "$OUT"; exit 1;
+          }
+          # (2) determinism: two cold-rebuild (--fresh) degraded runs are byte-equal.
+          OUT_A=$(env -u SPEC_TRACKER_TOKEN ./dist/spec provenance "$FIXTURE" --fresh --resolve-issues)
+          OUT_B=$(env -u SPEC_TRACKER_TOKEN ./dist/spec provenance "$FIXTURE" --fresh --resolve-issues)
+          test "$OUT_A" = "$OUT_B" || {
+            echo "FAIL: degraded --resolve-issues not deterministic across cold rebuild"
+            diff <(echo "$OUT_A") <(echo "$OUT_B") || true
+            exit 1;
+          }
+          # (3) default path unperturbed: no --resolve-issues flag still emits the
+          # Phase 13 matrix (>= 1 row) — the opt-in flag did not change the default.
+          DEF=$(./dist/spec provenance "$FIXTURE" --json)
+          echo "$DEF" | jq .
+          test "$(echo "$DEF" | jq 'length')" -ge 1 || {
+            echo "FAIL: default provenance --json (no flag) should have >= 1 row"; echo "$DEF"; exit 1;
+          }
+          # (4) served binary: GET /provenance → 200 with the matrix, and
+          # GET /api/provenance → JSON array. Mirrors smoke 11's serve harness.
+          rm -f /tmp/spec-prov-serve.log
+          ./dist/spec serve "$FIXTURE" --port 0 > /tmp/spec-prov-serve.log 2>&1 &
+          SERVE_PID=$!
+          trap 'kill $SERVE_PID 2>/dev/null || true; sleep 1' EXIT
+          PORT=""
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            sleep 1
+            if grep -q 'spec: serving on http://127.0.0.1:' /tmp/spec-prov-serve.log 2>/dev/null; then
+              PORT=$(grep -oE 'http://127.0.0.1:[0-9]+' /tmp/spec-prov-serve.log | head -1 | grep -oE '[0-9]+$')
+              break
+            fi
+          done
+          test -n "$PORT" || {
+            echo "FAIL: server did not print ready line within 10s"
+            cat /tmp/spec-prov-serve.log || true
+            exit 1;
+          }
+          echo "spec serve bound to 127.0.0.1:$PORT"
+          # GET /provenance — 200. The SSR page is currently flag-gated OFF
+          # (PROVENANCE_ENABLED=false in packages/webapp/src/pages/provenance.ts),
+          # so the served page is the "coming soon" placeholder: the page heading
+          # renders but the matrix does not. The /api/provenance JSON seam below
+          # stays live. Re-assert the matrix body here when the flag flips back on.
+          curl -sf "http://127.0.0.1:$PORT/provenance" > /tmp/prov.html || {
+            echo "FAIL: GET /provenance curl failed"; exit 1;
+          }
+          grep -qi 'Provenance matrix' /tmp/prov.html || {
+            echo "FAIL: GET /provenance body missing 'Provenance matrix' heading"; head -c 1000 /tmp/prov.html; exit 1;
+          }
+          grep -qi 'Coming soon' /tmp/prov.html || {
+            echo "FAIL: GET /provenance body missing 'Coming soon' placeholder (route flag-gated off)"; head -c 1000 /tmp/prov.html; exit 1;
+          }
+          # GET /api/provenance — JSON array, length >= 1.
+          curl -sf "http://127.0.0.1:$PORT/api/provenance" > /tmp/prov-api.json || {
+            echo "FAIL: GET /api/provenance curl failed"; exit 1;
+          }
+          test "$(jq -r 'if type=="array" then "array" else "not-array" end' /tmp/prov-api.json)" = "array" || {
+            echo "FAIL: /api/provenance did not return a JSON array"; cat /tmp/prov-api.json; exit 1;
+          }
+          test "$(jq -r 'length' /tmp/prov-api.json)" -ge 1 || {
+            echo "FAIL: /api/provenance returned an empty array"; cat /tmp/prov-api.json; exit 1;
+          }
+          echo "smoke 20: provenance --resolve-issues degraded + /provenance served OK"
+
+      - name: "smoke 21 — trusted-red build_id parity with/without --results (compiled binary) [GATE-04]"
+        run: |
+          set -euo pipefail
+          # GATE-04 / Phase 19: the shipped binary MUST keep build_id byte-identical
+          # whether or not --results is supplied, on a cold rebuild. Results are
+          # decoration over the derived index (like coverage/provenance sidecars):
+          # ingested AFTER runIndex (check.ts:191-218), so a results-in-hash
+          # regression would diverge H_WITH from H_WITHOUT here. In-process proof:
+          # check-results-ci.test.ts (Plan 19-04, build_id parity across two cold
+          # runs). This smoke is the compiled-binary defense-in-depth (advisory per
+          # VALIDATION — the blocking proof is the bun test). Mirrors smoke 6's
+          # cold-rebuild rm-trio + 64-char-hex idiom; the build_id is on the trailing
+          # `build_id:` TEXT-mode stdout line (suppressed in --json, check.ts:241-243).
+          FIXTURE=fixtures/platform-fixture
+          DB="$FIXTURE/.spec-engine/index.sqlite"
+          # Copy the committed sample JUnit INSIDE the fixture tree so the 19-03
+          # --results V12 containment guard passes; pass it platformDir-relative
+          # (check.ts resolves --results against platformDir, NOT cwd).
+          SAMPLE_REL=".spec-engine-results-smoke.xml"
+          cp packages/engine/test/fixtures/junit/bun-green.xml "$FIXTURE/$SAMPLE_REL"
+          trap 'rm -f "$FIXTURE/$SAMPLE_REL"' EXIT
+          # Both runs are cold (rm the DB + WAL + SHM siblings) and differ ONLY by
+          # --results. `spec check --ci` exits 1 on the planted-defect fixture, so
+          # capture output under `set +e` (pipefail would otherwise kill the script).
+          set +e
+          rm -f "$DB" "$DB-wal" "$DB-shm"
+          OUT_WITHOUT=$(./dist/spec check --ci "$FIXTURE")
+          rm -f "$DB" "$DB-wal" "$DB-shm"
+          OUT_WITH=$(./dist/spec check --ci "$FIXTURE" --results "$SAMPLE_REL")
+          set -e
+          H_WITHOUT=$(echo "$OUT_WITHOUT" | grep '^build_id:' | awk '{print $2}')
+          H_WITH=$(echo "$OUT_WITH" | grep '^build_id:' | awk '{print $2}')
+          echo "H_WITHOUT=$H_WITHOUT"
+          echo "H_WITH=$H_WITH"
+          echo "$H_WITHOUT" | grep -qE '^[0-9a-f]{64}$' || { echo "FAIL: H_WITHOUT is not 64-char hex"; exit 1; }
+          test "$H_WITH" = "$H_WITHOUT" || { echo "FAIL: build_id diverged with vs without --results (results hashed into the index? GATE-04): $H_WITH != $H_WITHOUT"; exit 1; }
+          echo "smoke 21: trusted-red build_id parity OK (with/without --results byte-identical): $H_WITH"
+
+      - name: "smoke 22 — trusted-red --results fires UNPROVEN_REQ (compiled binary) [GATE-02 / GATE-04]"
+        run: |
+          set -euo pipefail
+          # GATE-02 / GATE-04 / Phase 19: prove `--results` is plumbed through the
+          # `bun build --compile` lazy-import boundary AND that the trusted-red gate
+          # actually FIRES — not merely that the run exits nonzero.
+          #
+          # WR-05: the planted-defect fixture already exits 1 on its error-severity
+          # diagnostics, so exit 1 ALONE cannot attribute the failure to the gate — a
+          # regression that made provenDetermination emit ZERO rows would still exit 1
+          # and pass a bare exit-code check. We therefore assert the SPECIFIC signal:
+          # an UNPROVEN_REQ diagnostic row in the --json output. bun-green.xml does not
+          # correlate to the fixture's active verifying tags, so BILLING-009 surfaces
+          # as UNPROVEN_REQ — the distinguishing cause this smoke pins.
+          #
+          # Still additive: the exit-1 (NOT 2 = crash / flag-not-wired) assertion is
+          # preserved; the row assertion is layered on top. In-process proof:
+          # check-results-ci.test.ts (Plan 19-04). Mirrors smoke 7/18/23's
+          # `set +e`/`EXIT=$?`/`set -e` + `bun -e` JSON-projection idiom.
+          FIXTURE=fixtures/platform-fixture
+          DB="$FIXTURE/.spec-engine/index.sqlite"
+          SAMPLE_REL=".spec-engine-results-smoke.xml"
+          cp packages/engine/test/fixtures/junit/bun-green.xml "$FIXTURE/$SAMPLE_REL"
+          trap 'rm -f "$FIXTURE/$SAMPLE_REL"' EXIT
+          set +e
+          rm -f "$DB" "$DB-wal" "$DB-shm"
+          OUT=$(./dist/spec check --ci "$FIXTURE" --results "$SAMPLE_REL" --json 2>/dev/null)
+          EXIT=$?
+          set -e
+          test "$EXIT" = "1" || { echo "FAIL: --results run should exit 1 (unproven active req + planted defects), got $EXIT (2 = crash / flag not plumbed through --compile)"; exit 1; }
+          # The distinguishing signal (WR-05): UNPROVEN_REQ rows emitted by the gate.
+          GOT_UNPROVEN=$(echo "$OUT" | bun -e '
+            const rows = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
+            const ids = rows.filter((d) => d.code === "UNPROVEN_REQ").map((d) => d.req_id).sort();
+            process.stdout.write(ids.join(","));
+          ')
+          test -n "$GOT_UNPROVEN" || { echo "FAIL: no UNPROVEN_REQ row in --results --json output — the trusted-red gate did NOT fire; exit 1 came only from the planted defects (WR-05)"; exit 1; }
+          echo "$GOT_UNPROVEN" | grep -q 'BILLING-009' || { echo "FAIL: expected UNPROVEN_REQ for BILLING-009 (bun-green.xml does not prove it), got: $GOT_UNPROVEN"; exit 1; }
+          echo "smoke 22: trusted-red gate fired — UNPROVEN_REQ rows: $GOT_UNPROVEN (exit 1, not 2)"
+
+      - name: "smoke 23 — GATE-05 no-results --json baseline re-verify (compiled binary) [GATE-05]"
+        run: |
+          set -euo pipefail
+          # GATE-05 / Phase 19: this phase MUST NOT perturb the pre-existing
+          # no-results inverted-CI --json baseline. `spec check --ci --json` with
+          # NO --results must still emit EXACTLY the 6-row planted set smoke 7 / 18
+          # assert — PROOFS_UNCONFIRMED goes to STDERR, never the stdout diagnostic
+          # array (check.ts:225-231). This step INDEPENDENTLY re-verifies smoke 7 /
+          # smoke 18's baseline at the dist layer without editing their expected
+          # sets; if the baseline genuinely changed, this FAILS rather than being
+          # silently reconciled (T-19-12). ALSO asserts the proofs-unconfirmed note
+          # is present on stderr.
+          #
+          # Projection helper (identical to smoke 7 / smoke 18): JSON -> sorted
+          #   <CODE>\t<repo or empty>\t<req_id or empty>
+          PROJECT='
+            const data = require("node:fs").readFileSync(0, "utf8");
+            const rows = JSON.parse(data);
+            const keys = rows.map(d => `${d.code}\t${d.repo ?? ""}\t${d.req_id ?? ""}`).sort().join("\n");
+            process.stdout.write(keys);
+          '
+          # The same 6-row planted baseline smoke 7 / smoke 18 assert (source of
+          # truth: packages/engine/test/check-ci.test.ts::EXPECTED_DIAGNOSTICS).
+          # `printf "%b"` (NOT `%s`) so the `\t` escapes become real TABs.
+          EXPECTED_NOFLAG=$(printf "%b\n%b\n%b\n%b\n%b\n%b" \
+            "DANGLING_TAG\tadmin\tBILLING-999" \
+            "DRIFT\tmobile\tBILLING-001" \
+            "ORPHAN_REQ\t\tAUTH-001" \
+            "SUPERSEDED_REFERENCED\tmobile\tBILLING-001" \
+            "UNKNOWN_ROLE\t\tBILLING-002" \
+            "UNVERIFIED_REQ\t\tBILLING-002" \
+          )
+          # Capture stdout (the JSON array) and stderr (the PROOFS_UNCONFIRMED note)
+          # separately; capture exit via `set +e` (expected exit 1 on planted mess).
+          set +e
+          OUT=$(./dist/spec check --ci fixtures/platform-fixture --json 2>/tmp/spec-proofs-unconfirmed.stderr)
+          EXIT=$?
+          set -e
+          test "$EXIT" = "1" || { echo "FAIL: no-results --json run should exit 1 (planted errors), got $EXIT"; exit 1; }
+          GOT=$(echo "$OUT" | bun -e "$PROJECT")
+          test "$GOT" = "$EXPECTED_NOFLAG" || {
+            echo "FAIL: no-results --json baseline drift (PROOFS_UNCONFIRMED leaked into the stdout array? GATE-05 / T-19-12)"
+            echo "STOP: this is the GATE-05 locked baseline (smoke 7 / smoke 18) — do NOT edit the expected set to pass; a real drift here is a regression."
+            echo "--- GOT ---"
+            echo "$GOT"
+            echo "--- EXPECTED ---"
+            echo "$EXPECTED_NOFLAG"
+            echo "--- DIFF ---"
+            diff <(echo "$GOT") <(echo "$EXPECTED_NOFLAG") || true
+            exit 1
+          }
+          # The PROOFS_UNCONFIRMED advisory MUST be on stderr (not the array).
+          grep -q 'PROOFS_UNCONFIRMED' /tmp/spec-proofs-unconfirmed.stderr || {
+            echo "FAIL: no-results run should emit a PROOFS_UNCONFIRMED note on stderr (GATE-05)"
+            echo "--- stderr ---"; cat /tmp/spec-proofs-unconfirmed.stderr || true
+            exit 1
+          }
+          rm -f /tmp/spec-proofs-unconfirmed.stderr
+          echo "smoke 23: GATE-05 no-results --json baseline re-verified (6-row set byte-identical; PROOFS_UNCONFIRMED on stderr)"
+
+      - name: "smoke 24 — governance build_id parity with/without --base (compiled binary) [GATE-04]"
+        run: |
+          set -euo pipefail
+          # GATE-04 / Phase 20: the --base governance reads (git show / git ls-tree,
+          # check.ts:336-426) sit BELOW runIndex — build_id is frozen the instant
+          # runIndex returns — so build_id MUST be byte-identical with vs without
+          # --base on a cold rebuild (temporal isolation, exactly like smoke 21's
+          # --results parity). Governance needs platformDir to be a git repo ROOT
+          # (git object paths are repo-root-relative), so operate on a git-init'd tmp
+          # COPY of the fixture, NOT the in-repo subdir. In-process proof:
+          # check-governance-int.test.ts Scenario 5 (Plan 20-04). Mirrors smoke 21's
+          # cold-rebuild rm-trio + 64-char-hex + set +e idiom.
+          TMP=$(mktemp -d)
+          trap 'rm -rf "$TMP"' EXIT
+          cp -R fixtures/platform-fixture/. "$TMP/"
+          rm -rf "$TMP/.spec-engine"
+          git -C "$TMP" init -q
+          git -C "$TMP" -c user.email=ci@spec.local -c user.name=ci add -A
+          git -C "$TMP" -c user.email=ci@spec.local -c user.name=ci commit -q -m baseline
+          DB="$TMP/.spec-engine/index.sqlite"
+          # Both runs cold (rm the DB + WAL + SHM); differ ONLY by --base. `spec
+          # check --ci` exits 1 on the planted-defect fixture, so capture under set +e.
+          set +e
+          rm -f "$DB" "$DB-wal" "$DB-shm"
+          OUT_WITHOUT=$(./dist/spec check --ci "$TMP")
+          rm -f "$DB" "$DB-wal" "$DB-shm"
+          OUT_WITH=$(./dist/spec check --ci "$TMP" --base HEAD)
+          set -e
+          H_WITHOUT=$(echo "$OUT_WITHOUT" | grep '^build_id:' | awk '{print $2}')
+          H_WITH=$(echo "$OUT_WITH" | grep '^build_id:' | awk '{print $2}')
+          echo "H_WITHOUT=$H_WITHOUT"
+          echo "H_WITH=$H_WITH"
+          echo "$H_WITHOUT" | grep -qE '^[0-9a-f]{64}$' || { echo "FAIL: H_WITHOUT is not 64-char hex"; exit 1; }
+          test "$H_WITH" = "$H_WITHOUT" || { echo "FAIL: build_id diverged with vs without --base (governance perturbed the cold-build hash? GATE-04): $H_WITH != $H_WITHOUT"; exit 1; }
+          echo "smoke 24: governance build_id parity OK (with/without --base byte-identical): $H_WITH"
+
+      - name: "smoke 25 — governance-red on a cold build: REQUIREMENT_REMOVED + exit 1 (compiled binary) [GOV-01 / GOV-03]"
+        run: |
+          set -euo pipefail
+          # GOV-01 / GOV-03 / Phase 20: the fully-trusted-red governance gate fires on
+          # a COLD build through the shipped binary. Baseline = the committed fixture;
+          # a WORKING-TREE deletion of the BILLING domain file removes its ids with no
+          # surviving successor → REQUIREMENT_REMOVED + exit 1. Enumeration is from the
+          # ref via git ls-tree (NOT the working tree), so a wholesale-deleted file
+          # still surfaces its removed ids (Pitfall 3).
+          #
+          # WR-05 discipline (cf. smoke 22): the planted-defect fixture already exits 1,
+          # so exit 1 ALONE cannot attribute the failure to the gate. Assert the SPECIFIC
+          # REQUIREMENT_REMOVED row in --json. In-process proof:
+          # check-governance-int.test.ts Scenarios 1/3 (Plan 20-04).
+          TMP=$(mktemp -d)
+          trap 'rm -rf "$TMP"' EXIT
+          cp -R fixtures/platform-fixture/. "$TMP/"
+          rm -rf "$TMP/.spec-engine"
+          git -C "$TMP" init -q
+          git -C "$TMP" -c user.email=ci@spec.local -c user.name=ci add -A
+          git -C "$TMP" -c user.email=ci@spec.local -c user.name=ci commit -q -m baseline
+          # Working-tree mutation: delete the whole BILLING domain (its ids vanish
+          # from the change with no surviving successor).
+          rm "$TMP/spec-engine/BILLING/SPEC.json"
+          DB="$TMP/.spec-engine/index.sqlite"
+          set +e
+          rm -f "$DB" "$DB-wal" "$DB-shm"
+          OUT=$(./dist/spec check --ci "$TMP" --base HEAD --json 2>/dev/null)
+          EXIT=$?
+          set -e
+          test "$EXIT" = "1" || { echo "FAIL: governance-red run should exit 1, got $EXIT (2 = crash / --base not plumbed through --compile)"; exit 1; }
+          GOT_REMOVED=$(echo "$OUT" | bun -e '
+            const rows = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
+            const ids = rows.filter((d) => d.code === "REQUIREMENT_REMOVED").map((d) => d.req_id).sort();
+            process.stdout.write(ids.join(","));
+          ')
+          test -n "$GOT_REMOVED" || { echo "FAIL: no REQUIREMENT_REMOVED row in --base --json output — the governance gate did NOT fire; exit 1 came only from the planted defects (WR-05)"; exit 1; }
+          echo "smoke 25: governance-red fired on a cold build — REQUIREMENT_REMOVED rows: $GOT_REMOVED (exit 1, not 2)"
+
+      - name: secret-scan against compiled binary (T-1-02 mitigation)
+        run: |
+          if strings dist/spec 2>/dev/null | grep -E '(AKIA[0-9A-Z]{16}|sk-[a-zA-Z0-9]{20,}|xox[bp]-[a-zA-Z0-9-]+|ghp_[a-zA-Z0-9]{36}|AIza[0-9A-Za-z_-]{35})' >/dev/null 2>&1; then
+            echo "FORBIDDEN: compiled binary appears to contain a secret-shaped string"
+            exit 1
+          fi
+
+  # Linux coverage of the engine: lint, type-check, and the full unit suite.
+  # The binary smokes stay darwin-only above (D-13 target); this job exists
+  # so a Linux-only regression (path handling, sqlite build, glob behavior)
+  # cannot land green.
+  test-linux:
+    name: lint, type-check & unit tests (linux-x64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20  # 2.2
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: setup Bun (reads .bun-version)
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: '.bun-version'
+
+      - name: install (frozen lockfile)
+        run: bun install --frozen-lockfile
+
+      - name: lint (biome)
+        run: bun run check
+
+      - name: type-check
+        run: bun run typecheck
+
+      - name: unit tests (bun test)
+        run: bun run test
+  site:
+    name: docs site build (astro)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15  # 2.2
+    # 1.3: the site had zero CI coverage, so a rename broke its logo asset paths
+    # and nobody noticed (a stale local dist/ masked it). This job fails the
+    # build if the site can't compile — the cheapest guard against silent rot.
+    # The site is now the `@spec-engine/site` workspace package, so it installs
+    # from the ROOT lockfile like every other package.
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: setup Bun (reads .bun-version)
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: '.bun-version'
+
+      - name: install (frozen lockfile, root workspace)
+        run: bun install --frozen-lockfile
+
+      - name: build (astro build — fails on a missing asset/broken ref)
+        run: bun run build:site

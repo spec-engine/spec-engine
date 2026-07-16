@@ -1,0 +1,5 @@
+# CODEOWNERS — last matching pattern wins
+# Least-to-most-specific: the broad spec-engine/ rule is overridden by the
+# more-specific BILLING/ rule below, so a BILLING status flip resolves to @drea.
+spec-engine/ @platform-team
+spec-engine/BILLING/ @drea

@@ -1,0 +1,280 @@
+{
+  "key": "REQ",
+  "owner": null,
+  "updated": "2026-07-16",
+  "scope": "Requirement lifecycle: spec req, spec supersede, spec amend, and @-refs. Belongs here: next-id allocation; non-interactive authoring; supersede / move / amend; @path file-ref resolution. Does not belong here: scaffolding a whole domain (spec domain new → DOMAIN). Boundary case: minting a requirement id is REQ, scaffolding the domain that holds it is DOMAIN.",
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "status": "active",
+      "statement": "spec req <domain-prefix> resolves its prefix case-insensitively against the domains found on the filesystem, uppercasing the input and stripping whitespace before matching.",
+      "why": "Requiring the exact uppercased key before an id can be minted is friction with no safety gain; resolving case-insensitively against the real domain listing removes it without guessing a domain.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-002",
+      "status": "active",
+      "statement": "spec req <domain-prefix> resolves to the domain whose key exactly equals the input when one exists, and otherwise to the single domain the input is a unique prefix of.",
+      "why": "Without exact-match precedence, `auth` would be ambiguous whenever both AUTH and AUTHX exist, blocking the author from the domain they plainly named.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-003",
+      "status": "active",
+      "statement": "spec req <domain-prefix> prints the matching candidate domains to stderr and exits 2 when the prefix matches more than one domain and none matches exactly.",
+      "why": "Silently choosing one of several matching domains would mint the id in the wrong domain — a requirement authored into BOOKING when the author meant BILLING is a durable mistake.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-004",
+      "status": "active",
+      "statement": "spec req <domain-prefix> prints the available domains to stderr and exits 2 when the prefix matches no existing domain, and never mints a <KEY>-001 id for a domain that does not exist.",
+      "why": "Minting an id for a non-existent domain would create a requirement with no SPEC.json to hold it; domain creation belongs to spec domain new, kept separate so a typo cannot silently birth a domain.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-005",
+      "status": "active",
+      "statement": "spec req <domain-prefix>, run non-interactively with piped stdin, prints the next unused id — the domain's SPEC.json max sequence + 1, padded to three digits, as <KEY>-<NNN> on stdout — and exits 0.",
+      "why": "IDs are never reused; the id query must agree with the domain envelope's requirements, not a regex approximation.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/authoring/domains.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-006",
+      "status": "active",
+      "statement": "spec req on a non-platform directory prints the friendly not-a-platform message and exits 2.",
+      "why": "Same boundary contract as AUTHC-009.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-007",
+      "status": "active",
+      "statement": "Exit codes across the authoring surfaces are 0 and 2 only; exit 1 stays reserved for spec check --ci semantic failures.",
+      "why": "CI must be able to distinguish gate failures from authoring/usage errors.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-008",
+      "status": "active",
+      "statement": "When stdin is a TTY, spec req enters the interactive per-field prompt flow with prompts rendered to stderr; the allocated id and Active status are displayed but not editable.",
+      "why": "stdout stays machine-parseable while humans author interactively.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-009",
+      "status": "active",
+      "statement": "When stdin is not a TTY, spec req prints the next unused id and exits 0 — no prompts, no writes, no readline.",
+      "why": "The composable id query for scripts and agents is preserved byte-for-byte.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-010",
+      "status": "active",
+      "statement": "spec req, in its interactive TTY flow, aborts with a stderr notice and exit 0 writing zero bytes when the author submits an empty Requirement statement.",
+      "why": "Following the git-editor convention, an abandoned authoring session must be a clean no-op — treating an empty statement as a save would persist a meaningless entry.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-011",
+      "status": "superseded",
+      "statement": "spec req <KEY> --text appends a new Active requirement to the domain's SPEC.json — status active, the given statement, why null, empty relates/livesIn/issues, changedAtVersion 1 — and bumps the envelope's updated to the local date, such that the appended entry re-indexes with zero diagnostics.",
+      "why": "Authoring must produce exactly what the indexer ingests, or authored requirements silently vanish.",
+      "supersedes": null,
+      "supersededBy": "REQ-017",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "supersededAtVersion": 2,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-012",
+      "status": "active",
+      "statement": "An @-ref is @<relative/path> preceded by start-of-string or whitespace, containing at least one slash, resolved against the platform root; emails, @spec tags, and version pins never match.",
+      "why": "Requirement text points at code without false positives on everyday @ usage.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/authoring/filerefs.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-013",
+      "status": "active",
+      "statement": "spec req scans each authored field for an @-prefixed relative-path code reference and, when that path does not resolve under the platform root, warns on stderr while still saving the requirement.",
+      "why": "A requirement may legitimately point at code that does not exist yet; blocking the save on an unresolved reference would stop authors from recording intent ahead of implementation.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-014",
+      "status": "active",
+      "statement": "spec term authors, lists, and revises glossary TERM entries (definition in the statement, headword in term, synonyms in aliases), and spec supersede/amend operate on TERM ids exactly as on requirements — carrying term/aliases through the successor and amend shapes.",
+      "why": "Terms are lifecycle-managed like requirements: a shift in meaning must supersede (or revise-with-bump), never silently redefine; reusing the one lifecycle machinery keeps a term and a requirement governed by the same guarantees.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/term.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-015",
+      "status": "active",
+      "statement": "spec amend refuses any requirement that has at least one bound @spec tag; amend is permitted only for a Draft entry or an Active entry with zero bound tags, and once code tags a requirement, spec supersede is the sole path that may change it.",
+      "why": "amend rewrites a requirement in place with no version bump, so amending a requirement that code already binds would silently mutate shipped truth out from under the @spec tags that verify it, leaving no supersede trail recording that the meaning changed.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/amend.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-016",
+      "status": "active",
+      "statement": "spec supersede and spec move take every version they emit — the --json spec_version for supersede, the source and target versions for move, and the persisted supersededAtVersion died-at stamp — from the freshly-reindexed supersede DAG, never from an incremented authored envelope counter.",
+      "why": "If these commands emitted or stamped a self-incremented authored number, the version a lineage records and an agent parses would diverge from the DAG-derived number that pins, drift, and gate compare against, resurrecting the two-sources-of-truth split the derived model exists to close.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/supersede.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-017",
+      "status": "active",
+      "statement": "spec req <KEY> --text appends a new Active requirement to the domain's SPEC.json — status active, the given statement, why null when unset, empty relates/livesIn/issues, and no authored version counter — and bumps the envelope's updated to the local date, such that the appended entry re-indexes with zero diagnostics.",
+      "why": "Authoring must produce exactly what the indexer ingests, or authored requirements silently vanish.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    }
+  ]
+}

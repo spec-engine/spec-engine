@@ -1,0 +1,54 @@
+{
+  "key": "GOV",
+  "owner": "drea",
+  "updated": "2026-07-08",
+  "scope": null,
+  "requirements": [
+    {
+      "id": "GOV-01",
+      "status": "superseded",
+      "statement": "A requirement id present in the base ref but absent in the change, without an approved supersession, is a hard error (`REQUIREMENT_REMOVED`) — diff-based, deterministic.",
+      "why": "Requirements are durable — silently dropping one without an approved supersession must be a deterministic hard error.",
+      "supersedes": null,
+      "supersededBy": "GUARD-010",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/check/removed.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GOV-02",
+      "status": "superseded",
+      "statement": "A status flip to `superseded`/`retired` requires the domain owner's approval (CODEOWNERS on the spec path); otherwise gate red.",
+      "why": "Retiring or superseding a requirement is a governance act — it needs the owner's approval, enforced via CODEOWNERS.",
+      "supersedes": null,
+      "supersededBy": "OWNER-001",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/check/statusflip.ts",
+        "@packages/engine/src/check/codeowners.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GOV-03",
+      "status": "retired",
+      "statement": "Both governance checks run in the standard gate — deterministic, fully-trusted red.",
+      "why": "Governance must be part of the ordinary gate, not an optional extra, so the red is fully trusted.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/check.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    }
+  ]
+}

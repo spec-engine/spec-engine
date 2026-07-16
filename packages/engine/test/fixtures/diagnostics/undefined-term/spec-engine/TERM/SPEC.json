@@ -1,0 +1,16 @@
+{
+  "key": "TERM",
+  "owner": null,
+  "specVersion": 1,
+  "updated": "2026-07-08",
+  "requirements": [
+    {
+      "id": "TERM-001",
+      "status": "active",
+      "statement": "Domain — a bounded area of the spec taxonomy.",
+      "term": "Domain",
+      "aliases": ["namespace"],
+      "section": "Core nouns"
+    }
+  ]
+}

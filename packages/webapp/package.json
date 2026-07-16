@@ -1,0 +1,15 @@
+{
+  "name": "@spec-engine/webapp",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./server": "./src/server.ts"
+  },
+  "dependencies": {
+    "@spec-engine/shared": "workspace:*",
+    "hono": "4.12.27"
+  },
+  "devDependencies": {
+    "@spec-engine/spec-check": "workspace:*"
+  }
+}

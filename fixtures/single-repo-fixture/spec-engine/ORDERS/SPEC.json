@@ -1,0 +1,47 @@
+{
+  "key": "ORDERS",
+  "owner": "drea",
+  "specVersion": 1,
+  "updated": "2026-06-05",
+  "requirements": [
+    {
+      "id": "ORDERS-001",
+      "status": "active",
+      "statement": "When an order is placed, reserve inventory and create a pending order record.",
+      "why": "The order is the unit of revenue; a lost reservation oversells stock.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "src/orders.ts"
+      ],
+      "issues": []
+    },
+    {
+      "id": "ORDERS-002",
+      "status": "active",
+      "statement": "When an order is paid, transition it to confirmed and emit an order-confirmed event.",
+      "why": "Downstream fulfilment keys off the confirmed event.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "src/orders.ts"
+      ],
+      "issues": []
+    },
+    {
+      "id": "ORDERS-003",
+      "status": "active",
+      "statement": "When an order is cancelled, release the reserved inventory within the cancellation window.",
+      "why": "Held inventory on dead orders starves real demand.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "src/orders.ts"
+      ],
+      "issues": []
+    }
+  ]
+}

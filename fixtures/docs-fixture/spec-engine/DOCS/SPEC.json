@@ -1,0 +1,60 @@
+{
+  "key": "DOCS",
+  "owner": "drea",
+  "specVersion": 1,
+  "updated": "2026-06-06",
+  "requirements": [
+    {
+      "id": "DOCS-001",
+      "status": "active",
+      "statement": "Guide pages render from markdown sources at build time.",
+      "why": "Stale rendered guides ship wrong instructions silently.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "web/src/feature.ts"
+      ],
+      "issues": []
+    },
+    {
+      "id": "DOCS-002",
+      "status": "superseded",
+      "statement": "Guides are re-rendered nightly by a batch job.",
+      "why": "Predecessor of the streaming contract; kept for history.",
+      "supersedes": null,
+      "supersededBy": "DOCS-003",
+      "relates": [],
+      "livesIn": [
+        "web/src/feature.ts"
+      ],
+      "issues": []
+    },
+    {
+      "id": "DOCS-003",
+      "status": "active",
+      "statement": "Guides re-render on change via the streaming pipeline, not nightly.",
+      "why": "Nightly batches left up to 24h of stale guidance live.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "web/src/feature.ts"
+      ],
+      "issues": []
+    },
+    {
+      "id": "DOCS-004",
+      "status": "active",
+      "statement": "The sidebar export lists every published guide exactly once.",
+      "why": "Duplicate or missing sidebar entries break navigation.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "web/src/sidebar.ts"
+      ],
+      "issues": []
+    }
+  ]
+}

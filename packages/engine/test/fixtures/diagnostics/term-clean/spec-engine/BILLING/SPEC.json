@@ -1,0 +1,14 @@
+{
+  "key": "BILLING",
+  "owner": "drea",
+  "specVersion": 1,
+  "updated": "2026-07-08",
+  "requirements": [
+    {
+      "id": "BILLING-001",
+      "status": "active",
+      "statement": "A charge belongs to exactly one billing Domain.",
+      "cites": [{ "term": "Domain", "pinned": 1 }]
+    }
+  ]
+}
