@@ -5,6 +5,8 @@ description: Set up a multi-repo platform from scratch
 
 A platform is a directory holding a canonical `spec-engine/` folder plus one or more member repos beside it. Every step below is a CLI command — you never hand-write JSON.
 
+Need the CLI first? `bun add -g @spec-engine/spec-engine` puts `spec` on your PATH — no clone required. See [Getting Started](/getting-started/).
+
 ## Step 1: Create the domain and its first requirement
 
 ```shell

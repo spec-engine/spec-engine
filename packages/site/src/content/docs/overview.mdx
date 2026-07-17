@@ -18,6 +18,15 @@ These docs are written in narrative style with rationale, examples, and context.
 
 Spec Engine is a cross-repo requirements engine. It manages durable domain requirements that survive past production, addressed by permanent ID, bound to code, and checkable in CI.
 
+It ships as one npm package — no clone, no build step, no service. With [Bun](https://bun.sh) installed:
+
+```shell
+$ bunx @spec-engine/spec-engine --help    # run without installing
+$ bun add -g @spec-engine/spec-engine     # or put the `spec` bin on your PATH
+```
+
+That package carries the CLI, the local coverage webapp (`spec serve`), and these docs offline (`spec docs`). See [Getting Started](/getting-started/) to run your first check.
+
 A **spec** is the standing specification of one domain. Requirements carry permanent IDs (`KEY-NNN`); code points back at them with a `// @spec KEY-NNN` tag. From that one convention you get three things:
 
 1. An agent can be routed to exactly the requirements a task touches

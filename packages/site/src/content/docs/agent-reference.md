@@ -16,7 +16,9 @@ Machine-oriented reference for coding agents. For narrative and rationale, see t
 ## Invocation
 
 ```shell
-bun packages/engine/src/cli.ts <command> [...]   # from a checkout
+bunx @spec-engine/spec-engine <command> [...]   # published npm package (requires Bun)
+spec <command> [...]                            # after: bun add -g @spec-engine/spec-engine
+bun packages/engine/src/cli.ts <command> [...]  # from a checkout
 ./dist/spec <command> [...]                     # compiled binary
 ```
 
