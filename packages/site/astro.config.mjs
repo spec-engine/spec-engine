@@ -23,7 +23,9 @@ export default defineConfig({
         },
       ],
       customCss: ["./src/styles/spec-engine.css"],
-      // Brand fonts, loaded once in the document head.
+      // Brand fonts, favicons, and social-card meta, loaded once in the
+      // document head. Starlight already emits per-page og:title /
+      // og:description / twitter:card — only the image + icons live here.
       head: [
         {
           tag: "link",
@@ -38,6 +40,37 @@ export default defineConfig({
           attrs: {
             rel: "stylesheet",
             href: "https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap",
+          },
+        },
+        { tag: "link", attrs: { rel: "icon", href: "/favicon.ico", sizes: "any" } },
+        {
+          tag: "link",
+          attrs: { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32.png" },
+        },
+        {
+          tag: "link",
+          attrs: { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicon-16.png" },
+        },
+        {
+          tag: "link",
+          attrs: { rel: "apple-touch-icon", sizes: "180x180", href: "/favicon-180.png" },
+        },
+        { tag: "link", attrs: { rel: "manifest", href: "/site.webmanifest" } },
+        { tag: "meta", attrs: { name: "theme-color", content: "#0F1214" } },
+        {
+          tag: "meta",
+          attrs: {
+            property: "og:image",
+            content: "https://docs.spec-engine.dev/og-spec-engine-docs.png",
+          },
+        },
+        { tag: "meta", attrs: { property: "og:image:width", content: "1200" } },
+        { tag: "meta", attrs: { property: "og:image:height", content: "630" } },
+        {
+          tag: "meta",
+          attrs: {
+            name: "twitter:image",
+            content: "https://docs.spec-engine.dev/og-spec-engine-docs.png",
           },
         },
       ],
