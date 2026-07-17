@@ -17,7 +17,7 @@ spec-engine/          canonical requirements, in git (a repo or a package)
 
 ## One engine, not two
 
-The CLI, the local webapp, and the MCP server all read and write through the same storage interface and share one schema (the `shared` package). No forked logic that can drift between surfaces — a spec-check that drifts from itself is the one thing the project cannot ship.
+The CLI, the local webapp, and the MCP server all read and write through the same storage interface and share one schema (the `shared` package). No forked logic that can drift between surfaces — a spec engine that drifts from itself is the one thing the project cannot ship.
 
 ## Engine offline, adapter online
 
@@ -25,4 +25,4 @@ The engine treats issue IDs as opaque strings and never makes a network call —
 
 ## Where it sits
 
-Your build stack is a vertical of layers: the model at the base, the coding agent on top, an orchestration layer (DFC) above that, work entering from an issue tracker. spec-check is not another layer in that stack. It sits beside it as the store every layer reads from and writes to — closer to a database than to a tool in the pipeline.
+Your build stack is a vertical of layers: the model at the base, the coding agent on top, an orchestration layer (DFC) above that, work entering from an issue tracker. Spec Engine is not another layer in that stack. It sits beside it as the store every layer reads from and writes to — closer to a database than to a tool in the pipeline.

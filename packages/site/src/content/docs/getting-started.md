@@ -1,6 +1,6 @@
 ---
 title: Getting Started
-description: Set up and run spec-check in under a minute
+description: Set up and run Spec Engine in under a minute
 ---
 
 This is a PoC, so there is no global `spec` install. Run the CLI from a checkout as `bun packages/engine/src/cli.ts <args>`, or build the compiled binary once and run `./dist/spec <args>`.
