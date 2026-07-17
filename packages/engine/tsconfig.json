@@ -8,5 +8,5 @@
   // `include` doesn't reach that file by default, so we add it explicitly.
   // Without this, `tsc -p packages/engine/tsconfig.json` reports 4 spurious
   // TS2307 errors against the webapp pages. (Plan 05-06 deviation #1.)
-  "include": ["src/**/*", "test/**/*", "../webapp/src/assets.d.ts"]
+  "include": ["src/**/*", "test/**/*", "scripts/**/*", "../webapp/src/assets.d.ts"]
 }

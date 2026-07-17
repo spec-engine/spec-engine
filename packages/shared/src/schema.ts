@@ -4,7 +4,7 @@
 // @spec SCHM-001
 // @spec PROP-002
 //
-// Phase 1 contract — frozen schema vocabulary for the spec-check derived index.
+// Phase 1 contract — frozen schema vocabulary for the Spec Engine derived index.
 // Phases 2–6 import SCHEMA_VERSION and DDL from this module; no .sql files exist.
 //
 // VERSION SEMANTICS — quoted verbatim by Phase 3's DRIFT predicate (D-02):

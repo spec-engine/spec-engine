@@ -40,7 +40,7 @@ export interface Repo {
 
 /**
  * A sibling directory under the platform root that exists but is NOT a
- * spec-check member because it lacks a `spec-engine.member.json`. Captured by
+ * Spec Engine member because it lacks a `spec-engine.member.json`. Captured by
  * `discoverRepos` (DISC-02) for Phase 8's `NO_SPEC_CONFIG` diagnostic
  * emission. Only the "directory exists, config missing" case is captured —
  * loose files at the platform root and malformed configs are excluded.

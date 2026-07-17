@@ -166,7 +166,7 @@ describe("spec relations — missing platform (d)", () => {
   test("no spec-engine/ → friendly message (no stack trace) + exit 2", async () => {
     const code = await runRelations({ platformDir: tmp });
     expect(code).toBe(2);
-    expect(errs.some((m) => m.includes("is not a spec-check platform yet"))).toBe(true);
+    expect(errs.some((m) => m.includes("is not a Spec Engine platform yet"))).toBe(true);
     expect(errs.some((m) => /\n\s+at\s/.test(m) || m.includes("    at "))).toBe(false);
   });
 });

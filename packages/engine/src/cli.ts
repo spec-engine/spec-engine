@@ -49,6 +49,7 @@ const main = defineCommand({
     // Phase 1's only real subcommand surface: serve --probe (D-14) and
     // the two hidden CI smokes (D-15).
     serve: () => import("./commands/serve").then((m) => m.serveCommand),
+    docs: () => import("./commands/docs").then((m) => m.docsCommand),
     "__schema-smoke": () => import("./commands/__smoke").then((m) => m.schemaSmokeCommand),
     "__schema-mismatch-smoke": () =>
       import("./commands/__smoke").then((m) => m.schemaMismatchSmokeCommand),

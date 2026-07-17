@@ -42,7 +42,7 @@ const TERM_KEY = "TERM";
 
 // The fixed intro chrome — glossary boilerplate, verbatim, carried as a static
 // constant (it is not a term, so it lives in the template, never in the store).
-const GLOSSARY_INTRO = `Canonical names for spec-check concepts. When prose, code comments, diagnostics, or
+const GLOSSARY_INTRO = `Canonical names for Spec Engine concepts. When prose, code comments, diagnostics, or
 docs need one of these ideas, use the term below — not a synonym. Terms are ordered
 by the data model, outside-in.`;
 

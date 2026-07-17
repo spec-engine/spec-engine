@@ -252,7 +252,7 @@ describe("spec domain list (AUTHC-007/008/009)", () => {
 
   test("non-platform dir → exit 2 with friendly message", async () => {
     await expectExit2(() => runDomainList(tmp));
-    expect(errs.some((m) => m.includes("is not a spec-check platform"))).toBe(true);
+    expect(errs.some((m) => m.includes("is not a Spec Engine platform"))).toBe(true);
   });
 });
 

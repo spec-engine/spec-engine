@@ -5,7 +5,7 @@
 //
 // D-09 / WORK-04 / Invariant #5: webapp source imports ONLY from
 // `@spec-engine/shared` (types) and `hono` (runtime). This page in particular MUST
-// NOT import the tracker adapter package (nor `@spec-engine/spec-check`): all tracker
+// NOT import the tracker adapter package (nor `@spec-engine/spec-engine`): all tracker
 // resolution happens ENGINE-SIDE behind `/api/provenance?resolve=1`. The page reads that
 // decorated TEXT seam in-process via `app.request` (Pitfall 6) — exactly the
 // way relations.ts reads `/api/relations?format=mermaid`. Because both the CLI
@@ -86,7 +86,7 @@ export function mountProvenance(app: Hono): void {
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>spec-check — Provenance</title>
+    <title>Spec Engine — Provenance</title>
     ${styleTag}
   </head>
   <body>

@@ -31,7 +31,7 @@ export function renderAuthorPrompt(opts: {
       ? `\nTarget domain: ${opts.domain} (no charter/scope recorded — check placement carefully)\n`
       : "\nNo target domain given — determine placement from `spec domain list`.\n";
   return [
-    "You are authoring spec-check requirements from a brief. Follow this playbook exactly.",
+    "You are authoring Spec Engine requirements from a brief. Follow this playbook exactly.",
     charterBlock,
     "Brief:",
     opts.brief,

@@ -3,7 +3,7 @@
 // L4 (lifecycle pass) — `spec mcp [platformDir]`: serve the engine's read
 // surface as a Model Context Protocol server over stdio. Register it in an
 // agent harness (e.g. Claude Code `.mcp.json`) and the agent routes
-// through spec-check natively — query/resolve/reverse/report/check/propagation/
+// through Spec Engine natively — query/resolve/reverse/report/check/propagation/
 // next-id — instead of shelling out to the CLI.
 //
 // STDOUT IS THE PROTOCOL CHANNEL. Every human-facing line (startup notice,
@@ -24,7 +24,7 @@ export const mcpCommand = defineCommand({
   meta: {
     name: "mcp",
     description:
-      "Serve spec-check as an MCP (Model Context Protocol) server over stdio — agent-native query/resolve/check/report tools.",
+      "Serve Spec Engine as an MCP (Model Context Protocol) server over stdio — agent-native query/resolve/check/report tools.",
   },
   args: {
     platformDir: {

@@ -6,7 +6,7 @@
 // Plan 05-04 / Task 2 — defense-in-depth grep alongside Biome's
 // `noRestrictedImports` rule on `packages/webapp/biome.json`. Locks
 // D-09 / WORK-04 / Invariant #5: webapp source MUST NOT import
-// bun:sqlite, node:fs, fs, bun, node:path, or `@spec-engine/spec-check` (any
+// bun:sqlite, node:fs, fs, bun, node:path, or `@spec-engine/spec-engine` (any
 // subpath). If a future change disables the Biome rule, deletes the
 // override, or sneaks an import past it via a non-AST shape this lint
 // doesn't cover, this grep test fails before the build merges.
@@ -14,7 +14,7 @@
 // Defense-in-depth pattern from 05-RESEARCH § Import-Guard Mechanics
 // (lines 736-744). Test files live in `packages/webapp/test/` which the
 // biome.json scopes OUT of the noRestrictedImports rule (override applies
-// to `src/**/*.ts` only); tests can import @spec-engine/spec-check for harness use.
+// to `src/**/*.ts` only); tests can import @spec-engine/spec-engine for harness use.
 
 import { describe, expect, test } from "bun:test";
 import { join, resolve } from "node:path";
@@ -22,11 +22,11 @@ import { join, resolve } from "node:path";
 const WEBAPP_ROOT = resolve(import.meta.dir, "..");
 
 // Forbidden import targets enforced by the regex below:
-//   bun:sqlite, node:fs, fs, bun, node:path, @spec-engine/spec-check (any subpath).
+//   bun:sqlite, node:fs, fs, bun, node:path, @spec-engine/spec-engine (any subpath).
 // Allowed: @spec-engine/shared (types) + hono (runtime).
 
 /** Single combined regex: matches `from "x"` or `from 'x'` where x is any
- *  forbidden module path, OR any `@spec-engine/spec-check` subpath. Capture group 1
+ *  forbidden module path, OR any `@spec-engine/spec-engine` subpath. Capture group 1
  *  gives the offending module for failure messages.
  *
  *  Per CR-02: the `node:<mod>` alternatives MUST allow an optional `/...`
@@ -35,7 +35,7 @@ const WEBAPP_ROOT = resolve(import.meta.dir, "..");
  *  `node:child_process`, `node:net`, and `node:http` to the deny list to
  *  cover the rest of the hermetic-webapp surface. */
 const FORBIDDEN_RE =
-  /from\s+["'](bun:sqlite|node:fs(?:\/[^"']*)?|fs(?:\/[^"']*)?|bun|node:path(?:\/[^"']*)?|node:os(?:\/[^"']*)?|node:crypto(?:\/[^"']*)?|node:child_process(?:\/[^"']*)?|node:net(?:\/[^"']*)?|node:http(?:\/[^"']*)?|@spec-engine\/spec-check(?:\/[^"']*)?|@spec-engine\/tracker(?:\/[^"']*)?)["']/;
+  /from\s+["'](bun:sqlite|node:fs(?:\/[^"']*)?|fs(?:\/[^"']*)?|bun|node:path(?:\/[^"']*)?|node:os(?:\/[^"']*)?|node:crypto(?:\/[^"']*)?|node:child_process(?:\/[^"']*)?|node:net(?:\/[^"']*)?|node:http(?:\/[^"']*)?|@spec-engine\/spec-engine(?:\/[^"']*)?|@spec-engine\/tracker(?:\/[^"']*)?)["']/;
 
 /** Same shape for dynamic `import("…")` calls (defense against an
  *  AST-level bypass of Biome's static-import detection).
@@ -45,7 +45,7 @@ const FORBIDDEN_RE =
  *  ENGINE-SIDE behind `/api/provenance?resolve=1`; the webapp renders the
  *  decorated TEXT only and must never resolve issues itself. */
 const DYNAMIC_IMPORT_RE =
-  /import\s*\(\s*["'](bun:sqlite|node:fs(?:\/[^"']*)?|fs(?:\/[^"']*)?|bun|node:path(?:\/[^"']*)?|node:os(?:\/[^"']*)?|node:crypto(?:\/[^"']*)?|node:child_process(?:\/[^"']*)?|node:net(?:\/[^"']*)?|node:http(?:\/[^"']*)?|@spec-engine\/spec-check(?:\/[^"']*)?|@spec-engine\/tracker(?:\/[^"']*)?)["']\s*\)/;
+  /import\s*\(\s*["'](bun:sqlite|node:fs(?:\/[^"']*)?|fs(?:\/[^"']*)?|bun|node:path(?:\/[^"']*)?|node:os(?:\/[^"']*)?|node:crypto(?:\/[^"']*)?|node:child_process(?:\/[^"']*)?|node:net(?:\/[^"']*)?|node:http(?:\/[^"']*)?|@spec-engine\/spec-engine(?:\/[^"']*)?|@spec-engine\/tracker(?:\/[^"']*)?)["']\s*\)/;
 
 describe("webapp import fence (D-09 / WORK-04 / Invariant #5)", () => {
   test("packages/webapp/src/**/*.ts contains no forbidden imports", async () => {
@@ -84,8 +84,8 @@ describe("webapp import fence (D-09 / WORK-04 / Invariant #5)", () => {
     // names, so a future package rename breaks this test loudly instead of
     // neutering the fence.
     const offendingStatic = [
-      'import { runIndex } from "@spec-engine/spec-check";',
-      "import { openStorage } from '@spec-engine/spec-check/storage';",
+      'import { runIndex } from "@spec-engine/spec-engine";',
+      "import { openStorage } from '@spec-engine/spec-engine/storage';",
       'import { resolveIssues } from "@spec-engine/tracker";',
       'import { readFileSync } from "node:fs";',
       'import { Database } from "bun:sqlite";',
@@ -95,7 +95,7 @@ describe("webapp import fence (D-09 / WORK-04 / Invariant #5)", () => {
     }
 
     const offendingDynamic = [
-      'const e = await import("@spec-engine/spec-check");',
+      'const e = await import("@spec-engine/spec-engine");',
       "const t = await import('@spec-engine/tracker/linear');",
     ];
     for (const line of offendingDynamic) {

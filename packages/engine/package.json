@@ -1,18 +1,48 @@
 {
-  "name": "@spec-engine/spec-check",
-  "version": "0.0.6",
-  "private": true,
+  "name": "@spec-engine/spec-engine",
+  "version": "0.1.0",
+  "description": "Cross-repo spec engine — durable requirements with permanent IDs, bound to code via @spec tags, checked in CI. Ships the spec CLI, the local coverage webapp (spec serve), and offline docs (spec docs).",
+  "license": "MIT",
   "type": "module",
   "bin": {
-    "spec": "./src/cli.ts"
+    "spec": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "bun": ">=1.3.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spec-engine/spec-engine.git",
+    "directory": "packages/engine"
+  },
+  "homepage": "https://docs.spec-engine.dev",
+  "bugs": "https://github.com/spec-engine/spec-engine/issues",
+  "keywords": [
+    "spec",
+    "requirements",
+    "traceability",
+    "coverage",
+    "ci",
+    "cli",
+    "mcp",
+    "bun"
+  ],
+  "scripts": {
+    "build:npm": "bun scripts/build-npm.ts",
+    "prepack": "bun run build:npm"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",
-    "@spec-engine/shared": "workspace:*",
-    "@spec-engine/tracker": "workspace:*",
-    "@spec-engine/webapp": "workspace:*",
     "citty": "0.2.2",
     "hono": "4.12.27",
     "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@spec-engine/shared": "workspace:*",
+    "@spec-engine/tracker": "workspace:*",
+    "@spec-engine/webapp": "workspace:*"
   }
 }

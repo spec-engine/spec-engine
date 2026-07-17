@@ -12,23 +12,26 @@
       },
     },
     "packages/engine": {
-      "name": "@spec-engine/spec-check",
-      "version": "0.0.6",
+      "name": "@spec-engine/spec-engine",
+      "version": "0.1.0",
       "bin": {
-        "spec": "./src/cli.ts",
+        "spec": "./dist/cli.js",
       },
       "dependencies": {
         "@modelcontextprotocol/sdk": "1.29.0",
-        "@spec-engine/shared": "workspace:*",
-        "@spec-engine/tracker": "workspace:*",
-        "@spec-engine/webapp": "workspace:*",
         "citty": "0.2.2",
         "hono": "4.12.27",
         "zod": "3.25.76",
       },
+      "devDependencies": {
+        "@spec-engine/shared": "workspace:*",
+        "@spec-engine/tracker": "workspace:*",
+        "@spec-engine/webapp": "workspace:*",
+      },
     },
     "packages/shared": {
       "name": "@spec-engine/shared",
+      "version": "0.0.1",
       "dependencies": {
         "zod": "3.25.76",
       },
@@ -43,15 +46,17 @@
     },
     "packages/tracker": {
       "name": "@spec-engine/tracker",
+      "version": "0.0.1",
     },
     "packages/webapp": {
       "name": "@spec-engine/webapp",
+      "version": "0.0.1",
       "dependencies": {
         "@spec-engine/shared": "workspace:*",
         "hono": "4.12.27",
       },
       "devDependencies": {
-        "@spec-engine/spec-check": "workspace:*",
+        "@spec-engine/spec-engine": "workspace:*",
       },
     },
   },
@@ -316,7 +321,7 @@
 
     "@spec-engine/site": ["@spec-engine/site@workspace:packages/site"],
 
-    "@spec-engine/spec-check": ["@spec-engine/spec-check@workspace:packages/engine"],
+    "@spec-engine/spec-engine": ["@spec-engine/spec-engine@workspace:packages/engine"],
 
     "@spec-engine/tracker": ["@spec-engine/tracker@workspace:packages/tracker"],
 

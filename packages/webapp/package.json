@@ -1,5 +1,6 @@
 {
   "name": "@spec-engine/webapp",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "exports": {
@@ -10,6 +11,6 @@
     "hono": "4.12.27"
   },
   "devDependencies": {
-    "@spec-engine/spec-check": "workspace:*"
+    "@spec-engine/spec-engine": "workspace:*"
   }
 }

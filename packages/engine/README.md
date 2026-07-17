@@ -1,6 +1,15 @@
-# @spec-engine/spec-check
+# @spec-engine/spec-engine
 
-The engine. Ships the compiled `spec` CLI, the read-only webapp server, and the MCP surface.
+The engine. Ships the `spec` CLI, the read-only local webapp (`spec serve`), the offline docs site (`spec docs`), and the MCP surface (`spec mcp`) — one package, one version.
+
+## Install
+
+Requires the [Bun](https://bun.sh) runtime (>= 1.3) — the index engine uses `bun:sqlite` and does not run under Node.
+
+```bash
+bunx @spec-engine/spec-engine --help    # run without installing
+bun add -g @spec-engine/spec-engine     # or install the `spec` bin globally
+```
 
 ## What it does
 
@@ -29,6 +38,7 @@ The engine. Ships the compiled `spec` CLI, the read-only webapp server, and the 
 | `spec domain` | Author and scaffold domains. |
 | `spec gate` / `spec relations` / `spec provenance` | Approval gate, cross-refs, tracker provenance. |
 | `spec serve <dir>` | Local read-only webapp for the matrix and detail views. |
+| `spec docs` | Serve the bundled documentation site offline (loopback only). |
 | `spec mcp` | Expose the engine to agents over MCP. |
 
 Run `spec <command> --help` for flags. Many commands support `--json` for machine output.

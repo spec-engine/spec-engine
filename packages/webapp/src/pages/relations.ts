@@ -79,7 +79,7 @@ export function mountRelations(app: Hono): void {
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>spec-check — Relates</title>
+    <title>Spec Engine — Relates</title>
     ${styleTag}
   </head>
   <body>

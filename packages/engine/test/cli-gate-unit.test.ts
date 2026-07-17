@@ -400,7 +400,7 @@ describe("spec gate (in-process)", () => {
     try {
       const code = await runGate({ repo: "api", reqId: "BILLING-009", platformDir: bare });
       expect(code).toBe(2);
-      expect(errs.join("\n")).toContain("is not a spec-check platform yet");
+      expect(errs.join("\n")).toContain("is not a Spec Engine platform yet");
       // The guard runs BEFORE mkdir/cold-rm — no .spec-engine/ artifact minted.
       expect(existsSync(join(bare, ".spec-engine"))).toBe(false);
     } finally {

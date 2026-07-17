@@ -43,6 +43,10 @@ dist/
 build/
 coverage/
 *.tsbuildinfo
+# Exception: the canonical DIST spec domain — git ignores are case-insensitive
+# on macOS (core.ignoreCase), so `dist/` would otherwise swallow it silently.
+!spec-engine/DIST/
+!spec-engine/DIST/**
 
 # Caches
 .cache/

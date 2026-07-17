@@ -252,7 +252,7 @@ describe("spec resolve — pre-index guidance (RED-11)", () => {
     try {
       const code = await runResolve({ files: "src/foo.ts", platformDir: bare }, []);
       expect(code).toBe(2);
-      expect(errs.some((m) => m.includes("is not a spec-check platform yet"))).toBe(true);
+      expect(errs.some((m) => m.includes("is not a Spec Engine platform yet"))).toBe(true);
       // Directs the user toward their first completed spec.
       expect(errs.some((m) => m.includes("spec domain new"))).toBe(true);
       expect(errs.some((m) => m.includes("spec req"))).toBe(true);
@@ -272,7 +272,7 @@ describe("spec resolve — pre-index guidance (RED-11)", () => {
       errs.length = 0;
       logs.length = 0;
       expect(await runResolve({ files: "src/foo.ts", platformDir: bare }, [])).toBe(2);
-      expect(errs.some((m) => m.includes("is not a spec-check platform yet"))).toBe(true);
+      expect(errs.some((m) => m.includes("is not a Spec Engine platform yet"))).toBe(true);
       // The stale-index symptom: a 2nd run silently printing an empty
       // result with exit 0. Must NOT happen.
       expect(errs.some((m) => m.includes("No requirements indexed"))).toBe(false);

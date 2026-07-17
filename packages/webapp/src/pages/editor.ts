@@ -10,7 +10,7 @@
 //
 // The webapp stays hermetic (D-09 / WORK-04 / Invariant #5): this file
 // imports ONLY `@spec-engine/shared` (types) + `hono` (runtime) + the local
-// nav/styles. There is NO filesystem access, NO `@spec-engine/spec-check` import, NO
+// nav/styles. There is NO filesystem access, NO `@spec-engine/spec-engine` import, NO
 // `@spec-engine/tracker`, NO `bun:sqlite`, and NO forked write/validation logic —
 // every byte of the write path lives engine-side behind the ONE
 // `validateAndWrite` seam (VAL-01). Invalid input is NOT re-validated here;
@@ -105,7 +105,7 @@ function page(title: string, body: ReturnType<typeof html>): ReturnType<typeof h
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>spec-check — ${title}</title>
+    <title>Spec Engine — ${title}</title>
     ${styleTag}
   </head>
   <body>

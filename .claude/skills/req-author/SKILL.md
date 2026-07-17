@@ -1,6 +1,6 @@
 ---
 name: req-author
-description: Turn a vague brief or ticket into well-formed spec-check requirements — draft a batch against the §4.10 standard, present it for human approval, and only then mint via the real `spec` CLI.
+description: Turn a vague brief or ticket into well-formed Spec Engine requirements — draft a batch against the §4.10 standard, present it for human approval, and only then mint via the real `spec` CLI.
 ---
 
 # req-author

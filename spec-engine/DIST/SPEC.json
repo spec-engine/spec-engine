@@ -1,0 +1,68 @@
+{
+  "key": "DIST",
+  "owner": null,
+  "updated": "2026-07-16",
+  "scope": "The npm distribution surface: what the published @spec-engine/spec-engine artifact contains (the Bun bundle, the guarded bin entry, the embedded docs payload) and the CLI surfaces that exist only because of it (spec docs, the non-Bun runtime guard). Belongs here: the tarball-content promises, the bin wrapper's runtime guard, and the offline docs command. Does not belong here: the webapp routes the artifact embeds (→ SERV), the compiled-binary channel (root build:cli, CI-owned), or the docs site's content itself (packages/site, not spec-governed). Boundary case: `spec docs` binds loopback-only like `spec serve`, but the promise lives here — it is a distribution surface over static files, not a view over the index.",
+  "requirements": [
+    {
+      "id": "DIST-001",
+      "status": "active",
+      "statement": "The spec docs command serves the prebuilt documentation site over HTTP bound to 127.0.0.1 only, and its --probe mode boots an ephemeral port, fetches /, and exits 0 only when the site title renders.",
+      "why": "Docs that need the network die exactly when they are most needed (offline machines, sandboxed agents); a non-loopback bind would expose a local-only tool surface to the network.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/docs.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DIST-002",
+      "status": "active",
+      "statement": "The spec docs command resolves its docs root relative to the running module (import.meta.url) — the npm payload dist/docs/ first, then the checkout build packages/site/dist — and a missing root exits 2 with guidance naming bun run build:site; the lookup is never cwd-relative.",
+      "why": "A cwd-relative asset lookup breaks the moment the CLI runs from any directory but the package root — the classic embedded-UI bug; without guidance, a missing docs build reads as a broken install.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/docs.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DIST-003",
+      "status": "active",
+      "statement": "The published bin entry checks for the Bun global before importing the engine bundle and, under any non-Bun runtime, exits 1 with an actionable install hint instead of a module-resolution crash.",
+      "why": "The bundle statically imports bun:sqlite, which a Node ESM loader fails to resolve before any inline guard could run; engines.bun is advisory-only and postinstall checks are blocked by Bun's default trust policy, so the wrapper is the only enforcement point.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/scripts/npm-wrapper.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DIST-004",
+      "status": "active",
+      "statement": "The @spec-engine/spec-engine npm artifact ships only the built dist payload (bundle, bin wrapper, docs) plus manifest, README, and LICENSE, and its published dependencies never carry the workspace: protocol.",
+      "why": "A tarball with raw source and tests bloats installs and leaks internals, and a single workspace:* string in published dependencies makes the package uninstallable for every consumer.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/scripts/build-npm.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    }
+  ]
+}

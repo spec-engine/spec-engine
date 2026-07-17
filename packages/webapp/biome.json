@@ -31,8 +31,8 @@
                 "patterns": [
                   {
                     "group": [
-                      "@spec-engine/spec-check",
-                      "@spec-engine/spec-check/**",
+                      "@spec-engine/spec-engine",
+                      "@spec-engine/spec-engine/**",
                       "../engine/**"
                     ],
                     "message": "webapp must only depend on @spec-engine/shared (D-09 / WORK-04 / Invariant #5)"

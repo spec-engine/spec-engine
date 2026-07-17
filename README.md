@@ -1,8 +1,8 @@
-# spec-check
+# Spec Engine
 
 **Catch cross-repo spec drift in one local command.**
 
-`spec-check` walks a whole platform — a canonical `spec-engine/` spec repo plus every
+Spec Engine walks a whole platform — a canonical `spec-engine/` spec repo plus every
 member repo that pins it — and tells you, across all of them at once, who shipped a
 requirement, who verified it, and who's still stuck on a superseded version. It's the
 view a single-repo file scan can't give you.
@@ -23,7 +23,14 @@ found in one command instead of three repo reviews and a Slack thread.
 
 ## 30 seconds to value
 
-No global install yet (PoC). From a checkout:
+With [Bun](https://bun.sh) installed (the engine is Bun-only — it uses `bun:sqlite`):
+
+```bash
+bunx @spec-engine/spec-engine --help    # run without installing
+bun add -g @spec-engine/spec-engine     # or install the `spec` bin globally
+```
+
+Or from a checkout:
 
 ```bash
 bun install
@@ -153,7 +160,7 @@ writes. There is deliberately no shareable secret to expose it publicly.
 ### The one secret — `SPEC_TRACKER_TOKEN` (tracker provenance, *not* webapp auth)
 
 The only header secret in the system is unrelated to reaching the webapp: it authenticates
-`spec-check` to your **issue tracker** so `spec provenance` (and the webapp's provenance
+Spec Engine to your **issue tracker** so `spec provenance` (and the webapp's provenance
 view) can resolve an issue id like `ENG-1234` into its title/state/URL. Set it in the
 environment before serving:
 
@@ -231,7 +238,7 @@ edit would steamroll a requirement:
 
 ## For agents
 
-`spec-check` is built to be driven by coding agents. See **[AGENTS.md](AGENTS.md)**
+Spec Engine is built to be driven by coding agents. See **[AGENTS.md](AGENTS.md)**
 for the machine-facing reference: the route → tag → check loop, exit-code contract, and
 `--json` schemas. `spec mcp` exposes the same engine over the Model Context Protocol.
 
