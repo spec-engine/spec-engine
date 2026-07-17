@@ -1,4 +1,4 @@
-# Contributing to spec-check
+# Contributing to Spec Engine
 
 Thanks for your interest. This is a Bun + TypeScript monorepo — one engine, shared
 schema types, a CLI and a webapp reading through the same storage interface.
@@ -25,7 +25,7 @@ Run the CLI from source: `bun packages/engine/src/cli.ts <command>`, or compile 
 
 ## The `@spec` protocol
 
-spec-check dogfoods itself. Requirements live in `spec-engine/<DOMAIN>/SPEC.json` as
+Spec Engine dogfoods itself. Requirements live in `spec-engine/<DOMAIN>/SPEC.json` as
 durable ids (e.g. `INIT-001`); code binds to them with a `@spec` tag:
 
 ```ts

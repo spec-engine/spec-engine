@@ -18,7 +18,7 @@ We'll acknowledge your report, work with you on a fix, and coordinate disclosure
 
 ## Scope
 
-spec-check is a local developer tool: it reads a working directory of repos, builds a
+Spec Engine is a local developer tool: it reads a working directory of repos, builds a
 disposable local index, and writes spec files you author. It makes no network calls in
 normal operation and stores no credentials. Reports most relevant here involve path
 traversal, unsafe file writes outside the platform directory, or injection through spec

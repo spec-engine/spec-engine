@@ -1,4 +1,4 @@
-# spec-check — agent reference
+# Spec Engine — agent reference
 
 Machine-oriented reference for coding agents driving the `spec` CLI.
 Humans wanting narrative and rationale: read the [README](README.md);
@@ -94,7 +94,7 @@ bunx @spec-engine/spec-engine <command> [...]   # published npm package (require
 | --- | --- |
 | 0 | Success. Empty results are success (`[]` on stdout, guidance on stderr). |
 | 1 | Data-level failure: `check` found ≥1 error-severity diagnostic; `gate` failed (`NOT_FOUND` / `DRAFT` / `SUPERSEDED` / `VERSION_PIN`); `index` crashed mid-build. |
-| 2 | Usage/environment error: bad args, not a spec-check platform (no `spec-engine/`), path-containment violation, invalid `--limit`/`--port`, FTS5 syntax error. |
+| 2 | Usage/environment error: bad args, not a Spec Engine platform (no `spec-engine/`), path-containment violation, invalid `--limit`/`--port`, FTS5 syntax error. |
 
 Branch on exit codes, not on output text.
 
