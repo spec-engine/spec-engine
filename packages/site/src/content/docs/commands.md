@@ -3,7 +3,7 @@ title: Commands
 description: Complete CLI command reference
 ---
 
-All commands are run via `bun packages/engine/src/cli.ts <command> [args]` or `./dist/spec <command> [args]`.
+Install the CLI from npm — `bun add -g @spec-engine/spec-engine` puts `spec` on your PATH, and every command below is written that way. Without a global install, run any of them as `bunx @spec-engine/spec-engine <command> [args]`; from a checkout, as `bun packages/engine/src/cli.ts <command> [args]`. See [Getting Started](/getting-started/) for the details.
 
 ## Exit code contract
 

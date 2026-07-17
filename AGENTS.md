@@ -46,7 +46,7 @@ bun packages/engine/src/cli.ts check . --ci   # the self-gate
 ## Invocation
 
 ```
-bun packages/engine/src/cli.ts <command> [...]   # from a checkout (PoC default)
+bun packages/engine/src/cli.ts <command> [...]   # from a checkout (this repo's default)
 ./dist/spec <command> [...]                     # compiled binary (bun run build:cli)
 bunx @spec-engine/spec-engine <command> [...]   # published npm package (requires Bun)
 ```

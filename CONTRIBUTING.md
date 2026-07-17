@@ -14,6 +14,10 @@ requirement, and the rest) lives in **[GLOSSARY.md](GLOSSARY.md)**.
 
 ## Setup
 
+This section is for **developing Spec Engine itself**. To *use* it, you don't need a
+checkout at all — install the published package (`bun add -g @spec-engine/spec-engine`)
+and see the [README](README.md#30-seconds-to-value).
+
 ```bash
 bun install
 bun test           # full suite

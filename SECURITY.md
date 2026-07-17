@@ -26,4 +26,7 @@ content or `@spec` tags.
 
 ## Supported versions
 
-This is a pre-1.0 proof-of-concept; only the latest `main` is supported.
+This is a pre-1.0 proof-of-concept; only the latest `main` and the latest published
+[`@spec-engine/spec-engine`](https://www.npmjs.com/package/@spec-engine/spec-engine)
+release on npm are supported. Older npm versions get no backports — upgrade first, then
+report if the issue survives.

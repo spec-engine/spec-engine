@@ -23,22 +23,36 @@ found in one command instead of three repo reviews and a Slack thread.
 
 ## 30 seconds to value
 
-With [Bun](https://bun.sh) installed (the engine is Bun-only — it uses `bun:sqlite`):
+Spec Engine ships as one npm package. With [Bun](https://bun.sh) installed (the engine is
+Bun-only — it uses `bun:sqlite`), there is nothing to clone and nothing to build:
 
 ```bash
 bunx @spec-engine/spec-engine --help    # run without installing
 bun add -g @spec-engine/spec-engine     # or install the `spec` bin globally
 ```
 
-Or from a checkout:
+That one package carries the `spec` CLI, the local coverage webapp (`spec serve`), and the
+full documentation site offline (`spec docs`). Point it at any repo of your own:
 
 ```bash
+spec domain new ORDERS                                       # scaffold a domain
+spec req orders --text "An order total equals the sum of its line items." \
+    --why "Mispriced orders ship money out the door silently."   # author ORDERS-001
+spec map .                                                   # coverage matrix
+spec check .                                                 # integrity gate
+```
+
+### Or explore the planted fixtures
+
+This repo ships `fixtures/platform-fixture` — a canonical `spec-engine/` and three
+member repos (`admin`, `api`, `mobile`) — with drift deliberately planted. The fixtures
+are test data and aren't in the npm package, so this path wants a checkout:
+
+```bash
+git clone https://github.com/spec-engine/spec-engine && cd spec-engine
 bun install
 alias spec="bun packages/engine/src/cli.ts"     # or: bun build --compile packages/engine/src/cli.ts --outfile=dist/spec
 ```
-
-The repo ships `fixtures/platform-fixture` — a canonical `spec-engine/` and three
-member repos (`admin`, `api`, `mobile`) — with drift deliberately planted. Run:
 
 **1. The coverage matrix** — every requirement × every repo:
 
@@ -218,7 +232,7 @@ Wire it as a **pre-commit hook** (lefthook shown; a bare `.git/hooks/pre-commit`
 pre-commit:
   commands:
     spec-guard:
-      run: bun packages/engine/src/cli.ts guard . || exit 1
+      run: spec guard . || exit 1
 ```
 
 …or as a **Claude Code `PostToolUse` hook** so a coding agent is stopped the moment its
