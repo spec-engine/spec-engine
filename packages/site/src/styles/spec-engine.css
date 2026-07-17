@@ -1,0 +1,126 @@
+/* ============================================================
+   Spec Engine — theme for Astro Starlight
+   Load it from astro.config.mjs:
+     starlight({ customCss: ['./src/styles/spec-engine.css'] })
+   Fonts: the <head> links in astro.config load Archivo / IBM Plex;
+   the @import below is a fallback if you don't add them there.
+   ============================================================ */
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap");
+
+/* ---------- DARK ("charcoal") — Starlight's default :root ---------- */
+:root {
+  /* signal-lime accent (tuned for contrast on charcoal) */
+  --sl-color-accent-low: #2f3b00;
+  --sl-color-accent: #a6cf1f;
+  --sl-color-accent-high: #dcff85;
+
+  /* ink / charcoal gray ramp */
+  --sl-color-white: #e7e4db; /* primary text */
+  --sl-color-gray-1: #dcdad2;
+  --sl-color-gray-2: #b6bbbf;
+  --sl-color-gray-3: #868d94;
+  --sl-color-gray-4: #565e64;
+  --sl-color-gray-5: #2a3238;
+  --sl-color-gray-6: #191f23;
+  --sl-color-black: #0e1113;
+
+  --sl-color-bg: #0e1113;
+  --sl-color-bg-nav: color-mix(in srgb, #0e1113 86%, transparent);
+  --sl-color-bg-sidebar: #14181b;
+  --sl-color-bg-inline-code: #1e262b;
+  --sl-color-hairline: rgba(255, 255, 255, 0.09);
+  --sl-color-hairline-light: rgba(255, 255, 255, 0.14);
+  --sl-color-text-accent: var(--sl-color-accent-high);
+
+  /* status colors (use in callouts / custom components) */
+  --spec-verified: #c4f135;
+  --spec-drift: #e8a317;
+  --spec-broken: #f0472e;
+  --spec-unbound: #868d94;
+
+  /* type system */
+  --sl-font: "IBM Plex Sans", system-ui, sans-serif;
+  --sl-font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;
+}
+
+/* ---------- LIGHT ("bone") ---------- */
+:root[data-theme="light"] {
+  --sl-color-accent-low: #eaf6c0;
+  --sl-color-accent: #5f8300; /* darker olive so links pass contrast on paper */
+  --sl-color-accent-high: #33440a;
+
+  --sl-color-white: #0f1214; /* highest-contrast text */
+  --sl-color-gray-1: #20262b;
+  --sl-color-gray-2: #3d444a;
+  --sl-color-gray-3: #5c6369;
+  --sl-color-gray-4: #868d94;
+  --sl-color-gray-5: #d8d4c8;
+  --sl-color-gray-6: #ece9e0;
+  --sl-color-gray-7: #f4f2ea;
+  --sl-color-black: #f1eee6;
+
+  --sl-color-bg: #f1eee6;
+  --sl-color-bg-nav: color-mix(in srgb, #f1eee6 86%, transparent);
+  --sl-color-bg-sidebar: #fbfaf5;
+  --sl-color-bg-inline-code: #e7e3d8;
+  --sl-color-hairline: #e3e0d6;
+  --sl-color-hairline-light: #d8d4c8;
+  --sl-color-text-accent: var(--sl-color-accent);
+}
+
+/* ---------- Archivo for display: site title + headings ---------- */
+.site-title,
+a.site-title {
+  font-family: "Archivo", sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+h1,
+h2,
+h3,
+.sl-markdown-content h1,
+.sl-markdown-content h2,
+.sl-markdown-content h3 {
+  font-family: "Archivo", sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* inline code + spec IDs read as the signal */
+.sl-markdown-content code:not(:where(.expressive-code *)) {
+  color: var(--sl-color-text-accent);
+  font-weight: 500;
+}
+
+/* selection = signal lime / ink */
+::selection {
+  background: #c4f135;
+  color: #0f1214;
+}
+
+/* ---------- splash hero: blueprint grid + lime primary CTA ---------- */
+.hero {
+  background-image:
+    linear-gradient(var(--sl-color-hairline) 1px, transparent 1px),
+    linear-gradient(90deg, var(--sl-color-hairline) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+.hero h1 {
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+.hero .actions a.action.primary {
+  font-family: "Archivo", sans-serif;
+  font-weight: 700;
+  background: var(--sl-color-accent);
+  border-color: var(--sl-color-accent);
+  color: #0f1214;
+}
+.hero .actions a.action.primary:hover {
+  filter: brightness(0.94);
+}
+
+/* tighten the mono feel on eyebrow-like kbd + keep hairline borders crisp */
+kbd {
+  font-family: var(--sl-font-mono);
+}

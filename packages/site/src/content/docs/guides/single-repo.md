@@ -25,7 +25,7 @@ $ spec map .
 $ spec check .
 ```
 
-spec-check registers the repo as its own lone member and scans it for tags. The coverage column is the repo's own basename.
+Spec Engine registers the repo as its own lone member and scans it for tags. The coverage column is the repo's own basename.
 
 ## Promote to multi-repo
 

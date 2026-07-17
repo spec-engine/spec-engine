@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 32" fill="none">
-  <path d="M8 4L4 8L8 12L12 8L8 4Z" fill="#1a1a2e"/>
-  <path d="M4 8L2 12L6 16L10 12L8 8L4 8Z" fill="#16213e"/>
-  <path d="M8 12L6 16L10 20L14 16L12 12H8Z" fill="#0f3460"/>
-  <path d="M12 8L10 12L14 16L18 12L16 8H12Z" fill="#533483"/>
-  <path d="M16 4L14 8L18 12L22 8L20 4H16Z" fill="#7c3aed"/>
-  <text x="30" y="22" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="20" font-weight="bold" fill="#0b0b0f" letter-spacing="-0.5">Spec</text>
-</svg>

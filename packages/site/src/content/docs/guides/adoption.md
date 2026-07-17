@@ -1,9 +1,9 @@
 ---
 title: Adoption Guide
-description: Progressive adoption of spec-check — bottom-up, rung by rung
+description: Progressive adoption of Spec Engine — bottom-up, rung by rung
 ---
 
-spec-check is adopted one rung at a time.
+Spec Engine is adopted one rung at a time.
 
 ## Rung 1: Stop re-explaining to the AI
 
