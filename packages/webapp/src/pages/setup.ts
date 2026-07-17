@@ -149,7 +149,7 @@ export function mountSetup(app: Hono): void {
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>spec-check — Setup</title>
+    <title>Spec Engine — Setup</title>
     ${styleTag}
   </head>
   <body>

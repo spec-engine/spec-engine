@@ -1,6 +1,6 @@
 // packages/shared/src/diagnostics.ts
 //
-// Diagnostic codes for the spec-check derived index. Used by Phase 2 (validate-on-parse)
+// Diagnostic codes for the Spec Engine derived index. Used by Phase 2 (validate-on-parse)
 // and Phase 3 (integrity check) to report structural issues with file+line context.
 // `as const` object (not TS `enum`) so it survives verbatimModuleSyntax: true.
 
@@ -185,7 +185,7 @@ export interface Diagnostic {
 
 /**
  * Thrown by `discoverRepos` when the resolved platform directory has no
- * canonical `spec-engine/` subdirectory — i.e. the path is not a spec-check
+ * canonical `spec-engine/` subdirectory — i.e. the path is not a Spec Engine
  * platform yet. A typed sentinel (not a string-matched plain Error) so the
  * `map` / `index` / `check` command boundaries can branch on the
  * missing-canonical case via `instanceof` and print a friendly,
@@ -200,7 +200,7 @@ export class NotASpecPlatformError extends Error {
   public readonly platformDir: string;
 
   constructor(platformDir: string) {
-    super(`Not a spec-check platform: no 'spec-engine/' directory under ${platformDir}`);
+    super(`Not a Spec Engine platform: no 'spec-engine/' directory under ${platformDir}`);
     this.name = "NotASpecPlatformError";
     this.platformDir = platformDir;
     // Preserve the prototype chain so `instanceof` works after transpilation

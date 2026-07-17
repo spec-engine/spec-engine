@@ -87,7 +87,7 @@ function errorDoc(message: string, hint: string | null): ReturnType<typeof html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>spec-check — Error</title>
+    <title>Spec Engine — Error</title>
     ${styleTag}
   </head>
   <body>

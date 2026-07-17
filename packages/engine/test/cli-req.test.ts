@@ -221,7 +221,7 @@ describe("spec req — next-id correctness (AUTHC-014)", () => {
 describe("spec req — platform guard (AUTHC-015)", () => {
   test("non-platform dir → exit 2 with friendly message", async () => {
     await expectExit2(() => runReq("anything", tmp));
-    expect(errs.some((m) => m.includes("is not a spec-check platform"))).toBe(true);
+    expect(errs.some((m) => m.includes("is not a Spec Engine platform"))).toBe(true);
   });
 });
 

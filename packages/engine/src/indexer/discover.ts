@@ -40,13 +40,13 @@ import { parseDomainJsonFile } from "../parser/domainJson";
 import { findDomainJsonFiles } from "../scanner/fs";
 
 /**
- * Friendly, actionable message for the not-a-spec-check-platform case. Shared by
+ * Friendly, actionable message for the not-a-Spec Engine-platform case. Shared by
  * the `map` / `index` / `check` command boundaries so the prose lives in one
  * place. Dependency-free (no bun:sqlite, no I/O) — pure string assembly.
  */
 export function formatNotASpecPlatform(platformDir: string): string {
   return [
-    `${platformDir} is not a spec-check platform yet (no spec-engine/ directory).`,
+    `${platformDir} is not a Spec Engine platform yet (no spec-engine/ directory).`,
     "A platform directory must contain a canonical spec-engine/ folder holding your SPEC.md requirements.",
     "To get your first spec completed:",
     "  spec domain new <KEY>   scaffold spec-engine/<KEY>/SPEC.md (e.g. spec domain new BILLING)",
@@ -58,7 +58,7 @@ export function formatNotASpecPlatform(platformDir: string): string {
 
 /**
  * Friendly, actionable message for the indexed-but-empty case: the platform
- * directory IS a spec-check platform (spec-engine/ exists) but the derived index
+ * directory IS a Spec Engine platform (spec-engine/ exists) but the derived index
  * holds zero requirements. RED-11: read commands (`map` / `query` / `resolve`
  * / `propagation`) emit this on stderr instead of silent blank output, still
  * exiting 0 — empty data is not an error, but a brand-new platform deserves
@@ -335,7 +335,7 @@ async function classifySibling(name: string, absPlatform: string): Promise<Sibli
   // `NO_SPEC_CONFIG` warning-severity ParseDiagnostic per entry.
   if (!existsSync(configPath)) {
     if (looksLikeRepoRoot(repoPath)) {
-      // Bucket 2: a real repo root without a spec-check config → skipped sibling.
+      // Bucket 2: a real repo root without a Spec Engine config → skipped sibling.
       return { kind: "skipped", skipped: { name, path: repoPath } };
     }
     // Bucket 3: plain folder, not a repo → silently ignored (it belongs to

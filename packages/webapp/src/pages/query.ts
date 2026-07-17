@@ -66,7 +66,7 @@ export function mountQuery(app: Hono): void {
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>spec-check — Query</title>
+    <title>Spec Engine — Query</title>
     ${styleTag}
   </head>
   <body>
@@ -101,7 +101,7 @@ export function mountQuery(app: Hono): void {
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>spec-check — Query (error)</title>
+    <title>Spec Engine — Query (error)</title>
     ${styleTag}
   </head>
   <body>
@@ -133,7 +133,7 @@ export function mountQuery(app: Hono): void {
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>spec-check — Query: ${q}</title>
+    <title>Spec Engine — Query: ${q}</title>
     ${styleTag}
   </head>
   <body>

@@ -35,7 +35,7 @@ export function comingSoonDoc(active: string, title: string): ReturnType<typeof 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>spec-check — ${title}</title>
+    <title>Spec Engine — ${title}</title>
     ${styleTag}
   </head>
   <body>

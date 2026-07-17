@@ -277,12 +277,12 @@ describe("spec check — exit code wiring", () => {
   // command boundary catches → friendly message (no "crashed:" / no stack
   // trace) + exit 2. The exit-2 invariant the inverted CI assertion relies
   // on is preserved; only the message shape changed (260605-g84 B.2).
-  test("exit 2 with friendly message when platformDir is not a spec-check platform (no spec-engine/)", async () => {
+  test("exit 2 with friendly message when platformDir is not a Spec Engine platform (no spec-engine/)", async () => {
     // tmp exists but is empty — no spec-engine/ → NotASpecPlatformError.
     const code = await runCheck({ platformDir: tmp, ci: true, json: true });
     expect(code).toBe(2);
     // Friendly, actionable message — NOT a raw crash/stack trace.
-    expect(errs.some((m) => m.includes("is not a spec-check platform yet"))).toBe(true);
+    expect(errs.some((m) => m.includes("is not a Spec Engine platform yet"))).toBe(true);
     expect(errs.some((m) => m.includes("spec map fixtures/platform-fixture"))).toBe(true);
     // No leaked internals: neither the "crashed:" prefix nor the old
     // discoverRepos: string nor stack frames.
@@ -297,7 +297,7 @@ describe("spec check — exit code wiring", () => {
     // 1st run (no --ci): exit 2 + friendly message + NO artifact.
     const first = await runCheck({ platformDir: tmp });
     expect(first).toBe(2);
-    expect(errs.some((m) => m.includes("is not a spec-check platform yet"))).toBe(true);
+    expect(errs.some((m) => m.includes("is not a Spec Engine platform yet"))).toBe(true);
     expect(existsSync(join(tmp, ".spec-engine"))).toBe(false);
 
     // 2nd run against the SAME dir: identical exit 2 + identical message,
@@ -307,7 +307,7 @@ describe("spec check — exit code wiring", () => {
     logs.length = 0;
     const second = await runCheck({ platformDir: tmp });
     expect(second).toBe(2);
-    expect(errs.some((m) => m.includes("is not a spec-check platform yet"))).toBe(true);
+    expect(errs.some((m) => m.includes("is not a Spec Engine platform yet"))).toBe(true);
     expect(existsSync(join(tmp, ".spec-engine"))).toBe(false);
   });
 });

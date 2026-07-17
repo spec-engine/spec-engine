@@ -116,7 +116,7 @@ describe("spec map — missing platform (B.2)", () => {
     // command boundary → friendly message + exit 2.
     const code = await runMap({ platformDir: tmp });
     expect(code).toBe(2);
-    expect(errs.some((m) => m.includes("is not a spec-check platform yet"))).toBe(true);
+    expect(errs.some((m) => m.includes("is not a Spec Engine platform yet"))).toBe(true);
     expect(errs.some((m) => m.includes("spec map fixtures/platform-fixture"))).toBe(true);
     // No leaked internals: neither the old plain-Error prefix nor stack frames.
     expect(errs.some((m) => m.includes("discoverRepos:"))).toBe(false);
@@ -134,7 +134,7 @@ describe("spec map — missing platform (B.2)", () => {
     // 1st run: friendly B.2 message + exit 2 + NO artifact.
     const first = await runMap({ platformDir: tmp });
     expect(first).toBe(2);
-    expect(errs.some((m) => m.includes("is not a spec-check platform yet"))).toBe(true);
+    expect(errs.some((m) => m.includes("is not a Spec Engine platform yet"))).toBe(true);
     expect(existsSync(join(tmp, ".spec-engine"))).toBe(false);
 
     // 2nd run against the SAME dir: identical message + identical exit 2
@@ -144,7 +144,7 @@ describe("spec map — missing platform (B.2)", () => {
     logs.length = 0;
     const second = await runMap({ platformDir: tmp });
     expect(second).toBe(2);
-    expect(errs.some((m) => m.includes("is not a spec-check platform yet"))).toBe(true);
+    expect(errs.some((m) => m.includes("is not a Spec Engine platform yet"))).toBe(true);
     // B.2 stays distinct from B.1: the empty-index message must NOT appear.
     expect(errs.some((m) => m.includes("No requirements indexed"))).toBe(false);
     expect(existsSync(join(tmp, ".spec-engine"))).toBe(false);
@@ -162,7 +162,7 @@ describe("spec map — real empty platform stays B.1, distinct from B.2", () => 
     expect(code).toBe(-1); // returned normally → implicit exit 0
     expect(errs.some((m) => m.includes("No requirements indexed"))).toBe(true);
     // B.2 message must NOT appear for a real (if empty) platform.
-    expect(errs.some((m) => m.includes("is not a spec-check platform yet"))).toBe(false);
+    expect(errs.some((m) => m.includes("is not a Spec Engine platform yet"))).toBe(false);
     // A real platform DOES get a derived index (the B.1 path indexes it).
     expect(existsSync(join(tmp, ".spec-engine"))).toBe(true);
   });

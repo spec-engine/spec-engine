@@ -16,7 +16,7 @@ describe("createApp (Phase 1 probe factory)", () => {
     const res = await app.request("/");
     expect(res.status).toBe(200);
     const body = await res.text();
-    expect(body).toContain("spec-check — coming online");
+    expect(body).toContain("Spec Engine — coming online");
     expect(body).toBe(placeholderHtml);
   });
 

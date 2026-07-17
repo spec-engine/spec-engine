@@ -408,7 +408,7 @@ export function mountRequirements(app: Hono): void {
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>spec-check — Requirements</title>
+    <title>Spec Engine — Requirements</title>
     ${styleTag}
   </head>
   <body>
@@ -439,7 +439,7 @@ export function mountRequirements(app: Hono): void {
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>spec-check — Requirement not found</title>
+    <title>Spec Engine — Requirement not found</title>
     ${styleTag}
   </head>
   <body>
@@ -476,7 +476,7 @@ export function mountRequirements(app: Hono): void {
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>spec-check — ${r.id}</title>
+    <title>Spec Engine — ${r.id}</title>
     ${styleTag}
   </head>
   <body>

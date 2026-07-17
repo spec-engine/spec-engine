@@ -86,7 +86,7 @@ export function mountProvenance(app: Hono): void {
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>spec-check — Provenance</title>
+    <title>Spec Engine — Provenance</title>
     ${styleTag}
   </head>
   <body>

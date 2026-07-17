@@ -279,7 +279,7 @@ export function mountCoverage(app: Hono): void {
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>spec-check — Coverage</title>
+    <title>Spec Engine — Coverage</title>
     ${styleTag}
   </head>
   <body>

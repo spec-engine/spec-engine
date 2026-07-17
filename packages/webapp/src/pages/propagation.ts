@@ -61,7 +61,7 @@ export function mountPropagation(app: Hono): void {
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>spec-check — Propagation ${id}</title>
+    <title>Spec Engine — Propagation ${id}</title>
     ${styleTag}
   </head>
   <body>

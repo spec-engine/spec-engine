@@ -123,7 +123,7 @@ function resolveGateArgs(args: GateRawArgs): GateArgs {
   // the cold reset would wipe a pre-existing `<cwd>/.spec-engine/index.
   // sqlite` in a sibling project.
   //
-  // WR-05/WR-06: the canonical platform anchor that every other spec-check
+  // WR-05/WR-06: the canonical platform anchor that every other Spec Engine
   // command agrees on is the `spec-engine/` directory (mandatory in
   // `discoverRepos`). The gate uses ONLY that directory check as the
   // admission gate, consistent with the rest of the toolchain. (RED-85: the

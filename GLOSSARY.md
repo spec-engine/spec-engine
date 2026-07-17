@@ -1,6 +1,6 @@
 # Glossary
 
-Canonical names for spec-check concepts. When prose, code comments, diagnostics, or
+Canonical names for Spec Engine concepts. When prose, code comments, diagnostics, or
 docs need one of these ideas, use the term below — not a synonym. Terms are ordered
 by the data model, outside-in.
 

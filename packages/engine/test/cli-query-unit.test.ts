@@ -314,7 +314,7 @@ describe("spec query — pre-index guidance (RED-11)", () => {
     try {
       const code = await runQuery({ text: "renewal", platformDir: bare });
       expect(code).toBe(2);
-      expect(errs.some((m) => m.includes("is not a spec-check platform yet"))).toBe(true);
+      expect(errs.some((m) => m.includes("is not a Spec Engine platform yet"))).toBe(true);
       // Directs the user toward their first completed spec.
       expect(errs.some((m) => m.includes("spec domain new"))).toBe(true);
       expect(errs.some((m) => m.includes("spec req"))).toBe(true);

@@ -100,7 +100,7 @@ async function runProbe(): Promise<void> {
       process.exit(EXIT.FAILURE);
     }
     const body = await res.text();
-    if (!body.includes("spec-check — coming online")) {
+    if (!body.includes("Spec Engine — coming online")) {
       console.error(`serve --probe FAILED: body did not contain the placeholder string (D-14)`);
       server.stop();
       process.exit(EXIT.FAILURE);

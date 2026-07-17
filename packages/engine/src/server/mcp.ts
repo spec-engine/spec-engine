@@ -2,7 +2,7 @@
 //
 // L4 (lifecycle pass) — the MCP front-end. Exposes the engine's read
 // surface as Model Context Protocol tools so any MCP-capable agent harness
-// (Claude Code, etc.) can route through spec-check natively instead of shelling
+// (Claude Code, etc.) can route through Spec Engine natively instead of shelling
 // out to the CLI. One engine, three thin front-ends: CLI, webapp, MCP —
 // all reading through the same Storage seam.
 //
@@ -68,7 +68,7 @@ async function withFreshIndex<T>(platformDir: string, fn: (storage: Storage) => 
 }
 
 /**
- * Build the spec-check MCP server for one platform directory. Transport-free —
+ * Build the Spec Engine MCP server for one platform directory. Transport-free —
  * `spec mcp` connects it to stdio; tests connect it to an
  * InMemoryTransport pair.
  */
@@ -216,7 +216,7 @@ export function buildMcpServer(platformDir: string): McpServer {
     {
       title: "Author requirements from a brief",
       description:
-        "Turn a vague brief/ticket into well-formed spec-check requirements: one requirement per testable promise, placed by domain charter, deduped via spec query, drafted to the GUARD template + cold-read rubric, minted with spec req. The engine returns a static playbook template — your model runs it.",
+        "Turn a vague brief/ticket into well-formed Spec Engine requirements: one requirement per testable promise, placed by domain charter, deduped via spec query, drafted to the GUARD template + cold-read rubric, minted with spec req. The engine returns a static playbook template — your model runs it.",
       argsSchema: {
         brief: z.string().min(1).describe("The vague brief / ticket text to author from"),
         domain: z

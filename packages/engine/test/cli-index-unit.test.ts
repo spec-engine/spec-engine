@@ -112,7 +112,7 @@ describe("spec index (in-process, RED-14)", () => {
   test("non-platform dir → friendly RED-11 message + exit 2, no .spec-engine artifact", async () => {
     const code = await runIndexCmd({ platformDir: tmp });
     expect(code).toBe(2);
-    expect(errs.join("\n")).toContain("is not a spec-check platform yet");
+    expect(errs.join("\n")).toContain("is not a Spec Engine platform yet");
     expect(existsSync(join(tmp, ".spec-engine"))).toBe(false);
   });
 
