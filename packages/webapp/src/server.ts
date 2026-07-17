@@ -7,7 +7,7 @@
 // IMPORTANT: do NOT switch to Bun.file("./index.html") — that resolves at
 // runtime and fails inside the `bun build --compile` binary (Pitfall 10).
 // IMPORTANT: this package may NOT import bun:sqlite, node:fs, fs, bun,
-// node:path, or anything from @spec-engine/spec-check (enforced by D-09 lint).
+// node:path, or anything from @spec-engine/spec-engine (enforced by D-09 lint).
 
 import { Hono } from "hono";
 // Bun inlines the file as a string when imported with the `text` attribute.

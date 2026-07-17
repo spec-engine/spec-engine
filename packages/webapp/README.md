@@ -26,7 +26,7 @@ The local, read-only web UI over the derived index. A Hono app of server-rendere
 ## Constraints (enforced by lint)
 
 - No `bun:sqlite`, `node:fs`, `fs`, `bun`, or `node:path`.
-- No import from `@spec-engine/spec-check` (the engine). The dependency runs one way: engine depends on webapp, never the reverse.
+- No import from `@spec-engine/spec-engine` (the engine). The dependency runs one way: engine depends on webapp, never the reverse.
 - Depends only on `@spec-engine/shared` for types and `hono` for routing.
 - `index.html` is embedded at compile time via Bun's `import ... with { type: "text" }`. Do not switch to a runtime `Bun.file` read; it fails inside the `bun build --compile` binary.
 

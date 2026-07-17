@@ -31,5 +31,5 @@ Pure, dependency-light contracts shared across the platform. Zod schemas, typed 
 
 ## Members
 
-- `@spec-engine/spec-check` (the engine): parsing, indexing, gating, propagation.
+- `@spec-engine/spec-engine` (the engine): parsing, indexing, gating, propagation.
 - `@spec-engine/webapp`: the coverage report and page rendering.

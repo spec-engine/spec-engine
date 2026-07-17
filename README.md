@@ -23,7 +23,14 @@ found in one command instead of three repo reviews and a Slack thread.
 
 ## 30 seconds to value
 
-No global install yet (PoC). From a checkout:
+With [Bun](https://bun.sh) installed (the engine is Bun-only — it uses `bun:sqlite`):
+
+```bash
+bunx @spec-engine/spec-engine --help    # run without installing
+bun add -g @spec-engine/spec-engine     # or install the `spec` bin globally
+```
+
+Or from a checkout:
 
 ```bash
 bun install

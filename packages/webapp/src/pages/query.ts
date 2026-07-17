@@ -4,7 +4,7 @@
 //
 // D-09 / WORK-04 / Invariant #5: webapp source imports ONLY from
 // `@spec-engine/shared` (types) and `hono` (runtime). NO `bun:sqlite`, no
-// `node:fs`, no `fs`, no `bun`, no `node:path`, no `@spec-engine/spec-check`.
+// `node:fs`, no `fs`, no `bun`, no `node:path`, no `@spec-engine/spec-engine`.
 //
 // Rendering shape — single self-contained `<!doctype html>` document via
 // ONE `hono/html` tagged template (Pitfall 7 auto-escape). The `raw`

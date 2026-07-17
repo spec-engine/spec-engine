@@ -11,7 +11,7 @@
 //   - GET /api/relations?format=mermaid → 200 text/plain mermaid graph —
 //     the SAME formatter the CLI uses (one engine, no forked logic); this
 //     is the seam the webapp /relations page reads through, since the
-//     webapp import fence (D-09) forbids importing @spec-engine/spec-check directly.
+//     webapp import fence (D-09) forbids importing @spec-engine/spec-engine directly.
 //   - GET /api/relations?format=bogus → 400, never 500.
 //   - Cache-Control: no-store applies (derived-index staleness footgun).
 

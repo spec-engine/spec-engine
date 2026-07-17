@@ -8,7 +8,7 @@
 //
 // D-09 / WORK-04 / Invariant #5: webapp source imports ONLY from
 // `@spec-engine/shared` (types) and `hono` (runtime). NO `bun:sqlite`, no
-// `node:fs`, no `fs`, no `bun`, no `node:path`, no `@spec-engine/spec-check`.
+// `node:fs`, no `fs`, no `bun`, no `node:path`, no `@spec-engine/spec-engine`.
 // Enforced by `packages/webapp/biome.json`'s `noRestrictedImports` rule
 // AND by the defense-in-depth grep test in
 // `packages/webapp/test/import-fence.test.ts`.

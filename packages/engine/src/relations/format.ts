@@ -7,7 +7,7 @@
 // (server/api.ts `/api/relations?format=mermaid`) render through THIS
 // function, so the two surfaces cannot drift (Invariant: one engine, not
 // two). The webapp page reads the mermaid text via the API because its
-// import fence (D-09) forbids importing @spec-engine/spec-check directly.
+// import fence (D-09) forbids importing @spec-engine/spec-engine directly.
 //
 // Mermaid shape decisions:
 //   - `graph LR` (flowchart), NOT `erDiagram` — requirements relate

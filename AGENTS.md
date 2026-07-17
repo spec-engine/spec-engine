@@ -48,6 +48,7 @@ bun packages/engine/src/cli.ts check . --ci   # the self-gate
 ```
 bun packages/engine/src/cli.ts <command> [...]   # from a checkout (PoC default)
 ./dist/spec <command> [...]                     # compiled binary (bun run build:cli)
+bunx @spec-engine/spec-engine <command> [...]   # published npm package (requires Bun)
 ```
 
 - Almost every command takes an optional trailing `platformDir` positional
@@ -121,6 +122,7 @@ Branch on exit codes, not on output text.
 | `spec move <KEY-NNN> <NEW-DOMAIN> [platformDir]` | Cross-domain supersede: mint the successor in `<NEW-DOMAIN>` carrying the source's fields, flip the source to superseded, bump both specVersions, emit retag worklist | yes (object) | 0 / 2 |
 | `spec amend <KEY-NNN> [platformDir]` | Revise an unshipped entry's fields in place (same id, no version bump) | yes (object) | 0 / 2 |
 | `spec serve [platformDir] [--port N]` | Local webapp + `/api/*` over the index | n/a (HTTP) | 0 / 1 / 2 |
+| `spec docs [--port N]` | Serve the bundled documentation site offline (loopback only) | n/a (HTTP) | 0 / 1 / 2 |
 | `spec mcp [platformDir]` | MCP server over stdio: agent-native query/resolve/check/report tools | n/a (JSON-RPC) | 0 / 2 |
 
 Common flags on the index-touching commands (`index` / `check` / `map` /
@@ -382,6 +384,15 @@ edited specs or tags and need the answer to reflect it.
   carrying the platform-health stats + per-member heat chips on domain
   rows — the retired `/report` page's visuals live here now),
   `/requirements[/:id]`, `/query`, `/propagation/:id`, `/relations`.
+
+- **`spec docs`** — serves the PREBUILT documentation site (Starlight,
+  `packages/site`) over 127.0.0.1, fully offline. Takes NO platform dir and
+  never touches the index — it registers neither `--json` nor `--out` nor
+  `--no-prompt`. The docs root resolves module-relative (never cwd): the npm
+  artifact ships it at `dist/docs/`; a checkout serves `packages/site/dist`
+  (run `bun run build:site` first — a missing build exits 2 with that hint).
+  `--probe` boots an ephemeral port, GETs `/`, asserts the site title
+  renders, exits 0/1 — the `serve --probe` analogue.
 
 - **`spec mcp`** — the agent-native front-end: an MCP (Model Context
   Protocol) server over stdio. Register in the harness (e.g. `.mcp.json`:

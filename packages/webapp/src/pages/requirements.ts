@@ -5,7 +5,7 @@
 //
 // D-09 / WORK-04 / Invariant #5: webapp source imports ONLY from
 // `@spec-engine/shared` (types) and `hono` (runtime). NO `bun:sqlite`, no
-// `node:fs`, no `fs`, no `bun`, no `node:path`, no `@spec-engine/spec-check`.
+// `node:fs`, no `fs`, no `bun`, no `node:path`, no `@spec-engine/spec-engine`.
 //
 // Rendering shape — each handler is a single self-contained
 // `<!doctype html>` document via ONE `hono/html` tagged template
@@ -27,7 +27,7 @@ const styleTag = raw(`<style>${styleSheet}</style>`);
 
 /** One tag site for a requirement — the row shape `/api/resolve?req=` returns
  *  (the engine's `ReqTagRow`, a `Tag` minus its AUTOINCREMENT id). Redeclared
- *  here because the import fence forbids reaching into `@spec-engine/spec-check`. */
+ *  here because the import fence forbids reaching into `@spec-engine/spec-engine`. */
 interface ReqTagRow {
   req_id: string;
   repo: string;

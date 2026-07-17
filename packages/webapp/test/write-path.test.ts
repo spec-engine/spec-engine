@@ -29,8 +29,8 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { readFileSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { Storage } from "@spec-engine/shared";
-import { composeServeApp } from "@spec-engine/spec-check/src/commands/serve";
-import { openStorage } from "@spec-engine/spec-check/src/storage/sqlite";
+import { composeServeApp } from "@spec-engine/spec-engine/src/commands/serve";
+import { openStorage } from "@spec-engine/spec-engine/src/storage/sqlite";
 import { cloneFixture } from "./fixtures/cloneFixture";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "fixtures", "platform-fixture");

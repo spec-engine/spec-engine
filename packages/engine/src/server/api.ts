@@ -695,7 +695,7 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
       // RED-17: ?format=mermaid serves the SAME engine formatter the CLI
       // renders through (relations/format.ts) — the webapp /relations page
       // reads this text seam because its import fence (D-09) forbids
-      // importing @spec-engine/spec-check directly. Default (no format) is the JSON
+      // importing @spec-engine/spec-engine directly. Default (no format) is the JSON
       // row projection, consistent with every other /api/* route.
       const format = c.req.query("format");
       if (format !== undefined && format !== "mermaid") {

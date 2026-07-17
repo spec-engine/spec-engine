@@ -9,7 +9,7 @@
 // (enforced by `packages/webapp/biome.json`'s scoped `src/**/*.ts`
 // override + the defense-in-depth grep test in `import-fence.test.ts`).
 // The biome config explicitly carves tests out so this file can import
-// `@spec-engine/spec-check` to compose `mountApi(app, storage) + mountWebapp(app)`
+// `@spec-engine/spec-engine` to compose `mountApi(app, storage) + mountWebapp(app)`
 // on one Hono instance — mirrors plan 05-05's `commands/serve.ts`
 // composition.
 //
@@ -24,9 +24,9 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type { Storage } from "@spec-engine/shared";
-import { runIndex } from "@spec-engine/spec-check/src/indexer/pipeline";
-import { mountApi } from "@spec-engine/spec-check/src/server/api";
-import { openStorage } from "@spec-engine/spec-check/src/storage/sqlite";
+import { runIndex } from "@spec-engine/spec-engine/src/indexer/pipeline";
+import { mountApi } from "@spec-engine/spec-engine/src/server/api";
+import { openStorage } from "@spec-engine/spec-engine/src/storage/sqlite";
 import { Hono } from "hono";
 import { mountProvenance } from "../src/pages/provenance";
 import { mountWebapp } from "../src/server";

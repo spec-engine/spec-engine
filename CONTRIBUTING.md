@@ -65,6 +65,29 @@ bun packages/engine/src/cli.ts check . --ci
    ```
 4. Open a PR against `main` with a clear description of the what and the why.
 
+## Releasing (npm)
+
+Only `packages/engine` publishes — as **`@spec-engine/spec-engine`**, a single
+bundled package (the workspace packages inline into `dist/impl.js` at prepack;
+`shared`/`tracker`/`webapp`/`site` stay private forever). One-time
+prerequisites: the free npm **org `spec-engine`** must exist with you as a
+publisher, and you must be logged in (`npm login`).
+
+Release loop, from the repo root:
+
+1. Bump `version` in `packages/engine/package.json`.
+2. `bun install` — refreshes `bun.lock` (bun resolves pack-time versions from
+   the lockfile; a stale one packs the wrong number).
+3. Rehearse: `cd packages/engine && bun pm pack --dry-run` — the file list must
+   be `dist/` + `package.json`/`README.md`/`LICENSE` only. Then
+   `bun pm pack && tar -xOf *.tgz package/package.json` and confirm no
+   `workspace:*` survives anywhere in the manifest; delete the tarball.
+4. Publish the **directory** (never a pre-packed tarball — that skips the
+   `prepack` build): `bun publish --access public --auth-type web` from
+   `packages/engine`. Always `bun publish`, never `npm publish` — only bun
+   rewrites any residual `workspace:` protocol.
+5. Tag and push: `git tag v<version> && git push --tags`.
+
 ## Reporting bugs
 
 Open an issue using the bug template. Include the command you ran, what you expected,
