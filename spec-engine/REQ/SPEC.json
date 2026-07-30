@@ -3,6 +3,7 @@
   "owner": null,
   "updated": "2026-07-30",
   "scope": "Requirement lifecycle: spec req, spec supersede, spec amend, and @-refs. Belongs here: next-id allocation; non-interactive authoring; supersede / move / amend; @path file-ref resolution. Does not belong here: scaffolding a whole domain (spec domain new \u2192 DOMAIN). Boundary case: minting a requirement id is REQ, scaffolding the domain that holds it is DOMAIN.",
+  "grammar": "ears",
   "requirements": [
     {
       "id": "REQ-001",
@@ -301,6 +302,21 @@
       "relates": [],
       "livesIn": [
         "packages/engine/src/cli.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-020",
+      "status": "active",
+      "statement": "When new statement text is authored into a domain that declares the ears grammar, the spec CLI shall judge it against the EARS shapes \u2014 warning and writing under warning severity, refusing the write under error severity.",
+      "why": "Catching a malformed statement at write time costs one message; catching it after code binds to the id costs a supersede.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/authoring/grammar.ts"
       ],
       "issues": [],
       "aliases": [],

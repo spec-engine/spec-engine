@@ -47,6 +47,7 @@ import { join, resolve } from "node:path";
 import { validateAndWrite } from "@spec-engine/shared";
 import { defineCommand } from "citty";
 import { localToday } from "../authoring/edit";
+import { enforceStatementGrammar } from "../authoring/grammar";
 import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
 import { ID_RE } from "../parser/grammar";
@@ -150,6 +151,11 @@ export const amendCommand = defineCommand({
     const statusLc = assertAmendableStatus(id, req);
     if (statusLc === "active") {
       await assertUnshipped(platformDir, id);
+    }
+    // Statement-grammar gate (sentence 8): only a NEW statement is judged.
+    if (fields.hasText) {
+      const key = id.slice(0, id.indexOf("-"));
+      await enforceStatementGrammar(platformDir, key, (args.text as string).trim(), "spec amend");
     }
     const { fieldsChanged, refValues } = applyAmendMutations(req, args, fields);
 

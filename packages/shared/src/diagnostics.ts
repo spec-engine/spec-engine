@@ -15,6 +15,11 @@ export const DiagnosticCode = {
   // other terminal status): code claiming to implement a dead promise is
   // exactly the disagreement spec check exists to surface.
   DEPRECATED_REFERENCED: "DEPRECATED_REFERENCED",
+  // An Active/Draft statement in a domain that declares `grammar: "ears"`
+  // does not match any of the five EARS shapes (shared/ears.ts). Severity
+  // comes from the domain's `grammarSeverity` (default warning — a burn-down
+  // nudge, not a build-breaker; a domain can promote it to error).
+  STATEMENT_GRAMMAR: "STATEMENT_GRAMMAR",
   ORPHAN_REQ: "ORPHAN_REQ",
   UNVERIFIED_REQ: "UNVERIFIED_REQ",
   DRIFT: "DRIFT",

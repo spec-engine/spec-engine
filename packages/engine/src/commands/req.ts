@@ -57,7 +57,7 @@
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { createInterface } from "node:readline";
-import { validateAndWrite } from "@spec-engine/shared";
+import { parseEarsStatement, validateAndWrite } from "@spec-engine/shared";
 import { defineCommand } from "citty";
 import {
   domainScope,
@@ -67,6 +67,7 @@ import {
 } from "../authoring/domains";
 import { localToday } from "../authoring/edit";
 import { extractRefsFromText, resolveFileRef } from "../authoring/filerefs";
+import { enforceStatementGrammar } from "../authoring/grammar";
 import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
 import { handleNotAPlatform } from "./_shared";
@@ -276,7 +277,17 @@ async function authorFromFieldFlags(
     lives,
   });
   if (opts.json) {
-    console.log(JSON.stringify({ id: nextId, file: relFile }));
+    // When the statement parses as EARS, the decomposed clauses ride along —
+    // the machine-readable proof the statement names a condition, a system,
+    // and an observable result. Absent (not null) when it doesn't parse.
+    const parsed = parseEarsStatement(requirement);
+    console.log(
+      JSON.stringify(
+        parsed.ok
+          ? { id: nextId, file: relFile, clauses: parsed.clauses }
+          : { id: nextId, file: relFile },
+      ),
+    );
   } else {
     console.log(`appended ${nextId} to ${relFile}`);
   }
@@ -340,6 +351,10 @@ export async function appendEntry(
 ): Promise<string> {
   const relFile = `spec-engine/${key}/SPEC.json`;
   const specPath = join(platformDir, "spec-engine", key, "SPEC.json");
+  // Statement-grammar gate (sentence 8): a domain that declares grammar
+  // "ears" judges the NEW statement before anything is written — warn (and
+  // proceed) or refuse per the domain's grammarSeverity.
+  await enforceStatementGrammar(platformDir, key, fields.requirement, "spec req");
   // Post-cutover (Phase 18, D2): SPEC.json is the ONLY spec format — the
   // Markdown read/seed path is deleted. Reading SPEC.json unconditionally
   // would reject with ENOENT and throw an unhandled rejection (a raw stack +

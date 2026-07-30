@@ -2,12 +2,13 @@
   "key": "DOMAIN",
   "owner": null,
   "updated": "2026-07-14",
-  "scope": "Domain lifecycle: spec domain new / spec domain list and charter editing. Belongs here: the born-valid scaffold (spec domain new); the domain list output; the scope charter field on the envelope. Does not belong here: requirement authoring (spec req/supersede/amend → REQ). Boundary case: minting a requirement id is REQ, scaffolding the domain that holds it is DOMAIN.",
+  "scope": "Domain lifecycle: spec domain new / spec domain list and charter editing. Belongs here: the born-valid scaffold (spec domain new); the domain list output; the scope charter field on the envelope. Does not belong here: requirement authoring (spec req/supersede/amend \u2192 REQ). Boundary case: minting a requirement id is REQ, scaffolding the domain that holds it is DOMAIN.",
+  "grammar": "ears",
   "requirements": [
     {
       "id": "DOMAIN-001",
       "status": "active",
-      "statement": "Domain-name input is normalized before validation — uppercase plus strip ALL whitespace; spaces are never converted to dashes.",
+      "statement": "Domain-name input is normalized before validation \u2014 uppercase plus strip ALL whitespace; spaces are never converted to dashes.",
       "why": "A dash is HEAD_RE's key/seq separator; a dashed key scaffolds a spec that silently parses to zero requirements.",
       "supersedes": null,
       "supersededBy": null,
@@ -23,7 +24,7 @@
     {
       "id": "DOMAIN-002",
       "status": "active",
-      "statement": "spec domain new prints exactly one `<raw>` → <KEY> transformation line when uppercasing the name and stripping its whitespace changed the input, and prints no such line when the input was already a canonical key.",
+      "statement": "spec domain new prints exactly one `<raw>` \u2192 <KEY> transformation line when uppercasing the name and stripping its whitespace changed the input, and prints no such line when the input was already a canonical key.",
       "why": "The author must be able to see the silent transformation applied on their behalf; hiding it lets a surprising key scaffold a domain the author never intended to name.",
       "supersedes": null,
       "supersededBy": null,
@@ -55,7 +56,7 @@
     {
       "id": "DOMAIN-004",
       "status": "superseded",
-      "statement": "spec domain new <KEY> creates spec-engine/<KEY>/SPEC.json as a complete, valid domain envelope — key, owner null, specVersion 1, and the current date in the author's local timezone — so spec index ingests the new domain immediately with zero diagnostics.",
+      "statement": "spec domain new <KEY> creates spec-engine/<KEY>/SPEC.json as a complete, valid domain envelope \u2014 key, owner null, specVersion 1, and the current date in the author's local timezone \u2014 so spec index ingests the new domain immediately with zero diagnostics.",
       "why": "A scaffold must be born valid: a file the indexer cannot parse yields a domain with zero requirements and no error, and a UTC-computed date stamps evening authors with tomorrow.",
       "supersedes": null,
       "supersededBy": "DOMAIN-010",
@@ -72,7 +73,7 @@
     {
       "id": "DOMAIN-005",
       "status": "active",
-      "statement": "spec domain new <KEY> refuses to overwrite an existing spec-engine/<KEY>/SPEC.json — it prints an error to stderr and exits 2.",
+      "statement": "spec domain new <KEY> refuses to overwrite an existing spec-engine/<KEY>/SPEC.json \u2014 it prints an error to stderr and exits 2.",
       "why": "Never clobber an authored spec.",
       "supersedes": null,
       "supersededBy": null,
@@ -104,7 +105,7 @@
     {
       "id": "DOMAIN-007",
       "status": "active",
-      "statement": "A domain is a child directory of spec-engine/ containing a SPEC.json, enumerated from the filesystem — never from the derived index or a cache file.",
+      "statement": "A domain is a child directory of spec-engine/ containing a SPEC.json, enumerated from the filesystem \u2014 never from the derived index or a cache file.",
       "why": "Canonical truth is the git spec location; a second derived store would violate the derived-DB constraint.",
       "supersedes": null,
       "supersededBy": null,
@@ -152,7 +153,7 @@
     {
       "id": "DOMAIN-010",
       "status": "active",
-      "statement": "spec domain new <KEY> creates spec-engine/<KEY>/SPEC.json as a complete, valid domain envelope — key, owner null, the current date in the author's local timezone, and no authored specVersion for a requirement domain (only the reserved TERM domain is seeded with specVersion 1) — so spec index ingests the new domain immediately with zero diagnostics.",
+      "statement": "spec domain new <KEY> creates spec-engine/<KEY>/SPEC.json as a complete, valid domain envelope \u2014 key, owner null, the current date in the author's local timezone, and no authored specVersion for a requirement domain (only the reserved TERM domain is seeded with specVersion 1) \u2014 so spec index ingests the new domain immediately with zero diagnostics.",
       "why": "A scaffold must be born valid: a file the indexer cannot parse yields a domain with zero requirements and no error, and a UTC-computed date stamps evening authors with tomorrow; seeding an authored specVersion on a requirement domain would plant a second version counter beside the derived one, free to drift from the supersede history.",
       "supersedes": null,
       "supersededBy": null,

@@ -32,6 +32,7 @@ import { type Diagnostic, validateAndWrite, validateDomainFile } from "@spec-eng
 import { defineCommand } from "citty";
 import { nextRequirementId, normalizeDomainKey } from "../authoring/domains";
 import { localToday } from "../authoring/edit";
+import { enforceStatementGrammar } from "../authoring/grammar";
 import { defaultIndexPath, EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
 import { runIndex } from "../indexer/pipeline";
@@ -176,6 +177,25 @@ function resolveSuccessorFields(
   };
 }
 
+/** Reject a blank statement, and — when `--text` supplied NEW text — judge it
+ *  against the target domain's declared grammar (sentence 8). A move that
+ *  carries the source statement verbatim is never blocked on old prose. */
+async function assertMovableStatement(
+  platformDir: string,
+  id: string,
+  targetKey: string,
+  statement: string,
+  args: Record<string, unknown>,
+): Promise<void> {
+  if (statement === "") {
+    console.error(`spec move: ${id} has an empty Requirement — cannot move a blank statement`);
+    process.exit(EXIT.USAGE);
+  }
+  if (typeof args.text === "string") {
+    await enforceStatementGrammar(platformDir, targetKey, statement, "spec move");
+  }
+}
+
 /** Resolve the version to report for one side of a move. A requirement
  *  (non-TERM) domain's version is the DAG-derived projection over its OWN
  *  requirements after the edit — no authored counter is written (SCHM-008 /
@@ -305,10 +325,7 @@ export const moveCommand = defineCommand({
 
     const target = await resolveMoveTarget(id, rawTargetKey, platformDir);
     const fields = resolveSuccessorFields(args as Record<string, unknown>, target.req);
-    if (fields.statement === "") {
-      console.error(`spec move: ${id} has an empty Requirement — cannot move a blank statement`);
-      process.exit(EXIT.USAGE);
-    }
+    await assertMovableStatement(platformDir, id, target.target.key, fields.statement, args);
     warnUnresolvableRefs(platformDir, [fields.statement, fields.why, fields.lives]);
 
     const newId = await nextRequirementId(platformDir, target.target.key);

@@ -121,6 +121,17 @@ export const SpecDomainSchema = z
     // prototype-tampering mitigation), so whitelisting `scope` does not reopen the
     // door to `__proto__polluter`. NOT indexed — no column, no SCHEMA_VERSION bump.
     scope: z.string().nullable().optional(),
+    // The statement-grammar declaration (mental-model sentence 8). `grammar:
+    // "ears"` opts the domain's Active/Draft statements into the fixed EARS
+    // shape check (shared/ears.ts); absent or "freeform" means no check.
+    // `grammarSeverity` picks what a nonconforming statement costs: "warning"
+    // (the default — a burn-down nudge that never reds the gate) or "error"
+    // (gates `spec check --ci` and refuses authoring writes). Enums, not free
+    // strings: a typo'd grammar value should reject loudly, never silently
+    // mean freeform. NOT indexed — no column, no SCHEMA_VERSION bump.
+    // @spec SCHM-010
+    grammar: z.enum(["ears", "freeform"]).optional(),
+    grammarSeverity: z.enum(["warning", "error"]).optional(),
     requirements: z.array(SpecRequirementSchema),
   })
   .strict();
@@ -202,6 +213,11 @@ function orderDomain(d: SpecDomain) {
     // charter to an explicit null (mirroring `owner`), so an unscoped domain
     // re-reads as `scope === null`, never `undefined`.
     scope: d.scope ?? null,
+    // Statement-grammar declaration — same strip-trap as scope/IN-01: without
+    // these lines the whitelist rebuild silently drops the config on every
+    // write. `undefined` omits, so undeclared domains stay byte-identical.
+    grammar: d.grammar,
+    grammarSeverity: d.grammarSeverity,
     requirements: d.requirements.map((r) => ({
       id: r.id,
       status: r.status,

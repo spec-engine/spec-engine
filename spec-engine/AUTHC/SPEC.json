@@ -3,11 +3,12 @@
   "owner": "drea",
   "updated": "2026-07-08",
   "scope": null,
+  "grammar": "ears",
   "requirements": [
     {
       "id": "AUTHC-001",
       "status": "superseded",
-      "statement": "Domain-name input is normalized before validation — uppercase plus strip ALL whitespace; spaces are never converted to dashes.",
+      "statement": "Domain-name input is normalized before validation \u2014 uppercase plus strip ALL whitespace; spaces are never converted to dashes.",
       "why": "A dash is HEAD_RE's key/seq separator; a dashed key scaffolds a spec that silently parses to zero requirements.",
       "supersedes": null,
       "supersededBy": "DOMAIN-001",
@@ -22,7 +23,7 @@
     {
       "id": "AUTHC-002",
       "status": "superseded",
-      "statement": "When normalization changed the input, spec domain new prints exactly one normalized \"<raw>\" → <KEY> line; canonical input prints none.",
+      "statement": "When normalization changed the input, spec domain new prints exactly one normalized \"<raw>\" \u2192 <KEY> line; canonical input prints none.",
       "why": "The user must see the transformation that was applied on their behalf.",
       "supersedes": null,
       "supersededBy": "DOMAIN-002",
@@ -52,7 +53,7 @@
     {
       "id": "AUTHC-004",
       "status": "superseded",
-      "statement": "spec domain new <KEY> creates spec-engine/<KEY>/SPEC.json as a complete, valid domain envelope — key, owner null, specVersion 1, and the current date in the author's local timezone — so spec index ingests the new domain immediately with zero diagnostics.",
+      "statement": "spec domain new <KEY> creates spec-engine/<KEY>/SPEC.json as a complete, valid domain envelope \u2014 key, owner null, specVersion 1, and the current date in the author's local timezone \u2014 so spec index ingests the new domain immediately with zero diagnostics.",
       "why": "A scaffold must be born valid: a file the indexer cannot parse yields a domain with zero requirements and no error, and a UTC-computed date stamps evening authors with tomorrow.",
       "supersedes": null,
       "supersededBy": "DOMAIN-004",
@@ -67,7 +68,7 @@
     {
       "id": "AUTHC-005",
       "status": "superseded",
-      "statement": "spec domain new <KEY> refuses to overwrite an existing spec-engine/<KEY>/SPEC.json — it prints an error to stderr and exits 2.",
+      "statement": "spec domain new <KEY> refuses to overwrite an existing spec-engine/<KEY>/SPEC.json \u2014 it prints an error to stderr and exits 2.",
       "why": "Never clobber an authored spec.",
       "supersedes": null,
       "supersededBy": "DOMAIN-005",
@@ -97,7 +98,7 @@
     {
       "id": "AUTHC-007",
       "status": "superseded",
-      "statement": "A domain is a child directory of spec-engine/ containing a SPEC.json, enumerated from the filesystem — never from the derived index or a cache file.",
+      "statement": "A domain is a child directory of spec-engine/ containing a SPEC.json, enumerated from the filesystem \u2014 never from the derived index or a cache file.",
       "why": "Canonical truth is the git spec location; a second derived store would violate the derived-DB constraint.",
       "supersedes": null,
       "supersededBy": "DOMAIN-007",
@@ -188,7 +189,7 @@
       "id": "AUTHC-013",
       "status": "superseded",
       "statement": "A no-match prefix prints the available domains to stderr and exits 2; a nonexistent domain no longer mints a <KEY>-001 id.",
-      "why": "Resolution runs against existing domains only — spec domain new is the way to create one.",
+      "why": "Resolution runs against existing domains only \u2014 spec domain new is the way to create one.",
       "supersedes": null,
       "supersededBy": "REQ-004",
       "relates": [],
@@ -202,7 +203,7 @@
     {
       "id": "AUTHC-014",
       "status": "superseded",
-      "statement": "spec req <domain-prefix>, run non-interactively with piped stdin, prints the next unused id — the domain's SPEC.json max sequence + 1, padded to three digits, as <KEY>-<NNN> on stdout — and exits 0.",
+      "statement": "spec req <domain-prefix>, run non-interactively with piped stdin, prints the next unused id \u2014 the domain's SPEC.json max sequence + 1, padded to three digits, as <KEY>-<NNN> on stdout \u2014 and exits 0.",
       "why": "IDs are never reused; the id query must agree with the domain envelope's requirements, not a regex approximation.",
       "supersedes": null,
       "supersededBy": "REQ-005",
@@ -247,7 +248,7 @@
     {
       "id": "AUTHC-018",
       "status": "deprecated",
-      "statement": "spec new and spec id are removed entirely — no cli.ts entries, absent from --help, no aliases, and invoking them has no scaffold or next-id side effect.",
+      "statement": "spec new and spec id are removed entirely \u2014 no cli.ts entries, absent from --help, no aliases, and invoking them has no scaffold or next-id side effect.",
       "why": "Nothing is published, so back-compat shims carry no value and would re-open the dash trap.",
       "supersedes": null,
       "supersededBy": null,
@@ -277,7 +278,7 @@
     {
       "id": "AUTHC-020",
       "status": "superseded",
-      "statement": "When stdin is not a TTY, spec req prints the next unused id and exits 0 — no prompts, no writes, no readline.",
+      "statement": "When stdin is not a TTY, spec req prints the next unused id and exits 0 \u2014 no prompts, no writes, no readline.",
       "why": "The composable id query for scripts and agents is preserved byte-for-byte.",
       "supersedes": null,
       "supersededBy": "REQ-009",
@@ -293,7 +294,7 @@
       "id": "AUTHC-021",
       "status": "superseded",
       "statement": "An empty Requirement answer aborts with a stderr notice and exit 0, writing zero bytes.",
-      "why": "Git editor-abort tradition — an abandoned edit is not an error.",
+      "why": "Git editor-abort tradition \u2014 an abandoned edit is not an error.",
       "supersedes": null,
       "supersededBy": "REQ-010",
       "relates": [],
@@ -307,7 +308,7 @@
     {
       "id": "AUTHC-022",
       "status": "superseded",
-      "statement": "spec req <KEY> --text appends a new Active requirement to the domain's SPEC.json — status active, the given statement, why null, empty relates/livesIn/issues, changedAtVersion 1 — and bumps the envelope's updated to the local date, such that the appended entry re-indexes with zero diagnostics.",
+      "statement": "spec req <KEY> --text appends a new Active requirement to the domain's SPEC.json \u2014 status active, the given statement, why null, empty relates/livesIn/issues, changedAtVersion 1 \u2014 and bumps the envelope's updated to the local date, such that the appended entry re-indexes with zero diagnostics.",
       "why": "Authoring must produce exactly what the indexer ingests, or authored requirements silently vanish.",
       "supersedes": null,
       "supersededBy": "REQ-011",
@@ -353,7 +354,7 @@
       "id": "AUTHC-025",
       "status": "deprecated",
       "statement": "At index time, each @-ref in requirement field lines that does not resolve to a file under the platform root emits one warning-severity BROKEN_FILE_REF diagnostic with platform-relative source, real line, and enclosing requirement id; traversal outside the root is broken regardless of existence.",
-      "why": "Containment before existence — defense in depth; stale refs surface without failing the build.",
+      "why": "Containment before existence \u2014 defense in depth; stale refs surface without failing the build.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

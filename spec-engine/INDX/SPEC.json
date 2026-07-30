@@ -2,13 +2,14 @@
   "key": "INDX",
   "owner": null,
   "updated": "2026-07-08",
-  "scope": "The derivation pipeline and index lifecycle: cold-rebuild identity, build_id determinism, structural integrity at index time, and spec index. Belongs here: cold-rebuild equivalence (delete .spec-engine/ yields an identical result); build_id determinism for identical inputs; the index-time structural integrity checks; spec index itself. Does not belong here: spec check's diagnostic severity semantics (→ CHCK) or the SPEC.json envelope shape (→ SCHM). Boundary case: cold-rebuild identity is an INDX promise even though the model it rebuilds is defined in SCHM.",
+  "scope": "The derivation pipeline and index lifecycle: cold-rebuild identity, build_id determinism, structural integrity at index time, and spec index. Belongs here: cold-rebuild equivalence (delete .spec-engine/ yields an identical result); build_id determinism for identical inputs; the index-time structural integrity checks; spec index itself. Does not belong here: spec check's diagnostic severity semantics (\u2192 CHCK) or the SPEC.json envelope shape (\u2192 SCHM). Boundary case: cold-rebuild identity is an INDX promise even though the model it rebuilds is defined in SCHM.",
+  "grammar": "ears",
   "requirements": [
     {
       "id": "INDX-001",
       "status": "active",
       "statement": "Deleting the derived index and rebuilding from the spec location plus repo tags produces an identical result; nothing lives only in the DB.",
-      "why": "Canonical truth is the git spec location — the DB is derived and owns nothing.",
+      "why": "Canonical truth is the git spec location \u2014 the DB is derived and owns nothing.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
