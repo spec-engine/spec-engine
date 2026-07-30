@@ -25,4 +25,4 @@ The engine treats issue IDs as opaque strings and never makes a network call —
 
 ## Where it sits
 
-Your build stack is a vertical of layers: the model at the base, the coding agent on top, an orchestration layer (DFC) above that, work entering from an issue tracker. Spec Engine is not another layer in that stack. It sits beside it as the store every layer reads from and writes to — closer to a database than to a tool in the pipeline.
+Spec Engine is not another tool in your build pipeline. The model, the coding agent, any orchestration tooling, and the issue tracker all come and go per task; Spec Engine sits beside them as the store they all read from and write to — the durable record of what the software is supposed to do.

@@ -33,9 +33,13 @@ Spec Engine dogfoods itself. Requirements live in `spec-engine/<DOMAIN>/SPEC.jso
 durable ids (e.g. `INIT-001`); code binds to them with a `@spec` tag:
 
 ```ts
-// @spec INIT-001            implements the requirement
-// @spec INIT-001 verifies   proves it (in a test)
+// @spec INIT-001   in a source file: implements the requirement
+// @spec INIT-001   in a test file: proves it
 ```
+
+What a tag means comes from where it sits — the file path decides implements
+vs. proves. Never write those words in the tag; a test tag may carry an
+optional level token (`unit` | `integration` | `e2e`).
 
 Before opening a PR, keep the self-gate green:
 

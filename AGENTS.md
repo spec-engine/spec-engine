@@ -60,14 +60,26 @@ bunx @spec-engine/spec-engine <command> [...]   # published npm package (require
 - `--json` output is written to **stdout only**; guidance, warnings, and
   diagnostics chrome go to **stderr**. Parse stdout, surface stderr.
 
-## Mental model (6 lines)
+## The idea, then the mechanics
+
+The eight statements everything implements (the README's "The idea" section):
+
+1. A requirement represents a single behavior.
+2. A requirement is never deleted. When behavior changes, it is superseded or deprecated.
+3. The written requirements are the single source of truth for what the software is supposed to do.
+4. A requirement can be linked to the code that implements it and to the tests that prove it.
+5. Reports are computed from the requirements and their links.
+6. You can check whether the requirements, code, and tests agree, and exactly where they don't.
+7. Tickets are not requirements. A ticket is temporary work; requirements outlive it.
+8. Requirements are written in a fixed shape (when X happens, the system shall do Y).
+
+How this implementation realizes them:
 
 1. Canonical truth: `spec-engine/<DOMAIN>/SPEC.json` files in git — one JSON
    domain envelope `{ key, owner, specVersion, updated, requirements[] }` per
    key, validated by the one `@spec-engine/shared` schema every read/write surface
-   shares. The Markdown (`SPEC.md`) parse path is removed; `spec migrate`
-   was the one-time cutover. Requirement IDs (`KEY-NNN`) are permanent;
-   changes supersede, never overwrite.
+   shares. Requirement ids (`KEY-NNN`) are permanent; changes supersede (or
+   `spec deprecate` ends), never overwrite.
 2. Code binds to requirements with comment tags: `// @spec KEY-NNN` (+ optional
    level token `unit` | `integration` | `e2e` on test tags).
 3. Tag kind is path-derived: a tag in implementation code **implements**; a tag
@@ -77,16 +89,16 @@ bunx @spec-engine/spec-engine <command> [...]   # published npm package (require
 5. Coverage/drift/propagation are SQL projections over tags — never authored.
    Drift compares a member's pin (`spec-engine@N`, ONE platform-wide scalar)
    against each referenced requirement's `changed_at_version`, derived locally
-   within its domain's supersede DAG; the platform version is the max domain
-   version, derived too — `spec-engine.platform.json` is retired (a stray one
-   is ignored with a warning).
-6. **Requirements are not issues.** A tracker ticket (Linear/Jira/GitHub) is an
-   ephemeral work event; it does not live past production. One issue typically
-   fans out into SEVERAL durable requirements (its acceptance criteria). When
-   authoring from an issue, mint a `KEY-NNN` per requirement — NEVER use the
-   issue number as a requirement id, and never tag code with one. Issue links
-   on a requirement (future `Issues:` field) are provenance annotations,
-   opaque to the engine — not identity, not routing.
+   within its domain's supersede graph; the platform version is the max domain
+   version, derived too (a stray `spec-engine.platform.json` is ignored with a
+   warning).
+6. **Requirements are not issues.** A tracker ticket is temporary work; it does
+   not outlive the ship. One ticket typically splits into SEVERAL durable
+   requirements. When authoring from a ticket, mint a `KEY-NNN` per
+   requirement — NEVER use the ticket number as a requirement id, and never tag
+   code with one. Ticket links on a requirement (the `issues` field, written by
+   `--issue`) are provenance only — opaque to the engine, not identity, not
+   routing.
 
 ## Exit code contract
 
@@ -104,7 +116,7 @@ Branch on exit codes, not on output text.
 | --- | --- | --- | --- |
 | `spec index [platformDir]` | Build/refresh the derived index | yes (IndexResult) | 0 / 1 / 2 |
 | `spec check [platformDir] [--ci]` | Integrity + coverage + drift diagnostics | yes (array) | 0 / 1 / 2 |
-| `spec guard [platformDir] [--against <ref>]` | Loss detection: diff the requirement derivation at a git ref (default HEAD) vs the working tree; block requirements about to be steamrolled | yes (array) | 0 / 1 / 2 |
+| `spec guard [platformDir] [--against <ref>]` | Loss detection: diff the requirement derivation at a git ref (default HEAD) vs the working tree; block a change about to lose a requirement, its last implementation, or its last test | yes (array) | 0 / 1 / 2 |
 | `spec map [platformDir]` | Requirement × repo coverage matrix | yes (array) | 0 / 2 |
 | `spec query <text> [platformDir]` | Full-text retrieval over requirements | yes (array) | 0 / 2 |
 | `spec relations [platformDir]` | Mermaid graph of Relates links between requirements | yes (array) | 0 / 2 |
@@ -449,32 +461,28 @@ edited specs or tags and need the answer to reflect it.
 
 ## Authoring requirements (brief → mint)
 
-The mint front-half of the lifecycle: how a vague brief/ticket becomes
-well-formed requirements the route → tag → check loop below then consumes. This
-section owns the operational CLI choreography only — the authoring RUBRIC lives
-once in `spec-engine/TAXONOMY.md` §4.10 (the eight-point standard); cross-
-reference it, never restate it here.
+How a rough brief or ticket becomes well-formed requirements. The full
+authoring standard (the eight rules, including the fixed statement shapes)
+lives in `spec-engine/TAXONOMY.md` under "Requirement authoring standard" —
+one copy, there; this section is the command choreography.
 
-1. **Fan out the brief** — one requirement per **testable promise**, NEVER one
-   per ticket. A single issue's acceptance criteria typically become several
-   durable `KEY-NNN` requirements.
-2. **Place each** — `spec domain list --json` prints every domain's scope;
-   concept-wins per the domain charter (`spec req <domain>` alone prints the
-   target charter — CHRT-005 — confirming placement before you write).
-3. **Dedup** — `spec query "<phrase>" . --json` BEFORE minting; overlap →
+1. **Split the brief** — one requirement per behavior, never one per ticket.
+2. **Place each** — `spec domain list --json` prints every domain's charter;
+   file the requirement where the promise lives (`spec req <domain>` alone
+   echoes the target charter before you write).
+3. **Dedup** — `spec query "<phrase>" . --json` BEFORE minting; overlap means
    `spec amend`/relate the existing requirement, not a new id.
-4. **Draft + self-check** — write each statement to the GUARD template and run
-   the cold-read rubric: see `spec-engine/TAXONOMY.md` §4.10 for the eight-point
-   authoring standard (subject named, cold-read-standalone, timeless, the `why`
-   carries the failure mode). Do NOT copy those eight points here — three copies
-   drift; §4.10 is the single source.
-5. **Mint** — `spec req <domain> --text "<statement>" --why "<failure mode>" --lives "<file>"`
-   appends a born-active requirement, allocating the next unused id in the domain.
-6. **Provenance, not identity** — the originating ticket is recorded as `Issues:`
-   provenance ONLY: never a requirement id, never a code `@spec` tag (the issue
-   is an ephemeral work event; the `KEY-NNN` is the durable unit).
-7. **Verify** — `spec index . && spec check . --ci` (exit 0, no ORPHAN/UNVERIFIED)
-   and `spec guard .` (no loss) before opening the PR.
+4. **Draft to the standard** — statements in the fixed EARS shape (checked
+   mechanically at write time in domains that declare it); the why names what
+   breaks; every draft quotes the phrase of the brief it derives from.
+5. **Mint** — `spec req <domain> --text "<statement>" --why "<what breaks>"
+   --lives "<file>" [--issue <ticket>]` appends an Active requirement,
+   allocating the next unused id in the domain.
+6. **Provenance, not identity** — the originating ticket is recorded via
+   `--issue` (an opaque payload), never used as a requirement id, never a code
+   `@spec` tag.
+7. **Verify** — `spec index . && spec check . --ci` (exit 0) and `spec guard .`
+   (no loss) before opening the PR.
 
 ## The agent loop (route → tag → check)
 
@@ -525,7 +533,7 @@ decision to retire it. Never silently delete a requirement to make the gate pass
   any `fixtures/` folder never index. Planted fixture defects are test data;
   do not "fix" them to make `spec check` pass.
 - **The DB owns nothing.** Never edit `.spec-engine/index.sqlite`; edit the
-  `SPEC.md` source and re-run `spec index`. Deleting `.spec-engine/` is always safe.
+  `SPEC.json` source and re-run `spec index`. Deleting `.spec-engine/` is always safe.
 - **`storage_unavailable` / `SQLITE_IOERR*` means your environment, not the
   data.** The index DB runs in WAL mode and needs real file locks. A sandboxed
   process (e.g. a coding agent's default seatbelt profile on macOS) gets

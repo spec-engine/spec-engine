@@ -53,3 +53,4 @@ by the data model, outside-in.
 - **Charter** — (a domain's *scope*) — the statement of what belongs in a domain and what doesn't. Lives with the domain; consulted at authoring time.
 - **Shadow id** — a requirement-shaped id cited in code comments or CI fences that exists in no spec (e.g. `SCHM-07`). Debt: either promote it into a real requirement or remove the citation.
 - **Issue** — a tracker ticket (Linear/Jira/GitHub): an ephemeral work event. One issue typically fans out into several durable requirements. Issue links on a requirement are provenance, never identity — never tag code with an issue id.
+- **EARS** — The fixed shape requirement statements are written in — five sentence patterns (The/When/While/If-then/Where … shall …) where a leading keyword names the condition and the word shall separates who acts from the observable result. The name is an acronym (Easy Approach to Requirements Syntax); knowing it is never required to use the shapes.

@@ -48,7 +48,7 @@ Cross-repo integrity, coverage, and drift diagnostics. See [Integrity Checks](/c
 
 ### `spec guard [platformDir]`
 
-The pre-commit **loss gate**: diffs the requirement derivation at `--against <ref>` (default `HEAD`) against the working tree and blocks what the change is about to steamroll. Losses: `REQUIREMENT_REMOVED` (an active requirement gone with no supersession), `IMPL_LOST` / `VERIFY_LOST` (a surviving requirement's last implementing/verifying tag removed), `SPEC_FILE_DELETED`. A loss is suppressed only by superseding or deprecating the requirement in the same change — there is no override comment. A non-git tree or unknown ref warns and exits 0 — the guard is a safety net, not a git dependency.
+The pre-commit **loss gate**: diffs the requirement derivation at `--against <ref>` (default `HEAD`) against the working tree and blocks a change about to lose a requirement, its last implementation, or its last test. Losses: `REQUIREMENT_REMOVED` (an active requirement gone with no supersession), `IMPL_LOST` / `VERIFY_LOST` (a surviving requirement's last implementing/verifying tag removed), `SPEC_FILE_DELETED`. A loss is suppressed only by superseding or deprecating the requirement in the same change — there is no override comment. A non-git tree or unknown ref warns and exits 0 — the guard is a safety net, not a git dependency.
 
 | Flag | Description |
 | --- | --- |

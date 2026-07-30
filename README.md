@@ -107,8 +107,10 @@ Three moving parts, and the important one owns nothing:
 1. **Canonical specs** live in a `spec-engine/` repo as `spec-engine/<DOMAIN>/SPEC.json`.
    Each requirement is a durable id — `BILLING-009` — with a status (`Active`,
    `Superseded by …`). This is the only source of truth.
-2. **Code points back** with a `@spec` tag: `// @spec BILLING-009` in a source file
-   (implements it), `// @spec BILLING-009 verifies` in a test (proves it).
+2. **Code points back** with a `@spec` tag: `// @spec BILLING-009`. What the tag
+   means comes from where it sits — in a source file it implements the
+   requirement; in a test file it proves it. Never write "implements" or
+   "verifies" in the tag itself.
 3. **A derived index** (`.spec-engine/`, a disposable `bun:sqlite` db) is built from 1 + 2.
    Delete it and rebuild — you get a byte-identical result. Coverage is a SQL **view**
    over the tags, so it can never drift from what the tags actually say.
@@ -161,7 +163,7 @@ spec: serving on http://127.0.0.1:4319
 ```
 
 `--port 0` (the default) picks an ephemeral port; pass a fixed port for a stable URL.
-The pages: `/` (coverage matrix), `/report` (per-domain rollup + spec chart),
+The pages: `/` (coverage matrix, carrying the per-domain rollup),
 `/requirements` and `/requirements/:id`, `/query` (full-text search — term definitions
 render beside requirement hits), `/relations`, `/propagation/:id`, `/provenance`. The
 same routes are available as JSON under `/api/*` (`/api/coverage`, `/api/report`,
@@ -254,7 +256,7 @@ pre-commit:
 ```
 
 …or as a **Claude Code `PostToolUse` hook** so a coding agent is stopped the moment its
-edit would steamroll a requirement:
+edit would lose a requirement:
 
 ```jsonc
 // .claude/settings.json

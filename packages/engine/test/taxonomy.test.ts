@@ -53,12 +53,6 @@ const TARGET_DOMAINS = [
   "SERV",
 ];
 
-// The shadow-id promotion backlog the charter doc must name (Phase 3 targets).
-const SHADOW_ID_BACKLOG = ["QURY-01", "RSLV-01", "SERV-01", "PROP-02"];
-
-// The six headline invariants, cited by their former POC ids (§4.8).
-const FORMER_POC_INVARIANTS = ["POC-001", "POC-016", "POC-002", "POC-003", "POC-004", "POC-005"];
-
 describe("TAXONOMY.md — per-domain charter structure (CHRT-01)", () => {
   test("names a charter entry for every §4.5 target domain key", async () => {
     const doc = await loadTaxonomy();
@@ -78,25 +72,23 @@ describe("TAXONOMY.md — per-domain charter structure (CHRT-01)", () => {
     expect(doc).toMatch(/3-digit|three-digit/i);
   });
 
-  test("names the shadow-id promotion backlog", async () => {
+  test("does NOT carry the retired shadow-id backlog (those ids were promoted long ago)", async () => {
     const doc = await loadTaxonomy();
-    for (const id of SHADOW_ID_BACKLOG) {
-      expect(doc).toContain(id);
-    }
+    expect(doc).not.toContain("Shadow-id promotion backlog");
+    expect(doc).not.toContain("QURY-01/");
   });
 });
 
 describe("TAXONOMY.md — requirement-authoring standard (CHRT-02)", () => {
-  test("carries the GUARD-template phrase", async () => {
+  test("teaches the fixed statement shapes with a filled example", async () => {
     const doc = await loadTaxonomy();
-    // `<command/surface> <promise> when <condition>`
-    expect(doc).toMatch(/when <condition>/);
-    expect(doc).toMatch(/<promise>/);
+    expect(doc).toContain("shall");
+    expect(doc).toContain("When an unknown requirement id is passed");
   });
 
-  test("names the cold-read standard", async () => {
+  test("states the read-alone rule in plain words", async () => {
     const doc = await loadTaxonomy();
-    expect(doc).toMatch(/cold read/i);
+    expect(doc).toContain("make sense on its own");
   });
 
   test("states the requirement-anatomy triple (verifying=tests, livesIn+implementing=files, issues=provenance)", async () => {
@@ -108,9 +100,9 @@ describe("TAXONOMY.md — requirement-authoring standard (CHRT-02)", () => {
 });
 
 describe("TAXONOMY.md — six headline invariants by post-reorg domain (CHRT-06)", () => {
-  test("names all six former-POC invariant ids", async () => {
+  test("lists the six invariants by their live requirement ids", async () => {
     const doc = await loadTaxonomy();
-    for (const id of FORMER_POC_INVARIANTS) {
+    for (const id of ["INDX-001", "CHCK-002", "SCHM-001", "INDX-002", "SCHM-002", "PROP-002"]) {
       expect(doc).toContain(id);
     }
   });
@@ -122,8 +114,8 @@ describe("TAXONOMY.md — six headline invariants by post-reorg domain (CHRT-06)
     }
   });
 
-  test("carries the id-reconcile note deferring exact successor ids to Phase 2", async () => {
+  test("carries no reorg-schedule chatter (Phase/Wave markers are gone)", async () => {
     const doc = await loadTaxonomy();
-    expect(doc).toMatch(/reconcile|Phase 2/);
+    expect(doc).not.toMatch(/Phase \d|Wave [A-F]/);
   });
 });
