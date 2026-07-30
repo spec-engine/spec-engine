@@ -339,9 +339,9 @@ Six promises the whole system leans on, each a real requirement in its domain:
 
 | # | Domain | Requirement | Invariant |
 |---|--------|-------------|-----------|
-| 1 | INDX | INDX-001 | Cold-rebuild identity — deleting `.spec-engine/` and rebuilding yields an identical result. |
-| 2 | CHCK | CHCK-002 | `spec check --ci` builds fresh — correctness never trusts a cached or warm index. |
-| 3 | SCHM | SCHM-001 | One shared schema — every read/write surface validates the same envelope. |
-| 4 | INDX | INDX-002 | `build_id` is deterministic for identical inputs. |
-| 5 | SCHM | SCHM-002 | One model, one storage seam — CLI, webapp, and MCP can never disagree. |
-| 6 | PROP | PROP-002 | The drift definition is the propagation contract, computed by a SQL view. |
+| 1 | INDX | INDX-007 | Cold-rebuild identity — deleting `.spec-engine/` and rebuilding yields an identical result. |
+| 2 | CHCK | CHCK-014 | `spec check --ci` builds fresh — correctness never trusts a cached or warm index. |
+| 3 | SCHM | SCHM-011 | One shared schema — every read/write surface validates the same envelope. |
+| 4 | INDX | INDX-008 | `build_id` is deterministic for identical inputs. |
+| 5 | SCHM | SCHM-012 | One model, one storage seam — CLI, webapp, and MCP can never disagree. |
+| 6 | PROP | PROP-004 | The drift definition is the propagation contract, computed by a SQL view. |
