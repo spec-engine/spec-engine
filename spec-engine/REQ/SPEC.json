@@ -1,7 +1,7 @@
 {
   "key": "REQ",
   "owner": null,
-  "updated": "2026-07-16",
+  "updated": "2026-07-30",
   "scope": "Requirement lifecycle: spec req, spec supersede, spec amend, and @-refs. Belongs here: next-id allocation; non-interactive authoring; supersede / move / amend; @path file-ref resolution. Does not belong here: scaffolding a whole domain (spec domain new → DOMAIN). Boundary case: minting a requirement id is REQ, scaffolding the domain that holds it is DOMAIN.",
   "requirements": [
     {
@@ -273,6 +273,21 @@
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-018",
+      "status": "active",
+      "statement": "When allocating the next requirement id, the system shall take the maximum sequence over both the working-tree spec and the spec at git HEAD, so a deleted entry's id is never re-minted.",
+      "why": "An id freed by deletion gets reassigned to unrelated behavior, and every existing tag and reference then points at the wrong requirement.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/authoring/domains.ts"
+      ],
+      "issues": [],
       "aliases": [],
       "cites": []
     }

@@ -126,9 +126,38 @@ describe("classifyLosses — loss taxonomy (GUARD-002..006)", () => {
     expect(losses[0]?.file).toBe("spec-engine/LEGAL/SPEC.json");
   });
 
-  test("a non-Active base req is never guarded (Draft/Superseded)", () => {
+  // @spec GUARD-011 unit
+  test("deleting a non-Active entry (Draft/Superseded) is a REQUIREMENT_REMOVED — history is never deleted", () => {
     const losses = classifyLosses(
       facts({ baseReqs: [req("BILLING-009", "draft"), req("BILLING-008", "superseded")] }),
+    );
+    expect(losses).toHaveLength(2);
+    expect(losses.every((l) => l.kind === "REQUIREMENT_REMOVED")).toBe(true);
+    const superseded = losses.find((l) => l.req_id === "BILLING-008");
+    expect(superseded?.detail).toContain("never deleted");
+  });
+
+  test("the supersede exemption does NOT excuse deleting an already-superseded entry", () => {
+    // BILLING-008's successor BILLING-009 survives — before the fix that
+    // satisfied isSuperseded and made pruning history silent.
+    const losses = classifyLosses(
+      facts({
+        baseReqs: [req("BILLING-008", "superseded", { supersededBy: "BILLING-009" })],
+        worktreeReqIds: new Set(["BILLING-009"]),
+        worktreeActiveIds: new Set(["BILLING-009"]),
+      }),
+    );
+    expect(losses).toHaveLength(1);
+    expect(losses[0]?.kind).toBe("REQUIREMENT_REMOVED");
+    expect(losses[0]?.req_id).toBe("BILLING-008");
+  });
+
+  test("an approve comment still suppresses a history removal (GUARD-007)", () => {
+    const losses = classifyLosses(
+      facts({
+        baseReqs: [req("BILLING-008", "superseded")],
+        approved: new Set(["BILLING-008"]),
+      }),
     );
     expect(losses).toHaveLength(0);
   });

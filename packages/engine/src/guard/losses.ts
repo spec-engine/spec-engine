@@ -118,6 +118,17 @@ function reqDeletedLoss(base: SpecRequirement, f: GuardFacts): Loss {
   };
 }
 
+function historyRemovedLoss(base: SpecRequirement, f: GuardFacts): Loss {
+  const display = base.status.charAt(0).toUpperCase() + base.status.slice(1).toLowerCase();
+  return {
+    kind: "REQUIREMENT_REMOVED",
+    req_id: base.id,
+    file: f.baseReqPath.get(base.id) ?? "",
+    line: 0,
+    detail: `${base.id} was ${display} at the ref but is absent from the working-tree spec — a requirement is never deleted, and its history is the record`,
+  };
+}
+
 function implLostLoss(id: string, site: TagSite): Loss {
   return {
     kind: "IMPL_LOST",
@@ -149,16 +160,22 @@ function specFileDeletedLoss(path: string): Loss {
 }
 
 /**
- * REQUIREMENT_REMOVED for one base requirement (from a changed spec file), or null. A
- * requirement is lost when it was Active at the ref, is absent from the working
- * tree, and was neither approved (GUARD-007) nor properly superseded in either
- * direction (GUARD-006). A requirement that SURVIVES in the working tree is not
- * a REQUIREMENT_REMOVED — any tag loss it suffers is caught by the tag-driven pass.
+ * REQUIREMENT_REMOVED for one base requirement (from a changed spec file), or null.
+ * An ACTIVE requirement is lost when it is absent from the working tree and was
+ * neither approved (GUARD-007) nor properly superseded in either direction
+ * (GUARD-006). A NON-Active requirement (superseded/retired/draft) absent from
+ * the working tree is ALWAYS a loss unless approved: it is history, and the
+ * supersede exemption never applies to it — a superseded entry's successor edge
+ * existed before the change, so honoring it here would make pruning history
+ * silent (the very hole this closes). A requirement that SURVIVES in the working
+ * tree is not a REQUIREMENT_REMOVED — any tag loss it suffers is caught by the
+ * tag-driven pass.
  */
 function reqDeletedFor(base: SpecRequirement, f: GuardFacts): Loss | null {
-  if (!isActive(base.status)) return null;
   if (f.approved.has(base.id)) return null;
   if (f.worktreeReqIds.has(base.id)) return null;
+  // @spec GUARD-011
+  if (!isActive(base.status)) return historyRemovedLoss(base, f);
   if (isSuperseded(base, f)) return null;
   return reqDeletedLoss(base, f);
 }
