@@ -4,7 +4,6 @@
 // @spec DOMAIN-001
 // @spec DOMAIN-007
 // @spec REQ-005
-// @spec approve AUTHC-017 import-count rule evicted to AGENTS.md + the D-08 CI fence (§4.5 dev convention, not a product promise)
 //
 // Shared substrate for the noun-verb authoring surface:
 // `spec domain new`, `spec domain list`,

@@ -18,9 +18,9 @@
 // @spec GUARD-004
 // @spec GUARD-005
 // @spec GUARD-006
-// @spec GUARD-007
 // @spec GUARD-008
 // @spec GUARD-009
+// @spec GUARD-012
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -247,8 +247,9 @@ describe("spec guard — loss classes (GUARD-002..005)", () => {
     );
     expect(r.stdout).toContain(
       "and its verifying test. Requirements are superseded, never deleted. " +
-        "Either run `spec supersede BILLING-001` with a successor, or stop and ask the user " +
-        "whether this requirement should die.",
+        "Either run `spec supersede BILLING-001` with a successor, or run " +
+        "`spec deprecate BILLING-001 " +
+        '--reason "..."` to end it with a recorded reason.',
     );
   });
 });
@@ -277,19 +278,23 @@ describe("spec guard — suppressions (GUARD-006/007)", () => {
     expect(JSON.parse(r.stdout)).toEqual([]);
   });
 
-  test("an @spec approve directive suppresses the loss (GUARD-007)", async () => {
-    // Delete BILLING-001, but acknowledge it with an in-diff approve comment.
+  test("no override comment exists: an in-diff acknowledgement does NOT suppress the loss (GUARD-012)", async () => {
+    // Delete BILLING-001 and leave an approve-style comment in the diff — the
+    // escape hatch is gone; the deletion is still reported.
     writeFileSync(
       join(repo, "spec-engine", "BILLING", "SPEC.json"),
       billingJson([activeReq("BILLING-002")]),
     );
     writeFileSync(
       join(repo, "src", "billing.ts"),
-      `// billing implementation — ${approve("BILLING-001", "retired per user decision")}\nexport function refund() {} // ${tag("BILLING-002")}\n`,
+      `// billing implementation — ${approve("BILLING-001", "acknowledged")}\nexport function refund() {} // ${tag("BILLING-002")}\n`,
     );
     const r = await runGuard({ platformDir: repo, json: true });
-    expect(r.code).toBe(0);
-    expect(JSON.parse(r.stdout)).toEqual([]);
+    expect(r.code).toBe(1);
+    const losses = JSON.parse(r.stdout) as Array<{ kind: string; req_id: string }>;
+    expect(losses.some((l) => l.kind === "REQUIREMENT_REMOVED" && l.req_id === "BILLING-001")).toBe(
+      true,
+    );
   });
 });
 

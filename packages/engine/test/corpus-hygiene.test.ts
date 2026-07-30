@@ -130,9 +130,9 @@ describe("corpus hygiene (STND-03 — AUTHC-017 eviction)", () => {
     }
   });
 
-  test("authoring/domains.ts carries no binding AUTHC-017 @spec tag, only the approve tombstone", async () => {
+  test("authoring/domains.ts carries no binding AUTHC-017 @spec tag and no approve tombstone (the override comment is removed — GUARD-012)", async () => {
     await assertAbsent(DOMAINS_TS, "authoring/domains.ts", BINDING_TAG_RE);
     const src = await Bun.file(DOMAINS_TS).text();
-    expect(src).toContain("@spec approve AUTHC-017");
+    expect(src).not.toContain("@spec approve");
   });
 });
