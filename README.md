@@ -233,14 +233,15 @@ against your working tree and blocks what's about to be lost.
 $ spec guard .
 🛑 spec-guard: BILLING-009 is Active and this change deletes its only implementation
 (src/billing.ts:12) and its verifying test. Requirements are superseded, never deleted.
-Either run `spec supersede BILLING-009` with a successor, or stop and ask the user
-whether this requirement should die.
+Either run `spec supersede BILLING-009` with a successor, or run
+`spec deprecate BILLING-009 --reason "..."` to end it with a recorded reason.
 ```
 
 It exits `1` on any loss, `0` when clean (or when run outside a git repo — it never fails
-a non-git context). Two things suppress a loss: superseding the requirement in the same
-change (the legal path), or an explicit `// @spec approve BILLING-009 <reason>` comment —
-the deliberate, reasoned escape hatch, same UX as `biome-ignore`.
+a non-git context). There is no override comment. A loss is suppressed only by ending the
+requirement properly in the same change: supersede it with a successor, or run
+`spec deprecate BILLING-009 --reason "..."` — which records why on the entry itself, the
+one place the reason survives the code being deleted.
 
 Wire it as a **pre-commit hook** (lefthook shown; a bare `.git/hooks/pre-commit` works too):
 

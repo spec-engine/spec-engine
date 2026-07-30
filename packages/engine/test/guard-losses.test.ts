@@ -1,7 +1,7 @@
 // packages/engine/test/guard-losses.test.ts
 //
 // Pure-function coverage for the guard package: the classifier
-// (guard/losses.ts), the formatter (guard/format.ts), and the approve-directive
+// (guard/losses.ts) and the formatter (guard/format.ts). These
 // parser (guard/directives.ts). These need no git repo — they exercise the loss
 // taxonomy, both suppressions, the exact product-surface block copy, and the
 // byte-stable --json contract directly against hand-built facts.
@@ -12,19 +12,13 @@
 // @spec GUARD-004
 // @spec GUARD-005
 // @spec GUARD-006
-// @spec GUARD-007
 // @spec GUARD-009
+// @spec GUARD-012
 
 import { describe, expect, test } from "bun:test";
 import type { SpecRequirement } from "@spec-engine/shared";
-import { scanApprovals } from "../src/guard/directives";
 import { renderGuard, sortLosses } from "../src/guard/format";
 import { classifyLosses, type GuardFacts, type Loss } from "../src/guard/losses";
-import { SPEC_TOKEN } from "./fixtures/specTag";
-
-// Compose tag tokens at runtime so no literal `@spec <ID>` appears in this
-// test's source (the self-member scanner would index it — see specTag.ts).
-const T = SPEC_TOKEN;
 
 /** Minimal SpecRequirement builder — fills the schema-defaulted array fields. */
 function req(id: string, status: string, extra: Partial<SpecRequirement> = {}): SpecRequirement {
@@ -55,7 +49,6 @@ function facts(over: Partial<GuardFacts> = {}): GuardFacts {
     worktreeSupersedesTargets: new Set(),
     worktreeImplCount: new Map(),
     worktreeVerifyCount: new Map(),
-    approved: new Set(),
     deletedSpecFiles: [],
     ...over,
   };
@@ -152,14 +145,10 @@ describe("classifyLosses — loss taxonomy (GUARD-002..006)", () => {
     expect(losses[0]?.req_id).toBe("BILLING-008");
   });
 
-  test("an approve comment still suppresses a history removal (GUARD-007)", () => {
-    const losses = classifyLosses(
-      facts({
-        baseReqs: [req("BILLING-008", "superseded")],
-        approved: new Set(["BILLING-008"]),
-      }),
-    );
-    expect(losses).toHaveLength(0);
+  test("no override exists: a history removal is a loss even when 'acknowledged' in the change (GUARD-012)", () => {
+    const losses = classifyLosses(facts({ baseReqs: [req("BILLING-008", "superseded")] }));
+    expect(losses).toHaveLength(1);
+    expect(losses[0]?.kind).toBe("REQUIREMENT_REMOVED");
   });
 });
 
@@ -199,32 +188,18 @@ describe("classifyLosses — suppressions (GUARD-006/007)", () => {
     expect(losses).toHaveLength(0);
   });
 
-  test("@spec approve suppresses every loss for the acknowledged id (GUARD-007)", () => {
+  test("deprecating in the same change suppresses tag losses — the status flip is the legal path (GUARD-012)", () => {
+    // BILLING-001 survives but is no longer Active (deprecated in this change):
+    // its removed implementation is the expected cleanup, not a loss.
     const losses = classifyLosses(
       facts({
         baseReqs: [req("BILLING-001", "active")],
         baseImplSite: new Map([["BILLING-001", { file: "src/billing.ts", line: 12 }]]),
-        approved: new Set(["BILLING-001"]),
+        worktreeReqIds: new Set(["BILLING-001"]),
+        worktreeActiveIds: new Set(), // deprecated now — not Active
       }),
     );
     expect(losses).toHaveLength(0);
-  });
-});
-
-describe("scanApprovals — the @spec approve escape hatch (GUARD-007)", () => {
-  test("parses id + mandatory reason", () => {
-    const a = scanApprovals(`// ${T} approve BILLING-009 dropping per user decision`);
-    expect(a).toEqual([{ req_id: "BILLING-009", reason: "dropping per user decision" }]);
-  });
-
-  test("a reasonless approve does NOT count", () => {
-    expect(scanApprovals(`// ${T} approve BILLING-009`)).toEqual([]);
-    expect(scanApprovals(`// ${T} approve BILLING-009   `)).toEqual([]);
-  });
-
-  test("a normal @spec binding tag is NOT an approval (disjoint grammars)", () => {
-    expect(scanApprovals(`// ${T} BILLING-009`)).toEqual([]);
-    expect(scanApprovals(`// ${T} BILLING-009 unit`)).toEqual([]);
   });
 });
 
@@ -245,8 +220,9 @@ describe("renderGuard — product surface + byte-stable JSON (GUARD-009)", () =>
     expect(text).toBe(
       "🛑 spec-guard: BILLING-009 is Active and this change deletes its only implementation " +
         "(src/billing.ts:12) and its verifying test. Requirements are superseded, never deleted. " +
-        "Either run `spec supersede BILLING-009` with a successor, or stop and ask the user " +
-        "whether this requirement should die.",
+        "Either run `spec supersede BILLING-009` with a successor, or run " +
+        "`spec deprecate BILLING-009 " +
+        '--reason "..."` to end it with a recorded reason.',
     );
   });
 

@@ -19,14 +19,12 @@
 // D-08 grep-fence: this file imports NO bun:sqlite. Tag counts come through the
 // Storage interface, never a raw driver.
 
-import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { type SpecRequirement, type Storage, validateDomainFile } from "@spec-engine/shared";
-import { type DiffEntry, gitDiffNameStatus, gitShow } from "../base/gitBase";
+import { gitDiffNameStatus, gitShow } from "../base/gitBase";
 import { CANONICAL_SPECS_DIR } from "../constants";
 import { DEFAULT_EXTS, findDomainJsonFiles, isPathIgnored } from "../scanner/fs";
 import { scanTagsInFile } from "../scanner/tags";
-import { scanApprovals } from "./directives";
 import type { GuardFacts, TagSite } from "./losses";
 
 const CODE_EXTS: ReadonlySet<string> = new Set(DEFAULT_EXTS);
@@ -143,23 +141,6 @@ function tallyWorktreeTags(storage: Storage): {
   return { implCount, verifyCount };
 }
 
-/** Requirement ids acknowledged by an `@spec approve` directive anywhere in the
- *  still-present changed files (a deleted file carries no worktree text). */
-async function collectApprovals(
-  platformDir: string,
-  changed: readonly DiffEntry[],
-): Promise<Set<string>> {
-  const approved = new Set<string>();
-  for (const entry of changed) {
-    if (entry.status === "D") continue;
-    const abs = join(platformDir, entry.path);
-    if (!existsSync(abs)) continue;
-    const text = await Bun.file(abs).text();
-    for (const a of scanApprovals(text)) approved.add(a.req_id);
-  }
-  return approved;
-}
-
 /**
  * Assemble the full `GuardFacts` bag for the classifier. Orchestrates the five
  * collectors above over the `git diff --name-status <ref>` change scope; each
@@ -182,7 +163,6 @@ export async function collectFacts(
   const baseTags = collectBaseTags(platformDir, ref, codePaths);
   const worktree = await collectWorktreeReqs(join(platformDir, CANONICAL_SPECS_DIR));
   const counts = tallyWorktreeTags(storage);
-  const approved = await collectApprovals(platformDir, changed);
 
   return {
     baseReqs: base.reqs,
@@ -194,7 +174,6 @@ export async function collectFacts(
     worktreeSupersedesTargets: worktree.supersedesTargets,
     worktreeImplCount: counts.implCount,
     worktreeVerifyCount: counts.verifyCount,
-    approved,
     deletedSpecFiles,
   };
 }

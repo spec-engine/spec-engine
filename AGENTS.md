@@ -118,6 +118,7 @@ Branch on exit codes, not on output text.
 | `spec req <domain-prefix> [platformDir]` | Piped: print next unused ID. TTY: interactive authoring. `--text` (+`--why/--binds/--lives`): author non-interactively | yes (object) | 0 / 2 |
 | `spec term <name> [platformDir]` / `spec term list` / `spec term revise <TERM-NNN>` / `spec term confirm <KEY-NNN> <TERM-NNN>` | Author a glossary TERM (definition in the statement, headword in `term`, `--aliases` synonyms), list terms, revise a definition in place with a version bump, or re-pin/re-point a requirement's citation (clears TERM_DRIFT / SUPERSEDED_TERM_REFERENCED) | yes (object/array) | 0 / 2 |
 | `spec glossary [platformDir]` | GENERATE GLOSSARY.md from the TERM store (byte-stable). `--migrate`: one-time parse of GLOSSARY.md into `TERM-001..N` (idempotent-skip). `--check`: fail on drift (committed != generated) | yes (object) | 0 / 1 / 2 |
+| `spec deprecate <KEY-NNN> --reason "…" [platformDir]` | Mark an Active/Draft requirement end-of-life, recording why on the entry; emits the cleanup worklist of tags still bound to the id | yes (object) | 0 / 2 |
 | `spec supersede <KEY-NNN> [platformDir]` | Flip to `Superseded by NEW`, mint successor, bump spec_version, emit retag worklist | yes (object) | 0 / 2 |
 | `spec move <KEY-NNN> <NEW-DOMAIN> [platformDir]` | Cross-domain supersede: mint the successor in `<NEW-DOMAIN>` carrying the source's fields, flip the source to superseded, bump both specVersions, emit retag worklist | yes (object) | 0 / 2 |
 | `spec amend <KEY-NNN> [platformDir]` | Revise an unshipped entry's fields in place (same id, no version bump) | yes (object) | 0 / 2 |
@@ -199,9 +200,9 @@ edited specs or tags and need the answer to reflect it.
   implementing tag for a surviving Active req removed) | `VERIFY_LOST` (its
   last verifying tag removed) | `SPEC_FILE_DELETED` (`req_id` null — a
   canonical spec file gone). Exit 1 on any loss, 0 clean. **A loss is
-  suppressed** two ways: superseding the requirement in the same change
-  (either direction), or an explicit `// @spec approve KEY-NNN <reason>`
-  comment in the change (mandatory reason — same UX as `biome-ignore`). Text
+  suppressed** only by ending the requirement properly in the same change:
+  supersede it (either direction), or `spec deprecate` it — there is no
+  override comment. Text
   mode emits the product-surface `🛑 spec-guard:` block per requirement,
   written in the second person so an agent relays it verbatim.
   **Never-fail-non-git (GUARD-008):** a non-git tree, a fresh repo with no

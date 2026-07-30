@@ -80,6 +80,12 @@ export const SpecRequirementSchema = z
     // back-fill). Carried in the orderDomain whitelist below or it is silently
     // stripped on write (the changedAtVersion strip-trap).
     supersededAtVersion: z.number().int().optional(),
+    // The reason recorded by `spec deprecate` (D1): why this requirement is
+    // end-of-life. Lives ON the entry — a comment was the wrong record
+    // because it lives in the code being deleted. Absent for every
+    // non-deprecated entry. Carried in the orderDomain whitelist below or it
+    // is silently stripped on write (the strip-trap).
+    deprecatedReason: z.string().optional(),
     // TERM-01 (Phase 6): the four OPTIONAL glossary-term fields. A term IS a
     // requirement row (FORK 1 = reuse, not a parallel schema): `term` is the
     // glossary headword, `aliases` its synonyms, `cites` its pinned references
@@ -241,6 +247,9 @@ function orderDomain(d: SpecDomain) {
       // `undefined` (never superseded, or pre-field history) omits by
       // JSON.stringify, so untouched requirements stay byte-identical.
       supersededAtVersion: r.supersededAtVersion,
+      // The deprecation reason (D1) — undefined omits, so every
+      // non-deprecated entry stays byte-identical.
+      deprecatedReason: r.deprecatedReason,
       // TERM-01 (Phase 6): carry the four glossary-term fields in their
       // canonical (schema) positions. WITHOUT these lines the whitelist rebuild
       // silently strips an authored term/aliases/cites/section on every write —

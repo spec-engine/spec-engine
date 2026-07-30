@@ -18,8 +18,8 @@
 //          "<STOP> spec-guard: BILLING-009 is Active and this change deletes its
 //           only implementation (src/billing.ts:12) and its verifying test.
 //           Requirements are superseded, never deleted. Either run
-//           `spec supersede BILLING-009` with a successor, or stop and ask the
-//           user whether this requirement should die."
+//           `spec supersede BILLING-009` with a successor, or run
+//           `spec deprecate BILLING-009 --reason "..."` to end it."
 //
 //          Per-requirement losses (REQUIREMENT_REMOVED / IMPL_LOST / VERIFY_LOST) are
 //          AGGREGATED into a single block so the "...implementation ... and its
@@ -80,8 +80,8 @@ function requirementBlock(reqId: string, losses: readonly Loss[]): string {
   return (
     `${STOP} spec-guard: ${reqId} is Active and this change deletes ${deletesClause(losses)}. ` +
     "Requirements are superseded, never deleted. " +
-    `Either run \`spec supersede ${reqId}\` with a successor, ` +
-    "or stop and ask the user whether this requirement should die."
+    `Either run \`spec supersede ${reqId}\` with a successor, or run ` +
+    `\`spec deprecate ${reqId} --reason "..."\` to end it with a recorded reason.`
   );
 }
 

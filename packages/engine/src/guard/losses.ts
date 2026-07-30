@@ -19,7 +19,7 @@
 //
 // The four loss classes:
 //   REQUIREMENT_REMOVED       — a req Active at the ref is absent from the working-tree
-//                       spec with no approved supersession (GUARD-002).
+//                       spec and not superseded (GUARD-002).
 //   IMPL_LOST         — the LAST implementing tag for a surviving Active req is
 //                       gone from the whole working tree (GUARD-003).
 //   VERIFY_LOST       — the LAST verifying tag for a surviving Active req is
@@ -30,8 +30,8 @@
 // Two suppressions (a loss is NOT a loss when):
 //   - the requirement was properly superseded in the same change — in either
 //     direction (GUARD-006), OR
-//   - the change carries an `@spec approve KEY-NNN <reason>` directive
-//     (GUARD-007, the escape hatch — `approved` is populated by the caller from
+//   - (there is no override comment: a loss is suppressed only by superseding
+//     or deprecating the requirement in the same change — GUARD-012.
 //     guard/directives.ts).
 
 import type { SpecRequirement } from "@spec-engine/shared";
@@ -86,9 +86,6 @@ export interface GuardFacts {
   worktreeImplCount: ReadonlyMap<string, number>;
   /** id → count of verifying tags across the WHOLE working tree. */
   worktreeVerifyCount: ReadonlyMap<string, number>;
-  /** Requirement ids acknowledged by an `@spec approve` directive in the
-   *  change — every loss for these is suppressed (GUARD-007). */
-  approved: ReadonlySet<string>;
   /** Canonical spec files present at the ref but absent from the working tree
    *  (git status `D` under spec-engine) — one SPEC_FILE_DELETED each. */
   deletedSpecFiles: readonly string[];
@@ -114,7 +111,7 @@ function reqDeletedLoss(base: SpecRequirement, f: GuardFacts): Loss {
     req_id: base.id,
     file: f.baseReqPath.get(base.id) ?? "",
     line: 0,
-    detail: `${base.id} was Active at the ref but is absent from the working-tree spec with no approved supersession`,
+    detail: `${base.id} was Active at the ref but is absent from the working-tree spec and was not superseded — a requirement is never deleted`,
   };
 }
 
@@ -162,9 +159,8 @@ function specFileDeletedLoss(path: string): Loss {
 /**
  * REQUIREMENT_REMOVED for one base requirement (from a changed spec file), or null.
  * An ACTIVE requirement is lost when it is absent from the working tree and was
- * neither approved (GUARD-007) nor properly superseded in either direction
- * (GUARD-006). A NON-Active requirement (superseded/retired/draft) absent from
- * the working tree is ALWAYS a loss unless approved: it is history, and the
+ * not properly superseded in either direction (GUARD-006). A NON-Active requirement (superseded/retired/draft) absent from
+ * the working tree is ALWAYS a loss: it is history, and the
  * supersede exemption never applies to it — a superseded entry's successor edge
  * existed before the change, so honoring it here would make pruning history
  * silent (the very hole this closes). A requirement that SURVIVES in the working
@@ -172,7 +168,6 @@ function specFileDeletedLoss(path: string): Loss {
  * tag-driven pass.
  */
 function reqDeletedFor(base: SpecRequirement, f: GuardFacts): Loss | null {
-  if (f.approved.has(base.id)) return null;
   if (f.worktreeReqIds.has(base.id)) return null;
   // @spec GUARD-011
   if (!isActive(base.status)) return historyRemovedLoss(base, f);
@@ -182,13 +177,13 @@ function reqDeletedFor(base: SpecRequirement, f: GuardFacts): Loss | null {
 
 /** True iff `id` — which had a base tag of the relevant kind in a changed code
  *  file — has lost its LAST tag of that kind. Gated on the working tree: only a
- *  surviving, still-Active, un-approved requirement is guarded. A req that was
+ *  surviving, still-Active requirement is guarded. A req that was
  *  deleted (REQUIREMENT_REMOVED owns it), superseded (status flipped OUT of Active — the
- *  expected retag worklist, GUARD-006), or approved (GUARD-007) is excluded by
- *  the same `worktreeActiveIds`/`approved` gate. `count === 0` means no tag of
+ *  expected retag worklist, GUARD-006) is excluded by the same
+ *  `worktreeActiveIds` gate. `count === 0` means no tag of
  *  that kind survives anywhere in the working tree (the derived index). */
 function lastTagGone(id: string, count: number, f: GuardFacts): boolean {
-  return !f.approved.has(id) && f.worktreeActiveIds.has(id) && count === 0;
+  return f.worktreeActiveIds.has(id) && count === 0;
 }
 
 /**

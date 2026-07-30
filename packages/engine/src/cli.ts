@@ -40,6 +40,7 @@ const main = defineCommand({
     term: () => import("./commands/term").then((m) => m.termCommand),
     glossary: () => import("./commands/glossary").then((m) => m.glossaryCommand),
     supersede: () => import("./commands/supersede").then((m) => m.supersedeCommand),
+    deprecate: () => import("./commands/deprecate").then((m) => m.deprecateCommand),
     move: () => import("./commands/move").then((m) => m.moveCommand),
     amend: () => import("./commands/amend").then((m) => m.amendCommand),
     mcp: () => import("./commands/mcp").then((m) => m.mcpCommand),
