@@ -21,6 +21,23 @@ found in one command instead of three repo reviews and a Slack thread.
 
 ---
 
+## The idea
+
+Everything in Spec Engine follows from eight statements:
+
+1. A requirement represents a single behavior.
+2. A requirement is never deleted. When behavior changes, it is superseded or deprecated.
+3. The written requirements are the single source of truth for what the software is supposed to do.
+4. A requirement can be linked to the code that implements it and to the tests that prove it.
+5. Reports are computed from the requirements and their links.
+6. You can check whether the requirements, code, and tests agree, and exactly where they don't.
+7. Tickets are not requirements. A ticket is temporary work; requirements outlive it.
+8. Requirements are written in a fixed shape (when X happens, the system shall do Y).
+
+Everything else — the file format, the tags, the commands — is implementation of these.
+
+---
+
 ## 30 seconds to value
 
 Spec Engine ships as one npm package. With [Bun](https://bun.sh) installed (the engine is
