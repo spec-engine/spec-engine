@@ -7,17 +7,18 @@
   "requirements": [
     {
       "id": "PROV-001",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec provenance treats every issue_id as an opaque payload — never a PK, FK, UNIQUE, index, or JOIN key — so an issue link can never silently become an identity or routing construct.",
       "why": "If an issue id became a join or routing key, an issue-link collision would silently reroute a requirement's provenance to the wrong requirement — corrupting the audit trail the provenance matrix exists to preserve.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "PROV-004",
       "relates": [],
       "livesIn": [
         "@packages/shared/src/schema.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 2,
       "aliases": [],
       "cites": []
     },
@@ -48,6 +49,22 @@
         "packages/engine/src/commands/supersede.ts"
       ],
       "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "PROV-004",
+      "status": "active",
+      "statement": "The spec CLI shall store and display an issue id verbatim as an opaque string; an issue id shall never be resolved against the requirements table, shall never route provenance between requirements, and colliding issue ids shall coexist without merging.",
+      "why": "If an issue id became a join or routing key, an issue-link collision would silently reroute a requirement's provenance to the wrong requirement — corrupting the audit trail the provenance matrix exists to preserve.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/shared/src/schema.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
       "aliases": [],
       "cites": []
     }

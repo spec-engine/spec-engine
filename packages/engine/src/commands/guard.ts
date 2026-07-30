@@ -1,8 +1,8 @@
 // packages/engine/src/commands/guard.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec GUARD-001
-// @spec GUARD-008
+// @spec GUARD-013
+// @spec GUARD-019
 //
 // `spec guard [platformDir] [--against <ref>] [--json]` — loss detection for
 // requirements about to be steamrolled.

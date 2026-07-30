@@ -1,9 +1,7 @@
 // packages/engine/src/cli.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec INIT-010
-// @spec INIT-011
-// @spec INIT-012
+// @spec INIT-026
 // @spec REQ-019
 //
 // citty entrypoint for the compiled `spec` binary (WORK-07 / CI-01).

@@ -1,7 +1,8 @@
 // packages/engine/test/cli-query-unit.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec QURY-001
+// @spec QURY-005
+// @spec QURY-006
 //
 // Unit tests for `spec query` (commands/query.ts). In-process invocation
 // of the citty command with process.exit stubbed to throw ExitError so the

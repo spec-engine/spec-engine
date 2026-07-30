@@ -1,15 +1,15 @@
 // packages/engine/test/cli-domain.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec DOMAIN-001
-// @spec DOMAIN-002
-// @spec DOMAIN-003
-// @spec DOMAIN-010
-// @spec DOMAIN-005
-// @spec DOMAIN-006
-// @spec DOMAIN-007
-// @spec DOMAIN-008
-// @spec DOMAIN-009
+// @spec DOMAIN-011
+// @spec DOMAIN-012
+// @spec DOMAIN-013
+// @spec DOMAIN-019
+// @spec DOMAIN-014
+// @spec DOMAIN-015
+// @spec DOMAIN-016
+// @spec DOMAIN-017
+// @spec DOMAIN-018
 //
 // `spec domain new <name> [platformDir]` scaffolds a starter SPEC.md with input
 // normalization; `spec domain list [platformDir]` prints sorted domain
@@ -151,7 +151,7 @@ describe("spec domain new — normalization (AUTHC-001/002)", () => {
 });
 
 describe("spec domain new — scaffold shape (AUTHC-004)", () => {
-  // @spec DOMAIN-010 — a requirement (non-TERM) domain scaffolds WITHOUT an
+  // @spec DOMAIN-019 — a requirement (non-TERM) domain scaffolds WITHOUT an
   // authored specVersion (its version is DAG-derived, SCHM-007/008).
   test("scaffold is a JSON envelope with the canonical empty shape (no specVersion)", async () => {
     await runDomainNew("VALID", tmp);
@@ -172,7 +172,7 @@ describe("spec domain new — scaffold shape (AUTHC-004)", () => {
     expect("specVersion" in obj).toBe(false);
   });
 
-  // @spec DOMAIN-010 — the reserved TERM domain is the sole exception: it IS
+  // @spec DOMAIN-019 — the reserved TERM domain is the sole exception: it IS
   // seeded with specVersion 1 (its authored counter is the term-drift pin).
   test("the reserved TERM domain scaffolds WITH specVersion 1", async () => {
     await runDomainNew("TERM", tmp);
@@ -279,7 +279,7 @@ describe("D-08 — zero bun:sqlite imports in the authoring path", () => {
 // objects (a breaking shape change from the old flat `string[]`). scope is read
 // per-key from the filesystem SPEC.json — null when a domain has no charter,
 // `[]` when there are none. Verifies the CHRT-004 emit site in commands/domain.ts.
-// @spec CHRT-004 unit
+// @spec CHRT-011 unit
 // ----------------------------------------------------------------------------
 
 describe("spec domain list --json — machine mode (CHRT-004)", () => {

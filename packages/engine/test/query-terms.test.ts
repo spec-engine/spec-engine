@@ -48,7 +48,7 @@ afterAll(() => {
 });
 
 describe("TERM-07 — spec query surfaces term definitions beside requirement hits", () => {
-  // @spec QURY-003 unit
+  // @spec QURY-008 unit
   test("term hit surfaces with key='TERM' (definition-word match on the real store)", () => {
     // "ephemeral" appears ONLY in TERM-029's definition across the whole
     // canonical store — a clean proof that a term surfaces via its definition.

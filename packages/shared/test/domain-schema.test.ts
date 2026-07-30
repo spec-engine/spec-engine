@@ -228,7 +228,7 @@ describe("validateDomainFile — structural ACCEPT despite SEMANTIC defect (Inva
 // write never happens) and `orderDomain` DROPS scope from the unscoped one. The
 // assertions target the GREEN (plan 01-02) expectation and fail as clean
 // assertion failures now — never a thrown exception. Do not soften them.
-// @spec CHRT-003 unit
+// @spec CHRT-010 unit
 describe("scope round-trip (CHRT-003)", () => {
   // Unique temp path per case. `validateAndWrite → Bun.write` creates the parent
   // dir, and `Bun.file(...).exists()` guards the re-read — so this shared-package
@@ -286,7 +286,7 @@ describe("scope round-trip (CHRT-003)", () => {
 // validateAndWrite REJECTS the term-bearing envelope (ok:false — the write
 // never happens). It goes GREEN when Plan 06-01 Task 2 adds the four fields to
 // BOTH the schema and orderDomain. Do not soften these assertions.
-// @spec SCHM-005 unit
+// @spec SCHM-016 unit
 describe("term field round-trip (TERM-01, dogfooded as SCHM)", () => {
   let n = 0;
   function writePath() {

@@ -156,7 +156,7 @@ function readSpecRaw(): string {
 }
 
 describe("spec supersede — happy path (L2)", () => {
-  // @spec REQ-016 — a requirement domain reports the DAG-derived version, never
+  // @spec REQ-036 — a requirement domain reports the DAG-derived version, never
   // an authored counter. The fixture already holds one superseded edge
   // (BILLING-002), so before this run the derived version is 2; superseding
   // BILLING-001 adds the second edge and the reported/died-at version is 3 —
@@ -232,7 +232,7 @@ describe("spec supersede — happy path (L2)", () => {
     expect((succ as unknown as DomainReq).livesIn).toEqual(["renew.ts"]); // still copied
   });
 
-  // @spec REQ-016 — on a requirement domain --no-bump is a no-op: there is no
+  // @spec REQ-036 — on a requirement domain --no-bump is a no-op: there is no
   // authored counter to hold back, so the died-at stamp is still the DAG-derived
   // version (two edges → 3) and no specVersion is written.
   test("--no-bump is a no-op on a requirement domain — the version stays DAG-derived", async () => {

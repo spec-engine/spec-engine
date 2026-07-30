@@ -35,7 +35,7 @@ const DEFAULT_TIMEOUT_MS = 5000;
  * string-interpolated into the query (injection-safe; mirrors Phase 13 `$issue`
  * discipline). This is a read document; it carries no GraphQL write.
  *
- * @spec TRK-002 — the tracker sends only a GraphQL read `query`, never a
+ * @spec TRK-005 — the tracker sends only a GraphQL read `query`, never a
  * mutation, so requirement state is looked up but never written back.
  */
 const ISSUE_QUERY = "query($id:String!){ issue(id:$id){ title state{ name } url } }";
@@ -178,7 +178,7 @@ export function makeLinearAdapter(fetchImpl: typeof fetch = fetch): TrackerAdapt
     name: "linear",
     matches: (id) => ISSUE_RE.test(id),
     async resolveIssues(ids) {
-      // @spec TRK-003 — read SPEC_TRACKER_TOKEN once from the environment, send it
+      // @spec TRK-006 — read SPEC_TRACKER_TOKEN once from the environment, send it
       // only as the raw Authorization header, never write it to a console.* call.
       // Trim first: a whitespace-only token (stray space / trailing newline from a
       // shell or `.env`) is treated as ABSENT — empty after trim → no network.

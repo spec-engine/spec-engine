@@ -1,7 +1,8 @@
 // packages/engine/src/onboarding/context.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec INIT-009
+// @spec INIT-024
+// @spec INIT-025
 //
 // INIT-07 / INIT-15: substrate for "where am I?" detection used by
 // commands/init.ts (Plan 09-02) and Phase 10's interactive prompt.

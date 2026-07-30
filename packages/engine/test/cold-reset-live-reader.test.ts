@@ -1,7 +1,7 @@
 // packages/engine/test/cold-reset-live-reader.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec CHCK-002
+// @spec CHCK-014
 //
 // The two operational-concurrency guarantees added after the storage-error
 // work (commit 6d87266 follow-ups):

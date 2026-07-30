@@ -1,7 +1,7 @@
 // packages/engine/src/authoring/filerefs.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec REQ-012
+// @spec REQ-031
 //
 // 260605-tqz (D-03): @file-ref substrate — grammar, extraction, and
 // platform-root resolution for `@<relative/path>` tokens in requirement

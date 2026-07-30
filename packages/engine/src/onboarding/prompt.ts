@@ -1,7 +1,7 @@
 // packages/engine/src/onboarding/prompt.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec INIT-008
+// @spec INIT-023
 //
 // INIT-13: shared interactive onboarding prompt for the 8 indexing-tier
 // commands (index, check, map, propagation, query, resolve, gate, serve).

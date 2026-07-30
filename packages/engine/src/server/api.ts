@@ -447,7 +447,7 @@ async function amendGateRejection(
     );
   }
   if (statusLc === "active") {
-    // @spec REQ-015
+    // @spec REQ-035
     await runIndex({ platformDir, storage });
     const bound = storage
       .listTags({ req_id: id })
@@ -518,7 +518,8 @@ function parseQueryLimit(
  * fixture clone. Resolution is engine-SIDE — the webapp reads the decorated
  * text and never imports `@spec-engine/tracker` (D-09).
  *
- * @spec SERV-002
+ * @spec SERV-009
+ # @spec SERV-010
  */
 export function mountApi(app: Hono, storage: Storage, platformDir: string = process.cwd()): Hono {
   // No-store middleware — applies to every `/api/*` route below. Registered

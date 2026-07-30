@@ -24,7 +24,8 @@
 // never inside the committed fixture).
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec CHCK-004 integration
+// @spec CHCK-016 integration
+// @spec CHCK-017 integration
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";

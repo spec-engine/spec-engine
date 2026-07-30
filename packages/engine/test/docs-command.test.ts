@@ -36,7 +36,8 @@ const get = (path: string) => handler(new Request(`http://127.0.0.1${path}`));
 
 describe("createDocsFetchHandler routing", () => {
   test("serves the site index at /", async () => {
-    // @spec DIST-001 unit
+    // @spec DIST-005 unit
+    // @spec DIST-006 unit
     const res = get("/");
     expect(res.status).toBe(200);
     expect(await res.text()).toContain("docs home");
@@ -84,7 +85,8 @@ describe("createDocsFetchHandler routing", () => {
 
 describe("resolveDocsRootFrom fallback chain", () => {
   test("first candidate holding an index.html wins", () => {
-    // @spec DIST-002 unit
+    // @spec DIST-007 unit
+    // @spec DIST-008 unit
     const empty = mkdtempSync(join(tmpdir(), "spec-docs-empty-"));
     try {
       expect(resolveDocsRootFrom([empty, root])).toBe(root);
@@ -106,7 +108,7 @@ describe("resolveDocsRootFrom fallback chain", () => {
 
 describe("docs.ts loopback fence (same posture as test/serve-loopback.test.ts)", () => {
   test("the all-zeros bind address never appears; every serve site is 127.0.0.1", () => {
-    // @spec DIST-001 unit
+    // @spec DIST-005 unit
     const src = readFileSync(resolve(import.meta.dir, "..", "src", "commands", "docs.ts"), "utf8");
     expect(src).not.toContain("0.0.0.0");
     const hostnames = [...src.matchAll(/hostname:\s*"([^"]+)"/g)].map((m) => m[1]);

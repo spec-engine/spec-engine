@@ -1,62 +1,65 @@
 {
   "key": "DOMAIN",
   "owner": null,
-  "updated": "2026-07-14",
-  "scope": "Domain lifecycle: spec domain new / spec domain list and charter editing. Belongs here: the born-valid scaffold (spec domain new); the domain list output; the scope charter field on the envelope. Does not belong here: requirement authoring (spec req/supersede/amend \u2192 REQ). Boundary case: minting a requirement id is REQ, scaffolding the domain that holds it is DOMAIN.",
+  "updated": "2026-07-30",
+  "scope": "Domain lifecycle: spec domain new / spec domain list and charter editing. Belongs here: the born-valid scaffold (spec domain new); the domain list output; the scope charter field on the envelope. Does not belong here: requirement authoring (spec req/supersede/amend → REQ). Boundary case: minting a requirement id is REQ, scaffolding the domain that holds it is DOMAIN.",
   "grammar": "ears",
   "requirements": [
     {
       "id": "DOMAIN-001",
-      "status": "active",
-      "statement": "Domain-name input is normalized before validation \u2014 uppercase plus strip ALL whitespace; spaces are never converted to dashes.",
+      "status": "superseded",
+      "statement": "Domain-name input is normalized before validation — uppercase plus strip ALL whitespace; spaces are never converted to dashes.",
       "why": "A dash is HEAD_RE's key/seq separator; a dashed key scaffolds a spec that silently parses to zero requirements.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "DOMAIN-011",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/authoring/domains.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 3,
       "aliases": [],
       "cites": []
     },
     {
       "id": "DOMAIN-002",
-      "status": "active",
-      "statement": "spec domain new prints exactly one `<raw>` \u2192 <KEY> transformation line when uppercasing the name and stripping its whitespace changed the input, and prints no such line when the input was already a canonical key.",
+      "status": "superseded",
+      "statement": "spec domain new prints exactly one `<raw>` → <KEY> transformation line when uppercasing the name and stripping its whitespace changed the input, and prints no such line when the input was already a canonical key.",
       "why": "The author must be able to see the silent transformation applied on their behalf; hiding it lets a surprising key scaffold a domain the author never intended to name.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "DOMAIN-012",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/commands/domain.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 4,
       "aliases": [],
       "cites": []
     },
     {
       "id": "DOMAIN-003",
-      "status": "active",
+      "status": "superseded",
       "statement": "The post-normalization key must match KEY_RE /^[A-Z][A-Z0-9]*$/; failure prints to stderr and exits 2.",
       "why": "Only KEY_RE-clean keys produce headings the parser can bind.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "DOMAIN-013",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/commands/domain.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 5,
       "aliases": [],
       "cites": []
     },
     {
       "id": "DOMAIN-004",
       "status": "superseded",
-      "statement": "spec domain new <KEY> creates spec-engine/<KEY>/SPEC.json as a complete, valid domain envelope \u2014 key, owner null, specVersion 1, and the current date in the author's local timezone \u2014 so spec index ingests the new domain immediately with zero diagnostics.",
+      "statement": "spec domain new <KEY> creates spec-engine/<KEY>/SPEC.json as a complete, valid domain envelope — key, owner null, specVersion 1, and the current date in the author's local timezone — so spec index ingests the new domain immediately with zero diagnostics.",
       "why": "A scaffold must be born valid: a file the indexer cannot parse yields a domain with zero requirements and no error, and a UTC-computed date stamps evening authors with tomorrow.",
       "supersedes": null,
       "supersededBy": "DOMAIN-010",
@@ -72,78 +75,116 @@
     },
     {
       "id": "DOMAIN-005",
-      "status": "active",
-      "statement": "spec domain new <KEY> refuses to overwrite an existing spec-engine/<KEY>/SPEC.json \u2014 it prints an error to stderr and exits 2.",
+      "status": "superseded",
+      "statement": "spec domain new <KEY> refuses to overwrite an existing spec-engine/<KEY>/SPEC.json — it prints an error to stderr and exits 2.",
       "why": "Never clobber an authored spec.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "DOMAIN-014",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/commands/domain.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 6,
       "aliases": [],
       "cites": []
     },
     {
       "id": "DOMAIN-006",
-      "status": "active",
+      "status": "superseded",
       "statement": "The resolved scaffold destination must stay inside the platform directory; violation exits 2.",
       "why": "Path-containment defense in depth even though KEY_RE already blocks traversal characters.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "DOMAIN-015",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/commands/domain.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 7,
       "aliases": [],
       "cites": []
     },
     {
       "id": "DOMAIN-007",
-      "status": "active",
-      "statement": "A domain is a child directory of spec-engine/ containing a SPEC.json, enumerated from the filesystem \u2014 never from the derived index or a cache file.",
+      "status": "superseded",
+      "statement": "A domain is a child directory of spec-engine/ containing a SPEC.json, enumerated from the filesystem — never from the derived index or a cache file.",
       "why": "Canonical truth is the git spec location; a second derived store would violate the derived-DB constraint.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "DOMAIN-016",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/authoring/domains.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 8,
       "aliases": [],
       "cites": []
     },
     {
       "id": "DOMAIN-008",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec domain list prints the keys sorted lexicographically, one per line, exit 0; zero domains produce empty output and still exit 0.",
       "why": "Authors need to see what exists; prefix resolution builds on this listing.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "DOMAIN-017",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/commands/domain.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 9,
       "aliases": [],
       "cites": []
     },
     {
       "id": "DOMAIN-009",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec domain list on a missing or non-directory spec-engine/ prints the friendly not-a-platform message and exits 2.",
       "why": "Same command-boundary pattern as map/index/check.",
+      "supersedes": null,
+      "supersededBy": "DOMAIN-018",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/domain.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "supersededAtVersion": 10,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DOMAIN-010",
+      "status": "superseded",
+      "statement": "spec domain new <KEY> creates spec-engine/<KEY>/SPEC.json as a complete, valid domain envelope — key, owner null, the current date in the author's local timezone, and no authored specVersion for a requirement domain (only the reserved TERM domain is seeded with specVersion 1) — so spec index ingests the new domain immediately with zero diagnostics.",
+      "why": "A scaffold must be born valid: a file the indexer cannot parse yields a domain with zero requirements and no error, and a UTC-computed date stamps evening authors with tomorrow; seeding an authored specVersion on a requirement domain would plant a second version counter beside the derived one, free to drift from the supersede history.",
+      "supersedes": null,
+      "supersededBy": "DOMAIN-019",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/domain.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "supersededAtVersion": 11,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DOMAIN-011",
+      "status": "active",
+      "statement": "When spec domain new receives a name, it shall normalize it before validation — uppercase plus strip all whitespace — and shall never convert spaces to dashes.",
+      "why": "A dash is the key/sequence separator in requirement ids; a dashed key scaffolds a domain whose entries silently parse to zero requirements.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "@packages/engine/src/commands/domain.ts"
+        "packages/engine/src/authoring/domains.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
@@ -151,15 +192,127 @@
       "cites": []
     },
     {
-      "id": "DOMAIN-010",
+      "id": "DOMAIN-012",
       "status": "active",
-      "statement": "spec domain new <KEY> creates spec-engine/<KEY>/SPEC.json as a complete, valid domain envelope \u2014 key, owner null, the current date in the author's local timezone, and no authored specVersion for a requirement domain (only the reserved TERM domain is seeded with specVersion 1) \u2014 so spec index ingests the new domain immediately with zero diagnostics.",
-      "why": "A scaffold must be born valid: a file the indexer cannot parse yields a domain with zero requirements and no error, and a UTC-computed date stamps evening authors with tomorrow; seeding an authored specVersion on a requirement domain would plant a second version counter beside the derived one, free to drift from the supersede history.",
+      "statement": "When normalization changed the input name, spec domain new shall print exactly one <raw> → <KEY> transformation line, and shall print no such line when the input was already canonical.",
+      "why": "The author must see the silent transformation applied on their behalf; hiding it lets a surprising key scaffold a domain the author never intended to name.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "@packages/engine/src/commands/domain.ts"
+        "packages/engine/src/commands/domain.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DOMAIN-013",
+      "status": "active",
+      "statement": "If the normalized domain key does not match /^[A-Z][A-Z0-9]*$/, then spec domain new shall print an error to stderr and exit 2.",
+      "why": "A key outside that grammar produces an envelope the shared domain schema rejects, so the scaffolded domain would index to zero requirements with no error.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/domain.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DOMAIN-014",
+      "status": "active",
+      "statement": "If spec-engine/<KEY>/SPEC.json already exists, then spec domain new shall refuse to overwrite it, printing an error to stderr and exiting 2.",
+      "why": "Overwriting would reset an authored domain to an empty scaffold, destroying every requirement it held — canonical-truth loss in the file git treats as the source.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/domain.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DOMAIN-015",
+      "status": "active",
+      "statement": "If the resolved destination of spec domain new's scaffold falls outside the platform directory, then the command shall refuse the write and exit 2.",
+      "why": "Without this containment check, a regression in key normalization or validation could let a crafted name write a scaffold outside the platform tree.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/domain.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DOMAIN-016",
+      "status": "active",
+      "statement": "When enumerating domains, the engine shall treat each child directory of spec-engine/ containing a SPEC.json as a domain, reading the filesystem only — never the derived index or a cache file.",
+      "why": "Canonical truth is the git spec location; a second derived store would let the domain listing drift from what actually exists on disk.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/authoring/domains.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DOMAIN-017",
+      "status": "active",
+      "statement": "When spec domain list runs, it shall print the domain keys sorted lexicographically, one per line, and exit 0 — zero domains shall produce empty output and still exit 0.",
+      "why": "Prefix resolution and scripted listings build on this output; an unstable order or an error exit on an empty platform would break both.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/domain.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DOMAIN-018",
+      "status": "active",
+      "statement": "If spec domain list runs where spec-engine/ is missing or not a directory, then it shall print the friendly not-a-platform message and exit 2.",
+      "why": "A raw throw at the boundary buries the fix; the guidance-plus-exit-2 contract keeps the failure actionable and lets scripts branch on the usage code.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/domain.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DOMAIN-019",
+      "status": "active",
+      "statement": "When spec domain new <KEY> scaffolds, it shall write spec-engine/<KEY>/SPEC.json as a complete valid envelope — key, owner null, the current local-timezone date, and no authored specVersion for a requirement domain (only the reserved TERM domain seeds specVersion 1) — so spec index ingests it immediately with zero diagnostics.",
+      "why": "A scaffold the indexer cannot parse yields a domain with zero requirements and no error; a UTC date stamps evening authors with tomorrow; and an authored specVersion on a requirement domain plants a second version counter free to drift from the derived one.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/domain.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,

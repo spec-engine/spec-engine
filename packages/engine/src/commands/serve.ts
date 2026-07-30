@@ -1,7 +1,7 @@
 // packages/engine/src/commands/serve.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec SERV-001
+// @spec SERV-008
 //
 // `spec serve [platformDir] [--port N] [--out path]` (plan 05-05 / SERV-01)
 // composes the engine HTTP API plane (`mountApi`) and the webapp SSR pages
@@ -74,7 +74,8 @@ export function composeServeApp(storage: Storage, platformDir: string = process.
  * branch stays under the biome cognitive-complexity ceiling; the two modes
  * are conceptually independent and share no state.
  *
- * @spec SERV-003
+ * @spec SERV-011
+ # @spec SERV-012
  */
 async function runProbe(): Promise<void> {
   const app = createApp();

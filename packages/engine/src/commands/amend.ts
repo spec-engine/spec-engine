@@ -275,7 +275,7 @@ function assertAmendableStatus(id: string, req: DomainRequirement): string {
  * entries never reach here — the caller skips Tier 2 for them.
  */
 async function assertUnshipped(platformDir: string, id: string): Promise<void> {
-  // @spec REQ-015
+  // @spec REQ-035
   const tags = await reindexAndListTags(platformDir, id);
   const bound = tags.filter((t) => t.kind === "implements" || t.kind === "verifies");
   if (bound.length > 0) {
@@ -326,7 +326,8 @@ function applyAmendMutations(
   // Wave B (06-02): glossary-term fields. `--term` sets the headword; `--aliases`
   // splits on comma into aliases[]. Whitelisted mutations only — the whole
   // object still re-validates through validateDomainFile (T-06-07).
-  // @spec REQ-014
+  // @spec REQ-033
+  // @spec REQ-034
   if (fields.hasTerm) {
     const v = (args.term as string).trim();
     req.term = v;

@@ -11,9 +11,10 @@
 // requirements minted in plan 01-03 (path-derived kind = verifies; the
 // requirements' `livesIn` records `@spec-engine/TAXONOMY.md`, and this test IS
 // the verifying evidence that clears ORPHAN_REQ for a doc-only requirement):
-// @spec CHRT-001 unit
-// @spec CHRT-002 unit
-// @spec CHRT-006 unit
+// @spec CHRT-007 unit
+// @spec CHRT-008 unit
+// @spec CHRT-009 unit
+// @spec CHRT-013 unit
 //
 // Assertions are STRUCTURAL only (presence of keys, markers, ids) — never prose
 // exactness — so the doc's wording can evolve without breaking the contract.

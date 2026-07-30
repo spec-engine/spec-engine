@@ -1,7 +1,7 @@
 // packages/engine/test/map.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec MAP-001
+// @spec MAP-002
 //
 // Pure-function tests for map/format.ts (MAP-01 / MAP-02). No I/O, no
 // Storage, no DB — just sortMatrix / cellStatus / renderMatrix exercised

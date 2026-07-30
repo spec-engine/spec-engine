@@ -210,7 +210,7 @@ export function buildMcpServer(platformDir: string): McpServer {
   // (no index build — a template needs no rebuild) and substitutes it into the
   // template. The engine runs NO model here; the client's model consumes the
   // returned text. This is the phase's LLM-free constraint, fence-enforced.
-  // @spec AUTHOR-003
+  // @spec AUTHOR-008
   server.registerPrompt(
     "author_requirements",
     {

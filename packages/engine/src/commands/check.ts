@@ -1,9 +1,10 @@
 // packages/engine/src/commands/check.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec CHCK-001
-// @spec CHCK-002
-// @spec CHCK-003
+// @spec CHCK-012
+// @spec CHCK-013
+// @spec CHCK-014
+// @spec CHCK-015
 //
 // `spec check [platformDir] [--out <path>] [--ci] [--json]` — citty
 // subcommand for the cross-repo integrity check (CHCK-01 / CHCK-02 /
@@ -307,7 +308,7 @@ async function runGovernanceGate(
   // under --require-owner-approval). approvedBy is FAIL-CLOSED (empty = no
   // approver) and — per the T-20-04 trust boundary — MUST be sourced by CI
   // from the PR-reviews API, never from PR-author-controlled input.
-  // @spec OWNER-001
+  // @spec OWNER-002
   const codeowners = parseCodeowners(readCodeownersText(platformDir) ?? "");
   const approvedBy = (args.approvedBy ?? "")
     .split(",")

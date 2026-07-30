@@ -1,7 +1,7 @@
 // packages/engine/test/gate-rung3.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec GATE-006
+// @spec GATE-008
 //
 // Phase 06 Plan 04 Task 2 — GATE-04 demonstration (ROADMAP Success
 // Criterion #3): the rung-3 narrative.

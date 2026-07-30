@@ -104,7 +104,7 @@ export function renderQuery(hits: FtsHit[], mode: RenderMode): string {
   // TERM-07: partition on the FtsHit key discriminator — terms are rows in the
   // reserved TERM domain that ride the same FTS index. Both filters preserve
   // the rank-ascending order of `sorted`.
-  // @spec QURY-003
+  // @spec QURY-008
   const termHits = sorted.filter((hit) => hit.key === "TERM");
   const reqHits = sorted.filter((hit) => hit.key !== "TERM");
 

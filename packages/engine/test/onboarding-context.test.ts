@@ -1,7 +1,8 @@
 // packages/engine/test/onboarding-context.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec INIT-009
+// @spec INIT-024
+// @spec INIT-025
 //
 // INIT-07 / INIT-15: substrate tests for detectContext + findPlatformDirUpward.
 // Locks all three kinds (platform / member / loose), the three-rule

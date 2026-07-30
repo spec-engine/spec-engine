@@ -7,97 +7,103 @@
   "requirements": [
     {
       "id": "GUARD-001",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec guard [platformDir] [--against <ref>] [--json] compares the requirement derivation at a git ref (default HEAD) against the working tree and reports requirements about to be lost; exit 0 clean, 1 when losses are found, 2 on a usage error.",
       "why": "The derived index has no memory of what a change deletes — git is the memory, so a pre-commit diff of derivations is what catches a requirement being steamrolled.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "GUARD-013",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/commands/guard.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 2,
       "aliases": [],
       "cites": []
     },
     {
       "id": "GUARD-002",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec guard reports REQUIREMENT_REMOVED when a requirement Active at the ref is absent from the working-tree spec with no approved supersession.",
       "why": "Requirements are durable; dropping an Active one without superseding it is exactly the silent loss the derived index cannot feel.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "GUARD-014",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/guard/losses.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 3,
       "aliases": [],
       "cites": []
     },
     {
       "id": "GUARD-003",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec guard reports IMPL_LOST when the last implementing @spec tag for an Active requirement is removed in the working tree.",
       "why": "A requirement that survives in the spec but loses its only implementation has been quietly gutted — the rebuilt index just looks smaller, nothing alarms.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "GUARD-015",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/guard/losses.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 4,
       "aliases": [],
       "cites": []
     },
     {
       "id": "GUARD-004",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec guard reports VERIFY_LOST when the last verifying @spec tag for an Active requirement is removed in the working tree.",
       "why": "Losing the only test that proves a requirement leaves it unguarded while the rebuilt index stays consistent-but-weaker.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "GUARD-016",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/guard/losses.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 5,
       "aliases": [],
       "cites": []
     },
     {
       "id": "GUARD-005",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec guard reports SPEC_FILE_DELETED when a canonical spec file present at the ref is absent from the working tree.",
       "why": "Deleting a whole domain file erases its requirements wholesale; the coarse file-level alarm catches what a scattered per-requirement diff might miss.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "GUARD-017",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/guard/losses.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 6,
       "aliases": [],
       "cites": []
     },
     {
       "id": "GUARD-006",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec guard suppresses a loss when the requirement was properly superseded in the same change (the legal path), in either supersede direction.",
       "why": "Supersession is how requirements legitimately change; the guard must not cry loss when the sanctioned path was followed.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "GUARD-018",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/guard/losses.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 7,
       "aliases": [],
       "cites": []
     },
@@ -120,39 +126,41 @@
     },
     {
       "id": "GUARD-008",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec guard prints a NOT_A_GIT_REPO warning to stderr and exits 0 when the platform is not a git repository or the ref does not resolve — it never fails a non-git context.",
       "why": "The guard is a pre-commit safety net, not a hard dependency on git; a non-git checkout or fresh repo must pass cleanly, not error.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "GUARD-019",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/commands/guard.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 8,
       "aliases": [],
       "cites": []
     },
     {
       "id": "GUARD-009",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec guard --json emits deterministic, chrome-free, byte-stable loss rows on stdout, and the human text output uses the second-person spec-guard block message so an agent can relay it verbatim.",
       "why": "The block message is a product surface agents forward to their user; determinism makes the JSON safe to diff and snapshot.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "GUARD-020",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/guard/format.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 9,
       "aliases": [],
       "cites": []
     },
     {
       "id": "GUARD-010",
-      "status": "active",
+      "status": "deprecated",
       "statement": "A requirement id present in the base ref but absent in the change, without an approved supersession, is a hard error (`REQUIREMENT_REMOVED`) — diff-based, deterministic.",
       "why": "Requirements are durable — silently dropping one without an approved supersession must be a deterministic hard error.",
       "supersedes": null,
@@ -164,6 +172,7 @@
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "deprecatedReason": "Duplicate of GUARD-002: the same disappearance concept and the same REQUIREMENT_REMOVED code, enforced at a second point (spec check). The rewritten GUARD-002 owns both enforcement points. Retag check/removed.ts and its tests from GUARD-010 to GUARD-002.",
       "aliases": [],
       "cites": []
     },
@@ -192,6 +201,149 @@
       "relates": [],
       "livesIn": [
         "packages/engine/src/guard/losses.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GUARD-013",
+      "status": "active",
+      "statement": "When spec guard is run, the spec CLI shall compare the requirement derivation at the given git ref (default HEAD) against the working tree, report every requirement about to be lost, and exit 1 when at least one loss is found and 0 when none is.",
+      "why": "The derived index has no memory of what a change deletes — git is the memory, so a pre-commit diff of derivations is the only thing that catches a requirement being silently lost.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/guard.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GUARD-014",
+      "status": "active",
+      "statement": "If a requirement Active at the base ref is absent from the compared spec with no supersession in the same change, then the spec CLI shall report REQUIREMENT_REMOVED for it — at pre-commit via spec guard and in CI via spec check.",
+      "why": "Requirements are durable; dropping an Active one without a successor is the silent loss the derived index cannot feel — it just rebuilds smaller. Two enforcement points close both routes to main.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/guard/losses.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GUARD-015",
+      "status": "active",
+      "statement": "When a change removes the last implementing @spec tag for a requirement that remains Active in the working tree, spec guard shall report IMPL_LOST for it.",
+      "why": "A requirement that survives in the spec but loses its only implementation has been quietly gutted — the rebuilt index just looks smaller, nothing alarms.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/guard/losses.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GUARD-016",
+      "status": "active",
+      "statement": "When a change removes the last verifying @spec tag for a requirement that remains Active in the working tree, spec guard shall report VERIFY_LOST for it.",
+      "why": "Losing the only test that proves a requirement leaves it unguarded while the rebuilt index stays consistent-but-weaker.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/guard/losses.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GUARD-017",
+      "status": "active",
+      "statement": "When a canonical spec file present at the base ref is absent from the working tree, spec guard shall report SPEC_FILE_DELETED for that file.",
+      "why": "Deleting a whole domain file erases its requirements wholesale; the coarse file-level alarm catches what a scattered per-requirement diff might miss.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/guard/losses.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GUARD-018",
+      "status": "active",
+      "statement": "When a requirement absent from the working tree is superseded in the same change — its supersededBy successor survives, or a surviving requirement declares supersedes on it — spec guard shall report no loss for it.",
+      "why": "Supersession is the sanctioned way a requirement changes; a guard that fires on the legal path teaches people to bypass the guard.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/guard/losses.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GUARD-019",
+      "status": "active",
+      "statement": "If the platform directory is not a git repository or the requested ref does not resolve, then spec guard shall print a NOT_A_GIT_REPO warning to stderr and exit 0.",
+      "why": "The guard is a pre-commit safety net, not a hard dependency on git; a non-git checkout or fresh repo must pass cleanly, not error.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/guard.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GUARD-020",
+      "status": "active",
+      "statement": "When spec guard --json is run, the spec CLI shall write loss rows to stdout sorted by (req_id, kind, file, line), byte-stable across runs with identical inputs, with all chrome on stderr.",
+      "why": "Nondeterministic or chrome-polluted stdout breaks every consumer that diffs, snapshots, or parses the rows — the CI use the JSON mode exists for.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/guard/format.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GUARD-021",
+      "status": "active",
+      "statement": "When spec guard reports losses in text mode, the spec CLI shall render each protected requirement as the second-person spec-guard block message.",
+      "why": "The block is a product surface an agent relays verbatim to its user; a third-person diagnostic gets summarized away and the human never learns what was protected.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/guard/format.ts"
       ],
       "issues": [],
       "aliases": [],

@@ -1,7 +1,7 @@
 // packages/shared/src/storage.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec SCHM-002
+// @spec SCHM-012
 //
 // The Storage interface (D-07). Implemented exclusively by
 // packages/engine/src/storage/sqlite.ts. Webapp consumes read methods

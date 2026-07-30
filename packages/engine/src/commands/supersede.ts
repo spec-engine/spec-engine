@@ -198,7 +198,7 @@ function resolveSuccessorFields(
  * predecessor's values forward (a revised definition usually keeps its
  * headword + synonyms). The whole object still re-validates through
  * validateDomainFile (T-06-07), so this branch injects no unchecked key.
- * @spec REQ-014
+ * @spec REQ-033
  */
 function resolveSuccessorTermFields(
   args: Record<string, unknown>,
@@ -283,7 +283,7 @@ function applySupersedeEdit(
   //    its authored specVersion bump: a `spec term revise` adds no supersede edge,
   //    so that counter is the only pin a citation's drift can lag, and --no-bump
   //    still opts out of it.
-  // @spec REQ-016
+  // @spec REQ-036
   let reportedVersion: number | null;
   if (domain.key === "TERM") {
     const currentVersion = typeof domain.specVersion === "number" ? domain.specVersion : 1;

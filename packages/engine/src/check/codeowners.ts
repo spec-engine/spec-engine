@@ -29,7 +29,7 @@ export interface CodeownersRule {
  * ...owners]`. Authored order is preserved (ownersForPath depends on it for
  * last-match-wins). A pattern with no trailing owners yields `owners: []`.
  */
-// @spec OWNER-001
+// @spec OWNER-002
 export function parseCodeowners(text: string): CodeownersRule[] {
   const rules: CodeownersRule[] = [];
   for (const raw of text.split("\n")) {

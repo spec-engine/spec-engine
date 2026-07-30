@@ -1,9 +1,9 @@
 // packages/engine/src/authoring/domains.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec DOMAIN-001
-// @spec DOMAIN-007
-// @spec REQ-005
+// @spec DOMAIN-011
+// @spec DOMAIN-016
+// @spec REQ-026
 //
 // Shared substrate for the noun-verb authoring surface:
 // `spec domain new`, `spec domain list`,
@@ -113,7 +113,7 @@ export async function domainsWithScope(
  * `specVersion` 1.
  */
 export function scaffoldDomainObject(key: string, today: string) {
-  // @spec DOMAIN-010 — a requirement (non-TERM) domain is born WITHOUT an
+  // @spec DOMAIN-019 — a requirement (non-TERM) domain is born WITHOUT an
   // authored specVersion: its version is the DAG-derived projection (SCHM-007)
   // and the schema rejects an authored counter on a non-TERM domain (SCHM-008).
   // Only the reserved TERM domain is seeded with specVersion 1 — that authored

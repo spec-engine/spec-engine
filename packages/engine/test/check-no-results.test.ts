@@ -1,7 +1,7 @@
 // packages/engine/test/check-no-results.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec PROOF-005
+// @spec PROOF-012
 //
 // GATE-05 (Phase 19, Plan 19-03) — the no-`--results` gradual-adoption
 // fallback, asserted at the in-process `checkCommand.run` layer.

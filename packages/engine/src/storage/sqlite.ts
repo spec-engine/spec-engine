@@ -444,7 +444,8 @@ ORDER BY rel.source_file, rel.line, rel.from_id, rel.to_id
 // clause catches the common case; the LEFT JOIN's second clause is defense in
 // depth against a term_id that points at a non-TERM / deleted row. repo is NULL
 // (the defect is in the SPEC's cites field, not a member repo).
-// @spec CHCK-004
+// @spec CHCK-016
+// @spec CHCK-017
 const Q8_UNDEFINED_TERM_SQL = `
 SELECT
   'UNDEFINED_TERM'                                            AS code,
@@ -469,7 +470,7 @@ ORDER BY tc.source_file, tc.line, tc.req_id
 // red the gate the instant the glossary lands (RESEARCH Pitfall 4). Only Active
 // terms (a Draft/Retired term is not a live obligation). ORDER BY (key, seq)
 // matches Q4/Q5.
-// @spec CHCK-004
+// @spec CHCK-016
 const Q9_ORPHAN_TERM_SQL = `
 SELECT
   'ORPHAN_TERM'                                               AS code,
@@ -505,7 +506,7 @@ ORDER BY r.key, r.seq
 // pin is a re-confirmation prompt, not a build-breaker), so a drifted citation
 // keeps `spec check --ci` at exit 0. repo is NULL (the pin lives in the SPEC's
 // cites field, not a member repo).
-// @spec CHCK-005
+// @spec CHCK-018
 const Q10_TERM_DRIFT_SQL = `
 SELECT
   'TERM_DRIFT'                                               AS code,
@@ -528,7 +529,7 @@ ORDER BY td.source_file, td.line, td.req_id
 // `severity === 'error'` predicate. term.key='TERM' keeps it scoped to the
 // reserved glossary domain; detail names the successor (superseded_by). repo is
 // NULL (the stale citation is in the SPEC's cites field, not a member repo).
-// @spec CHCK-005
+// @spec CHCK-018
 const Q11_SUPERSEDED_TERM_REFERENCED_SQL = `
 SELECT
   'SUPERSEDED_TERM_REFERENCED'                               AS code,
@@ -717,8 +718,8 @@ ORDER BY repos.name
 // with `key` cannot change cold-build identity — searchFts output is not hashed
 // into build_id.
 //
-// @spec QURY-003
-// @spec QURY-002
+// @spec QURY-008
+// @spec QURY-007
 // @spec QURY-004
 const FTS_SEARCH_SQL = `SELECT r.id AS req_id, r.key AS key, r.text AS text, r.why AS why, r.source_file AS source_file, r.line AS line, bm25(requirements_fts, 1.0, 0.5) AS rank FROM requirements_fts JOIN requirements r ON r.rowid = requirements_fts.rowid WHERE requirements_fts MATCH $query AND r.status NOT IN ('Superseded', 'Deprecated') ORDER BY rank ASC LIMIT $limit`;
 

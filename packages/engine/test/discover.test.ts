@@ -1,7 +1,7 @@
 // packages/engine/test/discover.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec INIT-006
+// @spec INIT-022
 //
 // DISC-02 substrate regression suite for `discoverRepos`. Locks the
 // Phase 7 widened return shape `{ canonical, platformVersion, members,
@@ -145,7 +145,7 @@ describe("discoverRepos skipped[] field (DISC-02)", () => {
 });
 
 describe("discoverRepos self-member / single-repo mode (RUNG1-01)", () => {
-  // @spec INIT-014 unit
+  // @spec INIT-028 unit
   test("(1) lone repo (spec-engine/ only, no siblings, no loose files) registers exactly one self-member", async () => {
     // A domain at derived version 3 (two supersede edges) — the self-member
     // pin must TRACK it, not sit on a stale authored counter (RED-85).
@@ -337,7 +337,8 @@ describe("readRepoConfig three-layer error contract (RED-14)", () => {
 });
 
 describe("derived platform version in discoverRepos (RED-85)", () => {
-  // @spec SCHM-009 unit
+  // @spec SCHM-022 unit
+  // @spec SCHM-023 unit
   test("platformVersion = max domain version across the platform's SPEC.json files", async () => {
     await writeVersionedDomain(tmp, "ALPHA", 4);
     await writeVersionedDomain(tmp, "BETA", 2);

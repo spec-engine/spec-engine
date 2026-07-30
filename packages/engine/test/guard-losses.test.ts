@@ -7,12 +7,13 @@
 // byte-stable --json contract directly against hand-built facts.
 //
 // Verifies:
-// @spec GUARD-002
-// @spec GUARD-003
-// @spec GUARD-004
-// @spec GUARD-005
-// @spec GUARD-006
-// @spec GUARD-009
+// @spec GUARD-014
+// @spec GUARD-015
+// @spec GUARD-016
+// @spec GUARD-017
+// @spec GUARD-018
+// @spec GUARD-020
+// @spec GUARD-021
 // @spec GUARD-012
 
 import { describe, expect, test } from "bun:test";

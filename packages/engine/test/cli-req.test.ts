@@ -1,19 +1,19 @@
 // packages/engine/test/cli-req.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec REQ-001
-// @spec REQ-002
-// @spec REQ-003
-// @spec REQ-004
-// @spec REQ-005
-// @spec REQ-006
-// @spec REQ-007
+// @spec REQ-022
+// @spec REQ-023
+// @spec REQ-024
+// @spec REQ-025
+// @spec REQ-026
+// @spec REQ-027
+// @spec REQ-028
 // @spec REQ-019
-// @spec REQ-008
-// @spec REQ-009
-// @spec REQ-010
-// @spec REQ-013
-// @spec REQ-017
+// @spec REQ-029
+// @spec REQ-026
+// @spec REQ-030
+// @spec REQ-032
+// @spec REQ-037
 //
 // `spec req <domain-prefix> [platformDir]` resolves a case-insensitive
 // domain prefix against the filesystem domain listing. On a TTY it authors a new
@@ -611,7 +611,7 @@ describe("spec req — field-flag authoring (L1)", () => {
 // at authoring time. The piped bare-id (stdout) and --json payload (stdout) must
 // stay BYTE-IDENTICAL — charter chrome never leaks onto the machine channel.
 // A null/absent charter degrades gracefully to a single "no charter set" notice.
-// @spec CHRT-005 unit
+// @spec CHRT-012 unit
 // ----------------------------------------------------------------------------
 
 describe("spec req — charter at authoring (CHRT-005)", () => {

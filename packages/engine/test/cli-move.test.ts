@@ -125,7 +125,7 @@ async function expectExit2(fn: () => Promise<void>): Promise<void> {
 }
 
 describe("spec move — happy path (4.7)", () => {
-  // @spec REQ-016 — move reports each side's DAG-derived version. The source
+  // @spec REQ-036 — move reports each side's DAG-derived version. The source
   // gains a supersede edge (0 → 1 edge, derived 1 → 2); the target gains only an
   // Active successor (no edge), so its derived version is UNCHANGED at 1. Neither
   // envelope carries an authored specVersion (SCHM-008).
@@ -187,7 +187,7 @@ describe("spec move — happy path (4.7)", () => {
     expect(succ?.why).toBe("an idle session must not stay authenticated forever");
   });
 
-  // @spec REQ-016 — on requirement domains --no-bump is a no-op (no authored
+  // @spec REQ-036 — on requirement domains --no-bump is a no-op (no authored
   // counter to hold back); both sides still report their DAG-derived versions
   // and neither writes a specVersion.
   test("--no-bump is a no-op on requirement domains — versions stay DAG-derived", async () => {

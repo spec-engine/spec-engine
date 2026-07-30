@@ -182,7 +182,8 @@ describe("cold-rebuild equivalence over the JSON domain fixture (SC5 / STOR-02)"
 // precedent). The byte-identity leg holds even RED (an empty section is
 // deterministic); the RED signal is the section-label assertion, which fails
 // until Plan 06-01 Task 2 adds the two labels to computeBuildId.
-// @spec SCHM-005 unit
+// @spec SCHM-016 unit
+// @spec SCHM-017 unit
 describe("TERM derived-table build_id coverage (TERM-01, dogfooded as SCHM)", () => {
   async function writeTermFixture(root: string): Promise<void> {
     await mkdir(join(root, "spec-engine", "TERM"), { recursive: true });

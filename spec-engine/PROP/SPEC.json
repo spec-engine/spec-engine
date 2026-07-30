@@ -1,15 +1,15 @@
 {
   "key": "PROP",
   "owner": "drea",
-  "updated": "2026-07-08",
-  "scope": "Propagation and migration state, including the drift definition. Belongs here: the per-repo migrated/drifted state; spec propagation; the drift definition itself. Does not belong here: the SPEC.json model shape (\u2192 SCHM). Boundary case: the drift definition lands in PROP, not SCHM \u2014 it is the propagation contract, and the SQL view computing it is merely enforcement.",
+  "updated": "2026-07-30",
+  "scope": "Propagation and migration state, including the drift definition. Belongs here: the per-repo migrated/drifted state; spec propagation; the drift definition itself. Does not belong here: the SPEC.json model shape (→ SCHM). Boundary case: the drift definition lands in PROP, not SCHM — it is the propagation contract, and the SQL view computing it is merely enforcement.",
   "grammar": "ears",
   "requirements": [
     {
       "id": "PROP-01",
       "status": "superseded",
       "statement": "A rule change requires every bound site to re-prove green (GATE-02 applied across all tagged sites), so a partial update (cart fixed, invoice not) fails the gate.",
-      "why": "Propagation has teeth \u2014 a rule change is not done until every bound site re-proves green; a partial update fails.",
+      "why": "Propagation has teeth — a rule change is not done until every bound site re-proves green; a partial update fails.",
       "supersedes": null,
       "supersededBy": "PROOF-006",
       "relates": [],
@@ -22,14 +22,48 @@
     },
     {
       "id": "PROP-002",
-      "status": "active",
+      "status": "superseded",
       "statement": "A repo is drifted only when it is pinned to a spec version older than the version in which a requirement it actually references changed; behind-but-unaffected is not drift.",
       "why": "Drift must be precise or the gate cries wolf.",
+      "supersedes": null,
+      "supersededBy": "PROP-004",
+      "relates": [],
+      "livesIn": [
+        "@packages/shared/src/schema.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "supersededAtVersion": 3,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "PROP-003",
+      "status": "superseded",
+      "statement": "spec propagation shows, for a superseded requirement, which repos migrated to the successor and which are still pinned behind.",
+      "why": "The value moment — BILLING-009 shipped: api migrated, mobile still on BILLING-001.",
+      "supersedes": null,
+      "supersededBy": "PROP-005",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/propagation.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "supersededAtVersion": 4,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "PROP-004",
+      "status": "active",
+      "statement": "The spec CLI shall report a member repo as drifted for a requirement only when the repo references that requirement with an @spec tag and the repo's pinned spec version is older than the requirement's changed_at_version.",
+      "why": "If merely being behind counted as drift, every version bump would flag every member and real drift would drown in noise — a gate that cries wolf gets ignored.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "@packages/shared/src/schema.ts"
+        "packages/shared/src/schema.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
@@ -37,15 +71,15 @@
       "cites": []
     },
     {
-      "id": "PROP-003",
+      "id": "PROP-005",
       "status": "active",
-      "statement": "spec propagation shows, for a superseded requirement, which repos migrated to the successor and which are still pinned behind.",
-      "why": "The value moment \u2014 BILLING-009 shipped: api migrated, mobile still on BILLING-001.",
+      "statement": "When spec propagation <KEY-NNN> is run for a superseded requirement, the spec CLI shall report one row per member repo classifying it as migrated to the successor (verified or unverified), still on the predecessor, on another requirement of the domain, or referencing the domain not at all.",
+      "why": "After a supersession ships, a member can keep building on the predecessor indefinitely; without per-repo migration state no one can see which repos are behind until the drift bites in production.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "@packages/engine/src/commands/propagation.ts"
+        "packages/engine/src/commands/propagation.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,

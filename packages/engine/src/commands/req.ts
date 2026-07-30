@@ -1,17 +1,17 @@
 // packages/engine/src/commands/req.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec REQ-001
-// @spec REQ-002
-// @spec REQ-003
-// @spec REQ-004
-// @spec REQ-006
-// @spec REQ-007
-// @spec REQ-008
-// @spec REQ-009
-// @spec REQ-010
-// @spec REQ-013
-// @spec REQ-017
+// @spec REQ-022
+// @spec REQ-023
+// @spec REQ-024
+// @spec REQ-025
+// @spec REQ-027
+// @spec REQ-028
+// @spec REQ-029
+// @spec REQ-026
+// @spec REQ-030
+// @spec REQ-032
+// @spec REQ-037
 //
 // `spec req <domain-prefix> [platformDir]` resolves a case-insensitive
 // domain prefix.
@@ -183,7 +183,7 @@ export const reqCommand = defineCommand({
     // AUTHC-019 (D-01): interactive per-field flow. The allocated id +
     // Active status are display-only (rendered to stderr — T-10-03).
     console.error(`Authoring ${nextId} — Active`);
-    // @spec CHRT-005: at authoring time, echo the resolved domain's charter to
+    // @spec CHRT-012: at authoring time, echo the resolved domain's charter to
     // STDERR (the chrome channel) so the author writes to spec. This runs ONLY
     // on the interactive + --text authoring paths, NEVER on the piped bare-id or
     // --json id-query branches above — so stdout stays byte-identical.
@@ -272,7 +272,7 @@ async function authorFromFieldFlags(
     console.error("spec req: --text must be a non-empty Requirement");
     process.exit(EXIT.USAGE);
   }
-  // @spec CHRT-005: charter echo on the --text authoring path (stderr chrome).
+  // @spec CHRT-012: charter echo on the --text authoring path (stderr chrome).
   await printResolvedCharter(platformDir, key);
   const why = (opts.why ?? "").trim();
   const binds = (opts.binds ?? "").trim();

@@ -94,7 +94,8 @@ export const SpecRequirementSchema = z
     // default to `[]` like `relates`/`livesIn`. Each MUST also be carried in the
     // orderDomain whitelist below or it is silently stripped on write (the
     // scope/IN-01 strip-trap). `.strict()` stays intact (T-06-01 mitigation).
-    // @spec SCHM-005
+    // @spec SCHM-016
+    // @spec SCHM-017
     term: z.string().optional(),
     aliases: z.array(z.string()).optional().default([]),
     cites: z.array(SpecCiteSchema).optional().default([]),
@@ -109,7 +110,8 @@ export const SpecDomainSchema = z
   .object({
     key: z.string().regex(KEY_RE),
     owner: z.string().nullable().optional(),
-    // @spec SCHM-008 — the authored envelope version counter is retired for
+    // @spec SCHM-020 — the authored envelope version counter is retired for
+    // @spec SCHM-021
     // requirement domains: a domain's version is the DAG-derived projection
     // (SCHM-007), so a requirement (non-TERM) domain carries NO specVersion —
     // the field is optional here, and a deterministic gate
@@ -120,7 +122,7 @@ export const SpecDomainSchema = z
     // supersede edge for the DAG to count, so term-drift cannot be derived.
     specVersion: z.number().int().positive().optional(),
     updated: z.string(),
-    // @spec CHRT-003 — the per-domain charter sentence, carried ON the envelope.
+    // @spec CHRT-010 — the per-domain charter sentence, carried ON the envelope.
     // Optional so a pre-charter domain stays valid; nullable so it round-trips
     // as an explicit null. A plain named string, NOT z.enum / a loose passthrough
     // — `.strict()` keeps rejecting every OTHER unknown key (the T-01-01
@@ -281,7 +283,7 @@ function orderDomain(d: SpecDomain) {
  *
  * Uses `Bun.write` (a global) — it does NOT trip the D-11 bun:sqlite import fence.
  *
- * @spec SCHM-004
+ * @spec SCHM-015
  */
 export async function validateAndWrite(
   path: string,

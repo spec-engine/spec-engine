@@ -1,7 +1,7 @@
 // packages/engine/test/serve-loopback.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec SERV-001
+// @spec SERV-008
 //
 // Plan 05-05 / Task 1 — locks SERV-01 at the CLI surface and the
 // loopback-only invariant for `spec serve`.
@@ -124,7 +124,8 @@ describe("serve.ts source invariants (T-5-05-01 loopback bind)", () => {
 
 // ---------- 2. composeServeApp real-serve smoke ----------
 
-// @spec SERV-003
+// @spec SERV-011
+// @spec SERV-012
 describe("composeServeApp (real serve mode composition)", () => {
   test("composeServeApp(storage) returns a Hono that answers /api/coverage on 127.0.0.1", async () => {
     const dbPath = resolve(clone, ".spec-engine", "index.sqlite");

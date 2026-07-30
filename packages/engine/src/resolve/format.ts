@@ -45,7 +45,7 @@ const TEXT_MAX = 60;
  * ORDER BYs the same key, but re-sorting here means JSON byte-stability
  * survives any future SQL reorder.
  */
-// @spec RSLV-002
+// @spec RSLV-004
 export function sortResolve(rows: Requirement[]): Requirement[] {
   return [...rows].sort((a, b) => (a.key !== b.key ? a.key.localeCompare(b.key) : a.seq - b.seq));
 }

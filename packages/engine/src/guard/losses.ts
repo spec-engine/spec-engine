@@ -1,11 +1,11 @@
 // packages/engine/src/guard/losses.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec GUARD-002
-// @spec GUARD-003
-// @spec GUARD-004
-// @spec GUARD-005
-// @spec GUARD-006
+// @spec GUARD-014
+// @spec GUARD-015
+// @spec GUARD-016
+// @spec GUARD-017
+// @spec GUARD-018
 //
 // The pure loss classifier at the heart of `spec guard`. Given
 // the requirement derivation at a git ref (the "base") and a set of already-

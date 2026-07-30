@@ -1,7 +1,7 @@
 // packages/engine/test/cli-index-unit.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec INDX-003
+// @spec INDX-009
 //
 // RED-14 dead-end audit: `spec index` (commands/index.ts) had NO test at
 // the citty command layer — its --json mode, the RED-11 not-a-platform

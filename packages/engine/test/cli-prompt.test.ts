@@ -1,7 +1,7 @@
 // packages/engine/test/cli-prompt.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec INIT-008
+// @spec INIT-023
 //
 // INIT-13: helper-level tests for the shared interactive onboarding prompt
 // (packages/engine/src/onboarding/prompt.ts — Plan 10-01 Task 2 GREEN

@@ -1,7 +1,7 @@
 // packages/engine/test/proven-correlate.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec PROOF-001 unit
+// @spec PROOF-008 unit
 //
 // GATE-01 (correlation half) unit cases for the pure `correlateTag()` helper.
 // Drives the function directly with synthetic Tag[] + TestCaseResult[] inputs —

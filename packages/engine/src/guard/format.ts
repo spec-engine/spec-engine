@@ -1,7 +1,8 @@
 // packages/engine/src/guard/format.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec GUARD-009
+// @spec GUARD-020
+// @spec GUARD-021
 //
 // The pure formatter for `spec guard`. Losses in, string out — no
 // I/O, no Storage, no bun:sqlite (D-08 fence). Two modes:

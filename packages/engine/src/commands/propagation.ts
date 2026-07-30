@@ -1,7 +1,7 @@
 // packages/engine/src/commands/propagation.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec PROP-003
+// @spec PROP-005
 //
 // `spec propagation <reqId> [platformDir] [--out <path>] [--json]` — citty
 // subcommand that classifies each member repo's relationship to a target

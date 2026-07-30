@@ -115,7 +115,8 @@ function readOrEmpty(path: string): string {
 
 describe("AGENTS.md authoring playbook (AUTHOR-001) + req-author skill (AUTHOR-002)", () => {
   test("AGENTS.md carries the brief→mint authoring playbook section", () => {
-    // @spec AUTHOR-001 unit
+    // @spec AUTHOR-004 unit
+    // @spec AUTHOR-005 unit
     const doc = readFileSync(AGENT_DOC, "utf8");
     // The playbook section header — the mint front-half that feeds the existing
     // route → tag → check loop.
@@ -129,7 +130,8 @@ describe("AGENTS.md authoring playbook (AUTHOR-001) + req-author skill (AUTHOR-0
   });
 
   test("the req-author SKILL.md exists with frontmatter + approval gate + rubric cross-ref + real-CLI dogfood", () => {
-    // @spec AUTHOR-002 unit
+    // @spec AUTHOR-006 unit
+    // @spec AUTHOR-007 unit
     const skill = readOrEmpty(SKILL_MD);
     // YAML frontmatter keys (the Claude Code skill convention).
     expect(skill).toContain("name:");

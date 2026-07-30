@@ -1,7 +1,7 @@
 // packages/engine/src/commands/map.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec MAP-001
+// @spec MAP-002
 //
 // `spec map [platformDir] [--out <path>] [--json]` — citty subcommand
 // that renders the cross-repo coverage matrix directly from the `coverage`

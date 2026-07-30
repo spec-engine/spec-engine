@@ -1,7 +1,7 @@
 // packages/engine/src/indexer/discover.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec INIT-006
+// @spec INIT-022
 //
 // INDX-01: platform discovery — enumerates the canonical `spec-engine/` dir
 // plus every sibling member that carries a `spec-engine.member.json`.
@@ -195,7 +195,8 @@ function extractPin(specs: string): number {
  * ignored; command paths surface `warnIfRetiredManifest` beside this call.
  */
 export async function derivePlatformVersion(platformDir: string): Promise<number> {
-  // @spec SCHM-009
+  // @spec SCHM-022
+  // @spec SCHM-023
   const canonicalPath = join(resolve(platformDir), "spec-engine");
   const jsonPaths = await findDomainJsonFiles(canonicalPath);
   let version = 1;
@@ -395,7 +396,7 @@ export async function discoverRepos(platformDir: string): Promise<{
   const platformVersion = await derivePlatformVersion(absPlatform);
   warnIfRetiredManifest(absPlatform, platformVersion);
 
-  // @spec INIT-014
+  // @spec INIT-028
   const canonical: Repo = {
     name: "spec-engine",
     path: canonicalPath,

@@ -407,7 +407,7 @@ describe("shared nav (W4)", () => {
 // storage (the shared beforeAll storage stays pinned to platform-fixture).
 // ---------------------------------------------------------------------------
 
-// @spec SERV-004 integration
+// @spec SERV-013 integration
 describe("Setup scan-mode detection (RED-93)", () => {
   /** Index `platformDir` into a throwaway storage and serve it. */
   async function appOver(platformDir: string): Promise<{ app: Hono; close: () => void }> {
@@ -494,7 +494,9 @@ describe("Setup scan-mode detection (RED-93)", () => {
 // superseded domain never gets a row; the last test pins that.
 // ---------------------------------------------------------------------------
 
-// @spec SERV-005 integration
+// @spec SERV-014 integration
+// @spec SERV-016 integration
+// @spec SERV-015 integration
 describe("status filtering: live-contract default + ?all=1 toggle (RED-99)", () => {
   test("Coverage: superseded rows hidden by default, shown under ?all=1, toggle link present", async () => {
     const app = buildApp(); // platform-fixture: BILLING-001 is Superseded

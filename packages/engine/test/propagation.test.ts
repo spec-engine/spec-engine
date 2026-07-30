@@ -1,7 +1,7 @@
 // packages/engine/test/propagation.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec PROP-003
+// @spec PROP-005
 //
 // Plan 04-02 / Task 2 — lock the canonical fixture trace for PROP-02 at the
 // Storage seam. The 5-state classifier (PROP_REPO_STATES_SQL + propagationFor

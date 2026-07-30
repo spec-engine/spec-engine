@@ -1,7 +1,7 @@
 // packages/engine/test/check-propagation-teeth.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec PROOF-007 unit
+// @spec PROOF-013 unit
 //
 // PROP-01 unit cases for the pure `changedRules()` + `partialPropagation()`
 // detectors. Drives the functions directly with hand-built SpecRequirement[] /

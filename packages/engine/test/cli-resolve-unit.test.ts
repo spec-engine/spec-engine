@@ -1,7 +1,7 @@
 // packages/engine/test/cli-resolve-unit.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec RSLV-001
+// @spec RSLV-003
 //
 // Unit tests for `spec resolve` (commands/resolve.ts). In-process
 // invocation of the citty command with process.exit stubbed to throw
@@ -114,7 +114,7 @@ describe("spec resolve (in-process)", () => {
   });
 
   // Test 3: RSLV-02 byte-stability — two consecutive runs same bytes.
-  // @spec RSLV-002 unit
+  // @spec RSLV-004 unit
   test("RSLV-02 byte-stability: two consecutive invocations produce identical JSON bytes", async () => {
     await runResolve({ files: "api/src/renew.ts", platformDir: clone, json: true }, [
       "api/src/renew.ts",

@@ -1,7 +1,7 @@
 // packages/engine/src/indexer/diagnostics.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec INDX-002
+// @spec INDX-008
 //
 // PARS-02: structural-integrity validator that runs over the union of
 // parsed SPEC.md files. Emits five codes:

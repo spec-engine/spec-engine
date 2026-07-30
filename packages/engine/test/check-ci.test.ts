@@ -1,7 +1,8 @@
 // packages/engine/test/check-ci.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec CHCK-001
+// @spec CHCK-012
+// @spec CHCK-013
 //
 // CHCK-04 / CI-03 — the inverted CI assertion (proves CHCK-001/CHCK-002) at
 // the in-process layer. The headline test of Phase 3.

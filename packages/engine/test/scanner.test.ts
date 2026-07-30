@@ -1,7 +1,8 @@
 // packages/engine/test/scanner.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec INDX-004 unit
+// @spec INDX-010 unit
+// @spec INDX-011 unit
 //
 // PARS-03 + PARS-04 unit coverage for the scanner modules.
 // Closes PARS-03 by mechanically demonstrating the @spec regex, path-based

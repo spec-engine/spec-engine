@@ -1,7 +1,7 @@
 // packages/engine/test/check-statusflip.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec OWNER-001 unit
+// @spec OWNER-002 unit
 //
 // GOV-02 unit cases for the pure `unapprovedStatusFlip()` detector. Drives the
 // function directly with hand-built SpecRequirement[] / CodeownersRule[] — no

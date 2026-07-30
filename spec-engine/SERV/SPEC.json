@@ -7,79 +7,84 @@
   "requirements": [
     {
       "id": "SERV-001",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec serve launches the local webapp over the derived index, bound to loopback only.",
       "why": "CLI + DB + local webapp shape; loopback is the T-1-01 security posture.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "SERV-008",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/commands/serve.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 2,
       "aliases": [],
       "cites": []
     },
     {
       "id": "SERV-002",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec serve exposes the documented /api/* read routes (coverage, report, requirements, query, resolve, relations, propagation), returning 400 \u2014 never 500 \u2014 on malformed input.",
       "why": "The webapp and any external client depend on these contracts; a 500 on bad FTS input would leak internals and break the loopback UI.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "SERV-009",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/server/api.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 3,
       "aliases": [],
       "cites": []
     },
     {
       "id": "SERV-003",
-      "status": "active",
+      "status": "superseded",
       "statement": "The spec binary embeds the webapp assets at compile time, so spec serve renders the UI from the single binary with no external asset files (--probe boots, fetches /, and confirms the page renders).",
       "why": "If assets were read from disk at runtime, a distributed binary would serve a blank UI \u2014 the self-contained-binary promise breaks silently.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "SERV-011",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/commands/serve.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 4,
       "aliases": [],
       "cites": []
     },
     {
       "id": "SERV-004",
-      "status": "active",
+      "status": "superseded",
       "statement": "The Setup page detects the scan mode from the mapped member rows with the canonical spec row excluded: members expanded from one workspace root render Monorepo, two or more sibling member repos render Platform, and a lone member renders Single repo.",
       "why": "The count-based check included the canonical spec-engine row and hardcoded the Monorepo tile off, so the first mapping view an adopter checks \u2014 including this repo's own dogfood \u2014 misstated the layout as a multi-repo platform.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "SERV-013",
       "relates": [],
       "livesIn": [
         "@packages/webapp/src/pages/setup.ts"
       ],
       "issues": [],
+      "supersededAtVersion": 5,
       "aliases": [],
       "cites": []
     },
     {
       "id": "SERV-005",
-      "status": "active",
+      "status": "superseded",
       "statement": "The webapp Coverage and Requirements pages list only non-Superseded, non-Retired requirements by default \u2014 a domain left with no listed requirement disappears with them \u2014 and a toggle link (?all=1) restores the full ledger; a listed requirement's version-history panel includes its superseded predecessors in either view.",
       "why": "Superseded history soon outnumbers the live contract; an unfiltered default buries what the platform must satisfy now under dead versions, and hiding lineage along with the rows would erase the audit trail the supersede model exists to keep.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "SERV-014",
       "relates": [],
       "livesIn": [
         "@packages/webapp/src/pages/requirements.ts"
       ],
       "issues": [],
+      "supersededAtVersion": 6,
       "aliases": [],
       "cites": []
     },
@@ -108,6 +113,146 @@
       "relates": [],
       "livesIn": [
         "packages/shared/src/flags.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SERV-008",
+      "status": "active",
+      "statement": "The spec serve command shall serve the webapp and /api/* routes over the derived index, bound to 127.0.0.1 only, with no flag to widen the bind address.",
+      "why": "A non-loopback bind would expose the index and its query surface to the network from a tool built for a trusted local caller.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/serve.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SERV-009",
+      "status": "active",
+      "statement": "The spec serve /api/* read routes \u2014 coverage / report / requirements / query / resolve / relations / propagation \u2014 shall each return the same deterministic JSON shape as the corresponding CLI --json command.",
+      "why": "The webapp and external clients bind to these shapes; a route that drifted from its CLI twin would fork the one engine into two contracts.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/server/api.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SERV-010",
+      "status": "active",
+      "statement": "When an /api/* request is malformed \u2014 invalid search syntax, a bad limit, or a traversal path segment \u2014 the route shall respond 400 with a structured error, never 500.",
+      "why": "A 500 on bad search input leaks internals and breaks the loopback UI; malformed input is the caller's error and must read that way.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/server/api.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SERV-011",
+      "status": "active",
+      "statement": "The spec binary shall render the webapp UI with no asset files read from disk at runtime \u2014 the assets travel inside the binary itself.",
+      "why": "If assets were read from disk at runtime, a distributed binary would serve a blank UI \u2014 the self-contained-binary promise breaks silently.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/serve.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SERV-012",
+      "status": "active",
+      "statement": "When run with --probe, spec serve shall boot on an ephemeral loopback port, fetch /, and exit 0 only when the page renders (exit 1 otherwise).",
+      "why": "Without a mechanical boot check, an asset-embedding regression ships silently and surfaces as a blank page on someone else's machine.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/serve.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SERV-013",
+      "status": "active",
+      "statement": "The Setup page shall derive the scan-mode tile from the mapped member rows with the canonical spec row excluded: members expanded from one workspace root render Monorepo, two or more sibling member repos render Platform, and a lone member renders Single repo.",
+      "why": "The count-based check included the canonical spec-engine row and hardcoded the Monorepo tile off, so the first mapping view an adopter checks misstated the layout as a multi-repo platform.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/webapp/src/pages/setup.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SERV-014",
+      "status": "active",
+      "statement": "When rendering the Coverage and Requirements pages without ?all=1, the webapp shall list only requirements that are neither Superseded nor Deprecated, omitting any domain left with no listed requirement.",
+      "why": "Superseded history soon outnumbers the live contract; an unfiltered default buries what the platform must satisfy now under dead versions.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/webapp/src/pages/requirements.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SERV-015",
+      "status": "active",
+      "statement": "When the query string carries all=1, the Coverage and Requirements pages shall list the full ledger, Superseded and Deprecated requirements included.",
+      "why": "The supersede model keeps history precisely so it can be audited; a filter with no escape hatch makes dead versions unreachable in the UI.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/webapp/src/pages/requirements.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SERV-016",
+      "status": "active",
+      "statement": "A listed requirement's version-history panel shall include its superseded predecessors regardless of the ?all=1 filter state.",
+      "why": "Hiding lineage along with the filtered rows would erase the audit trail the supersede model exists to keep.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/webapp/src/pages/requirements.ts"
       ],
       "issues": [],
       "aliases": [],
