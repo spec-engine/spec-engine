@@ -2,7 +2,7 @@
   "key": "CHCK",
   "owner": null,
   "updated": "2026-07-30",
-  "scope": "spec check diagnostics and CI-gate semantics: the diagnostic codes and their severities, the --ci cold-rebuild gate, and which severity drives exit 1. Belongs here: the diagnostic codes and severities; the --ci gate; the exit-1 contract. Does not belong here: membership discovery itself (\u2192 INIT). Boundary case: check-severity semantics stay in CHCK even when the discovery path (INIT) emits the diagnostic, as with the NO_SPEC_CONFIG finding.",
+  "scope": "spec check diagnostics and CI-gate semantics: the diagnostic codes and their severities, the --ci cold-rebuild gate, and which severity drives exit 1. Belongs here: the diagnostic codes and severities; the --ci gate; the exit-1 contract. Does not belong here: membership discovery itself (→ INIT). Boundary case: check-severity semantics stay in CHCK even when the discovery path (INIT) emits the diagnostic, as with the NO_SPEC_CONFIG finding.",
   "grammar": "ears",
   "requirements": [
     {
@@ -85,7 +85,7 @@
       "id": "CHCK-006",
       "status": "active",
       "statement": "GLOSSARY.md is migrated into TERM-001..N and then generated from the term store byte-stably, and a CI fence fails if the committed GLOSSARY.md diverges from the generated output.",
-      "why": "The human view of the glossary must not drift from the canonical terms \u2014 generation is a deterministic projection of the store, fenced in CI.",
+      "why": "The human view of the glossary must not drift from the canonical terms — generation is a deterministic projection of the store, fenced in CI.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
@@ -101,7 +101,7 @@
       "id": "CHCK-007",
       "status": "active",
       "statement": "If a code tag references a deprecated requirement, then spec check shall report DEPRECATED_REFERENCED as an error.",
-      "why": "Code claiming to implement an end-of-life promise is a disagreement between spec and code that otherwise stays invisible \u2014 the SUPERSEDED_REFERENCED analogue for the other terminal status.",
+      "why": "Code claiming to implement an end-of-life promise is a disagreement between spec and code that otherwise stays invisible — the SUPERSEDED_REFERENCED analogue for the other terminal status.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
@@ -116,7 +116,7 @@
       "id": "CHCK-008",
       "status": "active",
       "statement": "If a domain declares the ears grammar and an Active or Draft statement does not match one of the five EARS shapes, then spec check shall report STATEMENT_GRAMMAR at the domain's declared severity, defaulting to warning.",
-      "why": "Vague statements read as fine and fail as requirements \u2014 without a mechanical check the burn-down list is invisible and new word salad enters unnoticed.",
+      "why": "Vague statements read as fine and fail as requirements — without a mechanical check the burn-down list is invisible and new word salad enters unnoticed.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
@@ -131,7 +131,7 @@
       "id": "CHCK-009",
       "status": "active",
       "statement": "If a code tag references a Draft requirement, then spec check shall report DRAFT_REFERENCED as a warning.",
-      "why": "Code shipped against a promise nobody approved yet is invisible otherwise \u2014 the draft quietly becomes de-facto truth without ever being accepted.",
+      "why": "Code shipped against a promise nobody approved yet is invisible otherwise — the draft quietly becomes de-facto truth without ever being accepted.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
@@ -152,6 +152,21 @@
       "relates": [],
       "livesIn": [
         "packages/engine/src/commands/glossary.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-011",
+      "status": "active",
+      "statement": "While the platform is a git repository with a resolvable HEAD, spec check shall report REQUIREMENT_REMOVED for any requirement present at HEAD that is absent from the working tree without a supersession in the same change, with no flag required.",
+      "why": "A deleted requirement was invisible to a plain spec check unless the opt-in --base flag was wired in CI — the biggest disagreement the tool exists to catch defaulted to off.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/check.ts"
       ],
       "issues": [],
       "aliases": [],
