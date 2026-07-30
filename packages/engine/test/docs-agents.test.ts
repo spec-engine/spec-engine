@@ -143,8 +143,10 @@ describe("AGENTS.md authoring playbook (AUTHOR-001) + req-author skill (AUTHOR-0
     expect(skill).toContain("description:");
     // Approval-before-write gate — the skill never mints without a human OK.
     expect(skill).toMatch(/approval|before writing/i);
-    // Cross-references the §4.10 rubric rather than re-authoring it.
-    expect(skill).toMatch(/4\.10|cold.read/i);
+    // Teaches the EARS statement shapes and the quote-your-source rule —
+    // the two mechanics the skill owns (no ghost section references).
+    expect(skill).toContain("shall");
+    expect(skill).toMatch(/source quote|quotes its source/i);
     // Dogfoods the REAL CLI — the skill drives `spec req`, never a reimpl.
     expect(skill).toContain("spec req");
   });
