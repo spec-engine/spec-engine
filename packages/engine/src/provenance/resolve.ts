@@ -90,13 +90,22 @@ export async function resolveAndCache(
   // Project each served id → ResolvedShape, DROPPING `reason` so the decorator
   // cannot distinguish absent from failed (parity by construction). Serve order:
   // a fresh/updated cache entry wins; on a miss with a failed resolve, {ok:false}.
+  // An entry served PAST its TTL (its refresh just failed) is labeled stale —
+  // degraded data must say it is degraded, never impersonate a live answer.
+  // @spec PROV-002
   const out = new Map<string, ResolvedShape>();
   for (const id of uniqueIds) {
     const entry: CacheEntry | undefined = next[id];
     out.set(
       id,
       entry
-        ? { ok: true, title: entry.title, status: entry.status, url: entry.url }
+        ? {
+            ok: true,
+            title: entry.title,
+            status: entry.status,
+            url: entry.url,
+            stale: !isFresh(entry, now),
+          }
         : { ok: false },
     );
   }

@@ -20,6 +20,15 @@ export const DiagnosticCode = {
   // comes from the domain's `grammarSeverity` (default warning — a burn-down
   // nudge, not a build-breaker; a domain can promote it to error).
   STATEMENT_GRAMMAR: "STATEMENT_GRAMMAR",
+  // A code tag points at a Draft requirement — code shipped against a promise
+  // nobody approved yet. Warning severity: it is a review prompt (approve the
+  // Draft or hold the code), not a structural break like a dangling tag.
+  DRAFT_REFERENCED: "DRAFT_REFERENCED",
+  // The committed GLOSSARY.md no longer matches what the TERM store generates.
+  // Warning severity — the fix is one regenerate command, but until it runs
+  // the human view of the terms is lying. Previously only this repo's own CI
+  // fence caught it; adopters' glossaries could drift forever.
+  GLOSSARY_DRIFT: "GLOSSARY_DRIFT",
   ORPHAN_REQ: "ORPHAN_REQ",
   UNVERIFIED_REQ: "UNVERIFIED_REQ",
   DRIFT: "DRIFT",

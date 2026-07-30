@@ -7,8 +7,8 @@
 // correct-by-copy-paste and at risk of silent drift: the V12 path-containment
 // guard and the cold-reset primitive.
 
-import { existsSync, mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import { existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { NotASpecPlatformError, type Storage, type Tag } from "@spec-engine/shared";
 import { defaultIndexPath, EXIT, isContainedPath } from "../constants";
 import { assertSpecPlatform, formatNotASpecPlatform } from "../indexer/discover";
@@ -122,6 +122,35 @@ export async function reindexAndListTags(platformDir: string, reqId: string): Pr
   }
 }
 
+/**
+ * Warn (stderr) when a warm index predates a change to any canonical spec
+ * file — the common way a read command silently serves old numbers. Only the
+ * spec-engine/ SPEC.json mtimes are compared (walking every member's code for
+ * tag edits would cost more than the reindex itself), so a tag-only change can
+ * still go undetected — hence "may be stale", and --fresh as the certain path.
+ * Never throws; a stat failure just skips the warning.
+ */
+// @spec INDX-006
+function warnIfIndexStale(platformDir: string, dbPath: string): void {
+  try {
+    const dbMtime = statSync(dbPath).mtimeMs;
+    const specsDir = join(platformDir, "spec-engine");
+    for (const entry of readdirSync(specsDir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const specPath = join(specsDir, entry.name, "SPEC.json");
+      if (!existsSync(specPath)) continue;
+      if (statSync(specPath).mtimeMs > dbMtime) {
+        console.error(
+          `spec: warning — spec-engine/${entry.name}/SPEC.json changed after the index was built; results may be stale. Pass --fresh to rebuild.`,
+        );
+        return;
+      }
+    }
+  } catch {
+    // Best-effort: staleness detection must never break a read command.
+  }
+}
+
 export async function withReadStorage(
   opts: ReadStorageOptions,
   fn: (storage: Storage) => void | Promise<void>,
@@ -136,6 +165,8 @@ export async function withReadStorage(
     try {
       if (needsIndex || storage.listRepos().length === 0) {
         await runIndex({ platformDir, storage });
+      } else {
+        warnIfIndexStale(platformDir, dbPath);
       }
       await fn(storage);
     } finally {

@@ -126,6 +126,36 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "CHCK-009",
+      "status": "active",
+      "statement": "If a code tag references a Draft requirement, then spec check shall report DRAFT_REFERENCED as a warning.",
+      "why": "Code shipped against a promise nobody approved yet is invisible otherwise \u2014 the draft quietly becomes de-facto truth without ever being accepted.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/storage/sqlite.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-010",
+      "status": "active",
+      "statement": "If the committed GLOSSARY.md does not byte-match the glossary generated from the TERM store, then spec check shall report GLOSSARY_DRIFT as a warning.",
+      "why": "Only this repo's own CI fence caught glossary drift before; an adopter's human view of the terms could lie forever under a green gate.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/glossary.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
   ]
 }

@@ -162,6 +162,11 @@ export type ResolvedShape = {
   title?: string;
   status?: string;
   url?: string;
+  /** True when the tracker refresh failed and this data is served from an
+   *  expired cache entry — rendered with an explicit marker, because degraded
+   *  data must say it is degraded. Orthogonal to the PWEB-03 ok:false parity
+   *  (absent vs failed stays indistinguishable). */
+  stale?: boolean;
 };
 
 /**
@@ -189,8 +194,11 @@ export function decorateRow(row: ProvenanceMatrixRow, resolved: ResolvedShape | 
   // malformed `… [] ` line (dangling bracket, trailing space). Treat an ok:true
   // with empty title or url as a DEGRADE so the overlay is never half-rendered.
   if (resolved?.ok && resolved.title && resolved.url) {
-    // Overlay: <title> [<status>] <url> on the same link line.
-    return `${prefix}  ${resolved.title} [${resolved.status ?? ""}] ${resolved.url}`;
+    // Overlay: <title> [<status>] <url> on the same link line. A stale entry
+    // (refresh failed, served from an expired cache) says so on the line —
+    // an old title rendered as current is a quiet lie.
+    const staleMark = resolved.stale ? " (cached — refresh failed)" : "";
+    return `${prefix}  ${resolved.title} [${resolved.status ?? ""}] ${resolved.url}${staleMark}`;
   }
   // Degraded (absent OR failed OR unresolved OR ok:true-with-empty-fields):
   // bare opaque id + the hint.
@@ -233,7 +241,14 @@ export function renderProvenanceDecorated(
         const hit = resolved.get(r.issue_id);
         const resolvedField =
           hit?.ok === true
-            ? { title: hit.title ?? "", status: hit.status ?? "", url: hit.url ?? "" }
+            ? {
+                title: hit.title ?? "",
+                status: hit.status ?? "",
+                url: hit.url ?? "",
+                // Machines get the degradation signal too: true only when the
+                // refresh failed and the data is served past its cache TTL.
+                stale: hit.stale === true,
+              }
             : null;
         return { ...r, resolved: resolvedField };
       }),

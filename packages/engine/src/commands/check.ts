@@ -60,6 +60,7 @@ import { parseJUnit, type TestCaseResult } from "../results/junit";
 import { findDomainJsonFiles, isPathIgnored } from "../scanner/fs";
 import { openStorage } from "../storage/sqlite";
 import { assertContainedPath, coldResetDb } from "./_shared";
+import { glossaryDriftDiagnostic } from "./glossary";
 
 // A parsed set of domain requirements plus the platform-relative path each id
 // was sourced from — the shape returned by BOTH collectChangeReqs (working
@@ -535,6 +536,12 @@ export const checkCommand = defineCommand({
       // predicate — a domain opts into error severity explicitly.
       // @spec CHCK-008
       diagnostics.push(...(await statementGrammarDiagnostics(platformDir)));
+      // Glossary round-trip probe (drift audit, statement 5): a committed
+      // GLOSSARY.md that no longer matches the TERM store surfaces in EVERY
+      // check run, not just this repo's CI fence — adopters get the warning
+      // too. Warning severity, so it never flips the exit predicate.
+      const glossaryDrift = glossaryDriftDiagnostic(platformDir);
+      if (glossaryDrift !== null) diagnostics.push(glossaryDrift);
 
       // Results-ingest stage (GATE-01/02/05): reads/parses --results under the
       // T-19-04 containment guard and hoists the parsed results + verifying

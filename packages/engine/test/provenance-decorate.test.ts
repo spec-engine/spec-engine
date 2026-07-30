@@ -123,6 +123,7 @@ describe("renderProvenanceDecorated", () => {
       title: "Renew charge",
       status: "Done",
       url: "https://linear.app/x",
+      stale: false,
     });
     expect(parsed[1]?.resolved).toBeNull();
     // Deterministic: same input → same bytes.
