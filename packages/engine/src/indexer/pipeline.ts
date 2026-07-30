@@ -2,7 +2,6 @@
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec INDX-001
-// @spec AUTHC-025
 //
 // PARS-05: the single named `runIndex` function. This is the Rust-swap
 // seam — every CLI / webapp / future indexer caller funnels through here,

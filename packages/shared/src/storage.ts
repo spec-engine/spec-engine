@@ -68,7 +68,7 @@ export interface Domain {
  * VALID_STATUSES, and the api.ts "one of Active|Superseded|…" error string);
  * all now derive from here.
  */
-export const REQUIREMENT_STATUSES = ["Active", "Superseded", "Draft", "Retired"] as const;
+export const REQUIREMENT_STATUSES = ["Active", "Superseded", "Draft", "Deprecated"] as const;
 export type RequirementStatus = (typeof REQUIREMENT_STATUSES)[number];
 
 export interface Requirement {

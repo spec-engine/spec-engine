@@ -146,6 +146,29 @@ describe("classifyGate", () => {
     expect(out.detail).toContain("BILLING-009");
   });
 
+  // @spec GATE-007 unit
+  test("Test 5b — DEPRECATED: a deprecated req fails the gate, never PASSes through the version comparison", () => {
+    // Before the branch existed, Deprecated fell through to VERSION_PIN/PASS —
+    // changed_at_version <= pin would approve building against a dead promise.
+    const req = makeReq({
+      id: "BILLING-001",
+      seq: 1,
+      status: "Deprecated",
+      changed_at_version: 1,
+    });
+    const repo = makeRepo(2);
+    const out = classifyGate({
+      req,
+      repo,
+      requestedReqId: "BILLING-001",
+      requestedRepoName: "api",
+    });
+    expect(out.pass).toBe(false);
+    expect(out.reason).toBe("DEPRECATED");
+    expect(out.status).toBe("Deprecated");
+    expect(out.detail).toContain("end-of-life");
+  });
+
   test("Test 6 — SUPERSEDED precedence over VERSION_PIN (Pitfall 3 / T-06-02-02) — critical branch-order lock", () => {
     // Superseded AND behind-pin: req.changed_at_version=2 > repo.pin=1
     // would naively classify VERSION_PIN. The hard-ordered branches

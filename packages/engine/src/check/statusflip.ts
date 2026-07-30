@@ -45,15 +45,19 @@ function normalizeHandle(h: string): string {
   return (h.startsWith("@") ? h.slice(1) : h).toLowerCase();
 }
 
+/** The two terminal authored statuses ("retired" is the legacy spelling of
+ *  "deprecated" — accepted on read, never written by new code). */
+const TERMINAL_STATUSES = new Set(["superseded", "deprecated", "retired"]);
+
 /** True iff `change` is a NEW flip INTO a terminal status relative to `base`.
- *  WR-02 exact-match: only a flip INTO `superseded`/`retired` qualifies. A
+ *  WR-02 exact-match: only a flip INTO `superseded`/`deprecated` qualifies. A
  *  BAD_STATUS value (e.g. "drft") stays invisible — no fuzzy coercion. A req
- *  not present in base, ALREADY superseded/retired in base, or unchanged is not
- *  a NEW flip → returns false. */
+ *  not present in base, ALREADY superseded/deprecated in base, or unchanged is
+ *  not a NEW flip → returns false. */
 function isNewTerminalFlip(base: string | undefined, change: string): boolean {
-  if (change !== "superseded" && change !== "retired") return false;
+  if (!TERMINAL_STATUSES.has(change)) return false;
   if (base === undefined) return false;
-  if (base === "superseded" || base === "retired") return false;
+  if (TERMINAL_STATUSES.has(base)) return false;
   // Only a NEW flip when the base status differs (and was not already terminal).
   return base !== change;
 }

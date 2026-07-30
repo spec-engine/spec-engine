@@ -13,7 +13,7 @@
 //
 // 5-MEMBER CONTRACT (DECLARATION ORDER MATTERS — appears verbatim in
 // CLI --json output and stdout text mode):
-//   PASS | NOT_FOUND | DRAFT | SUPERSEDED | VERSION_PIN
+//   PASS | NOT_FOUND | DRAFT | SUPERSEDED | DEPRECATED | VERSION_PIN
 // Any addition or removal here is a breaking change to the CLI + JSON
 // output contract. Each literal is also the user-facing diagnostic
 // label in `spec gate` stdout — keep them all-caps, ASCII, snake-free.
@@ -28,7 +28,13 @@ import type { Repo, Requirement, RequirementStatus } from "./storage";
  * in declaration order. Public CLI contract — appears verbatim in
  * --json output and stdout text mode.
  */
-export type GateReason = "PASS" | "NOT_FOUND" | "DRAFT" | "SUPERSEDED" | "VERSION_PIN";
+export type GateReason =
+  | "PASS"
+  | "NOT_FOUND"
+  | "DRAFT"
+  | "SUPERSEDED"
+  | "DEPRECATED"
+  | "VERSION_PIN";
 
 /**
  * Fully-populated decision row returned by `classifyGate`. Every field

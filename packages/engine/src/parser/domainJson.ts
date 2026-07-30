@@ -57,7 +57,10 @@ const STATUS_CASE_MAP: Readonly<Record<string, RequirementStatus>> = Object.free
   active: "Active",
   draft: "Draft",
   superseded: "Superseded",
-  retired: "Retired",
+  deprecated: "Deprecated",
+  // Legacy alias (pre-rename files): reads as Deprecated; new writes use
+  // "deprecated". The word is deprecated everywhere a human reads it.
+  retired: "Deprecated",
 });
 
 // PROV-01/05: closed allow-list of provenance roles — identical contract to

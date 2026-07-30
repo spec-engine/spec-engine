@@ -1,8 +1,8 @@
 {
   "key": "CHCK",
   "owner": null,
-  "updated": "2026-07-08",
-  "scope": "spec check diagnostics and CI-gate semantics: the diagnostic codes and their severities, the --ci cold-rebuild gate, and which severity drives exit 1. Belongs here: the diagnostic codes and severities; the --ci gate; the exit-1 contract. Does not belong here: membership discovery itself (→ INIT). Boundary case: check-severity semantics stay in CHCK even when the discovery path (INIT) emits the diagnostic, as with the NO_SPEC_CONFIG finding.",
+  "updated": "2026-07-30",
+  "scope": "spec check diagnostics and CI-gate semantics: the diagnostic codes and their severities, the --ci cold-rebuild gate, and which severity drives exit 1. Belongs here: the diagnostic codes and severities; the --ci gate; the exit-1 contract. Does not belong here: membership discovery itself (\u2192 INIT). Boundary case: check-severity semantics stay in CHCK even when the discovery path (INIT) emits the diagnostic, as with the NO_SPEC_CONFIG finding.",
   "requirements": [
     {
       "id": "CHCK-001",
@@ -84,7 +84,7 @@
       "id": "CHCK-006",
       "status": "active",
       "statement": "GLOSSARY.md is migrated into TERM-001..N and then generated from the term store byte-stably, and a CI fence fails if the committed GLOSSARY.md diverges from the generated output.",
-      "why": "The human view of the glossary must not drift from the canonical terms — generation is a deterministic projection of the store, fenced in CI.",
+      "why": "The human view of the glossary must not drift from the canonical terms \u2014 generation is a deterministic projection of the store, fenced in CI.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
@@ -93,6 +93,21 @@
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-007",
+      "status": "active",
+      "statement": "If a code tag references a deprecated requirement, then spec check shall report DEPRECATED_REFERENCED as an error.",
+      "why": "Code claiming to implement an end-of-life promise is a disagreement between spec and code that otherwise stays invisible \u2014 the SUPERSEDED_REFERENCED analogue for the other terminal status.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/storage/sqlite.ts"
+      ],
+      "issues": [],
       "aliases": [],
       "cites": []
     }

@@ -3,7 +3,6 @@
 // Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec GUARD-010 integration
 // @spec OWNER-001 integration
-// @spec GOV-03 integration
 //
 // GOV-01/02/03 at the INTEGRATION layer: one in-process `spec check --ci --base
 // HEAD` over a git-init'd clone proves the governance teeth compose correctly

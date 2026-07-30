@@ -128,10 +128,10 @@ export function mountCoverage(app: Hono): void {
     const showAll = c.req.query("all") === "1";
     const visible = showAll
       ? rows
-      : rows.filter((r) => r.req_status !== "Superseded" && r.req_status !== "Retired");
+      : rows.filter((r) => r.req_status !== "Superseded" && r.req_status !== "Deprecated");
     const hiddenCount = new Set(
       rows
-        .filter((r) => r.req_status === "Superseded" || r.req_status === "Retired")
+        .filter((r) => r.req_status === "Superseded" || r.req_status === "Deprecated")
         .map((r) => r.req_id),
     ).size;
 
@@ -171,7 +171,7 @@ export function mountCoverage(app: Hono): void {
         ${
           showAll
             ? html`<span class="legend-item">${requirementStatusBadge("Superseded")}</span>
-        <span class="legend-item">${requirementStatusBadge("Retired")}</span>`
+        <span class="legend-item">${requirementStatusBadge("Deprecated")}</span>`
             : ""
         }
         <span class="panel-spacer"></span>

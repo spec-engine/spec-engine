@@ -93,7 +93,7 @@ bunx @spec-engine/spec-engine <command> [...]   # published npm package (require
 | Code | Meaning |
 | --- | --- |
 | 0 | Success. Empty results are success (`[]` on stdout, guidance on stderr). |
-| 1 | Data-level failure: `check` found ≥1 error-severity diagnostic; `gate` failed (`NOT_FOUND` / `DRAFT` / `SUPERSEDED` / `VERSION_PIN`); `index` crashed mid-build. |
+| 1 | Data-level failure: `check` found ≥1 error-severity diagnostic; `gate` failed (`NOT_FOUND` / `DRAFT` / `SUPERSEDED` / `DEPRECATED` / `VERSION_PIN`); `index` crashed mid-build. |
 | 2 | Usage/environment error: bad args, not a Spec Engine platform (no `spec-engine/`), path-containment violation, invalid `--limit`/`--port`, FTS5 syntax error. |
 
 Branch on exit codes, not on output text.
@@ -153,7 +153,7 @@ edited specs or tags and need the answer to reflect it.
   `{ code, severity, repo, source_file, line, req_id, detail }` (nullable
   except `code`/`severity`/`detail`). Codes: `DUP_ID`, `BROKEN_SUPERSEDE`,
   `CYCLIC_SUPERSEDE`, `DANGLING_TAG`, `BAD_STATUS`, `DRIFT`,
-  `SUPERSEDED_REFERENCED`, `ORPHAN_REQ`, `UNVERIFIED_REQ`,
+  `SUPERSEDED_REFERENCED`, `DEPRECATED_REFERENCED`, `ORPHAN_REQ`, `UNVERIFIED_REQ`,
   `NO_SPEC_CONFIG`, `BROKEN_FILE_REF`, `BROKEN_RELATES`,
   `RELATES_SUPERSEDED`, `SELF_RELATES`, `UNDEFINED_TERM`,
   `ORPHAN_TERM`, `TERM_DRIFT`, `SUPERSEDED_TERM_REFERENCED`. The four
@@ -247,8 +247,8 @@ edited specs or tags and need the answer to reflect it.
   `NO_DOMAIN_REFERENCE`.
 - **`spec gate`** — JSON: `{ pass, reason, repo, req_id, detail, status,
   changed_at_version, pinned_spec_version }` with `reason` ∈ `PASS` |
-  `NOT_FOUND` | `DRAFT` | `SUPERSEDED` | `VERSION_PIN`. Decision order:
-  NOT_FOUND → DRAFT → SUPERSEDED → VERSION_PIN → PASS; pin equality passes.
+  `NOT_FOUND` | `DRAFT` | `SUPERSEDED` | `DEPRECATED` | `VERSION_PIN`. Decision order:
+  NOT_FOUND → DRAFT → SUPERSEDED → DEPRECATED → VERSION_PIN → PASS; pin equality passes.
   An unknown repo name is a usage error (exit 2), not a gate failure.
 - **`spec req`** — when stdin is **not** a TTY it prints the bare next unused
   ID (e.g. `BILLING-010`) and exits 0 — zero prompts, zero writes. Domain
@@ -311,7 +311,7 @@ edited specs or tags and need the answer to reflect it.
   `SPEC.json` on the filesystem, never the index. Text mode is one key per line
   (keys only, unchanged).
 - **`spec supersede`** — the post-ship lifecycle move. Requires the target
-  to be `Active` (already-superseded / Draft / Retired → exit 2 with
+  to be `Active` (already-superseded / Draft / Deprecated → exit 2 with
   guidance). Successor fields: `--text` is the new Requirement (mandatory
   non-TTY; prompted on a TTY); `--why` / `--binds` / `--lives` default to
   COPIES of the old entry's values. Reindexes fresh, then emits the retag
@@ -336,7 +336,7 @@ edited specs or tags and need the answer to reflect it.
   `updated`, reindexes fresh, and
   emits the retag worklist (the sites `spec check` flags as
   `SUPERSEDED_REFERENCED` until retagged). Only Active requirements move
-  (superseded/retired stay as history); moving to the source's own domain is a
+  (superseded/deprecated stay as history); moving to the source's own domain is a
   usage error (use `spec supersede`). All guards run before the first write, and
   both envelopes are validated before EITHER is written, so a reject never
   leaves a half-applied move. `--json`: `{ old_id, new_id, from_file, to_file,
@@ -349,7 +349,7 @@ edited specs or tags and need the answer to reflect it.
 - **`spec amend`** — the pre-production counterpart to supersede. Field
   flags (`--text` / `--why` / `--binds` / `--lives`) name what changes; at
   least one is required, untouched fields stay byte-identical. Only Active
-  and Draft entries amend (superseded/retired → exit 2). Bumps frontmatter
+  and Draft entries amend (superseded/deprecated → exit 2). Bumps frontmatter
   `updated`, never `spec_version`. `--json`: `{ id, file, fields_changed }`.
 - **`spec init`** — an existing `spec-engine.member.json` is left untouched and
   reported as "already configured" with **exit 0** (a no-op, not a refusal) —

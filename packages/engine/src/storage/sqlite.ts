@@ -289,6 +289,25 @@ WHERE r.status = 'Superseded'
 ORDER BY t.repo, t.file, t.line
 `;
 
+// The Q2 analogue for the other terminal status: a tag on a Deprecated
+// requirement is code claiming a dead promise. Error severity, same shape.
+// @spec CHCK-007
+const Q2B_DEPRECATED_REFERENCED_SQL = `
+SELECT
+  'DEPRECATED_REFERENCED'                                     AS code,
+  t.repo                                                      AS repo,
+  t.file                                                      AS source_file,
+  t.line                                                      AS line,
+  t.req_id                                                    AS req_id,
+  ('Tag references deprecated requirement ' || t.req_id ||
+    ' — it is end-of-life with no successor')                 AS detail,
+  'error'                                                     AS severity
+FROM tags t
+JOIN requirements r ON r.id = t.req_id
+WHERE r.status = 'Deprecated'
+ORDER BY t.repo, t.file, t.line
+`;
+
 const Q3_DRIFT_SQL = `
 SELECT
   'DRIFT'                                                     AS code,
@@ -681,7 +700,8 @@ ORDER BY repos.name
 //
 // @spec QURY-003
 // @spec QURY-002
-const FTS_SEARCH_SQL = `SELECT r.id AS req_id, r.key AS key, r.text AS text, r.why AS why, r.source_file AS source_file, r.line AS line, bm25(requirements_fts, 1.0, 0.5) AS rank FROM requirements_fts JOIN requirements r ON r.rowid = requirements_fts.rowid WHERE requirements_fts MATCH $query AND r.status != 'Superseded' ORDER BY rank ASC LIMIT $limit`;
+// @spec QURY-004
+const FTS_SEARCH_SQL = `SELECT r.id AS req_id, r.key AS key, r.text AS text, r.why AS why, r.source_file AS source_file, r.line AS line, bm25(requirements_fts, 1.0, 0.5) AS rank FROM requirements_fts JOIN requirements r ON r.rowid = requirements_fts.rowid WHERE requirements_fts MATCH $query AND r.status NOT IN ('Superseded', 'Deprecated') ORDER BY rank ASC LIMIT $limit`;
 
 // --- Phase 5 / plan 05-01 — resolveByFiles join SQL -------------------------
 //
@@ -878,6 +898,7 @@ class SqliteStorage implements Storage {
     for (const sql of [
       Q1_DANGLING_TAG_SQL,
       Q2_SUPERSEDED_REFERENCED_SQL,
+      Q2B_DEPRECATED_REFERENCED_SQL,
       Q3_DRIFT_SQL,
       Q4_ORPHAN_REQ_SQL,
       Q5_UNVERIFIED_REQ_SQL,

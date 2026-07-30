@@ -10,6 +10,11 @@ export const DiagnosticCode = {
   BAD_STATUS: "BAD_STATUS",
   DANGLING_TAG: "DANGLING_TAG",
   SUPERSEDED_REFERENCED: "SUPERSEDED_REFERENCED",
+  // A code tag points at a Deprecated requirement — end-of-life with no
+  // successor. Error severity (the SUPERSEDED_REFERENCED analogue for the
+  // other terminal status): code claiming to implement a dead promise is
+  // exactly the disagreement spec check exists to surface.
+  DEPRECATED_REFERENCED: "DEPRECATED_REFERENCED",
   ORPHAN_REQ: "ORPHAN_REQ",
   UNVERIFIED_REQ: "UNVERIFIED_REQ",
   DRIFT: "DRIFT",
