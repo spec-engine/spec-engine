@@ -4,7 +4,7 @@
 // @spec INIT-010
 // @spec INIT-011
 // @spec INIT-012
-// @spec AUTHC-018
+// @spec REQ-019
 //
 // citty entrypoint for the compiled `spec` binary (WORK-07 / CI-01).
 // `bun build --compile --target=bun-darwin-arm64 packages/engine/src/cli.ts

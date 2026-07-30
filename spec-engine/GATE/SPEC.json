@@ -1,7 +1,7 @@
 {
   "key": "GATE",
   "owner": "drea",
-  "updated": "2026-07-08",
+  "updated": "2026-07-30",
   "scope": "The `spec gate` approval command: the pass/fail decision order (NOT_FOUND → DRAFT → SUPERSEDED → VERSION_PIN → PASS), pin-equality passing. Belongs here: the approval decision. Does not belong here: proof-of-passing → PROOF; loss detection → GUARD.",
   "requirements": [
     {
@@ -92,6 +92,21 @@
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GATE-007",
+      "status": "active",
+      "statement": "When spec gate is asked about a deprecated requirement, it shall fail with reason DEPRECATED.",
+      "why": "A deprecated requirement is end-of-life with no successor; before this branch existed it fell through to the version comparison and could PASS, approving new work against a dead promise.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/gate/classify.ts"
+      ],
+      "issues": [],
       "aliases": [],
       "cites": []
     }

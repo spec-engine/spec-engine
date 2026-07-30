@@ -2,7 +2,7 @@
   "key": "REQ",
   "owner": null,
   "updated": "2026-07-30",
-  "scope": "Requirement lifecycle: spec req, spec supersede, spec amend, and @-refs. Belongs here: next-id allocation; non-interactive authoring; supersede / move / amend; @path file-ref resolution. Does not belong here: scaffolding a whole domain (spec domain new → DOMAIN). Boundary case: minting a requirement id is REQ, scaffolding the domain that holds it is DOMAIN.",
+  "scope": "Requirement lifecycle: spec req, spec supersede, spec amend, and @-refs. Belongs here: next-id allocation; non-interactive authoring; supersede / move / amend; @path file-ref resolution. Does not belong here: scaffolding a whole domain (spec domain new \u2192 DOMAIN). Boundary case: minting a requirement id is REQ, scaffolding the domain that holds it is DOMAIN.",
   "requirements": [
     {
       "id": "REQ-001",
@@ -40,7 +40,7 @@
       "id": "REQ-003",
       "status": "active",
       "statement": "spec req <domain-prefix> prints the matching candidate domains to stderr and exits 2 when the prefix matches more than one domain and none matches exactly.",
-      "why": "Silently choosing one of several matching domains would mint the id in the wrong domain — a requirement authored into BOOKING when the author meant BILLING is a durable mistake.",
+      "why": "Silently choosing one of several matching domains would mint the id in the wrong domain \u2014 a requirement authored into BOOKING when the author meant BILLING is a durable mistake.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
@@ -71,7 +71,7 @@
     {
       "id": "REQ-005",
       "status": "active",
-      "statement": "spec req <domain-prefix>, run non-interactively with piped stdin, prints the next unused id — the domain's SPEC.json max sequence + 1, padded to three digits, as <KEY>-<NNN> on stdout — and exits 0.",
+      "statement": "spec req <domain-prefix>, run non-interactively with piped stdin, prints the next unused id \u2014 the domain's SPEC.json max sequence + 1, padded to three digits, as <KEY>-<NNN> on stdout \u2014 and exits 0.",
       "why": "IDs are never reused; the id query must agree with the domain envelope's requirements, not a regex approximation.",
       "supersedes": null,
       "supersededBy": null,
@@ -135,7 +135,7 @@
     {
       "id": "REQ-009",
       "status": "active",
-      "statement": "When stdin is not a TTY, spec req prints the next unused id and exits 0 — no prompts, no writes, no readline.",
+      "statement": "When stdin is not a TTY, spec req prints the next unused id and exits 0 \u2014 no prompts, no writes, no readline.",
       "why": "The composable id query for scripts and agents is preserved byte-for-byte.",
       "supersedes": null,
       "supersededBy": null,
@@ -152,7 +152,7 @@
       "id": "REQ-010",
       "status": "active",
       "statement": "spec req, in its interactive TTY flow, aborts with a stderr notice and exit 0 writing zero bytes when the author submits an empty Requirement statement.",
-      "why": "Following the git-editor convention, an abandoned authoring session must be a clean no-op — treating an empty statement as a save would persist a meaningless entry.",
+      "why": "Following the git-editor convention, an abandoned authoring session must be a clean no-op \u2014 treating an empty statement as a save would persist a meaningless entry.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
@@ -167,7 +167,7 @@
     {
       "id": "REQ-011",
       "status": "superseded",
-      "statement": "spec req <KEY> --text appends a new Active requirement to the domain's SPEC.json — status active, the given statement, why null, empty relates/livesIn/issues, changedAtVersion 1 — and bumps the envelope's updated to the local date, such that the appended entry re-indexes with zero diagnostics.",
+      "statement": "spec req <KEY> --text appends a new Active requirement to the domain's SPEC.json \u2014 status active, the given statement, why null, empty relates/livesIn/issues, changedAtVersion 1 \u2014 and bumps the envelope's updated to the local date, such that the appended entry re-indexes with zero diagnostics.",
       "why": "Authoring must produce exactly what the indexer ingests, or authored requirements silently vanish.",
       "supersedes": null,
       "supersededBy": "REQ-017",
@@ -216,7 +216,7 @@
     {
       "id": "REQ-014",
       "status": "active",
-      "statement": "spec term authors, lists, and revises glossary TERM entries (definition in the statement, headword in term, synonyms in aliases), and spec supersede/amend operate on TERM ids exactly as on requirements — carrying term/aliases through the successor and amend shapes.",
+      "statement": "spec term authors, lists, and revises glossary TERM entries (definition in the statement, headword in term, synonyms in aliases), and spec supersede/amend operate on TERM ids exactly as on requirements \u2014 carrying term/aliases through the successor and amend shapes.",
       "why": "Terms are lifecycle-managed like requirements: a shift in meaning must supersede (or revise-with-bump), never silently redefine; reusing the one lifecycle machinery keeps a term and a requirement governed by the same guarantees.",
       "supersedes": null,
       "supersededBy": null,
@@ -248,7 +248,7 @@
     {
       "id": "REQ-016",
       "status": "active",
-      "statement": "spec supersede and spec move take every version they emit — the --json spec_version for supersede, the source and target versions for move, and the persisted supersededAtVersion died-at stamp — from the freshly-reindexed supersede DAG, never from an incremented authored envelope counter.",
+      "statement": "spec supersede and spec move take every version they emit \u2014 the --json spec_version for supersede, the source and target versions for move, and the persisted supersededAtVersion died-at stamp \u2014 from the freshly-reindexed supersede DAG, never from an incremented authored envelope counter.",
       "why": "If these commands emitted or stamped a self-incremented authored number, the version a lineage records and an agent parses would diverge from the DAG-derived number that pins, drift, and gate compare against, resurrecting the two-sources-of-truth split the derived model exists to close.",
       "supersedes": null,
       "supersededBy": null,
@@ -263,7 +263,7 @@
     {
       "id": "REQ-017",
       "status": "active",
-      "statement": "spec req <KEY> --text appends a new Active requirement to the domain's SPEC.json — status active, the given statement, why null when unset, empty relates/livesIn/issues, and no authored version counter — and bumps the envelope's updated to the local date, such that the appended entry re-indexes with zero diagnostics.",
+      "statement": "spec req <KEY> --text appends a new Active requirement to the domain's SPEC.json \u2014 status active, the given statement, why null when unset, empty relates/livesIn/issues, and no authored version counter \u2014 and bumps the envelope's updated to the local date, such that the appended entry re-indexes with zero diagnostics.",
       "why": "Authoring must produce exactly what the indexer ingests, or authored requirements silently vanish.",
       "supersedes": null,
       "supersededBy": null,
@@ -286,6 +286,21 @@
       "relates": [],
       "livesIn": [
         "packages/engine/src/authoring/domains.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-019",
+      "status": "active",
+      "statement": "The spec CLI shall expose neither a spec new nor a spec id subcommand.",
+      "why": "The noun-verb surface (spec domain new, spec req) replaced them; resurrecting the old spellings would fork the authoring path into two diverging front doors.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/cli.ts"
       ],
       "issues": [],
       "aliases": [],

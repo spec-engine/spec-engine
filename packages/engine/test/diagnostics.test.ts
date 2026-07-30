@@ -164,7 +164,7 @@ describe("validateStructure unit cases", () => {
         requirements: [
           mkReq({ id: "X-001", status: "Active" }),
           mkReq({ id: "X-002", status: "Draft" }),
-          mkReq({ id: "X-003", status: "Retired" }),
+          mkReq({ id: "X-003", status: "Deprecated" }),
           mkReq({ id: "X-004", status: "Superseded", superseded_by: "X-001" }),
         ],
       }),

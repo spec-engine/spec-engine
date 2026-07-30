@@ -246,7 +246,7 @@
     },
     {
       "id": "AUTHC-018",
-      "status": "retired",
+      "status": "deprecated",
       "statement": "spec new and spec id are removed entirely — no cli.ts entries, absent from --help, no aliases, and invoking them has no scaffold or next-id side effect.",
       "why": "Nothing is published, so back-compat shims carry no value and would re-open the dash trap.",
       "supersedes": null,
@@ -351,7 +351,7 @@
     },
     {
       "id": "AUTHC-025",
-      "status": "retired",
+      "status": "deprecated",
       "statement": "At index time, each @-ref in requirement field lines that does not resolve to a file under the platform root emits one warning-severity BROKEN_FILE_REF diagnostic with platform-relative source, real line, and enclosing requirement id; traversal outside the root is broken regardless of existence.",
       "why": "Containment before existence — defense in depth; stale refs surface without failing the build.",
       "supersedes": null,

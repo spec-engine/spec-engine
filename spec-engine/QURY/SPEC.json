@@ -1,7 +1,7 @@
 {
   "key": "QURY",
   "owner": null,
-  "updated": "2026-07-08",
+  "updated": "2026-07-30",
   "scope": "The spec query full-text retrieval command. Belongs here: FTS5 MATCH semantics; rank-ascending results; superseded exclusion; --limit bounds. Does not belong here: file→requirement resolution (→ RSLV). Boundary case: a bare AND OR FTS5 grammar error is a QURY usage-error (exit 2) contract.",
   "requirements": [
     {
@@ -47,6 +47,21 @@
       "livesIn": [],
       "issues": [],
       "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "QURY-004",
+      "status": "active",
+      "statement": "When searching requirements, spec query shall exclude deprecated requirements from the results.",
+      "why": "Dead guidance surfacing as live sends an agent to build against a promise that no longer holds.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/storage/sqlite.ts"
+      ],
+      "issues": [],
       "aliases": [],
       "cites": []
     }

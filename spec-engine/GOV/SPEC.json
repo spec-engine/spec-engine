@@ -37,7 +37,7 @@
     },
     {
       "id": "GOV-03",
-      "status": "retired",
+      "status": "deprecated",
       "statement": "Both governance checks run in the standard gate — deterministic, fully-trusted red.",
       "why": "Governance must be part of the ordinary gate, not an optional extra, so the red is fully trusted.",
       "supersedes": null,

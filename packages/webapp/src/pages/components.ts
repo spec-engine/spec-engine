@@ -57,14 +57,13 @@ export function badge(variant: string, label: string): ReturnType<typeof html> {
   return html`<span class="badge ${variant}">${label}</span>`;
 }
 
-/** Webapp display labels for the engine's requirement-status vocabulary. The
- *  engine value stays "Retired" (CLI, storage, specs); the UI surfaces it as
- *  "DEPRECATED" per the product label choice. */
+/** Webapp display labels for the engine's requirement-status vocabulary —
+ *  one word per status, the same word everywhere a human reads it. */
 const STATUS_LABEL: Record<RequirementStatus, string> = {
   Active: "ACTIVE",
   Superseded: "SUPERSEDED",
   Draft: "DRAFT",
-  Retired: "DEPRECATED",
+  Deprecated: "DEPRECATED",
 };
 
 /** Requirement lifecycle status → canonical badge variant + display label. */

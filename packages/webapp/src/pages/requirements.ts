@@ -195,7 +195,7 @@ function verPill(r: Requirement, versioned: boolean): ReturnType<typeof html> {
  *  envelope's CURRENT version — identical for every req in the domain and the
  *  source of the "why does this jump 10 → 23?" confusion. */
 function chainVerLabel(v: Requirement): ReturnType<typeof html> {
-  const dead = v.status === "Superseded" || v.status === "Retired";
+  const dead = v.status === "Superseded" || v.status === "Deprecated";
   if (dead && v.superseded_at_version != null) {
     return html`<span class="chain-ver">superseded at v${v.superseded_at_version}</span>`;
   }
@@ -388,9 +388,9 @@ export function mountRequirements(app: Hono): void {
     const showAll = c.req.query("all") === "1";
     const listed = showAll
       ? reqs
-      : reqs.filter((r) => r.status !== "Superseded" && r.status !== "Retired");
+      : reqs.filter((r) => r.status !== "Superseded" && r.status !== "Deprecated");
     const hiddenCount = reqs.filter(
-      (r) => r.status === "Superseded" || r.status === "Retired",
+      (r) => r.status === "Superseded" || r.status === "Deprecated",
     ).length;
 
     // Per-requirement bound files for the LISTED reqs only: reverse-resolve

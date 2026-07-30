@@ -104,6 +104,25 @@ export function classifyGate(input: ClassifyInput): GateOutcome {
     };
   }
 
+  // --- Branch 3b: DEPRECATED ----------------------------------------------
+  // A deprecated requirement is end-of-life with no successor — building new
+  // work against it must fail the gate exactly like Superseded does. Before
+  // this branch existed, a deprecated (then "Retired") requirement fell
+  // through to the version comparison and could PASS.
+  // @spec GATE-007
+  if (req.status === "Deprecated") {
+    return {
+      pass: false,
+      reason: "DEPRECATED",
+      repo: requestedRepoName,
+      req_id: requestedReqId,
+      detail: `Requirement ${requestedReqId} is Deprecated — it is end-of-life with no successor; do not build against it`,
+      status: req.status,
+      changed_at_version: req.changed_at_version,
+      pinned_spec_version: pin,
+    };
+  }
+
   // --- Branch 4: VERSION_PIN ---------------------------------------------
   // Strict greater-than, mirror schema.ts:188 byte-identically.
   // Equality is PASS — Pitfall 5 / T-06-02-01.
