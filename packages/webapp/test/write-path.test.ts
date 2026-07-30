@@ -119,21 +119,33 @@ describe("VAL-03 webapp editor — the create form forwards to POST /api/require
 });
 
 describe("VAL-03 webapp editor — the amend form forwards to PUT /api/requirements/:id", () => {
+  // AUTH-001 is the fixture's Active-but-unbound requirement — the only kind
+  // the engine's amend gate lets through (a shipped or superseded entry is 409).
   test("an amend submit updates the statement and a re-GET reflects it", async () => {
     const res = await postForm("/editor/amend", {
-      id: "BILLING-002",
-      statement: "When a charge fails, retry with exponential backoff and notify the customer.",
+      id: "AUTH-001",
+      statement: "When a session is idle for 30 days, the system shall expire it.",
     });
     expect(res.status).toBe(200);
     const bodyHtml = await res.text();
-    expect(bodyHtml).toContain("BILLING-002");
+    expect(bodyHtml).toContain("AUTH-001");
 
-    const getRes = await app.request("/api/requirements/BILLING-002");
+    const getRes = await app.request("/api/requirements/AUTH-001");
     expect(getRes.status).toBe(200);
     const row = (await getRes.json()) as { text: string };
-    expect(row.text).toBe(
-      "When a charge fails, retry with exponential backoff and notify the customer.",
-    );
+    expect(row.text).toBe("When a session is idle for 30 days, the system shall expire it.");
+  });
+
+  test("an amend submit for a shipped requirement renders the engine's refusal, not a save", async () => {
+    // BILLING-002 is Active and implemented in the api repo — immutable in place.
+    const res = await postForm("/editor/amend", {
+      id: "BILLING-002",
+      statement: "Editing a shipped requirement in place.",
+    });
+    expect(res.status).toBe(200);
+    const bodyHtml = await res.text();
+    expect(bodyHtml).toContain("Not saved");
+    expect(bodyHtml).toContain("supersede");
   });
 });
 

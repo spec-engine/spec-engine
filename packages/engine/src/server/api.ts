@@ -412,6 +412,57 @@ function applyAmendFields(req: Record<string, unknown>, body: Record<string, unk
   return true;
 }
 
+/** Whether the body names at least one amendable field — checked BEFORE the
+ * amend gates so an empty body stays a cheap 400, never a reindex. */
+function hasAmendFields(body: Record<string, unknown>): boolean {
+  return typeof body.statement === "string" || "why" in body || "livesIn" in body;
+}
+
+/**
+ * The same two-tier gate as `spec amend` (amend.ts), for the HTTP write plane.
+ * Tier 1 (status): only Active/Draft entries amend — a Superseded/Retired entry
+ * is history, and history is immutable over HTTP too. Tier 2 (bound tags,
+ * REQ-015): an Active requirement any code implements/verifies is shipped —
+ * refuse the in-place edit and direct to supersede. Reindexes first so the tag
+ * answer reflects the current tree, never a warm index. Returns the 409
+ * rejection, or null when the amend may proceed.
+ */
+async function amendGateRejection(
+  c: Context,
+  platformDir: string,
+  storage: Storage,
+  id: string,
+  req: Record<string, unknown>,
+): Promise<Response | null> {
+  const rawStatus = typeof req.status === "string" ? req.status : "";
+  const statusLc = rawStatus.toLowerCase();
+  if (statusLc !== "active" && statusLc !== "draft") {
+    return c.json(
+      {
+        error: `${id} is ${rawStatus} — only Active/Draft entries amend (a superseded entry is history; supersede its successor instead)`,
+      },
+      409,
+    );
+  }
+  if (statusLc === "active") {
+    // @spec REQ-015
+    await runIndex({ platformDir, storage });
+    const bound = storage
+      .listTags({ req_id: id })
+      .filter((t) => t.kind === "implements" || t.kind === "verifies");
+    if (bound.length > 0) {
+      const site = bound[0];
+      return c.json(
+        {
+          error: `${id} is shipped — ${bound.length} code tag(s) bind it (e.g. ${site.file}:${site.line}). A bound requirement is immutable; supersede it with a successor instead of amending in place.`,
+        },
+        409,
+      );
+    }
+  }
+  return null;
+}
+
 /**
  * Parse + validate the `/api/query` `?limit=` value. The strict POSITIVE_INT_RE
  * shape check AND the LIMIT_MAX ceiling both emit the SAME
@@ -635,9 +686,14 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
           );
         }
 
-        if (!applyAmendFields(found.req, body)) {
+        if (!hasAmendFields(body)) {
           return c.json({ error: "nothing to amend — provide statement, why, or livesIn" }, 400);
         }
+
+        const gateReject = await amendGateRejection(c, platformDir, storage, id, found.req);
+        if (gateReject) return gateReject;
+
+        applyAmendFields(found.req, body);
         found.domain.updated = localToday();
 
         const res = await validateAndWrite(found.specPath, found.domain, found.relFile);

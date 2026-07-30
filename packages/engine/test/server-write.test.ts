@@ -94,36 +94,71 @@ describe("VAL-03 POST /api/requirements — create through validateAndWrite + ru
   });
 });
 
+function authSpecPath(): string {
+  return join(platformDir, "spec-engine", "AUTH", "SPEC.json");
+}
+
+function readAuth(): { requirements: Array<Record<string, unknown>> } {
+  return JSON.parse(readFileSync(authSpecPath(), "utf8"));
+}
+
 describe("VAL-03 PUT /api/requirements/:id — amend through the same seam", () => {
+  // AUTH-001 is the fixture's Active-but-unbound requirement (the planted
+  // orphan) — the only kind the amend gate lets through.
   test("amending statement returns 200, GET reflects it, untouched fields byte-identical", async () => {
-    const before = readBilling().requirements.find((r) => r.id === "BILLING-002");
+    const before = readAuth().requirements.find((r) => r.id === "AUTH-001");
     expect(before).toBeDefined();
     const beforeWhy = before?.why;
     const beforeLives = before?.livesIn;
 
-    const res = await app.request("/api/requirements/BILLING-002", {
+    const res = await app.request("/api/requirements/AUTH-001", {
       method: "PUT",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        statement: "When a charge fails, retry with exponential backoff and notify the customer.",
+        statement: "When a session is idle for 30 days, the system shall expire it.",
       }),
     });
     expect(res.status).toBe(200);
     const body = (await res.json()) as { ok: boolean; id: string };
     expect(body.ok).toBe(true);
-    expect(body.id).toBe("BILLING-002");
+    expect(body.id).toBe("AUTH-001");
 
-    const getRes = await app.request("/api/requirements/BILLING-002");
+    const getRes = await app.request("/api/requirements/AUTH-001");
     expect(getRes.status).toBe(200);
     const row = (await getRes.json()) as { text: string };
-    expect(row.text).toBe(
-      "When a charge fails, retry with exponential backoff and notify the customer.",
-    );
+    expect(row.text).toBe("When a session is idle for 30 days, the system shall expire it.");
 
     // Untouched fields are byte-identical on disk.
-    const after = readBilling().requirements.find((r) => r.id === "BILLING-002");
+    const after = readAuth().requirements.find((r) => r.id === "AUTH-001");
     expect(after?.why).toEqual(beforeWhy);
     expect(after?.livesIn).toEqual(beforeLives);
+  });
+
+  test("a PUT on a Superseded entry is refused 409 — history is immutable over HTTP", async () => {
+    const onDiskBefore = readFileSync(billingSpecPath(), "utf8");
+    const res = await app.request("/api/requirements/BILLING-001", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ statement: "Rewriting history." }),
+    });
+    expect(res.status).toBe(409);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toContain("history");
+    expect(readFileSync(billingSpecPath(), "utf8")).toBe(onDiskBefore);
+  });
+
+  test("a PUT on a shipped requirement (bound by code tags) is refused 409 — supersede instead", async () => {
+    // BILLING-002 is Active and implemented in the api repo.
+    const onDiskBefore = readFileSync(billingSpecPath(), "utf8");
+    const res = await app.request("/api/requirements/BILLING-002", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ statement: "Editing a shipped requirement in place." }),
+    });
+    expect(res.status).toBe(409);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toContain("supersede");
+    expect(readFileSync(billingSpecPath(), "utf8")).toBe(onDiskBefore);
   });
 
   test("a PUT with no amendable field returns 400 and does not mutate", async () => {

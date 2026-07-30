@@ -415,6 +415,17 @@ async function locateCitation(
     console.error(`spec term confirm: no entry ${reqId} in ${relFile}`);
     process.exit(EXIT.USAGE);
   }
+  // Same status gate as `spec amend` Tier 1: a Superseded/Retired entry is
+  // history, and history is immutable — its citations stay exactly as they
+  // were when it died. Only Active/Draft entries re-pin.
+  const rawStatus = typeof citReq.status === "string" ? citReq.status : "";
+  const statusLc = rawStatus.toLowerCase();
+  if (statusLc !== "active" && statusLc !== "draft") {
+    console.error(
+      `spec term confirm: ${reqId} is ${rawStatus} — only Active/Draft entries re-pin a citation (a superseded entry is history)`,
+    );
+    process.exit(EXIT.USAGE);
+  }
   const cites = Array.isArray(citReq.cites) ? citReq.cites : [];
   const cite = cites.find((c) => c?.term === termId);
   if (cite === undefined) {
