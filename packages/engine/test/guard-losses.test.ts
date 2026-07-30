@@ -7,7 +7,7 @@
 // byte-stable --json contract directly against hand-built facts.
 //
 // Verifies:
-// @spec GUARD-014
+// @spec GUARD-023
 // @spec GUARD-015
 // @spec GUARD-016
 // @spec GUARD-017

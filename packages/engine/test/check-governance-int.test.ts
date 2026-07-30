@@ -1,7 +1,7 @@
 // packages/engine/test/check-governance-int.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec GUARD-014 integration
+// @spec CHCK-023 integration
 // @spec OWNER-002 integration
 //
 // GOV-01/02/03 at the INTEGRATION layer: one in-process `spec check --ci --base

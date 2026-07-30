@@ -2,7 +2,7 @@
   "key": "TRK",
   "owner": null,
   "updated": "2026-07-30",
-  "scope": "The @spec-engine/tracker package: the offline-default adapter and the optional Linear read integration that resolves an opaque issue_id to a title/URL for display. Belongs here: the adapter interface + offline noop adapter; the single read query to the tracker; the SPEC_TRACKER_TOKEN auth + no-token short-circuit; the sidecar cache; the engine-isolation boundary (engine internals never import the tracker; no external network from the derivation path). Does not belong here: the provenance matrix + issue-id opacity model itself (→ PROV); any write back to the tracker (forbidden — the integration is one-way/read-only). Boundary case: resolving an issue_id to a title is a TRK concern, but the opacity of that id inside the engine's index stays a PROV promise.",
+  "scope": "The @spec-engine/tracker package: the offline-default adapter and the optional Linear read integration that resolves an opaque issue_id to a title/URL for display. Belongs here: the adapter interface + offline noop adapter; the single read query to the tracker; the SPEC_TRACKER_TOKEN auth + no-token short-circuit; the sidecar cache; the engine-isolation boundary (engine internals never import the tracker; no external network from the derivation path). Does not belong here: how a display surface labels expired-cache data in its own output (→ PROV); the provenance matrix + issue-id opacity model itself (→ PROV); any write back to the tracker (forbidden — the integration is one-way/read-only). Boundary case: resolving an issue_id to a title is a TRK concern, but the opacity of that id inside the engine's index stays a PROV promise.",
   "grammar": "ears",
   "requirements": [
     {

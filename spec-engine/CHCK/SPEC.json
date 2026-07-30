@@ -2,7 +2,7 @@
   "key": "CHCK",
   "owner": null,
   "updated": "2026-07-30",
-  "scope": "spec check diagnostics and CI-gate semantics: the diagnostic codes and their severities, the --ci cold-rebuild gate, and which severity drives exit 1. Belongs here: the diagnostic codes and severities; the --ci gate; the exit-1 contract. Does not belong here: membership discovery itself (→ INIT). Boundary case: check-severity semantics stay in CHCK even when the discovery path (INIT) emits the diagnostic, as with the NO_SPEC_CONFIG finding.",
+  "scope": "spec check diagnostics and CI-gate semantics, plus the GLOSSARY.md round-trip: the diagnostic codes and their severities, the --ci cold-rebuild gate, which severity drives exit 1, and the spec glossary generate/--migrate/--check behaviors whose drift the GLOSSARY_DRIFT gate enforces. Belongs here: the diagnostic codes and severities; the --ci gate; the exit-1 contract. Does not belong here: membership discovery itself (→ INIT). Boundary case: check-severity semantics stay in CHCK even when the discovery path (INIT) emits the diagnostic, as with the NO_SPEC_CONFIG finding.",
   "grammar": "ears",
   "requirements": [
     {

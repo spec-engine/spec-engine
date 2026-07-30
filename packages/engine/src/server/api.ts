@@ -466,6 +466,25 @@ async function amendGateRejection(
 }
 
 /**
+ * Run the FTS search and shape the `/api/query` response. Translates the typed
+ * `searchFts: FTS5 query syntax error` prefix to a sanitized 400 — the message
+ * keeps the FTS5 token so the webapp client can surface "wrap phrases in
+ * double quotes" hints without leaking raw SQLite internals (T-5-03-03). Any
+ * other storage error rethrows (500 via `guarded`, never a sanitized 400).
+ */
+function searchFtsResponse(c: Context, storage: Storage, q: string, limit: number): Response {
+  try {
+    return c.json(storage.searchFts(q, limit));
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.startsWith(FTS_SYNTAX_ERROR_PREFIX)) {
+      return c.json({ error: "FTS5 grammar error; wrap phrases in double quotes" }, 400);
+    }
+    throw e;
+  }
+}
+
+/**
  * Parse + validate the `/api/query` `?limit=` value. The strict POSITIVE_INT_RE
  * shape check AND the LIMIT_MAX ceiling both emit the SAME
  * `limit must be a positive integer ≤ LIMIT_MAX` 400 they do inline today.
@@ -729,6 +748,11 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
   app.get(
     "/api/query",
     guarded((c) => {
+      // D4a / @spec SERV-006: an OFF feature refuses EVERY surface — the read
+      // API included, not just the page and the write plane.
+      if (!featureEnabled("query")) {
+        return c.json({ error: featureDisabledMessage("query") }, 404);
+      }
       const q = (c.req.query("q") ?? "").trim();
       if (!q) {
         return c.json({ error: "q is required (non-empty FTS5 MATCH query)" }, 400);
@@ -738,19 +762,7 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
       const parsedLimit = parseQueryLimit(c, rawLimit);
       if (!parsedLimit.ok) return parsedLimit.res;
 
-      try {
-        return c.json(storage.searchFts(q, parsedLimit.limit));
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        // Translate the typed `searchFts: FTS5 query syntax error` prefix to
-        // a sanitized 400. The sanitized message keeps the FTS5 token so the
-        // webapp client can surface "wrap phrases in double quotes" hints
-        // without leaking the raw SQLite internals (T-5-03-03).
-        if (msg.startsWith(FTS_SYNTAX_ERROR_PREFIX)) {
-          return c.json({ error: "FTS5 grammar error; wrap phrases in double quotes" }, 400);
-        }
-        throw e;
-      }
+      return searchFtsResponse(c, storage, q, parsedLimit.limit);
     }),
   );
 
@@ -759,6 +771,10 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
   app.get(
     "/api/relations",
     guarded((c) => {
+      // D4a / @spec SERV-006: OFF feature → 404, same as /api/query.
+      if (!featureEnabled("relations")) {
+        return c.json({ error: featureDisabledMessage("relations") }, 404);
+      }
       // RED-17: ?format=mermaid serves the SAME engine formatter the CLI
       // renders through (relations/format.ts) — the webapp /relations page
       // reads this text seam because its import fence (D-09) forbids
@@ -781,6 +797,10 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
   app.get(
     "/api/provenance",
     guarded(async (c) => {
+      // D4a / @spec SERV-006: OFF feature → 404, same as /api/query.
+      if (!featureEnabled("provenance")) {
+        return c.json({ error: featureDisabledMessage("provenance") }, 404);
+      }
       // PWEB-01: ?resolve=1 serves the SAME shared decorator the CLI
       // `--resolve-issues` flag renders through (provenance/format.ts
       // renderProvenanceDecorated) after resolving issues ENGINE-SIDE via the
@@ -816,6 +836,10 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
   app.get(
     "/api/provenance/by-issue",
     guarded((c) => {
+      // D4a / @spec SERV-006: OFF feature → 404, same as /api/provenance.
+      if (!featureEnabled("provenance")) {
+        return c.json({ error: featureDisabledMessage("provenance") }, 404);
+      }
       const issue = (c.req.query("issue") ?? "").trim();
       if (issue === "") return c.json({ error: "issue is required (non-empty)" }, 400);
       return c.json(storage.provenanceByIssue(issue));

@@ -13,7 +13,7 @@
 //
 // Verifies:
 // @spec GUARD-013
-// @spec GUARD-014
+// @spec GUARD-023
 // @spec GUARD-015
 // @spec GUARD-016
 // @spec GUARD-017

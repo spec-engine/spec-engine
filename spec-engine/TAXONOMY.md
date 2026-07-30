@@ -315,6 +315,12 @@ time and by `spec check`.
    If your statement fits no row, you have not yet decided what triggers the
    behavior or what observably happens — which is the problem the shape exists
    to catch.
+
+   A statement may end with a trailing `so <observable consequence>` clause
+   ("…shall report NO_SPEC_CONFIG at warning severity, so a lone warning never
+   fails the gate") when the consequence is itself observable. Rationale —
+   *why the behavior exists* — still belongs in the why, never in the
+   statement.
 3. **It must make sense on its own.** A reader seeing only this one statement —
    in search results, in a report — understands it. If it says "the
    normalization" or "that prefix" without naming the subject, it fails.

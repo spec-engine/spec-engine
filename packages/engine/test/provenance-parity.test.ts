@@ -31,7 +31,13 @@ const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "fixtures", "platform
 let clone: string;
 let storage: Storage;
 
+let priorFlags: string | undefined;
+
 beforeAll(async () => {
+  // D4a / SERV-006: the provenance read API is feature-flagged; this suite
+  // tests the ON behavior (the OFF 404 is locked in feature-flags.test.ts).
+  priorFlags = process.env.SPEC_FLAGS;
+  process.env.SPEC_FLAGS = "provenance";
   clone = cloneFixture(FIXTURE);
   rmSync(join(clone, ".spec-engine"), { recursive: true, force: true });
   storage = openStorage(join(clone, ".spec-engine", "index.sqlite"));
@@ -39,6 +45,8 @@ beforeAll(async () => {
 });
 
 afterAll(() => {
+  if (priorFlags === undefined) delete process.env.SPEC_FLAGS;
+  else process.env.SPEC_FLAGS = priorFlags;
   storage.close();
   rmSync(clone, { recursive: true, force: true });
 });

@@ -1,7 +1,7 @@
 // packages/engine/src/guard/losses.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec GUARD-014
+// @spec GUARD-023
 // @spec GUARD-015
 // @spec GUARD-016
 // @spec GUARD-017
