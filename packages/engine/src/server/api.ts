@@ -804,15 +804,21 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
     }),
   );
 
-  // --- /api/provenance/:issue ---------------------------------------------
-  // Bound reverse lookup mirroring /api/propagation/:id. `issue` is a bound
-  // param VALUE — passed straight to storage.provenanceByIssue (which binds it
-  // as `$issue`), NEVER string-interpolated into SQL and never a routing/
-  // resolve/coverage/JOIN key (PROV-02/SC3 opacity).
+  // --- /api/provenance?issue= ---------------------------------------------
+  // Bound reverse lookup. The issue id is a QUERY VALUE, not a path segment —
+  // an opaque tracker id may contain any character (a `/` made the old
+  // /api/provenance/:issue form unaddressable) and a first-class path for a
+  // ticket contradicted the opacity doctrine (PROV-02: a ticket is a filter
+  // value, never an address). Passed straight to storage.provenanceByIssue
+  // (bound as `$issue`), never string-interpolated into SQL.
 
   app.get(
-    "/api/provenance/:issue",
-    guarded((c) => c.json(storage.provenanceByIssue(c.req.param("issue") ?? ""))),
+    "/api/provenance/by-issue",
+    guarded((c) => {
+      const issue = (c.req.query("issue") ?? "").trim();
+      if (issue === "") return c.json({ error: "issue is required (non-empty)" }, 400);
+      return c.json(storage.provenanceByIssue(issue));
+    }),
   );
 
   // --- /api/resolve ------------------------------------------------------

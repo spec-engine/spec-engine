@@ -219,6 +219,21 @@ function resolveSuccessorTermFields(
   return { term, aliases };
 }
 
+/** Flip the predecessor to superseded. When --issue names the ticket that
+ *  caused this supersession, record it as supersedes-via provenance on the
+ *  PREDECESSOR (the entry UNSOURCED_CHANGE inspects) — opaque, never a
+ *  requirement id. */
+// @spec PROV-003
+function flipPredecessor(req: DomainRequirement, newId: string, issue?: string): void {
+  req.status = "superseded";
+  req.supersededBy = newId;
+  if (issue) {
+    const issues = Array.isArray(req.issues) ? req.issues : [];
+    issues.push({ role: "supersedes-via", id: issue });
+    req.issues = issues;
+  }
+}
+
 /**
  * Stage (c): the VAL-01 single object edit (all guards have passed). Mutates
  * `domain`/`requirements` in place and returns the new specVersion (null when
@@ -232,11 +247,11 @@ function applySupersedeEdit(
   lives: string,
   noBump: boolean,
   termFields: { term: string | undefined; aliases: string[] } | null,
+  issue?: string,
 ): number | null {
   const { domain, requirements, req } = target;
-  // 1. Flip the predecessor forward.
-  req.status = "superseded";
-  req.supersededBy = newId;
+  // 1. Flip the predecessor forward (supersedes-via provenance rides along).
+  flipPredecessor(req, newId, issue);
   // 2. Append the successor Active (mirror appendEntry's object shape).
   const successor: DomainRequirement = {
     id: newId,
@@ -247,7 +262,8 @@ function applySupersedeEdit(
     supersededBy: null,
     relates: [],
     livesIn: lives === "" ? [] : [lives],
-    issues: [],
+    // The same ticket created the successor.
+    issues: issue ? [{ role: "created", id: issue }] : [],
     changedAtVersion: 1,
   };
   // Wave B (06-02): a TERM successor carries its headword + synonyms forward
@@ -349,6 +365,11 @@ export const supersedeCommand = defineCommand({
       type: "boolean",
       description: "Do not bump the envelope specVersion",
     },
+    issue: {
+      type: "string",
+      description:
+        "Ticket that caused this supersession — recorded as supersedes-via on the predecessor and created on the successor (opaque provenance)",
+    },
     json: {
       type: "boolean",
       description:
@@ -385,6 +406,7 @@ export const supersedeCommand = defineCommand({
       lives,
       Boolean(args.noBump),
       termFields,
+      ((args.issue as string | undefined) ?? "").trim() || undefined,
     );
 
     // VAL-01: the single object edit above is written ONCE through
