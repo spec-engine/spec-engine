@@ -2,7 +2,7 @@
   "key": "SERV",
   "owner": null,
   "updated": "2026-07-30",
-  "scope": "The spec serve local webapp + /api/* over the index. Belongs here: the SSR pages; the /api/* route contracts; loopback-only binding. Does not belong here: the one-model-one-seam promise (\u2192 SCHM). Boundary case: loopback-only stays a SERV promise even though the data model it serves is defined in SCHM.",
+  "scope": "The spec serve local webapp + /api/* over the index. Belongs here: the SSR pages; the /api/* route contracts; loopback-only binding. Does not belong here: the one-model-one-seam promise (→ SCHM). Boundary case: loopback-only stays a SERV promise even though the data model it serves is defined in SCHM.",
   "grammar": "ears",
   "requirements": [
     {
@@ -25,7 +25,7 @@
     {
       "id": "SERV-002",
       "status": "superseded",
-      "statement": "spec serve exposes the documented /api/* read routes (coverage, report, requirements, query, resolve, relations, propagation), returning 400 \u2014 never 500 \u2014 on malformed input.",
+      "statement": "spec serve exposes the documented /api/* read routes (coverage, report, requirements, query, resolve, relations, propagation), returning 400 — never 500 — on malformed input.",
       "why": "The webapp and any external client depend on these contracts; a 500 on bad FTS input would leak internals and break the loopback UI.",
       "supersedes": null,
       "supersededBy": "SERV-009",
@@ -43,7 +43,7 @@
       "id": "SERV-003",
       "status": "superseded",
       "statement": "The spec binary embeds the webapp assets at compile time, so spec serve renders the UI from the single binary with no external asset files (--probe boots, fetches /, and confirms the page renders).",
-      "why": "If assets were read from disk at runtime, a distributed binary would serve a blank UI \u2014 the self-contained-binary promise breaks silently.",
+      "why": "If assets were read from disk at runtime, a distributed binary would serve a blank UI — the self-contained-binary promise breaks silently.",
       "supersedes": null,
       "supersededBy": "SERV-011",
       "relates": [],
@@ -60,7 +60,7 @@
       "id": "SERV-004",
       "status": "superseded",
       "statement": "The Setup page detects the scan mode from the mapped member rows with the canonical spec row excluded: members expanded from one workspace root render Monorepo, two or more sibling member repos render Platform, and a lone member renders Single repo.",
-      "why": "The count-based check included the canonical spec-engine row and hardcoded the Monorepo tile off, so the first mapping view an adopter checks \u2014 including this repo's own dogfood \u2014 misstated the layout as a multi-repo platform.",
+      "why": "The count-based check included the canonical spec-engine row and hardcoded the Monorepo tile off, so the first mapping view an adopter checks — including this repo's own dogfood — misstated the layout as a multi-repo platform.",
       "supersedes": null,
       "supersededBy": "SERV-013",
       "relates": [],
@@ -75,7 +75,7 @@
     {
       "id": "SERV-005",
       "status": "superseded",
-      "statement": "The webapp Coverage and Requirements pages list only non-Superseded, non-Retired requirements by default \u2014 a domain left with no listed requirement disappears with them \u2014 and a toggle link (?all=1) restores the full ledger; a listed requirement's version-history panel includes its superseded predecessors in either view.",
+      "statement": "The webapp Coverage and Requirements pages list only non-Superseded, non-Retired requirements by default — a domain left with no listed requirement disappears with them — and a toggle link (?all=1) restores the full ledger; a listed requirement's version-history panel includes its superseded predecessors in either view.",
       "why": "Superseded history soon outnumbers the live contract; an unfiltered default buries what the platform must satisfy now under dead versions, and hiding lineage along with the rows would erase the audit trail the supersede model exists to keep.",
       "supersedes": null,
       "supersededBy": "SERV-014",
@@ -91,7 +91,7 @@
     {
       "id": "SERV-006",
       "status": "active",
-      "statement": "Where a feature's flag is not enabled, the webapp shall refuse every surface of that feature \u2014 the page serves a coming-soon document and its endpoints respond 404.",
+      "statement": "Where a feature's flag is not enabled, the webapp shall refuse every surface of that feature — the page serves a coming-soon document and its endpoints respond 404.",
       "why": "Hiding the nav link while leaving endpoints live is how the ungated editor write plane happened; a flag that only hides UI is a lie about what is reachable.",
       "supersedes": null,
       "supersededBy": null,
@@ -137,7 +137,7 @@
     {
       "id": "SERV-009",
       "status": "active",
-      "statement": "The spec serve /api/* read routes \u2014 coverage / report / requirements / query / resolve / relations / propagation \u2014 shall each return the same deterministic JSON shape as the corresponding CLI --json command.",
+      "statement": "The spec serve /api/* read routes — coverage / report / requirements / query / resolve / relations / propagation — shall each return the same deterministic JSON shape as the corresponding CLI --json command.",
       "why": "The webapp and external clients bind to these shapes; a route that drifted from its CLI twin would fork the one engine into two contracts.",
       "supersedes": null,
       "supersededBy": null,
@@ -153,7 +153,7 @@
     {
       "id": "SERV-010",
       "status": "active",
-      "statement": "When an /api/* request is malformed \u2014 invalid search syntax, a bad limit, or a traversal path segment \u2014 the route shall respond 400 with a structured error, never 500.",
+      "statement": "When an /api/* request is malformed — invalid search syntax, a bad limit, or a traversal path segment — the route shall respond 400 with a structured error, never 500.",
       "why": "A 500 on bad search input leaks internals and breaks the loopback UI; malformed input is the caller's error and must read that way.",
       "supersedes": null,
       "supersededBy": null,
@@ -168,8 +168,8 @@
     {
       "id": "SERV-011",
       "status": "active",
-      "statement": "The spec binary shall render the webapp UI with no asset files read from disk at runtime \u2014 the assets travel inside the binary itself.",
-      "why": "If assets were read from disk at runtime, a distributed binary would serve a blank UI \u2014 the self-contained-binary promise breaks silently.",
+      "statement": "The spec binary shall render the webapp UI with no asset files read from disk at runtime — the assets travel inside the binary itself.",
+      "why": "If assets were read from disk at runtime, a distributed binary would serve a blank UI — the self-contained-binary promise breaks silently.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
@@ -198,17 +198,18 @@
     },
     {
       "id": "SERV-013",
-      "status": "active",
+      "status": "superseded",
       "statement": "The Setup page shall derive the scan-mode tile from the mapped member rows with the canonical spec row excluded: members expanded from one workspace root render Monorepo, two or more sibling member repos render Platform, and a lone member renders Single repo.",
       "why": "The count-based check included the canonical spec-engine row and hardcoded the Monorepo tile off, so the first mapping view an adopter checks misstated the layout as a multi-repo platform.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "SERV-017",
       "relates": [],
       "livesIn": [
         "packages/webapp/src/pages/setup.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 7,
       "aliases": [],
       "cites": []
     },
@@ -255,6 +256,22 @@
         "packages/webapp/src/pages/requirements.ts"
       ],
       "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SERV-017",
+      "status": "active",
+      "statement": "The Setup page shall render the scan-mode tile from the member layout: members expanded from one workspace root render Monorepo, two or more sibling member repos render Platform, and a lone member renders Single repo.",
+      "why": "A misclassified tile makes the first mapping view an adopter checks misstate their platform layout.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/webapp/src/pages/setup.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
       "aliases": [],
       "cites": []
     }

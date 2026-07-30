@@ -13,7 +13,7 @@ description: Diagnostic codes and what they mean
 | `DUP_ID` | error | The same requirement ID appears twice |
 | `BROKEN_SUPERSEDE` | error | `supersededBy` points at a missing ID |
 | `CYCLIC_SUPERSEDE` | error | A circular supersession chain (`A → B → A`) — the chain is the change history, so a cycle is corrupt history |
-| `BAD_STATUS` | error | Entry status outside `active` / `draft` / `superseded` / `retired` |
+| `BAD_STATUS` | error | Entry status outside `active` / `draft` / `superseded` / `deprecated` |
 | `DANGLING_TAG` | error | A `@spec` tag references no requirement |
 | `SUPERSEDED_REFERENCED` | error | Code still tags a superseded requirement (retag to the successor) |
 | `ORPHAN_REQ` | error | An active requirement has no implementing `@spec` tag |
@@ -56,7 +56,7 @@ With a git base ref, `check` also diffs the requirement set against that ref:
 | Code | Severity | Condition |
 | --- | --- | --- |
 | `REQUIREMENT_REMOVED` | error | A requirement present at the base ref is gone with no approved supersession |
-| `UNAPPROVED_STATUS_FLIP` | warning† | A flip to superseded/retired whose CODEOWNERS domain owner is absent from `--approved-by` — †error under `--require-owner-approval` |
+| `UNAPPROVED_STATUS_FLIP` | warning† | A flip to superseded/deprecated whose CODEOWNERS domain owner is absent from `--approved-by` — †error under `--require-owner-approval` |
 | `PARTIAL_PROPAGATION` | error | Needs `--base` **and** `--results`: a changed requirement where some bound tests pass and some fail — one site migrated, another still red |
 
 See also `spec guard`, the pre-commit loss gate that reports `REQUIREMENT_REMOVED` / `IMPL_LOST` / `VERIFY_LOST` / `SPEC_FILE_DELETED` against the working tree — [Commands](/commands/#spec-guard-platformdir).

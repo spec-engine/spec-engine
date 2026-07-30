@@ -8,7 +8,7 @@
 // the check layer).
 //
 // Verifies:
-// @spec CHCK-011 integration
+// @spec CHCK-023 integration
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { readFileSync, rmSync, writeFileSync } from "node:fs";

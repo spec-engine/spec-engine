@@ -193,16 +193,17 @@
     },
     {
       "id": "GUARD-012",
-      "status": "active",
+      "status": "superseded",
       "statement": "The spec guard command shall accept no override comment; a reported loss is suppressed only by superseding or deprecating the requirement in the same change.",
       "why": "An in-diff override was a sanctioned way to delete a requirement — the record of the decision lived in the code being deleted and vanished with it.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "GUARD-022",
       "relates": [],
       "livesIn": [
         "packages/engine/src/guard/losses.ts"
       ],
       "issues": [],
+      "supersededAtVersion": 10,
       "aliases": [],
       "cites": []
     },
@@ -346,6 +347,22 @@
         "packages/engine/src/guard/format.ts"
       ],
       "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GUARD-022",
+      "status": "active",
+      "statement": "The spec guard command shall accept no override comment; a reported loss is suppressed only by superseding or deprecating the requirement in the same change.",
+      "why": "An override comment is a sanctioned deletion whose record lives in the code being deleted and vanishes with it.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/guard/losses.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
       "aliases": [],
       "cites": []
     }

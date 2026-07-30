@@ -30,11 +30,11 @@ Run the CLI from source: `bun packages/engine/src/cli.ts <command>`, or compile 
 ## The `@spec` protocol
 
 Spec Engine dogfoods itself. Requirements live in `spec-engine/<DOMAIN>/SPEC.json` as
-durable ids (e.g. `INIT-001`); code binds to them with a `@spec` tag:
+durable ids (e.g. `INIT-015`); code binds to them with a `@spec` tag:
 
 ```ts
-// @spec INIT-001   in a source file: implements the requirement
-// @spec INIT-001   in a test file: proves it
+// @spec INIT-015   in a source file: implements the requirement
+// @spec INIT-015   in a test file: proves it
 ```
 
 What a tag means comes from where it sits — the file path decides implements

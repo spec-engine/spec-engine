@@ -1,7 +1,7 @@
 // packages/engine/test/cli-check-unit.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec CHCK-015
+// @spec CHCK-025
 //
 // Unit tests for `spec check` (commands/check.ts). In-process invocation
 // of the citty command with process.exit stubbed to throw ExitError so

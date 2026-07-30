@@ -310,6 +310,7 @@ describe("spec supersede — TERM successor carries term/aliases (Wave B)", () =
     return JSON.parse(readFileSync(join(platform, "spec-engine", "TERM", "SPEC.json"), "utf8"));
   }
 
+  // @spec REQ-034 unit
   test("successor carries the predecessor's term/aliases; predecessor flips to superseded", async () => {
     writeTermDomain();
     await supersedeRun({

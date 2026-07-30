@@ -102,17 +102,18 @@
     },
     {
       "id": "QURY-007",
-      "status": "active",
+      "status": "superseded",
       "statement": "When the search text and a requirement's wording differ only by word inflection, spec query shall still match — stemming makes 'renewal charge' return a requirement whose text says 'renews'.",
       "why": "Without stemming, agents must guess the author's exact wording, and retrieval silently fails on everyday inflection differences.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "QURY-009",
       "relates": [],
       "livesIn": [
         "packages/engine/src/storage/sqlite.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 5,
       "aliases": [],
       "cites": []
     },
@@ -126,6 +127,22 @@
       "relates": [],
       "livesIn": [
         "packages/engine/src/query/format.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "QURY-009",
+      "status": "active",
+      "statement": "When the search text and a requirement's wording differ only by word inflection, spec query shall still match — 'renewal charge' shall return a requirement whose text says 'renews'.",
+      "why": "When retrieval demands the author's exact wording, everyday inflection differences silently return nothing and duplicates get minted for requirements that already exist.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/storage/sqlite.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,

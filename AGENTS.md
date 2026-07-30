@@ -222,7 +222,7 @@ edited specs or tags and need the answer to reflect it.
   override comment. Text
   mode emits the product-surface `🛑 spec-guard:` block per requirement,
   written in the second person so an agent relays it verbatim.
-  **Never-fail-non-git (GUARD-008):** a non-git tree, a fresh repo with no
+  **Never-fail-non-git (GUARD-019):** a non-git tree, a fresh repo with no
   `HEAD`, or an unfetched/misspelled ref prints a `NOT_A_GIT_REPO` warning to
   stderr and exits 0 — the guard is a safety net, not a git dependency.
 - **`spec map`** — JSON rows keyed `(req_id, repo)`:
@@ -360,8 +360,8 @@ edited specs or tags and need the answer to reflect it.
   `{ old_id, new_id, file, spec_version, retag: [{ req_id, repo, file,
   line, kind, level }] }`. On a requirement (non-TERM) domain `spec_version`
   is the **DAG-derived** domain version after this supersession — no authored
-  counter is written (SCHM-008), the new `supersededAtVersion` died-at stamp is
-  that same derived number (REQ-016), and `--no-bump` is a no-op (there is no
+  counter is written (SCHM-020), the new `supersededAtVersion` died-at stamp is
+  that same derived number (REQ-036), and `--no-bump` is a no-op (there is no
   counter to hold back). On the reserved TERM domain the authored `specVersion`
   still bumps (+1) — its counter is the term-drift pin — and `--no-bump` opts
   out (then `spec_version` is null). Always advances `updated`. All guards run
@@ -383,7 +383,7 @@ edited specs or tags and need the answer to reflect it.
   source_spec_version, target_spec_version, retag: [...] }`. For requirement
   (non-TERM) domains both versions are **DAG-derived**: the source gains a
   supersede edge so its version advances, while the target gains only an Active
-  successor (no edge) so its version is UNCHANGED (REQ-016); `--no-bump` is a
+  successor (no edge) so its version is UNCHANGED (REQ-036); `--no-bump` is a
   no-op there. A TERM side keeps its authored `specVersion` bump and honors
   `--no-bump` (then that side's version is null).
 - **`spec amend`** — the pre-production counterpart to supersede. Field
@@ -396,7 +396,7 @@ edited specs or tags and need the answer to reflect it.
   reported as "already configured" with **exit 0** (a no-op, not a refusal) —
   do not use the exit code to distinguish "wrote" from "already there".
   `--force` rewrites it; `--specs spec-engine@N` overrides the pin. Default pin
-  resolution (INIT-013): `--specs` wins, else the DERIVED platform version (max
+  resolution (INIT-027): `--specs` wins, else the DERIVED platform version (max
   domain version across the enclosing platform's `spec-engine/*/SPEC.json`),
   else `spec-engine@1` with a printed note when no platform is found upward. The config
   may carry an optional `ignore: ["dir", …]` array (repo-relative directory

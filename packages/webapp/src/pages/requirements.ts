@@ -115,7 +115,8 @@ function coverageRollups(coverage: CoverageRow[]): Map<string, { impl: number; v
 /** The supersession lineage of one requirement, most-recent-first.
  *  `superseded_by` points OLD → NEW and is resolved GLOBALLY (a cross-domain
  *  move still lands in `byId`): walk back to the root, then forward collecting
- *  the chain. length 1 = standalone (no amendments). */
+ *  the chain. length 1 = standalone (no amendments).
+ *  @spec SERV-016 */
 function lineageOf(
   byId: Map<string, Requirement>,
   predecessorOf: Map<string, string>,

@@ -1,7 +1,7 @@
 // packages/engine/test/junit-reader.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec PROOF-008 unit
+// @spec PROOF-014 unit
 // @spec PROOF-009 unit
 //
 // Unit coverage for the ONE hand-rolled JUnit reader (`results/junit.ts`).

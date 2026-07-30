@@ -59,17 +59,18 @@
     },
     {
       "id": "AUTHOR-004",
-      "status": "active",
+      "status": "superseded",
       "statement": "Where requirements are authored from a brief, AGENTS.md shall document the brief-to-mint procedure: one requirement minted per behavior via spec req, with the originating ticket recorded as issue provenance only, never as a requirement id.",
       "why": "Without a written mint procedure, one-per-ticket or issue-id-tagged requirements get authored the moment work arrives as a vague ticket, and the corpus accumulates entries whose identity dies with the tracker.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "AUTHOR-010",
       "relates": [],
       "livesIn": [
         "AGENTS.md"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 5,
       "aliases": [],
       "cites": []
     },
@@ -147,6 +148,22 @@
         "packages/engine/src/server/authorPrompt.ts"
       ],
       "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHOR-010",
+      "status": "active",
+      "statement": "The AGENTS.md authoring playbook shall document the brief-to-mint procedure: one requirement minted per behavior via spec req, with the originating ticket recorded as issue provenance only, never as a requirement id.",
+      "why": "Without a written mint procedure, one-per-ticket or issue-id-tagged requirements get authored the moment work arrives as a vague ticket, and the corpus accumulates entries whose identity dies with the tracker.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "AGENTS.md"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
       "aliases": [],
       "cites": []
     }

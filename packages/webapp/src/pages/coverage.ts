@@ -123,7 +123,6 @@ export function mountCoverage(app: Hono): void {
     const titleOf = new Map(reqs.map((r) => [r.id, r.text]));
 
     // RED-99 — @spec SERV-014: the default view is the LIVE contract — Superseded/
-    // @spec SERV-016
     // @spec SERV-015
     // Retired rows (and any domain they empty out) hide unless ?all=1. The
     // toggle is a plain link so the filter is SSR-honest and no-JS-safe.

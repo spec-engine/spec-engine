@@ -10,7 +10,12 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { createDocsFetchHandler, resolveDocsRootFrom } from "../src/commands/docs";
+import {
+  createDocsFetchHandler,
+  exitNoDocsRoot,
+  resolveDocsRootFrom,
+  runProbe,
+} from "../src/commands/docs";
 
 // ── fixture docs tree (Astro "directory" build shape) ───────────────────────
 const root = mkdtempSync(join(tmpdir(), "spec-docs-"));
@@ -37,7 +42,6 @@ const get = (path: string) => handler(new Request(`http://127.0.0.1${path}`));
 describe("createDocsFetchHandler routing", () => {
   test("serves the site index at /", async () => {
     // @spec DIST-005 unit
-    // @spec DIST-006 unit
     const res = get("/");
     expect(res.status).toBe(200);
     expect(await res.text()).toContain("docs home");
@@ -86,7 +90,6 @@ describe("createDocsFetchHandler routing", () => {
 describe("resolveDocsRootFrom fallback chain", () => {
   test("first candidate holding an index.html wins", () => {
     // @spec DIST-007 unit
-    // @spec DIST-008 unit
     const empty = mkdtempSync(join(tmpdir(), "spec-docs-empty-"));
     try {
       expect(resolveDocsRootFrom([empty, root])).toBe(root);
@@ -103,6 +106,63 @@ describe("resolveDocsRootFrom fallback chain", () => {
     } finally {
       rmSync(empty, { recursive: true, force: true });
     }
+  });
+});
+
+describe("docs --probe / missing-root exits", () => {
+  function withExitCapture(fn: () => Promise<void> | void): Promise<number | null> {
+    const originalExit = process.exit;
+    const originalLog = console.log;
+    const originalErr = console.error;
+    class ExitError extends Error {
+      constructor(public code: number) {
+        super(`process.exit(${code})`);
+      }
+    }
+    (process as unknown as { exit: (code?: number) => never }).exit = (code?: number) => {
+      throw new ExitError(code ?? 0);
+    };
+    console.log = () => {};
+    console.error = () => {};
+    return Promise.resolve()
+      .then(fn)
+      .then(
+        () => null,
+        (e) => {
+          if (e instanceof ExitError) return e.code;
+          throw e;
+        },
+      )
+      .finally(() => {
+        process.exit = originalExit;
+        console.log = originalLog;
+        console.error = originalErr;
+      });
+  }
+
+  test("--probe: ephemeral loopback boot, GET /, exit 0 when the title renders", async () => {
+    // @spec DIST-006 unit
+    expect(await withExitCapture(() => runProbe(root))).toBe(0);
+  });
+
+  test("--probe: exit 1 when the served index lacks the site title", async () => {
+    // @spec DIST-006 unit
+    const bad = mkdtempSync(join(tmpdir(), "spec-docs-bad-"));
+    try {
+      writeFileSync(join(bad, "index.html"), "<title>Not the site</title>");
+      expect(await withExitCapture(() => runProbe(bad))).toBe(1);
+    } finally {
+      rmSync(bad, { recursive: true, force: true });
+    }
+  });
+
+  test("no docs root: exit 2 naming `bun run build:site`", async () => {
+    // @spec DIST-008 unit
+    expect(await withExitCapture(() => exitNoDocsRoot())).toBe(2);
+    // withExitCapture silences console.error, so assert the guidance at the
+    // source level: the message names the build command.
+    const src = readFileSync(resolve(import.meta.dir, "..", "src", "commands", "docs.ts"), "utf8");
+    expect(src).toContain("bun run build:site");
   });
 });
 

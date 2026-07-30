@@ -14,7 +14,7 @@
 // @spec GUARD-018
 // @spec GUARD-020
 // @spec GUARD-021
-// @spec GUARD-012
+// @spec GUARD-022
 
 import { describe, expect, test } from "bun:test";
 import type { SpecRequirement } from "@spec-engine/shared";

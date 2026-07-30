@@ -42,7 +42,7 @@ One JSON **domain envelope** per domain, at `spec-engine/<KEY>/SPEC.json`. Human
 | Field | Description |
 | --- | --- |
 | `id` | Permanent `KEY-NNN` id — never reused, never renumbered |
-| `status` | `active` \| `draft` \| `superseded` \| `retired` (lowercase in the file) |
+| `status` | `active` \| `draft` \| `superseded` \| `deprecated` (lowercase in the file) |
 | `statement` | The requirement statement — the testable promise |
 | `why` | Rationale: the failure mode if the promise is violated |
 | `supersededBy` | Set when superseded: the successor's id (resolved globally, so a cross-domain `spec move` works) |
@@ -58,7 +58,7 @@ Glossary `TERM` entries reuse the same shape plus `term` (the headword), `aliase
 - **active** — in force
 - **draft** — not yet approved
 - **superseded** — replaced by a successor; the old entry stays in the file as history, pointing forward via `supersededBy`
-- **retired** — deliberately ended with no successor (requires owner approval)
+- **deprecated** — deliberately ended with no successor, via `spec deprecate --reason`
 
 ## Provenance (`issues`)
 

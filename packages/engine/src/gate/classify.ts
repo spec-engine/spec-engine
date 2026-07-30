@@ -109,7 +109,7 @@ export function classifyGate(input: ClassifyInput): GateOutcome {
   // work against it must fail the gate exactly like Superseded does. Before
   // this branch existed, a deprecated (then "Retired") requirement fell
   // through to the version comparison and could PASS.
-  // @spec GATE-007
+  // @spec GATE-009
   if (req.status === "Deprecated") {
     return {
       pass: false,

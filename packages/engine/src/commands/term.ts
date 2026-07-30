@@ -443,7 +443,7 @@ async function locateCitation(
  * SUPERSEDED_TERM_REFERENCED). The whole citing domain is re-written ONCE through
  * validateAndWrite (VAL-01), then reindexed fresh.
  * @spec CHCK-018
- # @spec CHCK-019
+ * @spec CHCK-019
  */
 async function confirmCitation(opts: {
   reqId: string;

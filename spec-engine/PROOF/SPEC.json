@@ -126,17 +126,18 @@
     },
     {
       "id": "PROOF-008",
-      "status": "active",
+      "status": "superseded",
       "statement": "When --results names a JUnit XML file, spec check shall correlate each verifying @spec tag to that file's test cases by normalized file path and mark the tag passing or failing from the correlated outcomes.",
       "why": "The proof gate must read real test outcomes, not trust tag presence.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "PROOF-014",
       "relates": [],
       "livesIn": [
         "packages/engine/src/results/junit.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 8,
       "aliases": [],
       "cites": []
     },
@@ -213,6 +214,22 @@
       "relates": [],
       "livesIn": [
         "packages/engine/src/check/propagation-teeth.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "PROOF-014",
+      "status": "active",
+      "statement": "When --results names a JUnit XML file, spec check shall correlate each verifying @spec tag to that file's test cases by normalized file path and mark the tag passing or failing from the correlated outcomes.",
+      "why": "A tag correlated to nothing lets a red or deleted test count as proof — the gate passes on evidence that no longer exists.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/results/junit.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,

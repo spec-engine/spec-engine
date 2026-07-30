@@ -12,7 +12,7 @@
 //
 // Verifies:
 // @spec CHCK-009 integration
-// @spec CHCK-010 integration
+// @spec CHCK-024 integration
 // @spec INDX-006 integration
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";

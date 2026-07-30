@@ -28,7 +28,6 @@
 // definition is supplied. Tag lines composed via fixtures/specTag.ts.
 //
 // @spec REQ-033 unit
-// @spec REQ-034 unit
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -217,6 +216,7 @@ describe("spec term — non-TTY id query (D-02 mirror)", () => {
 
 // ── Test (revise) — the A2 in-place-with-bump op ─────────────────────────────
 describe("spec term revise — in-place definition edit with version bump (A2)", () => {
+  // @spec SCHM-021 unit
   test("revises the statement in place (same id) and bumps envelope specVersion", async () => {
     writeTermDomain(tmp);
     await termRun({

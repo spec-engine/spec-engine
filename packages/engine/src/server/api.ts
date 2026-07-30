@@ -519,7 +519,7 @@ function parseQueryLimit(
  * text and never imports `@spec-engine/tracker` (D-09).
  *
  * @spec SERV-009
- # @spec SERV-010
+ * @spec SERV-010
  */
 export function mountApi(app: Hono, storage: Storage, platformDir: string = process.cwd()): Hono {
   // No-store middleware — applies to every `/api/*` route below. Registered

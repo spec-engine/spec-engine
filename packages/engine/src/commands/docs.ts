@@ -97,9 +97,11 @@ export function createDocsFetchHandler(root: string): (req: Request) => Response
 /**
  * `--probe` smoke, mirroring serve.ts's SERV-04 shape (and its RED-14
  * exit-below-try discipline): bind an ephemeral loopback port, GET /, assert
- * the site title renders, exit 0/1.
+ * the site title renders, exit 0/1. Exported so the unit suite can drive it
+ * against a temp docs root without depending on a built site.
+ * @spec DIST-006
  */
-async function runProbe(root: string): Promise<void> {
+export async function runProbe(root: string): Promise<void> {
   const server = Bun.serve({
     port: 0,
     hostname: "127.0.0.1",
@@ -128,6 +130,19 @@ async function runProbe(root: string): Promise<void> {
   process.exit(EXIT.OK);
 }
 
+/**
+ * The missing-docs-root usage error: exit 2 with the `bun run build:site`
+ * hint. Extracted so the unit suite can assert the exit code + guidance.
+ * @spec DIST-008
+ */
+export function exitNoDocsRoot(): void {
+  console.error(
+    "spec docs: no built documentation found. From a checkout run `bun run build:site` " +
+      "(writes packages/site/dist); the published npm package ships it at dist/docs.",
+  );
+  process.exit(EXIT.USAGE);
+}
+
 export const docsCommand = defineCommand({
   meta: {
     name: "docs",
@@ -150,11 +165,7 @@ export const docsCommand = defineCommand({
   async run({ args }) {
     const root = resolveDocsRoot();
     if (!root) {
-      console.error(
-        "spec docs: no built documentation found. From a checkout run `bun run build:site` " +
-          "(writes packages/site/dist); the published npm package ships it at dist/docs.",
-      );
-      process.exit(EXIT.USAGE);
+      exitNoDocsRoot();
       return;
     }
 
