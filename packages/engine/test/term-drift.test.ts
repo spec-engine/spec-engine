@@ -237,4 +237,29 @@ describe("TERM-05 — the citation-drift cycle (member-pin drift, one level up)"
     expect(rows.some((d) => d.code === "TERM_DRIFT")).toBe(false);
     expect(rows.some((d) => d.code === "SUPERSEDED_TERM_REFERENCED")).toBe(false);
   });
+
+  test("confirm refuses a Superseded citing entry (exit 2, file untouched) — history is immutable", async () => {
+    buildFixture(tmp);
+    // Flip the citing entry to superseded history.
+    const specPath = join(tmp, "spec-engine", "BILLING", "SPEC.json");
+    const doc = JSON.parse(readFileSync(specPath, "utf8"));
+    doc.requirements[0].status = "superseded";
+    doc.requirements[0].supersededBy = "BILLING-002";
+    writeFileSync(specPath, `${JSON.stringify(doc, null, 2)}\n`);
+    const onDiskBefore = readFileSync(specPath, "utf8");
+
+    let exitCode: number | null = null;
+    try {
+      await confirmRun({
+        args: { reqId: "BILLING-001", termId: "TERM-001", platformDir: tmp },
+        rawArgs: [],
+      });
+    } catch (e) {
+      if (e instanceof ExitError) exitCode = e.code;
+      else throw e;
+    }
+    expect(exitCode).toBe(2);
+    expect(errs.join("\n")).toContain("history");
+    expect(readFileSync(specPath, "utf8")).toBe(onDiskBefore);
+  });
 });
