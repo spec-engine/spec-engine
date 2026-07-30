@@ -1,7 +1,7 @@
 // packages/engine/src/commands/term.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec REQ-014
+// @spec REQ-033
 //
 // Wave B (06-02) — `spec term`: the glossary-term authoring surface. A term IS
 // a requirement row (FORK 1 = reuse, not a parallel schema): the definition
@@ -442,7 +442,8 @@ async function locateCitation(
  * SUPERSEDED, RE-POINT the citation to its successor id (clearing
  * SUPERSEDED_TERM_REFERENCED). The whole citing domain is re-written ONCE through
  * validateAndWrite (VAL-01), then reindexed fresh.
- * @spec CHCK-005
+ * @spec CHCK-018
+ # @spec CHCK-019
  */
 async function confirmCitation(opts: {
   reqId: string;

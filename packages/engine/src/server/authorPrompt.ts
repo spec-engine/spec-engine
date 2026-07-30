@@ -20,7 +20,8 @@
  *   - no domain → the "determine placement from `spec domain list`" branch
  * Pure string assembly — deterministic and byte-stable.
  */
-// @spec AUTHOR-003
+// @spec AUTHOR-008
+// @spec AUTHOR-009
 export function renderAuthorPrompt(opts: {
   brief: string;
   domain?: string;

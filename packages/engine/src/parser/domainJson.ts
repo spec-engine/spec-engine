@@ -1,7 +1,8 @@
 // packages/engine/src/parser/domainJson.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec SCHM-003
+// @spec SCHM-013
+// @spec SCHM-014
 //
 // POC-014: SPEC.json is the authoring/interchange format the engine ingests.
 // Re-homed here from the deleted `parser/spec.ts` in the Phase 18 hard
@@ -403,7 +404,7 @@ function flattenIssues(
  * citation-by-name resolves against EITHER the headword or a synonym); blanks
  * are skipped and per-(term_id,name) duplicates deduped. `term_id` is the
  * owning requirement's own id — a term IS a requirement (FORK 1).
- * @spec INDX-005
+ * @spec INDX-012
  */
 function flattenAliases(r: DomainRequirement, acc: TermAcc): void {
   const id = r.id;
@@ -430,7 +431,7 @@ function flattenAliases(r: DomainRequirement, acc: TermAcc): void {
  * skipped and per-(req,cited_as) duplicates deduped. `term_id` is NOT resolved
  * here — a citation may name a term defined in another spec, so resolution is a
  * platform-wide pipeline step (Invariant #4: an unresolvable cite still lands).
- * @spec INDX-005
+ * @spec INDX-012
  */
 function flattenCites(r: DomainRequirement, sourceFile: string, line: number, acc: TermAcc): void {
   const id = r.id;
@@ -464,8 +465,8 @@ function flattenCites(r: DomainRequirement, sourceFile: string, line: number, ac
 export function deriveDomainVersion(
   requirements: readonly { supersededBy?: string | null }[],
 ): number {
-  // @spec SCHM-006
-  // @spec SCHM-007
+  // @spec SCHM-018
+  // @spec SCHM-019
   let edges = 0;
   for (const r of requirements) {
     if ((r.supersededBy ?? null) !== null) edges++;

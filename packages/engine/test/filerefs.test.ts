@@ -1,7 +1,7 @@
 // packages/engine/test/filerefs.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec REQ-012 unit
+// @spec REQ-031 unit
 //
 // Quick task 260605-tqz / Task 1 (D-03): @file-ref substrate.
 //

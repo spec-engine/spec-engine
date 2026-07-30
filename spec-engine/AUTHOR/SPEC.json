@@ -1,49 +1,51 @@
 {
   "key": "AUTHOR",
   "owner": null,
-  "updated": "2026-07-08",
-  "scope": "The brief\u2192mint authoring pipeline: the three surfaces that turn a vague brief/ticket into well-formed requirements \u2014 the AGENTS.md authoring playbook (AUTHOR-001), the .claude/skills/req-author skill (AUTHOR-002), and the spec mcp author_requirements MCP prompt template (AUTHOR-003) \u2014 plus the hard constraint that the engine stays LLM-free. Belongs here: the authoring-workflow surfaces (playbook doc, skill, MCP prompt template) and the LLM-free engine fence. Does not belong here: the requirement-lifecycle mechanics themselves (spec req/supersede/amend \u2192 REQ), the domain scaffold (spec domain new \u2192 DOMAIN), and the charter/authoring-standard doc (\u2192 CHRT). Boundary case: the MCP prompt is engine CODE, but it owns the authoring template text only, never the mint \u2014 the actual requirement write is REQ's promise.",
+  "updated": "2026-07-30",
+  "scope": "The brief→mint authoring pipeline: the three surfaces that turn a vague brief/ticket into well-formed requirements — the AGENTS.md authoring playbook (AUTHOR-001), the .claude/skills/req-author skill (AUTHOR-002), and the spec mcp author_requirements MCP prompt template (AUTHOR-003) — plus the hard constraint that the engine stays LLM-free. Belongs here: the authoring-workflow surfaces (playbook doc, skill, MCP prompt template) and the LLM-free engine fence. Does not belong here: the requirement-lifecycle mechanics themselves (spec req/supersede/amend → REQ), the domain scaffold (spec domain new → DOMAIN), and the charter/authoring-standard doc (→ CHRT). Boundary case: the MCP prompt is engine CODE, but it owns the authoring template text only, never the mint — the actual requirement write is REQ's promise.",
   "grammar": "ears",
   "requirements": [
     {
       "id": "AUTHOR-001",
-      "status": "active",
-      "statement": "AGENTS.md carries a brief-to-mint authoring playbook \u2014 one requirement per testable promise, charter placement via spec domain list, spec query dedup, GUARD-template draft, mint via spec req, and the originating ticket recorded as issue provenance only \u2014 that cross-references the TAXONOMY.md 4.10 authoring standard rather than restating it, when a requirement is authored from a brief",
+      "status": "superseded",
+      "statement": "AGENTS.md carries a brief-to-mint authoring playbook — one requirement per testable promise, charter placement via spec domain list, spec query dedup, GUARD-template draft, mint via spec req, and the originating ticket recorded as issue provenance only — that cross-references the TAXONOMY.md 4.10 authoring standard rather than restating it, when a requirement is authored from a brief",
       "why": "Without a written mint procedure that single-sources the 4.10 standard, cold-read-failing or one-per-ticket requirements get authored the moment work arrives as a vague ticket, and the corpus silently accumulates non-standalone entries",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "AUTHOR-004",
       "relates": [],
       "livesIn": [
         "@AGENTS.md"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 2,
       "aliases": [],
       "cites": []
     },
     {
       "id": "AUTHOR-002",
-      "status": "active",
+      "status": "superseded",
       "statement": "The req-author skill wraps the authoring playbook with real spec CLI calls, self-checks each drafted statement against the TAXONOMY.md 4.10 cold-read rubric, and presents the drafted batch for human approval before any requirement is written to the corpus, when a brief is turned into requirements",
       "why": "Without an approval gate an unattended drafter would mint unreviewed, non-standalone requirements straight into the corpus, and a reimplementation of minting would drift from the one shared schema spec req validates against",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "AUTHOR-006",
       "relates": [],
       "livesIn": [
         "@.claude/skills/req-author/SKILL.md"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 3,
       "aliases": [],
       "cites": []
     },
     {
       "id": "AUTHOR-003",
-      "status": "active",
-      "statement": "spec mcp advertises an author_requirements MCP prompt whose prompts/get returns a static playbook template \u2014 the brief substituted verbatim and, when a target domain is supplied, that domain's charter/scope injected via a pure filesystem read \u2014 with no model call, no inference, and no index build in the engine, when an authoring brief is turned into requirements",
+      "status": "superseded",
+      "statement": "spec mcp advertises an author_requirements MCP prompt whose prompts/get returns a static playbook template — the brief substituted verbatim and, when a target domain is supplied, that domain's charter/scope injected via a pure filesystem read — with no model call, no inference, and no index build in the engine, when an authoring brief is turned into requirements",
       "why": "Without a shipped, LLM-free authoring prompt every adopter re-derives the mint procedure by hand and cold-read-failing statements get written at authoring time; and any model call slipped into the engine would break the LLM-free guarantee the fence protects",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "AUTHOR-008",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/server/mcp.ts",
@@ -51,6 +53,100 @@
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 4,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHOR-004",
+      "status": "active",
+      "statement": "Where requirements are authored from a brief, AGENTS.md shall document the brief-to-mint procedure: one requirement minted per behavior via spec req, with the originating ticket recorded as issue provenance only, never as a requirement id.",
+      "why": "Without a written mint procedure, one-per-ticket or issue-id-tagged requirements get authored the moment work arrives as a vague ticket, and the corpus accumulates entries whose identity dies with the tracker.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "AGENTS.md"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHOR-005",
+      "status": "active",
+      "statement": "The AGENTS.md authoring playbook shall point at the TAXONOMY.md requirement-authoring standard rather than restating its rules.",
+      "why": "A restated copy of the authoring rules drifts from the canonical one; authors then self-check against stale criteria and the two texts disagree silently.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "AGENTS.md"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHOR-006",
+      "status": "active",
+      "statement": "While a drafted requirement batch awaits human approval, the req-author skill shall write nothing to the corpus — no spec req invocation runs until the human explicitly approves the batch.",
+      "why": "Without the approval gate an unattended drafter mints unreviewed, non-standalone requirements straight into durable KEY-NNN ids that code then binds to.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        ".claude/skills/req-author/SKILL.md"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHOR-007",
+      "status": "active",
+      "statement": "When an approved requirement is minted, the req-author skill shall write it through the real spec req CLI, never by editing SPEC.json directly.",
+      "why": "A reimplemented mint path drifts from the shared schema and grammar checks spec req enforces, producing entries the indexer rejects or silently drops.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        ".claude/skills/req-author/SKILL.md"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHOR-008",
+      "status": "active",
+      "statement": "When prompts/get requests the author_requirements prompt, spec mcp shall return the static authoring playbook with the brief substituted verbatim — no model call, no inference, and no index build in the engine.",
+      "why": "Any model call slipped into the engine breaks the LLM-free guarantee the fence protects, and a non-deterministic template makes the prompt output unsnapshotable.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/server/mcp.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHOR-009",
+      "status": "active",
+      "statement": "Where a target domain accompanies an author_requirements request, spec mcp shall inject that domain's charter scope into the returned playbook via a filesystem read of its SPEC.json.",
+      "why": "Without the charter in the prompt, the consuming model places requirements by guessing at domain boundaries, and misplacement mints durable ids in the wrong domain.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/server/authorPrompt.ts"
+      ],
+      "issues": [],
       "aliases": [],
       "cites": []
     }

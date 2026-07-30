@@ -30,7 +30,8 @@
 // the diagnostic rows prove the exit-code behavior without a member-config clone.
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec CHCK-005 integration
+// @spec CHCK-018 integration
+// @spec CHCK-019 integration
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";

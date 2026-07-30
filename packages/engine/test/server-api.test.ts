@@ -50,7 +50,8 @@ function buildApp(): Hono {
   return app;
 }
 
-// @spec SERV-002
+// @spec SERV-009
+// @spec SERV-010
 describe("mountApi (/api/* Hono surface)", () => {
   // --- /api/coverage --------------------------------------------------------
 

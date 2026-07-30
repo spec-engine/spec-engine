@@ -1,7 +1,7 @@
 // packages/engine/src/commands/resolve.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec RSLV-001
+// @spec RSLV-003
 //
 // `spec resolve <files...> [platformDir] [--out <path>] [--json]` — citty
 // subcommand that returns the requirements tagged in the given files (one

@@ -151,7 +151,7 @@ export const DiagnosticCode = {
   // `severity === "error"` predicate. Computed by Q8 in sqlite.ts (a LEFT JOIN
   // over term_citations, the BROKEN_RELATES shape); repo:null, keyed on the
   // citing req_id (the defect is in the SPEC's cites field, not a member repo).
-  // @spec CHCK-004
+  // @spec CHCK-016
   UNDEFINED_TERM: "UNDEFINED_TERM",
   // TERM-04 (Phase 6, dogfooded in CHCK): an Active TERM entry that NO
   // requirement cites (zero inbound `term_citations` rows) — glossary rot, a
@@ -162,7 +162,7 @@ export const DiagnosticCode = {
   // `severity === "error"` predicate so an orphan-term-only platform still
   // exits 0. Computed by Q9 in sqlite.ts (the ORPHAN_REQ NOT-EXISTS shape,
   // scoped to key='TERM' AND status='Active'); repo:null, keyed on the term id.
-  // @spec CHCK-004
+  // @spec CHCK-016
   ORPHAN_TERM: "ORPHAN_TERM",
   // TERM-05 (Phase 6, dogfooded in CHCK): a requirement whose `cites` pin LAGS
   // the cited term's current version — the citation was confirmed against an
@@ -175,7 +175,7 @@ export const DiagnosticCode = {
   // lagging pin is a re-confirmation prompt (run `spec term confirm`), NOT a
   // build-breaking defect, so a drifted citation keeps `spec check --ci` at
   // exit 0. Computed by Q10 (a SELECT over term_drift); repo:null, keyed on the
-  // citing req_id. @spec CHCK-005
+  // citing req_id. @spec CHCK-018
   TERM_DRIFT: "TERM_DRIFT",
   // TERM-05 (Phase 6, dogfooded in CHCK): a requirement citing a SUPERSEDED term
   // id — after `spec supersede TERM-NNN` minted a successor, the citation still
@@ -186,7 +186,7 @@ export const DiagnosticCode = {
   // predicate — a spec must not ship citing a retired definition; re-point it
   // with `spec term confirm`. Computed by Q11 (term_citations JOIN the cited
   // term WHERE status='Superseded', the Q2 clone); repo:null, keyed on the
-  // citing req_id. @spec CHCK-005
+  // citing req_id. @spec CHCK-018
   SUPERSEDED_TERM_REFERENCED: "SUPERSEDED_TERM_REFERENCED",
 } as const;
 

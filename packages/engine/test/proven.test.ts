@@ -1,7 +1,7 @@
 // packages/engine/test/proven.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec PROOF-002 unit
+// @spec PROOF-010 unit
 //
 // GATE-02 unit cases for the pure `provenDetermination()` detector +
 // `proofsUnconfirmedWarning()`. Drives the functions directly with synthetic

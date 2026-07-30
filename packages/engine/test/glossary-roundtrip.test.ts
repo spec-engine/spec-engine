@@ -85,7 +85,9 @@ async function diagnose(platformDir: string): Promise<Diagnostic[]> {
 }
 
 describe("TERM-06 — GLOSSARY round-trip (migrate + generate + fence)", () => {
-  // @spec CHCK-006 integration
+  // @spec CHCK-020 integration
+  // @spec CHCK-022 integration
+  // @spec CHCK-021 integration
   test("migrate: parses bullets in document order with section + collapsed statement", () => {
     const terms = parseGlossary(FIXTURE);
     expect(terms.map((t) => t.term)).toEqual(["Alpha", "Beta", "Gamma"]);

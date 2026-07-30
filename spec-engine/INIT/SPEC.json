@@ -1,67 +1,71 @@
 {
   "key": "INIT",
   "owner": "drea",
-  "updated": "2026-07-16",
-  "scope": "Membership, discovery, and onboarding, plus the adoption rungs. Belongs here: spec init pin authoring; member discovery; the progressive-disclosure adoption rungs (rung 1: a lone repo local-only; rung 2: + the CI gate; rung 3: + a second repo forming a platform with shared requirements). Does not belong here: check-severity semantics (\u2192 CHCK, INIT-007). Boundary case: the POC-017 adoption rungs are superseded into three per-rung INIT requirements, each independently testable, and stay in INIT.",
+  "updated": "2026-07-30",
+  "scope": "Membership, discovery, and onboarding, plus the adoption rungs. Belongs here: spec init pin authoring; member discovery; the progressive-disclosure adoption rungs (rung 1: a lone repo local-only; rung 2: + the CI gate; rung 3: + a second repo forming a platform with shared requirements). Does not belong here: check-severity semantics (→ CHCK, INIT-007). Boundary case: the POC-017 adoption rungs are superseded into three per-rung INIT requirements, each independently testable, and stay in INIT.",
   "grammar": "ears",
   "requirements": [
     {
       "id": "INIT-001",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec init writes spec-engine.member.json containing exactly { \"specs\": \"spec-engine@<N>\" }, pretty-printed with a trailing newline, and prints the absolute path plus the resolved pin.",
       "why": "The config is the member's explicit opt-in that discovery understands; its shape must match SpecConfigSchema byte-for-byte.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-015",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/commands/init.ts"
       ],
       "issues": [],
+      "supersededAtVersion": 4,
       "aliases": [],
       "cites": []
     },
     {
       "id": "INIT-002",
-      "status": "active",
-      "statement": "REPO defaults to the current directory; a path that does not exist, is not a directory, or cannot be resolved exits 2 with a clear message \u2014 never a stack trace.",
+      "status": "superseded",
+      "statement": "REPO defaults to the current directory; a path that does not exist, is not a directory, or cannot be resolved exits 2 with a clear message — never a stack trace.",
       "why": "Exit 2 is the onboarding failure contract; exit 1 stays reserved for check --ci.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-016",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/commands/init.ts"
       ],
       "issues": [],
+      "supersededAtVersion": 5,
       "aliases": [],
       "cites": []
     },
     {
       "id": "INIT-003",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec init refuses to scaffold inside a spec-engine/ tree (any path segment, post-symlink-resolution) and refuses a platform directory itself.",
       "why": "The canonical spec repo is not a member.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-018",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/commands/init.ts"
       ],
       "issues": [],
+      "supersededAtVersion": 6,
       "aliases": [],
       "cites": []
     },
     {
       "id": "INIT-004",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec init on a repo that already has a spec-engine.member.json prints the existing pin and exits 0 (\"already configured\") without --force; with --force it overwrites the file only when it contains exactly the specs key, and refuses (exit 2) when the file carries extra fields.",
       "why": "Re-running init must be an idempotent no-op, and a forced overwrite that clobbered unknown forward-compat fields would silently destroy configuration the current version does not yet understand.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-019",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/commands/init.ts"
       ],
       "issues": [],
+      "supersededAtVersion": 7,
       "aliases": [],
       "cites": []
     },
@@ -83,16 +87,17 @@
     },
     {
       "id": "INIT-006",
-      "status": "active",
+      "status": "superseded",
       "statement": "Discovery captures every repo-root sibling skipped for lack of spec-engine.member.json, and the index emits one warning-severity NO_SPEC_CONFIG diagnostic per skip, naming the directory and suggesting spec init <name>.",
-      "why": "The silent-skip failure mode \u2014 tag exists, index empty, exit 0, no signal \u2014 must be impossible.",
+      "why": "The silent-skip failure mode — tag exists, index empty, exit 0, no signal — must be impossible.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-022",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/indexer/discover.ts"
       ],
       "issues": [],
+      "supersededAtVersion": 8,
       "aliases": [],
       "cites": []
     },
@@ -113,55 +118,58 @@
     },
     {
       "id": "INIT-008",
-      "status": "active",
+      "status": "superseded",
       "statement": "On a TTY, index-building commands offer an interactive onboarding prompt for skipped siblings; non-TTY and --no-prompt contexts fall through to the NO_SPEC_CONFIG warning.",
       "why": "The moment discovery skips a repo is the one moment the CLI can teach the contract.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-023",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/onboarding/prompt.ts"
       ],
       "issues": [],
+      "supersededAtVersion": 9,
       "aliases": [],
       "cites": []
     },
     {
       "id": "INIT-009",
-      "status": "active",
+      "status": "superseded",
       "statement": "Context detection classifies a directory as platform, member, or loose by walking upward with the termination order: spec-engine/ found, then .git boundary, then filesystem root; malformed manifests throw loudly.",
       "why": "spec init must know where it is to pin correctly, and a .git boundary must stop the walk before an unrelated outer platform captures the repo.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-024",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/onboarding/context.ts"
       ],
       "issues": [],
+      "supersededAtVersion": 10,
       "aliases": [],
       "cites": []
     },
     {
       "id": "INIT-010",
-      "status": "active",
+      "status": "superseded",
       "statement": "A lone repo adopts the engine local-only: spec init pins the repo to its own spec-engine@N and spec check runs against that repo's own spec-engine/ requirements, with no CI gate and no second member.",
       "why": "The Linear-model adoption story is the product thesis; each rung must stay demonstrable.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-026",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/cli.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 11,
       "aliases": [],
       "cites": []
     },
     {
       "id": "INIT-011",
-      "status": "active",
+      "status": "deprecated",
       "statement": "The adopting repo adds the CI gate: spec check . --ci builds the index cold in CI and exits non-zero on an error-severity diagnostic, blocking the merge when a tag no longer binds its requirement.",
-      "why": "If the CI gate does not fail the build on an error-severity diagnostic, tag-binding regressions merge silently and the spec drifts out of sync with the code \u2014 the gate becomes decorative.",
+      "why": "If the CI gate does not fail the build on an error-severity diagnostic, tag-binding regressions merge silently and the spec drifts out of sync with the code — the gate becomes decorative.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
@@ -170,14 +178,15 @@
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "deprecatedReason": "Duplicate of CHCK-001 and CHCK-002: the CI-gate behavior it narrates is owned by check's exit contract and cold rebuild. Its unique content was onboarding documentation, not an engine behavior.",
       "aliases": [],
       "cites": []
     },
     {
       "id": "INIT-012",
-      "status": "active",
+      "status": "deprecated",
       "statement": "A second repo joins to form a platform: shared requirements are pinned per member, and spec map and spec propagation track which repos cover a requirement and which have drifted behind the version in which it changed.",
-      "why": "If cross-repo coverage and drift stay invisible once a second member joins, a shared requirement can change while a member silently lags behind \u2014 the multi-repo promise that distinguishes a platform from a lone repo is lost.",
+      "why": "If cross-repo coverage and drift stay invisible once a second member joins, a shared requirement can change while a member silently lags behind — the multi-repo promise that distinguishes a platform from a lone repo is lost.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
@@ -186,37 +195,260 @@
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "deprecatedReason": "Duplicate of MAP-001 and PROP-003: the second-repo narrative restates cross-repo coverage and migration state. INIT's own pin behaviors are owned by its remaining requirements.",
       "aliases": [],
       "cites": []
     },
     {
       "id": "INIT-013",
-      "status": "active",
-      "statement": "spec init resolves the pin it writes from --specs when given (validated against the config schema), else from the derived platform version \u2014 the maximum of the platform's domains' DAG-derived versions \u2014 else defaults to spec-engine@1 with a printed note when no enclosing platform is found.",
-      "why": "The default must wire a new member to the version the platform actually derives to; an authored default source (the retired spec-engine.platform.json counter) is a second source of truth nothing bumps, silently pinning new members below what the domains have derived past \u2014 born drifted or falsely current.",
+      "status": "superseded",
+      "statement": "spec init resolves the pin it writes from --specs when given (validated against the config schema), else from the derived platform version — the maximum of the platform's domains' DAG-derived versions — else defaults to spec-engine@1 with a printed note when no enclosing platform is found.",
+      "why": "The default must wire a new member to the version the platform actually derives to; an authored default source (the retired spec-engine.platform.json counter) is a second source of truth nothing bumps, silently pinning new members below what the domains have derived past — born drifted or falsely current.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-027",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/commands/init.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 12,
       "aliases": [],
       "cites": []
     },
     {
       "id": "INIT-014",
-      "status": "active",
+      "status": "superseded",
       "statement": "Repo discovery pins the canonical spec-engine row and the rung-1 self-member to the derived platform version (the maximum domain version), so a lone repo's tags can never be reported as drifted against the requirement domains in its own working tree.",
-      "why": "A self-member pinned below its own domains' derived versions fires false DRIFT on the very repo that owns the specs \u2014 the gate cries wolf on the dogfooding repo and trust in drift dies.",
+      "why": "A self-member pinned below its own domains' derived versions fires false DRIFT on the very repo that owns the specs — the gate cries wolf on the dogfooding repo and trust in drift dies.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-028",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/indexer/discover.ts"
       ],
       "issues": [],
+      "supersededAtVersion": 13,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-015",
+      "status": "active",
+      "statement": "When spec init scaffolds a member, it shall write spec-engine.member.json containing exactly { \"specs\": \"spec-engine@<N>\" }, pretty-printed with a trailing newline, and print the absolute path plus the resolved pin.",
+      "why": "The config is the member's explicit opt-in that discovery parses; a shape that deviates from the config schema is silently skipped and the repo's tags never index.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/init.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-016",
+      "status": "active",
+      "statement": "Where no REPO argument is given, spec init shall target the current directory.",
+      "why": "Onboarding must work from inside the repo being onboarded; requiring an explicit path adds friction at the exact moment the CLI is teaching the contract.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/init.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-017",
+      "status": "active",
+      "statement": "If the REPO path does not exist, is not a directory, or cannot be resolved, then spec init shall exit 2 with a clear message and never a stack trace.",
+      "why": "Exit 2 is the usage-failure contract; a stack trace or a stray exit 1 would collide with the code CI reserves for check --ci gate failures.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/init.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-018",
+      "status": "active",
+      "statement": "If the resolved target (post-symlink) lies inside a spec-engine/ tree or is a platform directory itself, then spec init shall refuse to scaffold and exit 2.",
+      "why": "A member pin inside the canonical spec tree registers the requirement source as a member of itself — discovery then scans spec text as code and coverage misreports.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/init.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-019",
+      "status": "active",
+      "statement": "When spec init runs without --force on a repo that already has spec-engine.member.json, it shall print the existing pin and exit 0 as a no-op.",
+      "why": "Re-running init must be idempotent; an error exit on an already-configured repo would break scripted onboarding that cannot know configuration state in advance.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/init.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-020",
+      "status": "active",
+      "statement": "If spec init --force finds fields beyond the known config keys in the existing spec-engine.member.json, then it shall refuse the overwrite and exit 2.",
+      "why": "A forced overwrite that clobbered unknown forward-compat fields would silently destroy configuration the current version does not yet understand.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/init.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-021",
+      "status": "active",
+      "statement": "When spec init --force overwrites a config carrying only known keys, it shall rewrite the pin while preserving the repo's ignore list.",
+      "why": "A --force that dropped the ignore list would silently re-include directories the operator deliberately excluded from tag scanning.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/init.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-022",
+      "status": "active",
+      "statement": "When discovery skips a repo-root sibling for lacking spec-engine.member.json, the index shall emit one warning-severity NO_SPEC_CONFIG diagnostic naming the directory and suggesting spec init <name>.",
+      "why": "The silent-skip failure mode — tag exists, index empty, exit 0, no signal — must be impossible; without the diagnostic a mistyped config hides a whole repo's coverage.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/indexer/discover.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-023",
+      "status": "active",
+      "statement": "While stdin is a TTY and --no-prompt is absent, index-building commands shall offer an interactive onboarding prompt for each skipped sibling instead of only the NO_SPEC_CONFIG warning.",
+      "why": "The moment discovery skips a repo is the one moment the CLI can teach the membership contract; losing it leaves the warning as the only, easily-ignored signal.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/onboarding/prompt.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-024",
+      "status": "active",
+      "statement": "When classifying a directory as platform, member, or loose, context detection shall walk upward and terminate at the first of: a spec-engine/ directory, a .git boundary, or the filesystem root.",
+      "why": "spec init must know where it is to pin correctly, and a .git boundary must stop the walk before an unrelated outer platform captures the repo.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/onboarding/context.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-025",
+      "status": "active",
+      "statement": "If a manifest encountered during the context walk is malformed, then context detection shall fail loudly rather than classify the directory.",
+      "why": "A silent fallback on a corrupt manifest would classify the repo wrongly and write a pin against the wrong platform — an error surfaced only later as inexplicable drift.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/onboarding/context.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-026",
+      "status": "active",
+      "statement": "Where a platform directory is itself a lone repo with no member siblings, discovery shall register it as its own single member, so its @spec tags index with no member config and no CI gate.",
+      "why": "If the lone-repo step needs any setup beyond having a spec-engine/ directory, the progressive-adoption ladder fails at first contact.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/indexer/discover.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-027",
+      "status": "active",
+      "statement": "When resolving the pin it writes, spec init shall use --specs when given, else the derived platform version — the maximum of the domains' derived versions — else spec-engine@1 with a printed note when no enclosing platform exists.",
+      "why": "An authored default source is a second source of truth nothing bumps — new members get pinned below what the domains derived past, born drifted or falsely current.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/init.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-028",
+      "status": "active",
+      "statement": "When discovery registers the canonical spec-engine row and the lone-repo self-member, it shall pin both to the derived platform version, so a lone repo is never reported drifted against its own working-tree domains.",
+      "why": "A self-member pinned below its own domains' derived versions fires false DRIFT on the very repo that owns the specs — the gate cries wolf and trust in drift dies.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/indexer/discover.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
       "aliases": [],
       "cites": []
     }

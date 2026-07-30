@@ -90,7 +90,7 @@ describe("linearAdapter — no-throw degraded ladder (injected fetch)", () => {
     });
   });
 
-  // @spec TRK-003 unit
+  // @spec TRK-006 unit
   test("TRK-06 unauthorized (no token): unset token → all unauthorized, NO fetch", async () => {
     delete process.env.SPEC_TRACKER_TOKEN;
     const { stub, calls } = makeStub({ kind: "response", status: 200, body: OK_BODY });
@@ -264,7 +264,7 @@ describe("linearAdapter — no-throw degraded ladder (injected fetch)", () => {
     expect(auth).not.toContain("Bearer");
   });
 
-  // @spec TRK-002 unit
+  // @spec TRK-005 unit
   test("TRK-04 read-only body: query binds $id and carries no GraphQL write keyword", async () => {
     const { stub, calls } = makeStub({ kind: "response", status: 200, body: OK_BODY });
     await makeLinearAdapter(stub).resolveIssues(["ENG-1"]);

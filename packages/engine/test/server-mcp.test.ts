@@ -249,7 +249,8 @@ describe("spec mcp — tool surface (L4)", () => {
 // registers the prompt (a static template, engine stays LLM-free) and greens
 // them. Prompts are NOT tools — the "lists the seven read tools" assertion above
 // is deliberately left untouched.
-// @spec AUTHOR-003 unit
+// @spec AUTHOR-008 unit
+// @spec AUTHOR-009 unit
 describe("spec mcp — author_requirements prompt (AUTHOR-003)", () => {
   /** Read the single text message body of a prompts/get result. */
   function promptText(res: { messages: Array<{ content: unknown }> }): string {

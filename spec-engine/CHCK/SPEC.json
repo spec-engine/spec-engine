@@ -7,93 +7,99 @@
   "requirements": [
     {
       "id": "CHCK-001",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec check reports cross-repo integrity diagnostics (dangling, superseded-referenced, orphan, unverified, drift) and exits non-zero on error-severity rows under --ci.",
       "why": "The gate; it catches all the planted mess.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHCK-012",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/commands/check.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 2,
       "aliases": [],
       "cites": []
     },
     {
       "id": "CHCK-002",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec check --ci builds fresh and is correct without trusting any cached or warm index.",
       "why": "Speed optimizations must never make correctness depend on a stale index.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHCK-014",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/commands/check.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 3,
       "aliases": [],
       "cites": []
     },
     {
       "id": "CHCK-003",
-      "status": "active",
+      "status": "superseded",
       "statement": "NO_SPEC_CONFIG is warning severity: spec check --ci does not fail on it.",
       "why": "A user may legitimately keep unrelated sibling repos in the same parent directory.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHCK-015",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/commands/check.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 4,
       "aliases": [],
       "cites": []
     },
     {
       "id": "CHCK-004",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec check reports UNDEFINED_TERM (error) when a requirement's cites entry resolves to no term and ORPHAN_TERM (warning) for an Active term that no requirement cites",
       "why": "the only-allowed-jargon rule becomes mechanically checkable and glossary rot is surfaced, without a freshly-migrated uncited term redding the gate (ORPHAN_TERM is warning-only)",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHCK-016",
       "relates": [],
       "livesIn": [],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 5,
       "aliases": [],
       "cites": []
     },
     {
       "id": "CHCK-005",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec check reports TERM_DRIFT (warning) when a requirement's cites pin lags the cited term's current version after an in-place spec term revise, and SUPERSEDED_TERM_REFERENCED (error) when a citation references a superseded term id, until re-confirmed via spec term confirm (which re-pins, and re-points to the successor on supersession).",
       "why": "term drift is the member-pin drift model replayed one level up (req to term): a citation implicitly pins the term version it was confirmed against; re-confirmation is explicit via spec term confirm, and the term_drift VIEW clones the drift VIEW predicate so there is one predicate in one place.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHCK-018",
       "relates": [],
       "livesIn": [],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 6,
       "aliases": [],
       "cites": []
     },
     {
       "id": "CHCK-006",
-      "status": "active",
+      "status": "superseded",
       "statement": "GLOSSARY.md is migrated into TERM-001..N and then generated from the term store byte-stably, and a CI fence fails if the committed GLOSSARY.md diverges from the generated output.",
       "why": "The human view of the glossary must not drift from the canonical terms — generation is a deterministic projection of the store, fenced in CI.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHCK-020",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/commands/glossary.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 7,
       "aliases": [],
       "cites": []
     },
@@ -167,6 +173,177 @@
       "relates": [],
       "livesIn": [
         "packages/engine/src/commands/check.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-012",
+      "status": "active",
+      "statement": "The spec check command shall report integrity diagnostics across every member repo, each row carrying a code, a severity, and the offending location.",
+      "why": "Spec-code disagreements — dangling tags, superseded references, orphan and unverified requirements — stay invisible without one command that surfaces them all.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/check.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-013",
+      "status": "active",
+      "statement": "When spec check finds at least one error-severity diagnostic, the command shall exit 1; warnings alone leave the exit at 0.",
+      "why": "CI branches on the exit code, not the output text; without this contract a red finding sails through the gate unnoticed.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/check.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-014",
+      "status": "active",
+      "statement": "When spec check runs with --ci, the command shall delete the existing index and rebuild it cold before evaluating diagnostics.",
+      "why": "A warm index can predate the latest spec and tag edits, so the gate would pass or fail against stale truth.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/check.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-015",
+      "status": "active",
+      "statement": "When spec check finds a sibling directory without a spec-engine.member.json, the command shall report NO_SPEC_CONFIG at warning severity, so the finding alone never fails the --ci gate.",
+      "why": "Unrelated sibling repos in the same parent directory are legitimate; failing the gate on them would force every neighbor to join the platform.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/check.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-016",
+      "status": "active",
+      "statement": "If a requirement's cites entry resolves to no term, then spec check shall report UNDEFINED_TERM as an error.",
+      "why": "A requirement leaning on jargon no reader can look up is unreviewable; as a warning the broken citation would ship under a green gate.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/storage/sqlite.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-017",
+      "status": "active",
+      "statement": "If an Active term is cited by no requirement, then spec check shall report ORPHAN_TERM as a warning.",
+      "why": "Uncited terms accumulate as glossary rot nobody sees; at error severity a freshly-migrated glossary would red the gate before any citation could exist.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/storage/sqlite.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-018",
+      "status": "active",
+      "statement": "If a requirement's citation pins an older version than the cited term's current version, then spec check shall report TERM_DRIFT as a warning until spec term confirm re-pins it.",
+      "why": "An in-place definition revision can change the meaning of every citing requirement; without a signal nobody re-reads them, while an error would block builds on a wording tweak.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/storage/sqlite.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-019",
+      "status": "active",
+      "statement": "If a requirement cites a superseded term id, then spec check shall report SUPERSEDED_TERM_REFERENCED as an error until spec term confirm re-points the citation to the successor.",
+      "why": "A requirement defined by a dead term no longer means what it appears to mean; as a warning it would ship anyway.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/storage/sqlite.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-020",
+      "status": "active",
+      "statement": "When spec glossary runs, the command shall regenerate GLOSSARY.md from the term store deterministically, byte-identical across runs over the same store.",
+      "why": "A generator with nondeterministic output makes drift detection impossible — every regeneration would itself look like drift.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/glossary.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-021",
+      "status": "active",
+      "statement": "When spec glossary --migrate runs, the command shall parse each committed GLOSSARY.md bullet into a term entry in document order, skipping when the term store already holds entries.",
+      "why": "Re-running a migration that re-mints ids would duplicate every term; without the parser the glossary's terms never become canonical data at all.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/glossary.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-022",
+      "status": "active",
+      "statement": "When spec glossary --check runs and the committed GLOSSARY.md differs byte-for-byte from the generated output, the command shall exit 1.",
+      "why": "The human view of the terms can silently diverge from the canonical store; only a failing exit code makes that drift block a merge.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/glossary.ts"
       ],
       "issues": [],
       "aliases": [],

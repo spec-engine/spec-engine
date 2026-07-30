@@ -27,7 +27,8 @@
 // authoring gate (like req.ts's --text), so a term is only written when its
 // definition is supplied. Tag lines composed via fixtures/specTag.ts.
 //
-// @spec REQ-014 unit
+// @spec REQ-033 unit
+// @spec REQ-034 unit
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";

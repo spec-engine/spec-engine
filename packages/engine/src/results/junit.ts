@@ -1,7 +1,8 @@
 // packages/engine/src/results/junit.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec PROOF-001
+// @spec PROOF-008
+// @spec PROOF-009
 //
 // GATE-01 (Phase 19): the ONE hand-rolled JUnit XML reader. Turns an untrusted
 // `--results` file's bytes into a typed `TestCaseResult[]` — one reader, no

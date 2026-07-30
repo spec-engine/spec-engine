@@ -98,7 +98,9 @@ export function parseGlossary(md: string): GlossaryTerm[] {
  * Generate GLOSSARY.md from terms deterministically: the fixed header + intro,
  * each `## {section}` heading once when it changes, a `- **{term}** — {statement}`
  * bullet per term, single trailing newline. LLM-free, no Date/random.
- * @spec CHCK-006
+ * @spec CHCK-020
+ # @spec CHCK-022
+ # @spec CHCK-021
  */
 export function generateGlossary(terms: GlossaryTerm[]): string {
   const parts: string[] = ["# Glossary", "", GLOSSARY_INTRO];
@@ -248,7 +250,7 @@ export function glossaryDriftDiagnostic(platformDir: string): Diagnostic | null 
  * The drift fence: regenerate into a buffer and compare byte-for-byte with the
  * committed GLOSSARY.md. Exit 1 (data-level failure) on any drift, 0 clean. This
  * is what fence_glossary_roundtrip (arch-fences.sh) shells out to.
- * @spec CHCK-006
+ * @spec CHCK-020
  */
 function checkGlossary(platformDir: string, json: boolean): void {
   const generated = generateGlossary(readStoreTerms(platformDir));

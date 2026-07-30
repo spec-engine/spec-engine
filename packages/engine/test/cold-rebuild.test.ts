@@ -1,7 +1,7 @@
 // packages/engine/test/cold-rebuild.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec INDX-001
+// @spec INDX-007
 //
 // INDX-03 mechanical assertion: cold-rebuild equivalence.
 // Verbatim pattern from 02-RESEARCH § CI test (CI-02) → phase-internal

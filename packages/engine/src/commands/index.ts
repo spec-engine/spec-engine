@@ -1,7 +1,7 @@
 // packages/engine/src/commands/index.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec INDX-003
+// @spec INDX-009
 //
 // `spec index [platformDir] [--out <path>] [--json]` — citty subcommand
 // wrapping the runIndex pipeline (INDX-01..04 wired through PARS-05).

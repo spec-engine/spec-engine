@@ -1,6 +1,6 @@
 // packages/engine/test/provenance-issueid-opacity.test.ts
 //
-// @spec PROV-001
+// @spec PROV-004
 // PROV-02 behavioral lock: issue_id is stored as an OPAQUE string and is NEVER
 // used as a PK/FK/JOIN/coverage/routing key. The CI `issue_id-opacity`
 // grep-fence (ci.yml) statically forbids issue_id appearing in any identity

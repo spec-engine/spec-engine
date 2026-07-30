@@ -1,7 +1,8 @@
 // packages/engine/src/scanner/tags.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec INDX-004
+// @spec INDX-010
+// @spec INDX-011
 //
 // PARS-03: `@spec KEY-NNN [level]` tag scanner.
 // Analog: src/spec.mjs:115-133 (`isTestFile` + `scanTags`). Port semantics

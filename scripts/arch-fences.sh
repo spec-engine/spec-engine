@@ -320,7 +320,7 @@ fence_stor04_no_spec_md_parse() {
 # and diffs it byte-for-byte against the committed file — exit 1 on any drift. So
 # a hand-edit of GLOSSARY.md that the store did not produce fails CI here, the same
 # way docs-agents.test.ts fails when the CLI surface and AGENTS.md disagree.
-# @spec CHCK-006
+# @spec CHCK-020
 fence_glossary_roundtrip() {
   if bun packages/engine/src/cli.ts glossary --check .; then
     echo "glossary round-trip fence: OK (committed GLOSSARY.md == generated from the TERM store)"
@@ -337,7 +337,7 @@ fence_glossary_roundtrip() {
 # carrier (its counter is the term-drift pin). A requirement never holds a
 # top-level `specVersion` (it uses changedAtVersion / supersededAtVersion), so a
 # match in a non-TERM SPEC.json is always the envelope counter.
-# @spec SCHM-008
+# @spec SCHM-020
 fence_no_authored_specversion() {
   local offenders=""
   for f in spec-engine/*/SPEC.json; do

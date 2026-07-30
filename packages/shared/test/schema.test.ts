@@ -1,6 +1,6 @@
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec SCHM-001 unit
+// @spec SCHM-011 unit
 
 import { expect, test } from "bun:test";
 import { join, resolve } from "node:path";
@@ -25,7 +25,7 @@ test("DDL contains no CHECK / FOREIGN KEY / UNIQUE on domain fields (SCHM-07)", 
 // coverage VIEW must drop key='TERM' so a migrated glossary term never fires a
 // coverage error. RED now: SCHEMA_VERSION is still 8 and the DDL carries none of
 // these strings. Goes GREEN when Plan 06-01 Task 2 lands the schema changes.
-// @spec SCHM-005 unit
+// @spec SCHM-016 unit
 test("SCHEMA_VERSION is 10 and DDL carries the TERM substrate + superseded_at_version column", () => {
   expect(SCHEMA_VERSION).toBe(10);
   expect(DDL).toContain("term_citations");

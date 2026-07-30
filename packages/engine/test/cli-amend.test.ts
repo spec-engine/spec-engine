@@ -239,7 +239,7 @@ describe("spec amend (L3)", () => {
 // refuses and directs the author to supersede. A Draft entry, or an Active
 // entry with zero bound tags, still amends. Bound = code-derived kind only. ──
 describe("spec amend — REQ-015 bound-tag gate", () => {
-  // @spec REQ-015 unit
+  // @spec REQ-035 unit
   test("Active + implementing @spec tag → exit 2 (shipped; supersede instead), no write", async () => {
     writeFileSync(join(tmp, "renew.ts"), `export const renew = 1; ${specTag("BILLING-001")}`);
     const before = readSpecRaw();

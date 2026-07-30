@@ -1,11 +1,14 @@
 // packages/engine/src/commands/init.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec INIT-001
-// @spec INIT-002
-// @spec INIT-003
-// @spec INIT-004
-// @spec INIT-013
+// @spec INIT-015
+// @spec INIT-016
+// @spec INIT-017
+// @spec INIT-018
+// @spec INIT-019
+// @spec INIT-021
+// @spec INIT-020
+// @spec INIT-027
 //
 // INIT-01..06, INIT-08..11, INIT-14: spec init scaffolder.
 //

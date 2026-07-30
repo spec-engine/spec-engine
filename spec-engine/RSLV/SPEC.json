@@ -1,20 +1,54 @@
 {
   "key": "RSLV",
   "owner": null,
-  "updated": "2026-07-08",
-  "scope": "The spec resolve files\u2192requirements command and its --req reverse query. Belongs here: file\u2192requirement mapping; the --req reverse tag-site query; path-containment normalization. Does not belong here: full-text search (\u2192 QURY). Boundary case: an absolute path resolving outside platformDir is an RSLV exit-2 contract, never a silent [].",
+  "updated": "2026-07-30",
+  "scope": "The spec resolve files→requirements command and its --req reverse query. Belongs here: file→requirement mapping; the --req reverse tag-site query; path-containment normalization. Does not belong here: full-text search (→ QURY). Boundary case: an absolute path resolving outside platformDir is an RSLV exit-2 contract, never a silent [].",
   "grammar": "ears",
   "requirements": [
     {
       "id": "RSLV-001",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec resolve maps file paths to the requirements tagged in them, with coverage.",
       "why": "Routes a task to its requirements (agent routing).",
+      "supersedes": null,
+      "supersededBy": "RSLV-003",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/commands/resolve.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "supersededAtVersion": 2,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "RSLV-002",
+      "status": "superseded",
+      "statement": "spec resolve --json emits byte-identical output across consecutive invocations on an unchanged tree (deterministic ordering).",
+      "why": "Non-deterministic output would break diff/snapshot consumers and the CI gates that compare it.",
+      "supersedes": null,
+      "supersededBy": "RSLV-004",
+      "relates": [],
+      "livesIn": [
+        "@packages/engine/src/resolve/format.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "supersededAtVersion": 3,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "RSLV-003",
+      "status": "active",
+      "statement": "When given one or more file paths, spec resolve shall list each requirement tagged in those files; a file with no tags contributes nothing, and an empty result exits 0.",
+      "why": "Routing a task by file must load the requirements that govern it; without this mapping an agent edits governed code blind.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "@packages/engine/src/commands/resolve.ts"
+        "packages/engine/src/commands/resolve.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
@@ -22,15 +56,15 @@
       "cites": []
     },
     {
-      "id": "RSLV-002",
+      "id": "RSLV-004",
       "status": "active",
-      "statement": "spec resolve --json emits byte-identical output across consecutive invocations on an unchanged tree (deterministic ordering).",
+      "statement": "The spec resolve --json output shall be byte-identical across consecutive invocations on an unchanged tree.",
       "why": "Non-deterministic output would break diff/snapshot consumers and the CI gates that compare it.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "@packages/engine/src/resolve/format.ts"
+        "packages/engine/src/resolve/format.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,

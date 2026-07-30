@@ -18,7 +18,7 @@ const REPO_ROOT = resolve(import.meta.dir, "..", "..", "..");
 const FENCE_SCRIPT = join(REPO_ROOT, "scripts", "arch-fences.sh");
 
 describe("architecture fences (2.1 — scripts/arch-fences.sh)", () => {
-  // @spec TRK-001 — verify-only: the fence runner proves the engine internals
+  // @spec TRK-004 — verify-only: the fence runner proves the engine internals
   // never import @spec-engine/tracker and emit no external-network host literal
   // (fence_trk02_tracker_import), so the derived index is built fully offline.
   // This is a negative/absence invariant with no implementing symbol.
@@ -47,7 +47,8 @@ describe("architecture fences (2.1 — scripts/arch-fences.sh)", () => {
     expect(stdout).toContain("llm-free engine fence: OK");
   });
 
-  // @spec SCHM-008 unit — the authored-specVersion gate: fence_no_authored_specversion
+  // @spec SCHM-020 unit — the authored-specVersion gate: fence_no_authored_specversion
+  // @spec SCHM-021 unit
   // fails the build if any non-TERM domain envelope in the real corpus carries a
   // specVersion (the version is DAG-derived; only TERM keeps an authored counter).
   // Proven two ways: the real tree passes (OK marker present in the runner's

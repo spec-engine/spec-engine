@@ -1,7 +1,8 @@
 // packages/engine/src/commands/query.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec QURY-001
+// @spec QURY-005
+// @spec QURY-006
 //
 // `spec query <text> [platformDir] [--out <path>] [--json] [--limit N]` —
 // citty subcommand for FTS5 retrieval over requirement text + why (QURY-01

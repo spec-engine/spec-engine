@@ -207,7 +207,7 @@ async function assertMovableStatement(
 function resolveMoveVersion(domain: DomainEnvelope, key: string, noBump: boolean): number | null {
   domain.updated = localToday();
   if (key !== "TERM") {
-    // @spec REQ-016
+    // @spec REQ-036
     return deriveDomainVersion(domain.requirements ?? []);
   }
   if (noBump) return null;

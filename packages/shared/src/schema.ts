@@ -1,8 +1,8 @@
 // packages/shared/src/schema.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec SCHM-001
-// @spec PROP-002
+// @spec SCHM-011
+// @spec PROP-004
 //
 // Phase 1 contract — frozen schema vocabulary for the Spec Engine derived index.
 // Phases 2–6 import SCHEMA_VERSION and DDL from this module; no .sql files exist.
@@ -82,7 +82,7 @@
 // VIEW (a glossary TERM is a requirement row but NOT a code-coverage
 // obligation). Existing v8 DBs route through D-12's silent cold-rebuild branch
 // as with every prior bump — no data migration (the index is disposable,
-// Invariant #1). @spec SCHM-005
+// Invariant #1). @spec SCHM-016
 export const SCHEMA_VERSION = 10;
 
 /**
@@ -216,7 +216,7 @@ CREATE INDEX IF NOT EXISTS idx_term_citations_term ON term_citations(term_id);
 -- Invariant #4). source_file + line locate the authored **Issues:** field line.
 -- Exactly ONE index, on req_id (SC3) — never on issue_id, which would read as
 -- treating the opaque payload as a lookup key (PROV-02, grep-fenced in Plan 04).
--- @spec PROV-001
+-- @spec PROV-004
 CREATE TABLE IF NOT EXISTS provenance (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   req_id        TEXT NOT NULL,
@@ -322,7 +322,7 @@ WHERE r.changed_at_version > repos.pinned_spec_version;
 -- the Wave-D diagnostics. term.key='TERM' keeps the VIEW scoped to the reserved
 -- glossary domain. Present-and-empty until Wave C populates term_citations; the
 -- diagnostic (TERM_DRIFT) reads it in Wave E.
--- @spec CHCK-005
+-- @spec CHCK-018
 CREATE VIEW IF NOT EXISTS term_drift AS
 SELECT
   tc.req_id                  AS req_id,

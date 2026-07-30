@@ -36,7 +36,7 @@ export type ScanMode = "platform" | "monorepo" | "single";
  * all share one slashed root are one repository's packages, not sibling
  * repos. Mixed shapes (any flat sibling, or several roots) stay "platform".
  */
-// @spec SERV-004
+// @spec SERV-013
 export function detectScanMode(repos: ReadonlyArray<Pick<Repo, "name">>): ScanMode {
   const members = repos.filter((r) => r.name !== CANONICAL_REPO_NAME);
   const oneWorkspaceRoot =

@@ -2,14 +2,14 @@
   "key": "GATE",
   "owner": "drea",
   "updated": "2026-07-30",
-  "scope": "The `spec gate` approval command: the pass/fail decision order (NOT_FOUND \u2192 DRAFT \u2192 SUPERSEDED \u2192 VERSION_PIN \u2192 PASS), pin-equality passing. Belongs here: the approval decision. Does not belong here: proof-of-passing \u2192 PROOF; loss detection \u2192 GUARD.",
+  "scope": "The `spec gate` approval command: the pass/fail decision order (NOT_FOUND → DRAFT → SUPERSEDED → VERSION_PIN → PASS), pin-equality passing. Belongs here: the approval decision. Does not belong here: proof-of-passing → PROOF; loss detection → GUARD.",
   "grammar": "ears",
   "requirements": [
     {
       "id": "GATE-01",
       "status": "superseded",
       "statement": "`spec check` ingests a JUnit XML results file (one reader, no per-runner adapter) and marks each verifying `@spec` tag PASS/FAIL by correlating test cases to tags by file + test name/line.",
-      "why": "One reader, runner owns the export \u2014 the trusted-red gate must read real test outcomes, not trust presence.",
+      "why": "One reader, runner owns the export — the trusted-red gate must read real test outcomes, not trust presence.",
       "supersedes": null,
       "supersededBy": "PROOF-001",
       "relates": [],
@@ -23,8 +23,8 @@
     {
       "id": "GATE-02",
       "status": "superseded",
-      "statement": "An active requirement is PROVEN only if it has \u22651 verifying tag whose test PASSED in the latest results; absent or failing proof \u2192 gate red.",
-      "why": "Presence is not proof \u2014 a requirement is only trusted when its verifying test actually passed.",
+      "statement": "An active requirement is PROVEN only if it has ≥1 verifying tag whose test PASSED in the latest results; absent or failing proof → gate red.",
+      "why": "Presence is not proof — a requirement is only trusted when its verifying test actually passed.",
       "supersedes": null,
       "supersededBy": "PROOF-002",
       "relates": [],
@@ -38,7 +38,7 @@
     {
       "id": "GATE-03",
       "status": "superseded",
-      "statement": "Green-suite-hides-removal \u2014 if a requirement's implementing code and its verifying test are both removed, `check` fails (the requirement is now unproven) even though the remaining suite is green.",
+      "statement": "Green-suite-hides-removal — if a requirement's implementing code and its verifying test are both removed, `check` fails (the requirement is now unproven) even though the remaining suite is green.",
       "why": "A green suite must not hide a silently deleted proof; removal makes the requirement unproven.",
       "supersedes": null,
       "supersededBy": "PROOF-003",
@@ -54,7 +54,7 @@
       "id": "GATE-04",
       "status": "superseded",
       "statement": "`spec check --ci` consumes results and exits non-zero if any active requirement is unproven; cold-build correctness is preserved (no trust in a warm index).",
-      "why": "The CI gate must be correct from a fresh build \u2014 speed never trades away trusted-red correctness (Invariant #2).",
+      "why": "The CI gate must be correct from a fresh build — speed never trades away trusted-red correctness (Invariant #2).",
       "supersedes": null,
       "supersededBy": "PROOF-004",
       "relates": [],
@@ -68,8 +68,8 @@
     {
       "id": "GATE-05",
       "status": "superseded",
-      "statement": "No results supplied \u2192 `check` runs in presence-only mode (today's behavior) and warns that proofs are unconfirmed (enables gradual adoption).",
-      "why": "Gradual adoption \u2014 presence-only mode with a PROOFS_UNCONFIRMED warning lets teams onboard before wiring results.",
+      "statement": "No results supplied → `check` runs in presence-only mode (today's behavior) and warns that proofs are unconfirmed (enables gradual adoption).",
+      "why": "Gradual adoption — presence-only mode with a PROOFS_UNCONFIRMED warning lets teams onboard before wiring results.",
       "supersedes": null,
       "supersededBy": "PROOF-005",
       "relates": [],
@@ -82,17 +82,18 @@
     },
     {
       "id": "GATE-006",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec gate passes only when the referenced requirement is approved (Active) in the spec location and the member's pin covers its changed_at_version; failures exit 1 with a typed reason.",
-      "why": "The rung-3 approval primitive \u2014 the spec merge is the approval, the PR check is the enforcement.",
+      "why": "The rung-3 approval primitive — the spec merge is the approval, the PR check is the enforcement.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "GATE-008",
       "relates": [],
       "livesIn": [
         "@packages/engine/src/commands/gate.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 7,
       "aliases": [],
       "cites": []
     },
@@ -108,6 +109,22 @@
         "packages/engine/src/gate/classify.ts"
       ],
       "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GATE-008",
+      "status": "active",
+      "statement": "When spec gate <repo> <KEY-NNN> is run, the spec CLI shall pass (exit 0) only if the requirement's status is Active and its changed_at_version is covered by the member's pinned spec version (equality passes), and shall otherwise exit 1 with a single typed reason.",
+      "why": "Without a machine-checkable approval gate, a member repo can build against a draft, superseded, deprecated, or newer-than-pinned requirement — the approval recorded by the spec merge never reaches the PR check that needed it.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/gate.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
       "aliases": [],
       "cites": []
     }

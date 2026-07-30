@@ -1,8 +1,10 @@
 // packages/engine/src/commands/docs.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec DIST-001
-// @spec DIST-002
+// @spec DIST-005
+// @spec DIST-006
+// @spec DIST-007
+// @spec DIST-008
 //
 // `spec docs [--port N] [--probe]` serves the PREBUILT documentation site
 // (Starlight, packages/site) over loopback HTTP, fully offline. No platform

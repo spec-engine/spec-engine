@@ -64,7 +64,7 @@ async function scaffoldPlatform(): Promise<void> {
   expect(res.ok).toBe(true);
 }
 
-// @spec SCHM-004
+// @spec SCHM-015
 describe("VAL-01 round-trip — appendEntry writes JSON the index reads back (STOR-01)", () => {
   test("append → re-read shows the requirement with status active", async () => {
     await scaffoldPlatform();

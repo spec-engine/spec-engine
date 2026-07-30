@@ -1,7 +1,8 @@
 // packages/engine/test/json-reader.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec SCHM-003 unit
+// @spec SCHM-013 unit
+// @spec SCHM-014 unit
 //
 // Verifies POC-014: SPEC.json parses as a domain envelope; malformed statuses
 // surface as BAD_STATUS and structurally-invalid files as INVALID_DOMAIN_FILE
@@ -107,7 +108,7 @@ describe("parseDomainJsonFile — status case-map (Invariant #4)", () => {
 // (1 + edge count), a pure monotonic projection — never the authored envelope
 // `specVersion`. These lock the anchor pins / drift / gate resolve against. ──
 describe("parseDomainJsonFile — derived domain version (SCHM-006 / SCHM-007)", () => {
-  // @spec SCHM-006 unit
+  // @spec SCHM-018 unit
   test("zero supersessions → version 1 even when the envelope authors a higher number", () => {
     const spec = parseOk(
       domainJson([{ id: "BILLING-001", status: "active", statement: "a" }], { specVersion: 99 }),
@@ -115,7 +116,7 @@ describe("parseDomainJsonFile — derived domain version (SCHM-006 / SCHM-007)",
     expect(spec.spec_version).toBe(1);
   });
 
-  // @spec SCHM-006 unit
+  // @spec SCHM-018 unit
   test("N supersede edges → version N+1 (one monotonic step per supersession)", () => {
     // Two chains' worth of supersessions: BILLING-001→009, BILLING-002→010.
     const spec = parseOk(
@@ -142,7 +143,7 @@ describe("parseDomainJsonFile — derived domain version (SCHM-006 / SCHM-007)",
     expect(spec.spec_version).toBe(3); // 1 + 2 edges
   });
 
-  // @spec SCHM-007 unit
+  // @spec SCHM-019 unit
   test("monotonic: adding one more supersession advances the derived version by exactly one", () => {
     const one = parseOk(
       domainJson([
@@ -162,7 +163,7 @@ describe("parseDomainJsonFile — derived domain version (SCHM-006 / SCHM-007)",
     expect(two.spec_version - one.spec_version).toBe(1);
   });
 
-  // @spec SCHM-006 unit
+  // @spec SCHM-018 unit
   test("a cross-domain supersededBy still counts in the source domain (the req died here)", () => {
     const spec = parseOk(
       domainJson([

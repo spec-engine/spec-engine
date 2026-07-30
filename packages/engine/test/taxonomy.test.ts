@@ -11,9 +11,10 @@
 // requirements minted in plan 01-03 (path-derived kind = verifies; the
 // requirements' `livesIn` records `@spec-engine/TAXONOMY.md`, and this test IS
 // the verifying evidence that clears ORPHAN_REQ for a doc-only requirement):
-// @spec CHRT-001 unit
-// @spec CHRT-002 unit
-// @spec CHRT-006 unit
+// @spec CHRT-007 unit
+// @spec CHRT-008 unit
+// @spec CHRT-009 unit
+// @spec CHRT-013 unit
 //
 // Assertions are STRUCTURAL only (presence of keys, markers, ids) — never prose
 // exactness — so the doc's wording can evolve without breaking the contract.
@@ -102,7 +103,7 @@ describe("TAXONOMY.md — requirement-authoring standard (CHRT-02)", () => {
 describe("TAXONOMY.md — six headline invariants by post-reorg domain (CHRT-06)", () => {
   test("lists the six invariants by their live requirement ids", async () => {
     const doc = await loadTaxonomy();
-    for (const id of ["INDX-001", "CHCK-002", "SCHM-001", "INDX-002", "SCHM-002", "PROP-002"]) {
+    for (const id of ["INDX-007", "CHCK-014", "SCHM-011", "INDX-008", "SCHM-012", "PROP-004"]) {
       expect(doc).toContain(id);
     }
   });

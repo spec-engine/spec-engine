@@ -1,7 +1,7 @@
 // packages/engine/test/check-drift-view.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec PROP-002
+// @spec PROP-004
 //
 // Plan 03-02 / Task 1 (RED → GREEN in Task 2): assert the `drift` SQL VIEW
 // behavior against the canonical platform-fixture. CHCK-03 requires DRIFT to

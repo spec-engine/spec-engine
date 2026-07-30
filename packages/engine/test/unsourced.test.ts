@@ -1,7 +1,7 @@
 // packages/engine/test/unsourced.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec INDX-002 unit
+// @spec INDX-008 unit
 //
 // USRC-01 / USRC-03 unit cases for the pure `unsourcedChanges()` detector.
 // Drives the function directly with synthetic Requirement[] + ProvenanceRow[]

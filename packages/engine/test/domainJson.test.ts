@@ -112,7 +112,7 @@ async function writeCitesFixture(root: string): Promise<void> {
   await writeFile(join(root, "api", "src", "noop.ts"), "export const noop = () => 0;\n");
 }
 
-// @spec INDX-005 unit
+// @spec INDX-012 unit
 describe("cites → term_citations resolution (TERM-03)", () => {
   test("term/aliases flatten to term_aliases (canonical name + each alias)", async () => {
     const fixture = join(tmp, "cites-fixture");

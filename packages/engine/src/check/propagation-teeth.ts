@@ -71,7 +71,7 @@ export function changedRules(
  * `verifyingTags` are expected pre-filtered to `kind === "verifies"`; we still
  * guard defensively. Pure: never mutates inputs, no I/O, and does NOT sort.
  */
-// @spec PROOF-007
+// @spec PROOF-013
 export function partialPropagation(
   changed: readonly SpecRequirement[],
   verifyingTags: readonly Tag[],

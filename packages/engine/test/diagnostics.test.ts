@@ -1,7 +1,7 @@
 // packages/engine/test/diagnostics.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec INDX-002 unit
+// @spec INDX-008 unit
 //
 // PARS-02 mechanical assertion: DUP_ID, BROKEN_SUPERSEDE, and BAD_STATUS
 // are captured at parse time AND the offending requirement row still

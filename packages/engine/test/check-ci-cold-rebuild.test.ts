@@ -1,7 +1,7 @@
 // packages/engine/test/check-ci-cold-rebuild.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec CHCK-002
+// @spec CHCK-014
 //
 // CHCK-01 / Invariant #2 ("CI gate can run cold") — prove `spec check
 // --ci` cold-resets the derived DB BEFORE `openStorage`: a FULL in-place

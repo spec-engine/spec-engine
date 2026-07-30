@@ -1,7 +1,7 @@
 // packages/engine/src/indexer/pipeline.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec INDX-001
+// @spec INDX-007
 //
 // PARS-05: the single named `runIndex` function. This is the Rust-swap
 // seam — every CLI / webapp / future indexer caller funnels through here,
@@ -459,7 +459,7 @@ function buildRows(input: BuildRowsInput): IndexRows {
  * Pre-sorts both collections by the SAME composite keys the LIST_TERM_*_SQL /
  * computeBuildId sections use, so the stored insertion order is deterministic
  * and the build_id sections hash stably across cold rebuilds.
- * @spec INDX-005
+ * @spec INDX-012
  */
 function buildTermRows(
   specs: ParsedSpec[],

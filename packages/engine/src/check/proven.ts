@@ -224,7 +224,7 @@ export function correlateTag(tag: Tag, results: readonly TestCaseResult[]): Verd
  * caller; we still guard defensively. Pure: never mutates inputs, no I/O, and
  * does NOT sort (downstream `sortDiagnostics` owns order — Pitfall 3).
  */
-// @spec PROOF-002
+// @spec PROOF-010
 export function provenDetermination(
   active: readonly Requirement[],
   verifyingTags: readonly Tag[],

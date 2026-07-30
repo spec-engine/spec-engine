@@ -1,7 +1,7 @@
 // packages/engine/src/commands/gate.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec GATE-006
+// @spec GATE-008
 //
 // `spec gate <repo> <reqId> [platformDir] [--out <path>] [--json]` —
 // citty subcommand for the rung-3 approval primitive (GATE-01 / GATE-02 /

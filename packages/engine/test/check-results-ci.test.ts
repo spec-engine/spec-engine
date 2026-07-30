@@ -1,7 +1,6 @@
 // packages/engine/test/check-results-ci.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec PROOF-004
 //
 // GATE-04 at the INTEGRATION layer: `spec check --ci --results <xml>` (1) exits
 // non-zero on any unproven active requirement, and (2) `build_id` is BYTE-

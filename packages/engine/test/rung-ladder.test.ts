@@ -96,7 +96,7 @@ async function run(command: unknown, args: Record<string, unknown>): Promise<num
 
 describe("adoption ladder (RED-14)", () => {
   // ----- Rung 1: one repo, specs inline, zero ceremony ----------------------
-  // @spec INIT-010 e2e
+  // @spec INIT-026 e2e
   test("rung 1: spec map self-consumes the lone repo — basename column, no config", async () => {
     const repo = clone(SINGLE_REPO);
     const code = await run(mapCommand, { platformDir: repo });
@@ -110,7 +110,6 @@ describe("adoption ladder (RED-14)", () => {
   });
 
   // ----- Rung 2: tags bind tests; check --ci gates ---------------------------
-  // @spec INIT-011 e2e
   test("rung 2 red: planted single repo FAILS spec check --ci (ORPHAN_REQ + UNVERIFIED_REQ)", async () => {
     const repo = clone(SINGLE_REPO);
     const code = await run(checkCommand, { platformDir: repo, ci: true });
@@ -143,7 +142,6 @@ describe("adoption ladder (RED-14)", () => {
   });
 
   // ----- Rung 3: dedicated spec repo + approval gate -------------------------
-  // @spec INIT-012 e2e
   test("rung 3: spec gate passes an approved requirement (api BILLING-009)", async () => {
     const platform = clone(PLATFORM);
     const code = await run(gateCommand, {

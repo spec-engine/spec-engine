@@ -36,7 +36,7 @@ import { DiagnosticCode } from "@spec-engine/shared";
  * the result — `renderDiagnostics` / `sortDiagnostics` (format.ts) re-sorts the
  * whole array downstream (Pitfall 3).
  */
-// @spec GUARD-010
+// @spec GUARD-014
 export function requirementRemoved(
   baseReqs: readonly SpecRequirement[],
   changeReqs: readonly SpecRequirement[],

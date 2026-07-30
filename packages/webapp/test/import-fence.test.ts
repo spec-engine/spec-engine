@@ -1,7 +1,7 @@
 // packages/webapp/test/import-fence.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec SCHM-002
+// @spec SCHM-012
 //
 // Plan 05-04 / Task 2 — defense-in-depth grep alongside Biome's
 // `noRestrictedImports` rule on `packages/webapp/biome.json`. Locks

@@ -142,7 +142,7 @@ function lineageOf(
  *  same grouping the coverage matrix uses) plus the id of the default-selected
  *  panel (the first requirement of the first domain).
  *
- *  RED-99 — @spec SERV-005: `allReqs` vs `listed` matters — lineage (byId /
+ *  RED-99 — @spec SERV-014: `allReqs` vs `listed` matters — lineage (byId /
  *  predecessorOf) walks the FULL ledger so a visible requirement's version
  *  history keeps its superseded predecessors even while the default filter
  *  hides those predecessors as rows. */
@@ -326,7 +326,7 @@ function renderBody(
   showAll: boolean,
   hiddenCount: number,
 ): ReturnType<typeof html> {
-  // RED-99 — @spec SERV-005: the toggle is a plain link (SSR-honest, no-JS-safe)
+  // RED-99 — @spec SERV-014: the toggle is a plain link (SSR-honest, no-JS-safe)
   // between the live-contract default and the full ledger.
   const statusToggle = showAll
     ? html`<a class="req-btn status-toggle" href="/requirements">Hide superseded &amp; retired</a>`
@@ -382,7 +382,7 @@ export function mountRequirements(app: Hono): void {
     const reqs = await apiJson<Requirement[]>(app, "/api/requirements");
     const coverage = await apiJson<CoverageRow[]>(app, "/api/coverage");
 
-    // RED-99 — @spec SERV-005: default to the live contract — Superseded/Retired
+    // RED-99 — @spec SERV-014: default to the live contract — Superseded/Retired
     // entries (and any domain they empty out) list only under ?all=1. The
     // full ledger still feeds buildDomains so version history stays whole.
     const showAll = c.req.query("all") === "1";

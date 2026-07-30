@@ -1,7 +1,7 @@
 // packages/engine/test/check-propagation-int.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec PROOF-007 integration
+// @spec PROOF-013 integration
 //
 // PROP-01 end-to-end over BILLING-007 (the cart-vs-invoice scenario): a CHANGED
 // active rule with two verifying sites — api/test/tax.test.ts and

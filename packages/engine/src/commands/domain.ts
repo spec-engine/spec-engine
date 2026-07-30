@@ -1,13 +1,13 @@
 // packages/engine/src/commands/domain.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec DOMAIN-002
-// @spec DOMAIN-003
-// @spec DOMAIN-010
-// @spec DOMAIN-005
-// @spec DOMAIN-006
-// @spec DOMAIN-008
-// @spec DOMAIN-009
+// @spec DOMAIN-012
+// @spec DOMAIN-013
+// @spec DOMAIN-019
+// @spec DOMAIN-014
+// @spec DOMAIN-015
+// @spec DOMAIN-017
+// @spec DOMAIN-018
 //
 // `spec domain` — noun-verb surface for managing spec domains
 // (spec-engine/<KEY>/).
@@ -177,7 +177,7 @@ export const domainListCommand = defineCommand({
 
     // AUTHC-007/008: filesystem-derived, sorted, one per line; empty → no
     // output, exit 0. NO index open, NO .spec-engine/ artifact, NO cache file.
-    // @spec CHRT-004: --json emits a sorted array of `{ key, scope }` objects —
+    // @spec CHRT-011: --json emits a sorted array of `{ key, scope }` objects —
     // scope read per-key from the filesystem (domainsWithScope), null when a
     // domain has no charter, `[]` when there are none (still exit 0). The
     // non-json per-line path is unchanged (keys only).

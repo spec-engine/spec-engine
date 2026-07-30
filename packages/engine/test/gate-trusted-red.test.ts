@@ -1,7 +1,7 @@
 // packages/engine/test/gate-trusted-red.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec PROOF-003
+// @spec PROOF-011
 //
 // GATE-03 (green-suite-hides-removal) at the INTEGRATION layer — the headline
 // proof that the trusted-red gate is more than presence-only. Two variants,
