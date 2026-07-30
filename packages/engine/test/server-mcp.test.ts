@@ -272,7 +272,7 @@ describe("spec mcp — author_requirements prompt (AUTHOR-003)", () => {
     // The brief is echoed verbatim inside the static template.
     expect(text).toContain("let users export invoices as PDF");
     // A stable playbook-body token.
-    expect(text).toContain("One requirement per TESTABLE PROMISE");
+    expect(text).toContain("One requirement per behavior");
     // The no-domain branch marker (no target domain given).
     expect(text).toContain("determine placement from `spec domain list`");
   });

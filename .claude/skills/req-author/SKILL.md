@@ -1,66 +1,85 @@
 ---
 name: req-author
-description: Turn a vague brief or ticket into well-formed Spec Engine requirements — draft a batch against the §4.10 standard, present it for human approval, and only then mint via the real `spec` CLI.
+description: Turn a rough brief or ticket into Spec Engine requirements — draft them in the fixed EARS shape, tie every draft to the exact words it came from, present the batch for human approval, and only then mint via the real `spec` CLI.
 ---
 
 # req-author
 
-The executable form of the AGENTS.md `## Authoring requirements (brief → mint)`
-playbook. This skill **dogfoods the real `spec` CLI** — it drives `spec req`,
-`spec query`, and `spec domain list`, and NEVER reimplements minting. It is the
-mint front-half of the lifecycle; the route → tag → check loop then consumes
-what it produces.
+This skill drives the real `spec` CLI (`spec req`, `spec query`,
+`spec domain list`) and never reimplements minting. It is the front half of
+the lifecycle: brief in, approved requirements out; the route → tag → check
+loop consumes what it produces.
 
-**Non-negotiable contract: this skill never writes without approval.** It drafts,
-self-checks, and PRESENTS a batch — then STOPS. No `spec req` (a corpus write)
-runs until the human explicitly approves the batch.
+**Two non-negotiable rules:**
+
+1. **Never write without approval.** Draft, self-check, present the batch —
+   then STOP. No `spec req` runs until the human explicitly approves.
+2. **Every draft quotes its source.** Each drafted requirement carries the
+   exact phrase from the brief it derives from, verbatim. A requirement you
+   cannot anchor to the author's words is labeled **inferred** so the human
+   can accept or reject the inference knowingly. This exists because
+   agent-drafted requirements have shipped that the product owner could not
+   trace back to anything they said.
 
 ## Procedure
 
-1. **Read the brief.** Take the raw brief/ticket as input. Note that a ticket is
-   ephemeral provenance, never a requirement id.
+1. **Read the brief.** A ticket is temporary work; the requirements outlive
+   it. One brief usually splits into several requirements — one per behavior,
+   never one per ticket.
 
-2. **Draft a batch.** Fan the brief out into candidate requirements following the
-   AGENTS.md `## Authoring requirements (brief → mint)` sequence: **one
-   requirement per testable promise, never one per ticket.** Write each to the
-   GUARD template — `<command/surface> <promise> when <condition>`.
+2. **Draft each requirement in the fixed shape.** Every statement uses one of
+   the five EARS shapes (the word "shall" separates who acts from the
+   observable result):
 
-3. **Place each.** Run `spec domain list --json` to see every domain's scope and
-   assign each candidate concept-wins per the domain charter. Run
-   `spec query "<phrase>" . --json` to dedup against existing requirements —
-   overlap means `spec amend`/relate, not a new id.
+   | Situation | Shape |
+   |---|---|
+   | Always true | The `<system>` shall `<result>` |
+   | Triggered by an event | When `<trigger>`, the `<system>` shall `<result>` |
+   | Only in a certain state | While `<state>`, the `<system>` shall `<result>` |
+   | Handling something going wrong | If `<failure>`, then the `<system>` shall `<result>` |
+   | Only when a feature is present | Where `<feature>`, the `<system>` shall `<result>` |
 
-4. **Self-check each statement against §4.10.** Run the cold-read rubric on every
-   draft: see `spec-engine/TAXONOMY.md` §4.10 for the eight-point authoring
-   standard (subject named, cold-read-standalone, promise altitude, timeless,
-   the `why` carries the failure mode). Cross-reference that single source — do
-   NOT re-author the rubric here.
+   Example: "When an unknown requirement id is passed, spec resolve shall
+   print [] and exit 0." If a draft fits no row, you have not yet decided
+   what triggers the behavior or what observably happens — decide, or mark
+   the draft as a question for the human.
 
-5. **Present the batch and STOP — approval gate.** Show the human the full batch:
-   for each candidate its domain placement, statement, `why` (failure mode), and
-   `livesIn`. Write NOTHING until the human approves. This is the approval-
-   before-writing gate and it is mandatory.
+3. **Write a why that names what breaks.** The `why` answers "what goes wrong
+   if this stops being true" — never a restatement of the statement in
+   different words.
 
-6. **On approval, mint via the real CLI.** For each approved candidate run:
+4. **Place and dedup.** `spec domain list --json` shows every domain's
+   charter; put each requirement in the domain whose promise it protects (not
+   where the code file sits). Then `spec query "<phrase>" . --json` — if a
+   close requirement already exists, propose amending or relating it instead
+   of a new id.
+
+5. **Present the batch and STOP.** For each candidate show: the domain, the
+   statement, the why, the `livesIn` file, and the **source quote** (or the
+   `inferred` label). Write nothing until the human approves. This gate is
+   mandatory.
+
+6. **On approval, mint via the real CLI:**
 
    ```
-   spec req <domain> --text "<statement>" --why "<failure mode>" --lives "<file>"
+   spec req <domain> --text "<statement>" --why "<what breaks>" --lives "<file>"
    ```
 
-   (or the equivalent `spec mcp` tools). Never a JS reimplementation of minting —
-   `spec req` validates through the one shared schema and is the single source of
-   the write.
+   (or the equivalent `spec mcp` tools). `spec req` validates through the one
+   shared schema — in a domain that declares the ears grammar it also checks
+   the statement shape at write time, and with `--json` it returns the parsed
+   clauses.
 
-7. **Provenance only.** Record the originating ticket as `Issues:` provenance —
-   never a requirement id, never a code `@spec` tag.
+7. **Record the ticket as provenance only.** The originating ticket id is
+   history, never a requirement id and never a code `@spec` tag.
 
-8. **Verify.** After minting, `spec index . && spec check . --ci` (exit 0) and
+8. **Verify.** `spec index . && spec check . --ci` (exit 0) and
    `spec guard .` (no loss) before the change ships.
 
 ## Invocation note
 
-The repo's `.mcp.json` registers the local `spec mcp` server (stdio, loopback),
-so the tools — and, once it lands, the `author_requirements` prompt — are
-callable natively from the harness. From a source checkout the server runs as
-`bun packages/engine/src/cli.ts mcp .`; a compiled `spec` binary on PATH runs as
-`spec mcp .`.
+The repo's `.mcp.json` registers the local `spec mcp` server (stdio,
+loopback), so the tools and the `author_requirements` prompt are callable
+natively from the harness. From a source checkout the server runs as
+`bun packages/engine/src/cli.ts mcp .`; a compiled `spec` binary on PATH runs
+as `spec mcp .`.
