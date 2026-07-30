@@ -1,7 +1,7 @@
 {
   "key": "INDX",
   "owner": null,
-  "updated": "2026-07-08",
+  "updated": "2026-07-30",
   "scope": "The derivation pipeline and index lifecycle: cold-rebuild identity, build_id determinism, structural integrity at index time, and spec index. Belongs here: cold-rebuild equivalence (delete .spec-engine/ yields an identical result); build_id determinism for identical inputs; the index-time structural integrity checks; spec index itself. Does not belong here: spec check's diagnostic severity semantics (\u2192 CHCK) or the SPEC.json envelope shape (\u2192 SCHM). Boundary case: cold-rebuild identity is an INDX promise even though the model it rebuilds is defined in SCHM.",
   "grammar": "ears",
   "requirements": [
@@ -80,6 +80,21 @@
       "livesIn": [],
       "issues": [],
       "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INDX-006",
+      "status": "active",
+      "statement": "While a read command serves an existing index that is older than a changed spec file, the command shall warn on stderr that results may be stale and name the --fresh flag.",
+      "why": "Editing a spec and then reading old numbers with no signal is how wrong answers get trusted; the warning turns silent staleness into a visible choice.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/_shared.ts"
+      ],
+      "issues": [],
       "aliases": [],
       "cites": []
     }

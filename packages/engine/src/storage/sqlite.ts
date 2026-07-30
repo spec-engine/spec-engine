@@ -308,6 +308,25 @@ WHERE r.status = 'Deprecated'
 ORDER BY t.repo, t.file, t.line
 `;
 
+// The Draft blind spot (drift audit, statement 6): code shipped against a
+// promise nobody approved yet. Warning — a review prompt, not a break.
+// @spec CHCK-009
+const Q2D_DRAFT_REFERENCED_SQL = `
+SELECT
+  'DRAFT_REFERENCED'                                          AS code,
+  t.repo                                                      AS repo,
+  t.file                                                      AS source_file,
+  t.line                                                      AS line,
+  t.req_id                                                    AS req_id,
+  ('Tag references Draft requirement ' || t.req_id ||
+    ' — code is bound to a promise nobody approved yet')      AS detail,
+  'warning'                                                   AS severity
+FROM tags t
+JOIN requirements r ON r.id = t.req_id
+WHERE r.status = 'Draft'
+ORDER BY t.repo, t.file, t.line
+`;
+
 const Q3_DRIFT_SQL = `
 SELECT
   'DRIFT'                                                     AS code,
@@ -899,6 +918,7 @@ class SqliteStorage implements Storage {
       Q1_DANGLING_TAG_SQL,
       Q2_SUPERSEDED_REFERENCED_SQL,
       Q2B_DEPRECATED_REFERENCED_SQL,
+      Q2D_DRAFT_REFERENCED_SQL,
       Q3_DRIFT_SQL,
       Q4_ORPHAN_REQ_SQL,
       Q5_UNVERIFIED_REQ_SQL,

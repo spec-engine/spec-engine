@@ -105,6 +105,7 @@ describe("resolveAndCache", () => {
       title: "Renew charge",
       status: "Done",
       url: "https://linear.app/x",
+      stale: false,
     });
     // ok:false carries NO reason — absent and failed collapse downstream.
     expect(map.get("ENG-2")).toEqual({ ok: false });
@@ -150,12 +151,14 @@ describe("resolveAndCache", () => {
       ok: true,
       title: "Cached title",
       status: "In Progress",
+      stale: false,
       url: "https://linear.app/cached",
     });
     // The adapter was never asked to resolve anything.
     expect(seen).toEqual([]);
   });
 
+  // @spec PROV-002 unit
   test("2.3: a STALE entry whose re-resolve fails is served STALE (not degraded)", async () => {
     await writeCache(tmp, {
       "ENG-1": {
@@ -176,11 +179,13 @@ describe("resolveAndCache", () => {
     // Re-resolve WAS attempted (entry was stale)...
     expect(seen).toEqual([["ENG-1"]]);
     // ...but on failure the stale entry is served rather than {ok:false}.
+    // ...and it says so: the served entry is labeled stale.
     expect(map.get("ENG-1")).toEqual({
       ok: true,
       title: "Old title",
       status: "Done",
       url: "https://linear.app/old",
+      stale: true,
     });
   });
 

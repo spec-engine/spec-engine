@@ -136,7 +136,10 @@ the index); `domain new` registers none of the three.
 `resolve` / `propagation`) build the index transparently when it is missing
 but otherwise TRUST a schema-matching existing index — if the platform
 changed since the last `spec index`, their output is stale. The exceptions
-rebuild cold by design: `gate` always, `check` with `--ci`. To force the
+rebuild cold by design: `gate` always, `check` with `--ci`. A read command
+serving a warm index that is OLDER than a changed `SPEC.json` warns on
+stderr that results may be stale (tag-only code edits are not detected —
+the check compares spec-file mtimes only). To force the
 cold path on a read command, pass `--fresh` (rm db + WAL/SHM, then reindex —
 same trio as `check --ci`). Agents: prefer `--fresh` when you have just
 edited specs or tags and need the answer to reflect it.
@@ -154,6 +157,8 @@ edited specs or tags and need the answer to reflect it.
   except `code`/`severity`/`detail`). Codes: `DUP_ID`, `BROKEN_SUPERSEDE`,
   `CYCLIC_SUPERSEDE`, `DANGLING_TAG`, `BAD_STATUS`, `DRIFT`,
   `SUPERSEDED_REFERENCED`, `DEPRECATED_REFERENCED`, `ORPHAN_REQ`, `UNVERIFIED_REQ`,
+  `SUPERSEDED_REFERENCED`, `DRAFT_REFERENCED`, `ORPHAN_REQ`, `UNVERIFIED_REQ`,
+  `GLOSSARY_DRIFT`,
   `NO_SPEC_CONFIG`, `BROKEN_FILE_REF`, `BROKEN_RELATES`,
   `RELATES_SUPERSEDED`, `SELF_RELATES`, `UNDEFINED_TERM`,
   `ORPHAN_TERM`, `TERM_DRIFT`, `SUPERSEDED_TERM_REFERENCED`,

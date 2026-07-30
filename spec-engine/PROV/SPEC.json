@@ -1,7 +1,7 @@
 {
   "key": "PROV",
   "owner": null,
-  "updated": "2026-07-08",
+  "updated": "2026-07-30",
   "scope": "The spec provenance matrix and the issue-link provenance model, with issue_id held as an opaque external payload. Belongs here: the provenance matrix rows and their sort/render; the **Issues:** role:ID parse into (req_id, issue_id, role); the doctrine that issue_id is opaque \u2014 projected only, never a PK/FK/UNIQUE/index/JOIN key. Does not belong here: the tracker fetch/cache that resolves an issue id to a title (\u2192 TRK); requirement identity/routing (issue ids are provenance, never identity). Boundary case: a KEY-NNN-shaped issue id stays an opaque string in PROV and is never resolved against the requirements table.",
   "grammar": "ears",
   "requirements": [
@@ -18,6 +18,21 @@
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "PROV-002",
+      "status": "active",
+      "statement": "When resolved issue data is served from an expired cache after a failed refresh, spec provenance shall label it stale in both text and JSON output.",
+      "why": "An old tracker title rendered as current is a quiet lie \u2014 degraded data must say it is degraded.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/provenance/resolve.ts"
+      ],
+      "issues": [],
       "aliases": [],
       "cites": []
     }

@@ -31,7 +31,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { validateAndWrite } from "@spec-engine/shared";
+import { type Diagnostic, DiagnosticCode, validateAndWrite } from "@spec-engine/shared";
 import { defineCommand } from "citty";
 import { localToday } from "../authoring/edit";
 import { EXIT } from "../constants";
@@ -214,6 +214,34 @@ async function writeGlossary(platformDir: string, json: boolean): Promise<void> 
   await Bun.write(glossaryPath(platformDir), generateGlossary(terms));
   if (json) console.log(JSON.stringify({ generated: terms.length, file: "GLOSSARY.md" }));
   else console.log(`generated GLOSSARY.md from ${terms.length} terms`);
+}
+
+/**
+ * The `spec check` probe (drift audit, statement 5): null when the committed
+ * GLOSSARY.md matches the TERM store (or there is nothing to compare — no
+ * terms, or no committed glossary); a warning-severity GLOSSARY_DRIFT
+ * diagnostic when they disagree. Same byte-comparison as `--check` below, but
+ * surfaced inside every `spec check` run instead of only this repo's CI fence.
+ */
+// @spec CHCK-010
+export function glossaryDriftDiagnostic(platformDir: string): Diagnostic | null {
+  const terms = readStoreTerms(platformDir);
+  if (terms.length === 0) return null;
+  const gPath = glossaryPath(platformDir);
+  if (!existsSync(gPath)) return null;
+  const generated = generateGlossary(terms);
+  const committed = readFileSync(gPath, "utf8");
+  if (generated === committed) return null;
+  return {
+    code: DiagnosticCode.GLOSSARY_DRIFT,
+    severity: "warning",
+    repo: null,
+    source_file: "GLOSSARY.md",
+    line: 0,
+    req_id: null,
+    detail:
+      "GLOSSARY.md does not match the TERM store — run `spec glossary .` to regenerate the human view",
+  };
 }
 
 /**
