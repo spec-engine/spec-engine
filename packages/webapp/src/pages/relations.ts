@@ -25,7 +25,7 @@
 // back to literal quotes in the element's text content, which is exactly
 // what mermaid's startOnLoad reads.
 
-import type { RelationRow } from "@spec-engine/shared";
+import { featureEnabled, type RelationRow } from "@spec-engine/shared";
 import type { Hono } from "hono";
 import { html, raw } from "hono/html";
 import { comingSoonDoc } from "./components";
@@ -37,18 +37,12 @@ import styleSheet from "./styles.css" with { type: "text" };
  *  data (Pitfall 7). Mirrors coverage.ts. */
 const styleTag = raw(`<style>${styleSheet}</style>`);
 
-/** Feature flag: the Relates graph view is disabled ("coming soon"). The
- *  route stays mounted so `/relations` renders the placeholder (not a 404).
- *  Flip to `true` to re-enable the implementation below verbatim. Typed
- *  `boolean` (not literal `false`) so the parked code stays reachable. */
-const RELATIONS_ENABLED: boolean = false;
-
 /** Mount the Relates diagram page (`GET /relations`) onto an existing
  *  Hono app. The handler closes over `app` so it can read its own
  *  `/api/relations` routes in-process via `app.request` (Pitfall 6). */
 export function mountRelations(app: Hono): void {
   app.get("/relations", async (c) => {
-    if (!RELATIONS_ENABLED) return c.html(comingSoonDoc("relations", "Relates graph"));
+    if (!featureEnabled("relations")) return c.html(comingSoonDoc("relations", "Relates graph"));
 
     const rows = await apiJson<RelationRow[]>(app, "/api/relations");
 

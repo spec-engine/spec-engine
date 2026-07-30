@@ -26,12 +26,19 @@ const CANONICAL_FIXTURE = join(import.meta.dir, "..", "..", "..", "fixtures", "p
 let platformDir: string;
 let dbPath: string;
 
+let priorFlags: string | undefined;
+
 beforeEach(() => {
+  // The write plane ships behind the editor feature flag (D4a).
+  priorFlags = process.env.SPEC_FLAGS;
+  process.env.SPEC_FLAGS = "editor";
   platformDir = cloneFixture(CANONICAL_FIXTURE);
   dbPath = join(platformDir, ".spec-engine", "test-index.sqlite");
 });
 
 afterEach(() => {
+  if (priorFlags === undefined) delete process.env.SPEC_FLAGS;
+  else process.env.SPEC_FLAGS = priorFlags;
   rmSync(platformDir, { recursive: true, force: true });
 });
 

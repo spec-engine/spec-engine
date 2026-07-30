@@ -385,7 +385,13 @@ edited specs or tags and need the answer to reflect it.
   `{ action: "already-configured", path, pin, extra_fields }` (`extra_fields`
   lists keys beyond `specs`; in text mode those surface as a warning line).
   Errors stay text-on-stderr + exit 2 in both modes — branch on `action`.
-- **`spec serve`** — binds loopback only. `--probe` boots on an ephemeral
+- **`spec serve`** — binds loopback only. Unshipped webapp features
+  (Glossary / Relations / Provenance / Query / Editor / Logs) sit behind ONE
+  shared flag map (`@spec-engine/shared` flags), all default OFF: the nav shows
+  "coming soon", the page serves a placeholder, and the feature's endpoints
+  (including the editor's `POST`/`PUT /api/requirements`) answer 404. Enable
+  locally with a comma-separated `SPEC_FLAGS` env var (e.g.
+  `SPEC_FLAGS=editor,query spec serve .`); unknown keys are ignored. `--probe` boots on an ephemeral
   port, fetches `/` and checks the placeholder page renders, then exits
   (0 OK / 1 failed). API routes:
   `/api/coverage`, `/api/report` (per-domain rollup over Active reqs:
