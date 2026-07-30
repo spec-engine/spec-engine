@@ -39,13 +39,21 @@ let platformDir: string;
 let storage: Storage;
 let app: ReturnType<typeof composeServeApp>;
 
+let priorFlags: string | undefined;
+
 beforeEach(() => {
+  // The editor ships behind the shared feature flag; these tests exercise the
+  // enabled behavior. Default-off behavior is covered in feature-flags.test.ts.
+  priorFlags = process.env.SPEC_FLAGS;
+  process.env.SPEC_FLAGS = "editor";
   platformDir = cloneFixture(CANONICAL_FIXTURE);
   storage = openStorage(join(platformDir, ".spec-engine", "test-index.sqlite"));
   app = composeServeApp(storage, platformDir);
 });
 
 afterEach(() => {
+  if (priorFlags === undefined) delete process.env.SPEC_FLAGS;
+  else process.env.SPEC_FLAGS = priorFlags;
   storage.close();
   rmSync(platformDir, { recursive: true, force: true });
 });

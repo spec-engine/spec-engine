@@ -1,7 +1,7 @@
 {
   "key": "SERV",
   "owner": null,
-  "updated": "2026-07-16",
+  "updated": "2026-07-30",
   "scope": "The spec serve local webapp + /api/* over the index. Belongs here: the SSR pages; the /api/* route contracts; loopback-only binding. Does not belong here: the one-model-one-seam promise (\u2192 SCHM). Boundary case: loopback-only stays a SERV promise even though the data model it serves is defined in SCHM.",
   "grammar": "ears",
   "requirements": [
@@ -78,6 +78,36 @@
       "relates": [],
       "livesIn": [
         "@packages/webapp/src/pages/requirements.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SERV-006",
+      "status": "active",
+      "statement": "Where a feature's flag is not enabled, the webapp shall refuse every surface of that feature \u2014 the page serves a coming-soon document and its endpoints respond 404.",
+      "why": "Hiding the nav link while leaving endpoints live is how the ungated editor write plane happened; a flag that only hides UI is a lie about what is reachable.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/shared/src/flags.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SERV-007",
+      "status": "active",
+      "statement": "When the SPEC_FLAGS environment variable lists a feature key, spec serve shall enable that feature's nav link, page, and endpoints together.",
+      "why": "Trying an unfinished feature must never require a code edit, and enabling one surface without the others gives a half-working feature that reads as broken.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/shared/src/flags.ts"
       ],
       "issues": [],
       "aliases": [],

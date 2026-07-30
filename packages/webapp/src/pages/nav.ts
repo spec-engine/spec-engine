@@ -15,6 +15,7 @@
 // highlighting) — NOT request data — so nothing user-controlled is ever
 // interpolated. It still flows through the auto-escaping template regardless.
 
+import { type FeatureKey, featureEnabled } from "@spec-engine/shared";
 import { html } from "hono/html";
 
 /** The clamp mark, inlined from src/assets/brand/mark-*.svg. */
@@ -37,6 +38,18 @@ function comingSoon(label: string): ReturnType<typeof html> {
   return html`<span class="sidebar-link disabled" aria-disabled="true"><span class="sidebar-dot"></span><span class="sidebar-label">${label}<span class="soon">coming soon</span></span></span>`;
 }
 
+/** A flagged feature's sidebar entry: a live link when its flag is on, the
+ *  coming-soon caption when off — one flag decides nav AND routes together. */
+function flagged(
+  feature: FeatureKey,
+  href: string,
+  key: string,
+  label: string,
+  active: string,
+): ReturnType<typeof html> {
+  return featureEnabled(feature) ? link(href, key, label, active) : comingSoon(label);
+}
+
 /**
  * The workspace sidebar. `active` is one of the item keys below (or "" for
  * pages with no nav home, e.g. a propagation detail). Grouped Registry /
@@ -51,22 +64,22 @@ export function navBar(active = ""): ReturnType<typeof html> {
       <div class="sidebar-group-label">Registry</div>
       ${link("/", "coverage", "Coverage", active)}
       ${link("/requirements", "requirements", "Requirements", active)}
-      ${comingSoon("Glossary")}
+      ${flagged("glossary", "/glossary", "glossary", "Glossary", active)}
     </div>
     <div class="sidebar-group">
       <div class="sidebar-group-label">Trace</div>
-      ${comingSoon("Relations")}
-      ${comingSoon("Provenance")}
+      ${flagged("relations", "/relations", "relations", "Relations", active)}
+      ${flagged("provenance", "/provenance", "provenance", "Provenance", active)}
     </div>
     <div class="sidebar-group">
       <div class="sidebar-group-label">Workspace</div>
-      ${comingSoon("Query")}
-      ${comingSoon("Editor")}
+      ${flagged("query", "/query", "query", "Query", active)}
+      ${flagged("editor", "/editor", "editor", "Editor", active)}
     </div>
     <div class="sidebar-group">
       <div class="sidebar-group-label">System</div>
       ${link("/setup", "setup", "Setup", active)}
-      ${comingSoon("Logs")}
+      ${flagged("logs", "/logs", "logs", "Logs", active)}
     </div>
   </div>
   <div class="sidebar-footer">

@@ -16,7 +16,7 @@
 // sanitized 400 body in plan 05-03; this page re-renders that 400 inline
 // without leaking SQLite internals (T-5-03-03).
 
-import type { FtsHit } from "@spec-engine/shared";
+import { type FtsHit, featureEnabled } from "@spec-engine/shared";
 import type { Hono } from "hono";
 import { html, raw } from "hono/html";
 import { comingSoonDoc, specId } from "./components";
@@ -27,18 +27,14 @@ import styleSheet from "./styles.css" with { type: "text" };
 const styleTag = raw(`<style>${styleSheet}</style>`);
 
 /**
- * Feature flag: the FTS search UI is disabled ("coming soon"). The route stays
- * mounted so `/query` renders a friendly placeholder (not a 404) and the nav
- * item can point users at it, but no search runs and no `q` is reflected. Flip
- * to `true` to re-enable the implementation below verbatim. Typed `boolean`
- * (not the literal `false`) so the guarded search code stays reachable for the
- * type-checker and lint — it is the real implementation, parked, not dead code.
+ * Feature flag: the FTS search UI ships behind the shared `query` flag
+ * (shared/flags.ts) — off serves the coming-soon page, SPEC_FLAGS=query
+ * enables the implementation below verbatim.
  */
-const QUERY_ENABLED: boolean = false;
 
 export function mountQuery(app: Hono): void {
   app.get("/query", async (c) => {
-    if (!QUERY_ENABLED) return c.html(comingSoonDoc("query", "Query"));
+    if (!featureEnabled("query")) return c.html(comingSoonDoc("query", "Query"));
 
     const q = (c.req.query("q") ?? "").trim();
 

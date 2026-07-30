@@ -23,6 +23,7 @@
 // a resolved field is entity-escaped — never rendered as markup. `raw()` is
 // used ONLY for the static stylesheet (build-time asset, never request data).
 
+import { featureEnabled } from "@spec-engine/shared";
 import type { Hono } from "hono";
 import { html, raw } from "hono/html";
 import { comingSoonDoc } from "./components";
@@ -34,18 +35,13 @@ import styleSheet from "./styles.css" with { type: "text" };
  *  (Pitfall 4). Mirrors relations.ts / coverage.ts. */
 const styleTag = raw(`<style>${styleSheet}</style>`);
 
-/** Feature flag: the provenance matrix view is disabled ("coming soon"). The
- *  route stays mounted so `/provenance` renders the placeholder (not a 404).
- *  Flip to `true` to re-enable the implementation below verbatim. Typed
- *  `boolean` (not literal `false`) so the parked code stays reachable. */
-const PROVENANCE_ENABLED: boolean = false;
-
 /** Mount the provenance page (`GET /provenance`) onto an existing Hono app.
  *  The handler closes over `app` so it can read its own `/api/provenance`
  *  routes in-process via `app.request` (Pitfall 6) — never `fetch("http://…")`. */
 export function mountProvenance(app: Hono): void {
   app.get("/provenance", async (c) => {
-    if (!PROVENANCE_ENABLED) return c.html(comingSoonDoc("provenance", "Provenance matrix"));
+    if (!featureEnabled("provenance"))
+      return c.html(comingSoonDoc("provenance", "Provenance matrix"));
 
     // WR-03: read the DECORATED text seam ONCE and derive emptiness from it.
     // The text arm returns "" for an empty matrix (format.ts

@@ -35,10 +35,16 @@
 // no stored XSS). The `raw` helper is used ONLY for the static styles.css
 // asset.
 
-import { type Diagnostic, isLoopbackHostname } from "@spec-engine/shared";
+import {
+  type Diagnostic,
+  featureDisabledMessage,
+  featureEnabled,
+  isLoopbackHostname,
+} from "@spec-engine/shared";
 import type { Context, Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { html, raw } from "hono/html";
+import { comingSoonDoc } from "./components";
 import { navBar } from "./nav";
 import styleSheet from "./styles.css" with { type: "text" };
 
@@ -174,6 +180,7 @@ async function renderResult(res: Response): Promise<ReturnType<typeof html>> {
  */
 export function mountEditor(app: Hono): void {
   app.get("/editor", (c) => {
+    if (!featureEnabled("editor")) return c.html(comingSoonDoc("editor", "Editor"));
     const body = html`
       ${navBar("editor")}
       <div class="eyebrow">/ Editor</div>
@@ -229,6 +236,9 @@ export function mountEditor(app: Hono): void {
   });
 
   app.post("/editor/create", editorBodyLimit, async (c) => {
+    // Flag off means the endpoints are off too — hiding the form is not
+    // turning the feature off (D4a).
+    if (!featureEnabled("editor")) return c.html(rejectPage(featureDisabledMessage("editor")), 404);
     if (crossOriginRejected(c)) return c.html(rejectPage("cross-origin request rejected"), 403);
     const form = (await c.req.parseBody()) as Record<string, unknown>;
     const statement = field(form, "statement");
@@ -255,6 +265,7 @@ export function mountEditor(app: Hono): void {
   });
 
   app.post("/editor/amend", editorBodyLimit, async (c) => {
+    if (!featureEnabled("editor")) return c.html(rejectPage(featureDisabledMessage("editor")), 404);
     if (crossOriginRejected(c)) return c.html(rejectPage("cross-origin request rejected"), 403);
     const form = (await c.req.parseBody()) as Record<string, unknown>;
     const id = field(form, "id");

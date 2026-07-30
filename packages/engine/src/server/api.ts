@@ -47,6 +47,8 @@ import {
   buildCoverageReport,
   DEFAULT_QUERY_LIMIT,
   FILES_MAX,
+  featureDisabledMessage,
+  featureEnabled,
   ID_RE,
   isLoopbackHostname,
   LIMIT_MAX,
@@ -612,6 +614,11 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
   app.post(
     "/api/requirements",
     guarded(async function createRequirement(c) {
+      // The editor feature flag gates the whole write plane, not just the
+      // form (D4a): off means these endpoints answer 404.
+      if (!featureEnabled("editor")) {
+        return c.json({ error: featureDisabledMessage("editor") }, 404);
+      }
       const originReject = rejectCrossOrigin(c);
       if (originReject) return originReject;
       const headerReject = rejectBadWriteHeaders(c);
@@ -662,6 +669,9 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
   app.put(
     "/api/requirements/:id",
     guarded(async function amendRequirement(c) {
+      if (!featureEnabled("editor")) {
+        return c.json({ error: featureDisabledMessage("editor") }, 404);
+      }
       const originReject = rejectCrossOrigin(c);
       if (originReject) return originReject;
       const headerReject = rejectBadWriteHeaders(c);
