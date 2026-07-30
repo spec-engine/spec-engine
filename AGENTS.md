@@ -156,7 +156,8 @@ edited specs or tags and need the answer to reflect it.
   `SUPERSEDED_REFERENCED`, `DEPRECATED_REFERENCED`, `ORPHAN_REQ`, `UNVERIFIED_REQ`,
   `NO_SPEC_CONFIG`, `BROKEN_FILE_REF`, `BROKEN_RELATES`,
   `RELATES_SUPERSEDED`, `SELF_RELATES`, `UNDEFINED_TERM`,
-  `ORPHAN_TERM`, `TERM_DRIFT`, `SUPERSEDED_TERM_REFERENCED`. The four
+  `ORPHAN_TERM`, `TERM_DRIFT`, `SUPERSEDED_TERM_REFERENCED`,
+  `STATEMENT_GRAMMAR`. The four
   term-store codes (Phase 6): `UNDEFINED_TERM`
   (**error** — a requirement's `cites` entry resolves to no TERM, so it
   gates `--ci`) and `ORPHAN_TERM` (**warning** — an Active TERM entry that
@@ -250,6 +251,18 @@ edited specs or tags and need the answer to reflect it.
   `NOT_FOUND` | `DRAFT` | `SUPERSEDED` | `DEPRECATED` | `VERSION_PIN`. Decision order:
   NOT_FOUND → DRAFT → SUPERSEDED → DEPRECATED → VERSION_PIN → PASS; pin equality passes.
   An unknown repo name is a usage error (exit 2), not a gate failure.
+- **Statement grammar (EARS).** A domain envelope may declare `grammar: "ears"`
+  (+ `grammarSeverity: "warning" | "error"`, default warning). Statements in
+  such a domain are written in a fixed shape — when X happens, the system
+  shall do Y (five shapes: `The <system> shall <result>` / `When <trigger>,
+  the <system> shall <result>` / `While <state>, …` / `If <failure>, then …` /
+  `Where <feature>, …`). `spec check` reports a nonconforming Active/Draft
+  statement as `STATEMENT_GRAMMAR` at the declared severity (warning never
+  reds `--ci`; error does), and `spec req`/`amend`/`supersede`/`move` judge
+  NEW statement text at write time — warn-and-write under warning severity,
+  refuse (exit 2) under error. The TERM domain is exempt (definitions, not
+  behavior). Under `--json`, `spec req --text` returns the parsed clauses
+  (`{ pattern, condition, system, response }`) when the statement conforms.
 - **`spec req`** — when stdin is **not** a TTY it prints the bare next unused
   ID (e.g. `BILLING-010`) and exits 0 — zero prompts, zero writes. Domain
   prefix is case-insensitive (`bil` → `BILLING`; ambiguous prefix → exit 2).

@@ -3,6 +3,7 @@
 export * from "./config";
 export * from "./diagnostics";
 export * from "./domain";
+export * from "./ears";
 export type { ClassifyInput, GateOutcome, GateReason } from "./gate";
 export * from "./indexResult";
 export * from "./net";

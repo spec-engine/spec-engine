@@ -2,12 +2,13 @@
   "key": "CHRT",
   "owner": "drea",
   "updated": "2026-07-08",
-  "scope": "Domain charters and the requirement-authoring standard: the TAXONOMY.md charter doc, the per-envelope scope field, and the CLI surfaces (spec domain list --json, spec req) that carry a domain's charter to the author at authoring time. Belongs here: what tells an author whether a requirement belongs in a domain. Does not belong here: the requirement lifecycle mechanics themselves (spec req/supersede/amend → REQ) or the domain scaffold (spec domain new → DOMAIN); this domain owns the charter, not the plumbing.",
+  "scope": "Domain charters and the requirement-authoring standard: the TAXONOMY.md charter doc, the per-envelope scope field, and the CLI surfaces (spec domain list --json, spec req) that carry a domain's charter to the author at authoring time. Belongs here: what tells an author whether a requirement belongs in a domain. Does not belong here: the requirement lifecycle mechanics themselves (spec req/supersede/amend \u2192 REQ) or the domain scaffold (spec domain new \u2192 DOMAIN); this domain owns the charter, not the plumbing.",
+  "grammar": "ears",
   "requirements": [
     {
       "id": "CHRT-001",
       "status": "active",
-      "statement": "spec-engine/TAXONOMY.md carries one charter entry per target domain — a scope sentence plus a belongs-here / does-not-belong-here list with at least one named boundary case — together with the 3-digit requirement-id rule and the shadow-id promotion backlog, when a domain exists in the target taxonomy.",
+      "statement": "spec-engine/TAXONOMY.md carries one charter entry per target domain \u2014 a scope sentence plus a belongs-here / does-not-belong-here list with at least one named boundary case \u2014 together with the 3-digit requirement-id rule and the shadow-id promotion backlog, when a domain exists in the target taxonomy.",
       "why": "Without a written charter an author cannot tell whether a new requirement belongs in a domain, so the taxonomy silently re-rots after every reorg.",
       "supersedes": null,
       "supersededBy": null,
@@ -23,7 +24,7 @@
     {
       "id": "CHRT-002",
       "status": "active",
-      "statement": "spec-engine/TAXONOMY.md states the requirement-authoring standard — the statement is the input→output promise of the GUARD template, verifying tags are the validating tests, livesIn plus implementing tags are the realizing files, and issue links are provenance only — when a requirement is authored.",
+      "statement": "spec-engine/TAXONOMY.md states the requirement-authoring standard \u2014 the statement is the input\u2192output promise of the GUARD template, verifying tags are the validating tests, livesIn plus implementing tags are the realizing files, and issue links are provenance only \u2014 when a requirement is authored.",
       "why": "Cold-read failures get written exactly when there is no standard to author against; the anatomy triple keeps tests, files, and provenance from being mistaken for identity.",
       "supersedes": null,
       "supersededBy": null,
@@ -39,7 +40,7 @@
     {
       "id": "CHRT-003",
       "status": "active",
-      "statement": "The shared SpecDomainSchema carries an optional scope that round-trips through validateAndWrite→orderDomain, so the domain charter travels on every SPEC.json envelope, when a domain is written and re-read.",
+      "statement": "The shared SpecDomainSchema carries an optional scope that round-trips through validateAndWrite\u2192orderDomain, so the domain charter travels on every SPEC.json envelope, when a domain is written and re-read.",
       "why": "If the charter cannot ride on the envelope it exists only in one repo's doc, and every adopter loses the placement guidance that keeps requirements in the right domain.",
       "supersedes": null,
       "supersededBy": null,
@@ -55,7 +56,7 @@
     {
       "id": "CHRT-004",
       "status": "active",
-      "statement": "spec domain list --json emits each domain's scope in a key-sorted array of {key, scope} objects — null when a domain has no scope and [] when the platform has none — when the domain listing is requested.",
+      "statement": "spec domain list --json emits each domain's scope in a key-sorted array of {key, scope} objects \u2014 null when a domain has no scope and [] when the platform has none \u2014 when the domain listing is requested.",
       "why": "A charter the read surface cannot show never reaches the author at the moment of placement, so the scope field would pay no rent.",
       "supersedes": null,
       "supersededBy": null,

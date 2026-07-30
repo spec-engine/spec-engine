@@ -45,6 +45,7 @@ import { defineCommand } from "citty";
 import { gitLsTree, gitRefResolves, gitShow } from "../base/gitBase";
 import { parseCodeowners } from "../check/codeowners";
 import { renderDiagnostics } from "../check/format";
+import { statementGrammarDiagnostics } from "../check/grammar";
 import { changedRules, partialPropagation } from "../check/propagation-teeth";
 import { proofsUnconfirmedWarning, provenDetermination } from "../check/proven";
 import { requirementRemoved } from "../check/removed";
@@ -526,6 +527,14 @@ export const checkCommand = defineCommand({
         const provenance = storage.listProvenance();
         diagnostics.push(...unsourcedChanges(superseded, provenance));
       }
+
+      // Statement-grammar pass (sentence 8): domains that declare
+      // `grammar: "ears"` get their Active/Draft statements shape-checked.
+      // Filesystem-read config, appended before render so renderDiagnostics
+      // owns the ordering; default warning severity never flips the exit
+      // predicate — a domain opts into error severity explicitly.
+      // @spec CHCK-008
+      diagnostics.push(...(await statementGrammarDiagnostics(platformDir)));
 
       // Results-ingest stage (GATE-01/02/05): reads/parses --results under the
       // T-19-04 containment guard and hoists the parsed results + verifying

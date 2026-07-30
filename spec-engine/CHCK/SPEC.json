@@ -3,6 +3,7 @@
   "owner": null,
   "updated": "2026-07-30",
   "scope": "spec check diagnostics and CI-gate semantics: the diagnostic codes and their severities, the --ci cold-rebuild gate, and which severity drives exit 1. Belongs here: the diagnostic codes and severities; the --ci gate; the exit-1 contract. Does not belong here: membership discovery itself (\u2192 INIT). Boundary case: check-severity semantics stay in CHCK even when the discovery path (INIT) emits the diagnostic, as with the NO_SPEC_CONFIG finding.",
+  "grammar": "ears",
   "requirements": [
     {
       "id": "CHCK-001",
@@ -106,6 +107,21 @@
       "relates": [],
       "livesIn": [
         "packages/engine/src/storage/sqlite.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-008",
+      "status": "active",
+      "statement": "If a domain declares the ears grammar and an Active or Draft statement does not match one of the five EARS shapes, then spec check shall report STATEMENT_GRAMMAR at the domain's declared severity, defaulting to warning.",
+      "why": "Vague statements read as fine and fail as requirements \u2014 without a mechanical check the burn-down list is invisible and new word salad enters unnoticed.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/check/grammar.ts"
       ],
       "issues": [],
       "aliases": [],

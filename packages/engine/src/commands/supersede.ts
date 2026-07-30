@@ -40,6 +40,7 @@ import { validateAndWrite } from "@spec-engine/shared";
 import { defineCommand } from "citty";
 import { nextRequirementId } from "../authoring/domains";
 import { localToday } from "../authoring/edit";
+import { enforceStatementGrammar } from "../authoring/grammar";
 import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
 import { deriveDomainVersion } from "../parser/domainJson";
@@ -360,6 +361,9 @@ export const supersedeCommand = defineCommand({
 
     const target = await resolveSupersedeTarget(id, platformDir);
     const requirement = await resolveSuccessorText(args as Record<string, unknown>, id);
+    // Statement-grammar gate (sentence 8): the successor's statement is new
+    // text — judged against the domain's declared grammar before any write.
+    await enforceStatementGrammar(platformDir, target.key, requirement, "spec supersede");
     const { why, lives, binds } = resolveSuccessorFields(
       args as Record<string, unknown>,
       target.req,

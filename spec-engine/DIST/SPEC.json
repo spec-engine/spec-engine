@@ -2,7 +2,8 @@
   "key": "DIST",
   "owner": null,
   "updated": "2026-07-16",
-  "scope": "The npm distribution surface: what the published @spec-engine/spec-engine artifact contains (the Bun bundle, the guarded bin entry, the embedded docs payload) and the CLI surfaces that exist only because of it (spec docs, the non-Bun runtime guard). Belongs here: the tarball-content promises, the bin wrapper's runtime guard, and the offline docs command. Does not belong here: the webapp routes the artifact embeds (→ SERV), the compiled-binary channel (root build:cli, CI-owned), or the docs site's content itself (packages/site, not spec-governed). Boundary case: `spec docs` binds loopback-only like `spec serve`, but the promise lives here — it is a distribution surface over static files, not a view over the index.",
+  "scope": "The npm distribution surface: what the published @spec-engine/spec-engine artifact contains (the Bun bundle, the guarded bin entry, the embedded docs payload) and the CLI surfaces that exist only because of it (spec docs, the non-Bun runtime guard). Belongs here: the tarball-content promises, the bin wrapper's runtime guard, and the offline docs command. Does not belong here: the webapp routes the artifact embeds (\u2192 SERV), the compiled-binary channel (root build:cli, CI-owned), or the docs site's content itself (packages/site, not spec-governed). Boundary case: `spec docs` binds loopback-only like `spec serve`, but the promise lives here \u2014 it is a distribution surface over static files, not a view over the index.",
+  "grammar": "ears",
   "requirements": [
     {
       "id": "DIST-001",
@@ -22,8 +23,8 @@
     {
       "id": "DIST-002",
       "status": "active",
-      "statement": "The spec docs command resolves its docs root relative to the running module (import.meta.url) — the npm payload dist/docs/ first, then the checkout build packages/site/dist — and a missing root exits 2 with guidance naming bun run build:site; the lookup is never cwd-relative.",
-      "why": "A cwd-relative asset lookup breaks the moment the CLI runs from any directory but the package root — the classic embedded-UI bug; without guidance, a missing docs build reads as a broken install.",
+      "statement": "The spec docs command resolves its docs root relative to the running module (import.meta.url) \u2014 the npm payload dist/docs/ first, then the checkout build packages/site/dist \u2014 and a missing root exits 2 with guidance naming bun run build:site; the lookup is never cwd-relative.",
+      "why": "A cwd-relative asset lookup breaks the moment the CLI runs from any directory but the package root \u2014 the classic embedded-UI bug; without guidance, a missing docs build reads as a broken install.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
