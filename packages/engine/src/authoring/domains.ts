@@ -129,13 +129,48 @@ export function scaffoldDomainObject(key: string, today: string) {
   };
 }
 
+/** Max requirement sequence number in one parsed domain document (0 if none). */
+function maxSeqOf(domain: { requirements?: Array<{ id?: unknown }> }): number {
+  const reqs = Array.isArray(domain.requirements) ? domain.requirements : [];
+  return reqs.reduce((m, r) => {
+    const id = typeof r?.id === "string" ? r.id : "";
+    const seq = Number(id.split("-")[1]);
+    return Number.isFinite(seq) ? Math.max(m, seq) : m;
+  }, 0);
+}
+
+/**
+ * Max sequence number in the domain file as committed at HEAD, so an id whose
+ * entry was deleted from the working tree cannot be re-minted for different
+ * behavior (ids are permanent). Never-fail-non-git (the GUARD-008 posture):
+ * outside a git repo, with no HEAD, or on any git/parse failure this returns 0
+ * and minting falls back to the working-tree max alone.
+ */
+async function headMaxSeq(platformDir: string, key: string): Promise<number> {
+  // @spec REQ-018
+  try {
+    // `HEAD:./SPEC.json` resolves relative to -C, so this works no matter
+    // where the platform sits inside the repo.
+    const proc = Bun.spawn(
+      ["git", "-C", join(platformDir, "spec-engine", key), "show", "HEAD:./SPEC.json"],
+      { stdout: "pipe", stderr: "ignore" },
+    );
+    const text = await new Response(proc.stdout).text();
+    if ((await proc.exited) !== 0) return 0;
+    return maxSeqOf(JSON.parse(text));
+  } catch {
+    return 0;
+  }
+}
+
 /**
  * AUTHC-014: next unused requirement id for `key`. Reads the domain's
  * `SPEC.json` (the sole spec format post-cutover, Phase 18 / D2) and
  * computes `max(seq)+1` across `requirements[].id`
- * (seq = `Number(id.split("-")[1])`), padded to 3 digits. Defensive
- * `<KEY>-001` when no `SPEC.json` exists (e.g. the dir vanished between
- * the caller's listing and this read).
+ * (seq = `Number(id.split("-")[1])`), padded to 3 digits — where the max is
+ * taken over BOTH the working-tree file and the file at HEAD, so deleting an
+ * entry never frees its id. Defensive `<KEY>-001` when no `SPEC.json` exists
+ * (e.g. the dir vanished between the caller's listing and this read).
  */
 export async function nextRequirementId(platformDir: string, key: string): Promise<string> {
   const jsonPath = join(platformDir, "spec-engine", key, "SPEC.json");
@@ -143,12 +178,7 @@ export async function nextRequirementId(platformDir: string, key: string): Promi
   const domain = JSON.parse(await Bun.file(jsonPath).text()) as {
     requirements?: Array<{ id?: unknown }>;
   };
-  const reqs = Array.isArray(domain.requirements) ? domain.requirements : [];
-  const maxSeq = reqs.reduce((m, r) => {
-    const id = typeof r?.id === "string" ? r.id : "";
-    const seq = Number(id.split("-")[1]);
-    return Number.isFinite(seq) ? Math.max(m, seq) : m;
-  }, 0);
+  const maxSeq = Math.max(maxSeqOf(domain), await headMaxSeq(platformDir, key));
   const next = String(maxSeq + 1).padStart(3, "0");
   return `${key}-${next}`;
 }

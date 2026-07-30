@@ -1,7 +1,7 @@
 {
   "key": "GUARD",
   "owner": "drea",
-  "updated": "2026-07-08",
+  "updated": "2026-07-30",
   "scope": "Loss detection: diffing the requirement derivation at a git ref against the working tree to block requirements about to be steamrolled. Belongs here: REQUIREMENT_REMOVED / IMPL_LOST / VERIFY_LOST / SPEC_FILE_DELETED; the supersession and `@spec approve` suppression paths; never-fail-non-git. Boundary case: GOV-01 (an Active req never disappears without approved supersession) folds in here — it names the same concept as GUARD-002 at a second enforcement point (CI/base-ref via check/removed.ts vs pre-commit/working-tree via guard/losses.ts), unified on one diagnostic code (REQUIREMENT_REMOVED). Does not belong here: who may approve a supersession (that is OWNER, the CODEOWNERS policy).",
   "requirements": [
     {
@@ -162,6 +162,21 @@
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GUARD-011",
+      "status": "active",
+      "statement": "If a requirement entry that is not Active at the git ref is absent from the working-tree spec, then spec guard shall report REQUIREMENT_REMOVED for it, and no supersede link shall excuse the removal.",
+      "why": "A superseded entry's successor link always exists, so honoring it as an exemption makes pruning history silent — the record behind 'a requirement is never deleted' vanishes without a trace.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/guard/losses.ts"
+      ],
+      "issues": [],
       "aliases": [],
       "cites": []
     }

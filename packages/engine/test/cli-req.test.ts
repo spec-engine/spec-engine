@@ -216,6 +216,27 @@ describe("spec req — next-id correctness (AUTHC-014)", () => {
     await runReq("FRESH", tmp);
     expect(logs).toEqual(["FRESH-002"]);
   });
+
+  // @spec REQ-018 unit
+  test("a deleted entry's id is never re-minted — the file at HEAD holds the max", async () => {
+    // Commit FRESH-001..003, then delete 003 from the working tree. The next
+    // id must be 004, not a recycled 003 (ids are permanent).
+    writeDomain(tmp, "FRESH", [1, 2, 3]);
+    const git = (...args: string[]) => {
+      const r = Bun.spawnSync(["git", "-C", tmp, ...args], { stdout: "pipe", stderr: "pipe" });
+      expect(r.exitCode).toBe(0);
+    };
+    git("init", "-q");
+    git("-c", "user.email=t@t", "-c", "user.name=t", "add", "-A");
+    git("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "seed");
+    writeDomain(tmp, "FRESH", [1, 2]);
+    expect(await nextRequirementId(tmp, "FRESH")).toBe("FRESH-004");
+  });
+
+  test("outside git, the working-tree max alone decides (never-fail-non-git)", async () => {
+    writeDomain(tmp, "FRESH", [1, 2]);
+    expect(await nextRequirementId(tmp, "FRESH")).toBe("FRESH-003");
+  });
 });
 
 describe("spec req — platform guard (AUTHC-015)", () => {
