@@ -3,7 +3,7 @@ title: Adoption Guide
 description: Progressive adoption of Spec Engine — bottom-up, rung by rung
 ---
 
-Spec Engine is adopted one rung at a time.
+Spec Engine is adopted in steps, like climbing a ladder one rung at a time — each rung is a working setup on its own, and each adds one thing.
 
 ## Rung 1: Stop re-explaining to the AI
 
@@ -19,7 +19,7 @@ Free, local.
 
 Promote specs to a dedicated `spec-engine` repo; a requirement change is approved by merging it there, and a consuming repo's PR is blocked until the requirement it depends on is approved upstream.
 
-Multiplayer — paid.
+Multiplayer — planned as a paid hosted service; today rung 3 runs free on your own machines.
 
 ## Dogfooding note
 

@@ -122,17 +122,10 @@ describe("AGENTS.md authoring playbook (AUTHOR-001) + req-author skill (AUTHOR-0
     expect(doc).toContain("## Authoring requirements (brief → mint)");
   });
 
-  test("the playbook cross-references TAXONOMY.md §4.10 (does not fork the rubric)", () => {
-    const doc = readFileSync(AGENT_DOC, "utf8");
-    // Body-scoped: the cross-reference must live INSIDE the new playbook
-    // section, not incidentally elsewhere in AGENTS.md — otherwise a stray
-    // `4.10`/`TAXONOMY.md` token far from the section would vacuously satisfy
-    // "cross-reference not fork". Slice from the header forward and assert the
-    // rubric-pointer tokens appear in that tail.
-    const idx = doc.indexOf("## Authoring requirements (brief → mint)");
-    const body = idx === -1 ? "" : doc.slice(idx);
-    expect(body).toContain("spec-engine/TAXONOMY.md");
-    expect(body).toContain("4.10");
+  test("the playbook points at the TAXONOMY authoring standard without ghost section numbers", () => {
+    const agents = readFileSync(AGENT_DOC, "utf8");
+    expect(agents).toContain("Requirement authoring standard");
+    expect(agents).not.toContain("4.10");
   });
 
   test("the req-author SKILL.md exists with frontmatter + approval gate + rubric cross-ref + real-CLI dogfood", () => {

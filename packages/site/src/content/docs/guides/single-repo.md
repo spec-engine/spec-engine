@@ -3,7 +3,7 @@ title: Single Repo (Rung 1)
 description: Getting started with one repo, specs inline, zero ceremony
 ---
 
-The bottom rung of the adoption ladder: one repo, specs inline, zero ceremony — no sibling members, no `spec-engine.member.json`, no `spec init`.
+The first adoption step (see the [adoption ladder](/guides/adoption/) — each "rung" is a working setup on its own): one repo, specs inline, zero ceremony — no sibling members, no `spec-engine.member.json`, no `spec init`.
 
 Need the CLI first? `bun add -g @spec-engine/spec-engine` puts `spec` on your PATH — no clone required. See [Getting Started](/getting-started/).
 

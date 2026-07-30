@@ -33,9 +33,22 @@ A **spec** is the standing specification of one domain. Requirements carry perma
 2. Integrity can be checked mechanically
 3. A requirement's history survives every refactor because IDs are permanent and changes supersede rather than overwrite
 
+## The idea
+
+Everything in Spec Engine follows from eight statements:
+
+1. A requirement represents a single behavior.
+2. A requirement is never deleted. When behavior changes, it is superseded or deprecated.
+3. The written requirements are the single source of truth for what the software is supposed to do.
+4. A requirement can be linked to the code that implements it and to the tests that prove it.
+5. Reports are computed from the requirements and their links.
+6. You can check whether the requirements, code, and tests agree, and exactly where they don't.
+7. Tickets are not requirements. A ticket is temporary work; requirements outlive it.
+8. Requirements are written in a fixed shape (when X happens, the system shall do Y).
+
 ## Why it exists
 
-Feature-generation tools (Spec Kit, Kiro, GSD/DFC) are keyed to the change you are about to make; their specs are per-feature and end at "implemented." Spec Engine is keyed to the **domain**, which outlives every feature. Its first-class operation is **life after production**: superseding established truth, not generating new work.
+Most spec tools are keyed to the change you are about to make: their specs describe one feature and end at "implemented." Spec Engine is keyed to the **domain**, which outlives every feature. Its first-class operation is what happens after production: superseding established truth, not generating new work.
 
 When AI agents produce more code in an afternoon than a person can carefully read in a week, Spec Engine answers by making the mission-critical path defend itself: `spec check` runs on every change and reports whether a load-bearing requirement was broken, orphaned, or left unverified.
 
@@ -43,19 +56,16 @@ When AI agents produce more code in an afternoon than a person can carefully rea
 
 A requirement can also carry an optional **`Issues:`** field linking it back to the tracker where the *why* lives, by role (`created`, `supersedes-via`, `amends-via`). `spec provenance` widens the coverage matrix into a provenance matrix: per requirement, the issue that birthed it, the issues that revised or retired it, and the tests backing it. The engine treats issue IDs as opaque strings and never makes a network call; an optional tracker adapter resolves them to titles and URLs. See [SPEC.json Format](/format/) and [Commands](/commands/).
 
-## Deployment tiers
+## What ships today, and what is planned
 
-| Tier | Form | Scope | Price |
-| --- | --- | --- | --- |
-| Local platform | CLI + SQLite + local webapp | repos on this machine | free |
-| Cloud service | same, hosted | the org's complete repo set, always-on, CI-wired | paid |
-| On-prem / air-gapped | the service in their infra | same as cloud, self-run | enterprise |
+What ships today is the local platform: the CLI, the SQLite index, and the
+local webapp — free, MIT-licensed, running entirely on your machine. A hosted
+service and an on-premises version are planned but do not exist yet; nothing
+on this site describes a product you can buy today.
 
-Same CLI, same schema, same webapp the whole way up.
+## The working loop
 
-## The four moves
-
-- **Author** — write a requirement before code. Agent drafts, human merges.
+- **Author** — write a requirement before code. Agent drafts, human approves.
 - **Route** — `spec resolve` / `spec query` to load the requirements a task touches.
 - **Tag** — add `@spec KEY-NNN` in code as you satisfy a requirement.
 - **Check** — `spec check --ci` as a gate.
