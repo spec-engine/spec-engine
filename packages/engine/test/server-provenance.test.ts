@@ -9,7 +9,7 @@
 // Contract:
 //   - GET /api/provenance              → 200 JSON ProvenanceMatrixRow[],
 //                                         deep-equals storage.provenanceMatrix().
-//   - GET /api/provenance/:issue       → 200 JSON rows for that bound issue
+//   - GET /api/provenance/by-issue?issue= → 200 JSON rows for that bound issue
 //                                         (issue is a bound param VALUE, never
 //                                         interpolated).
 //   - GET /api/provenance?resolve=1    → 200 text/plain decorated text. With no
@@ -72,8 +72,8 @@ describe("/api/provenance", () => {
     expect(rows.length).toBeGreaterThan(0);
   });
 
-  test("GET /api/provenance/:issue → 200 JSON rows for the bound issue filter", async () => {
-    const res = await buildApp().request("/api/provenance/ENG-1432");
+  test("GET /api/provenance/by-issue?issue= → 200 JSON rows for the bound issue filter", async () => {
+    const res = await buildApp().request("/api/provenance/by-issue?issue=ENG-1432");
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("application/json");
     const rows = (await res.json()) as ProvenanceMatrixRow[];
@@ -106,7 +106,7 @@ describe("/api/provenance", () => {
     const app = buildApp();
     const jsonRes = await app.request("/api/provenance");
     expect(jsonRes.headers.get("cache-control")).toBe("no-store");
-    const issueRes = await app.request("/api/provenance/ENG-1432");
+    const issueRes = await app.request("/api/provenance/by-issue?issue=ENG-1432");
     expect(issueRes.headers.get("cache-control")).toBe("no-store");
     const textRes = await app.request("/api/provenance?resolve=1");
     expect(textRes.headers.get("cache-control")).toBe("no-store");

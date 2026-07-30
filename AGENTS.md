@@ -281,7 +281,8 @@ edited specs or tags and need the answer to reflect it.
   zero-prompt / zero-write id query even on a TTY.
   **Non-interactive authoring:** `--text "<requirement>"` appends the entry
   with zero prompts (TTY or not); `--why` / `--binds` / `--lives` fill the
-  other fields (default empty; they error without `--text`). With `--json`
+  other fields and `--issue <ticket>` records created-provenance (opaque id,
+  never a requirement id); they error without `--text`. With `--json`
   the write confirms as `{ id, file }`. Unresolvable `@<path>` refs warn on
   stderr and never block.
 - **`spec term`** — the glossary-term authoring surface. A term IS a
@@ -338,7 +339,10 @@ edited specs or tags and need the answer to reflect it.
   to be `Active` (already-superseded / Draft / Deprecated → exit 2 with
   guidance). Successor fields: `--text` is the new Requirement (mandatory
   non-TTY; prompted on a TTY); `--why` / `--binds` / `--lives` default to
-  COPIES of the old entry's values. Reindexes fresh, then emits the retag
+  COPIES of the old entry's values. `--issue <ticket>` records the ticket
+  that caused the supersession — supersedes-via on the predecessor (what
+  UNSOURCED_CHANGE inspects) and created on the successor.
+  Reindexes fresh, then emits the retag
   worklist — every tag site still on the old id (the same sites `check`
   reports as `SUPERSEDED_REFERENCED` until retagged). `--json`:
   `{ old_id, new_id, file, spec_version, retag: [{ req_id, repo, file,
@@ -371,7 +375,8 @@ edited specs or tags and need the answer to reflect it.
   no-op there. A TERM side keeps its authored `specVersion` bump and honors
   `--no-bump` (then that side's version is null).
 - **`spec amend`** — the pre-production counterpart to supersede. Field
-  flags (`--text` / `--why` / `--binds` / `--lives`) name what changes; at
+  flags (`--text` / `--why` / `--binds` / `--lives` / `--issue`, the last
+  appending amends-via provenance) name what changes; at
   least one is required, untouched fields stay byte-identical. Only Active
   and Draft entries amend (superseded/deprecated → exit 2). Bumps frontmatter
   `updated`, never `spec_version`. `--json`: `{ id, file, fields_changed }`.

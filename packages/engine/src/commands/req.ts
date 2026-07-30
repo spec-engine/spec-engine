@@ -112,6 +112,11 @@ export const reqCommand = defineCommand({
       type: "string",
       description: "Lives in field (only with --text)",
     },
+    issue: {
+      type: "string",
+      description:
+        "Originating ticket id, recorded as created-provenance on the entry (only with --text; opaque — never a requirement id)",
+    },
   },
   async run({ args }) {
     const input = args.domainPrefix as string;
@@ -139,10 +144,11 @@ export const reqCommand = defineCommand({
     const hasFieldFlags =
       typeof args.why === "string" ||
       typeof args.binds === "string" ||
-      typeof args.lives === "string";
+      typeof args.lives === "string" ||
+      typeof args.issue === "string";
     if (textFlag === undefined && hasFieldFlags) {
       console.error(
-        "spec req: --why/--binds/--lives require --text (the Requirement field is mandatory)",
+        "spec req: --why/--binds/--lives/--issue require --text (the Requirement field is mandatory)",
       );
       process.exit(EXIT.USAGE);
       return;
@@ -152,6 +158,7 @@ export const reqCommand = defineCommand({
         why: args.why as string | undefined,
         binds: args.binds as string | undefined,
         lives: args.lives as string | undefined,
+        issue: args.issue as string | undefined,
         json: Boolean(args.json),
       });
       return;
@@ -256,6 +263,7 @@ async function authorFromFieldFlags(
     why: string | undefined;
     binds: string | undefined;
     lives: string | undefined;
+    issue: string | undefined;
     json: boolean;
   },
 ): Promise<void> {
@@ -275,6 +283,7 @@ async function authorFromFieldFlags(
     why,
     binds,
     lives,
+    issue: (opts.issue ?? "").trim() || undefined,
   });
   if (opts.json) {
     // When the statement parses as EARS, the decomposed clauses ride along —
@@ -347,7 +356,7 @@ export async function appendEntry(
   platformDir: string,
   key: string,
   id: string,
-  fields: { requirement: string; why: string; binds: string; lives: string },
+  fields: { requirement: string; why: string; binds: string; lives: string; issue?: string },
 ): Promise<string> {
   const relFile = `spec-engine/${key}/SPEC.json`;
   const specPath = join(platformDir, "spec-engine", key, "SPEC.json");
@@ -382,7 +391,10 @@ export async function appendEntry(
     supersededBy: null,
     relates: [],
     livesIn: fields.lives ? [fields.lives] : [],
-    issues: [],
+    // PROV: the originating ticket is provenance ONLY — an opaque payload,
+    // never a requirement id, never routing. Recorded as role "created".
+    // @spec PROV-003
+    issues: fields.issue ? [{ role: "created", id: fields.issue }] : [],
   });
   domain.requirements = requirements;
   domain.updated = localToday();

@@ -72,6 +72,7 @@ interface DomainEnvelope {
 /** Which persistable fields the invocation touched (STOR-01: `--binds` is not one). */
 interface AmendFields {
   hasText: boolean;
+  hasIssue: boolean;
   hasWhy: boolean;
   hasLives: boolean;
   hasBinds: boolean;
@@ -114,6 +115,11 @@ export const amendCommand = defineCommand({
       description: "Binds value (validated for @-refs; not persisted in JSON — STOR-01)",
     },
     lives: { type: "string", description: "New Lives in (livesIn) field value" },
+    issue: {
+      type: "string",
+      description:
+        "Ticket that motivated this amendment — recorded as amends-via provenance (opaque, never a requirement id)",
+    },
     term: { type: "string", description: "New TERM headword (term field; TERM ids)" },
     aliases: {
       type: "string",
@@ -190,13 +196,14 @@ export const amendCommand = defineCommand({
  */
 function validateAmendFields(args: Record<string, unknown>): AmendFields {
   const hasText = typeof args.text === "string";
+  const hasIssue = typeof args.issue === "string" && (args.issue as string).trim() !== "";
   const hasWhy = typeof args.why === "string";
   const hasLives = typeof args.lives === "string";
   const hasBinds = typeof args.binds === "string";
   const hasTerm = typeof args.term === "string";
   const hasAliases = typeof args.aliases === "string";
 
-  if (!hasText && !hasWhy && !hasLives && !hasTerm && !hasAliases) {
+  if (!hasText && !hasWhy && !hasLives && !hasTerm && !hasAliases && !hasIssue) {
     console.error(
       "spec amend: nothing to amend — pass at least one of --text / --why / --lives / --term / --aliases",
     );
@@ -210,7 +217,7 @@ function validateAmendFields(args: Record<string, unknown>): AmendFields {
     console.error("spec amend: --term must be a non-empty headword");
     process.exit(EXIT.USAGE);
   }
-  return { hasText, hasWhy, hasLives, hasBinds, hasTerm, hasAliases };
+  return { hasText, hasWhy, hasLives, hasBinds, hasTerm, hasAliases, hasIssue };
 }
 
 /**
@@ -325,6 +332,13 @@ function applyAmendMutations(
     req.term = v;
     fieldsChanged.push("term");
     refValues.push(v);
+  }
+  if (fields.hasIssue) {
+    // @spec PROV-003
+    const issues = Array.isArray(req.issues) ? (req.issues as unknown[]) : [];
+    issues.push({ role: "amends-via", id: (args.issue as string).trim() });
+    req.issues = issues;
+    fieldsChanged.push("issue");
   }
   if (fields.hasAliases) {
     const raw = (args.aliases as string).trim();
