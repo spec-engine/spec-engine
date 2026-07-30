@@ -814,8 +814,12 @@ jobs:
           }
           # (4) served binary: GET /provenance → 200 with the matrix, and
           # GET /api/provenance → JSON array. Mirrors smoke 11's serve harness.
+          # SERV-006: the provenance feature is flag-gated on EVERY surface
+          # (page AND read API — an OFF feature answers 404), so this smoke
+          # opts in via SPEC_FLAGS and asserts the ON behavior end-to-end.
+          # The OFF 404 contract is locked in-process (feature-flags.test.ts).
           rm -f /tmp/spec-prov-serve.log
-          ./dist/spec serve "$FIXTURE" --port 0 > /tmp/spec-prov-serve.log 2>&1 &
+          SPEC_FLAGS=provenance ./dist/spec serve "$FIXTURE" --port 0 > /tmp/spec-prov-serve.log 2>&1 &
           SERVE_PID=$!
           trap 'kill $SERVE_PID 2>/dev/null || true; sleep 1' EXIT
           PORT=""
@@ -832,19 +836,18 @@ jobs:
             exit 1;
           }
           echo "spec serve bound to 127.0.0.1:$PORT"
-          # GET /provenance — 200. The SSR page is currently flag-gated OFF
-          # (PROVENANCE_ENABLED=false in packages/webapp/src/pages/provenance.ts),
-          # so the served page is the "coming soon" placeholder: the page heading
-          # renders but the matrix does not. The /api/provenance JSON seam below
-          # stays live. Re-assert the matrix body here when the flag flips back on.
+          # GET /provenance — 200 with the REAL matrix (flag on): the heading
+          # renders and a fixture provenance row is in the body. (A bare
+          # 'Coming soon' grep can't discriminate — the nav renders that label
+          # for the OTHER still-off features on every page.)
           curl -sf "http://127.0.0.1:$PORT/provenance" > /tmp/prov.html || {
             echo "FAIL: GET /provenance curl failed"; exit 1;
           }
           grep -qi 'Provenance matrix' /tmp/prov.html || {
             echo "FAIL: GET /provenance body missing 'Provenance matrix' heading"; head -c 1000 /tmp/prov.html; exit 1;
           }
-          grep -qi 'Coming soon' /tmp/prov.html || {
-            echo "FAIL: GET /provenance body missing 'Coming soon' placeholder (route flag-gated off)"; head -c 1000 /tmp/prov.html; exit 1;
+          grep -q 'ENG-1432' /tmp/prov.html || {
+            echo "FAIL: GET /provenance served no matrix rows despite SPEC_FLAGS=provenance (placeholder?)"; head -c 1000 /tmp/prov.html; exit 1;
           }
           # GET /api/provenance — JSON array, length >= 1.
           curl -sf "http://127.0.0.1:$PORT/api/provenance" > /tmp/prov-api.json || {
