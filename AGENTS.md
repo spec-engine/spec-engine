@@ -152,7 +152,12 @@ edited specs or tags and need the answer to reflect it.
   inputs (cold rebuild equivalence). Exit 1 = crash mid-index, exit 2 = not a
   platform / bad args.
 - **`spec check`** — diagnostics sorted deterministically; severity `error`
-  drives exit 1, `warning` alone exits 0. `--ci` deletes the DB first (cold
+  drives exit 1, `warning` alone exits 0. Deletion detection runs by DEFAULT:
+  with no `--base`, the working tree is diffed against HEAD whenever git
+  resolves, and a requirement absent from the tree without a same-change
+  supersession is `REQUIREMENT_REMOVED` (error). History (superseded/
+  deprecated entries) is never legally deleted — its removal always reports.
+  Outside git the check stays quiet (never-fail-non-git). `--ci` deletes the DB first (cold
   rebuild — correctness never trusts a warm index). JSON rows:
   `{ code, severity, repo, source_file, line, req_id, detail }` (nullable
   except `code`/`severity`/`detail`). Codes: `DUP_ID`, `BROKEN_SUPERSEDE`,

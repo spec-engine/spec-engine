@@ -179,13 +179,14 @@ describe("governance integration (GOV-01/02/03) — cold spec check --ci --base"
     expect(fixtureClean()).toBe(true);
   });
 
-  test("Scenario 2: removing BILLING-001 is exempt (supersededBy BILLING-009 survives)", async () => {
+  test("Scenario 2: removing Superseded BILLING-001 is REPORTED — history is never deleted, its successor edge is no excuse", async () => {
     removeReq("BILLING-001");
-    const { logs: out } = await runCheck({ ci: true, json: true, base: "HEAD" });
+    const { logs: out, exitCode } = await runCheck({ ci: true, json: true, base: "HEAD" });
     const got = parseDiags(out);
-    expect(got.some((d) => d.code === "REQUIREMENT_REMOVED" && d.req_id === "BILLING-001")).toBe(
-      false,
-    );
+    const hit = got.find((d) => d.code === "REQUIREMENT_REMOVED" && d.req_id === "BILLING-001");
+    expect(hit).toBeDefined();
+    expect(hit?.detail).toContain("never deleted");
+    expect(exitCode).toBe(1);
   });
 
   test("Scenario 3: whole-file deletion surfaces BILLING-009 via git ls-tree", async () => {

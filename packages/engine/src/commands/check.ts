@@ -570,6 +570,25 @@ export const checkCommand = defineCommand({
         results,
       );
 
+      // D3 (2026-07-30): deletion detection runs by DEFAULT — a deleted
+      // requirement is the biggest disagreement check can miss, and it used
+      // to need the opt-in --base flag. With no --base, the working tree is
+      // diffed against HEAD whenever git resolves; outside git (or with no
+      // commits yet) this stays silent — the same never-fail-non-git posture
+      // as spec guard. An explicit --base already ran the full gate above.
+      // @spec CHCK-011
+      if (!args.base && gitRefResolves(platformDir, "HEAD")) {
+        const change = await collectChangeReqs(join(platformDir, "spec-engine"));
+        // Base-side parse problems are NOT this run's news: HEAD is committed
+        // history, and erroring on a malformed base would punish the very
+        // commit that fixes it. A throwaway sink keeps the default path quiet.
+        const baseParseSink: Diagnostic[] = [];
+        const base = collectBaseReqs(platformDir, "HEAD", baseParseSink);
+        diagnostics.push(
+          ...requirementRemoved(base.reqs, change.reqs, (id) => base.relPathById.get(id) ?? null),
+        );
+      }
+
       const output = renderDiagnostics(diagnostics, args.json ? "json" : "text");
       console.log(output);
 

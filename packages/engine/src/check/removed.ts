@@ -49,10 +49,16 @@ export function requirementRemoved(
     // Still present in the change → not removed.
     if (changeIds.has(b.id)) continue;
 
-    // Approved supersession in either direction exempts the removed id.
+    // The supersession exemption applies ONLY to an entry that was Active at
+    // the base. A non-Active base entry (superseded/deprecated/draft) is
+    // history, and its successor edge existed BEFORE the change — honoring it
+    // here would make pruning history silent (the same hole guard/losses.ts
+    // closed: GUARD-011).
+    const activeAtBase = (b.status ?? "").toLowerCase() === "active";
     const exempt =
-      (b.supersededBy != null && changeIds.has(b.supersededBy)) ||
-      changeReqs.some((y) => y.supersedes === b.id);
+      activeAtBase &&
+      ((b.supersededBy != null && changeIds.has(b.supersededBy)) ||
+        changeReqs.some((y) => y.supersedes === b.id));
     if (exempt) continue;
 
     out.push({
@@ -61,7 +67,9 @@ export function requirementRemoved(
       line: 0,
       repo: null,
       req_id: b.id,
-      detail: `${b.id} was present in the base ref but is absent from the change with no approved supersession`,
+      detail: activeAtBase
+        ? `${b.id} was present in the base ref but is absent from the change with no approved supersession`
+        : `${b.id} (${b.status}) was present in the base ref but is absent from the change — a requirement is never deleted, and its history is the record`,
       severity: "error",
     });
   }
