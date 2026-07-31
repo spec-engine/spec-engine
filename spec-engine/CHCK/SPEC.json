@@ -2,7 +2,7 @@
   "key": "CHCK",
   "owner": null,
   "updated": "2026-07-30",
-  "scope": "spec check diagnostics and CI-gate semantics: the diagnostic codes and their severities, the --ci cold-rebuild gate, and which severity drives exit 1. Belongs here: the diagnostic codes and severities; the --ci gate; the exit-1 contract. Does not belong here: membership discovery itself (→ INIT). Boundary case: check-severity semantics stay in CHCK even when the discovery path (INIT) emits the diagnostic, as with the NO_SPEC_CONFIG finding.",
+  "scope": "spec check diagnostics and CI-gate semantics, plus the GLOSSARY.md round-trip: the diagnostic codes and their severities, the --ci cold-rebuild gate, which severity drives exit 1, and the spec glossary generate/--migrate/--check behaviors whose drift the GLOSSARY_DRIFT gate enforces. Belongs here: the diagnostic codes and severities; the --ci gate; the exit-1 contract. Does not belong here: membership discovery itself (→ INIT). Boundary case: check-severity semantics stay in CHCK even when the discovery path (INIT) emits the diagnostic, as with the NO_SPEC_CONFIG finding.",
   "grammar": "ears",
   "requirements": [
     {
@@ -150,31 +150,33 @@
     },
     {
       "id": "CHCK-010",
-      "status": "active",
+      "status": "superseded",
       "statement": "If the committed GLOSSARY.md does not byte-match the glossary generated from the TERM store, then spec check shall report GLOSSARY_DRIFT as a warning.",
       "why": "Only this repo's own CI fence caught glossary drift before; an adopter's human view of the terms could lie forever under a green gate.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHCK-024",
       "relates": [],
       "livesIn": [
         "packages/engine/src/commands/glossary.ts"
       ],
       "issues": [],
+      "supersededAtVersion": 9,
       "aliases": [],
       "cites": []
     },
     {
       "id": "CHCK-011",
-      "status": "active",
+      "status": "superseded",
       "statement": "While the platform is a git repository with a resolvable HEAD, spec check shall report REQUIREMENT_REMOVED for any requirement present at HEAD that is absent from the working tree without a supersession in the same change, with no flag required.",
       "why": "A deleted requirement was invisible to a plain spec check unless the opt-in --base flag was wired in CI — the biggest disagreement the tool exists to catch defaulted to off.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHCK-023",
       "relates": [],
       "livesIn": [
         "packages/engine/src/commands/check.ts"
       ],
       "issues": [],
+      "supersededAtVersion": 8,
       "aliases": [],
       "cites": []
     },
@@ -227,17 +229,18 @@
     },
     {
       "id": "CHCK-015",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec check finds a sibling directory without a spec-engine.member.json, the command shall report NO_SPEC_CONFIG at warning severity, so the finding alone never fails the --ci gate.",
       "why": "Unrelated sibling repos in the same parent directory are legitimate; failing the gate on them would force every neighbor to join the platform.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHCK-025",
       "relates": [],
       "livesIn": [
         "packages/engine/src/commands/check.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 10,
       "aliases": [],
       "cites": []
     },
@@ -346,6 +349,54 @@
         "packages/engine/src/commands/glossary.ts"
       ],
       "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-023",
+      "status": "active",
+      "statement": "While the platform is a git repository with a resolvable HEAD, spec check shall report REQUIREMENT_REMOVED for any requirement present at HEAD that is absent from the working tree without a supersession in the same change, with no flag required.",
+      "why": "Without default-on detection, a deleted requirement is invisible to a plain spec check — the biggest disagreement the tool exists to catch goes unreported.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/check.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-024",
+      "status": "active",
+      "statement": "If the committed GLOSSARY.md does not byte-match the glossary generated from the TERM store, then spec check shall report GLOSSARY_DRIFT as a warning.",
+      "why": "Without the diagnostic, an adopter's committed glossary can misstate the canonical terms indefinitely under a green gate.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/glossary.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-025",
+      "status": "active",
+      "statement": "When spec check finds a sibling directory without a spec-engine.member.json, the command shall report NO_SPEC_CONFIG at warning severity.",
+      "why": "Unrelated sibling repos in the same parent directory are legitimate; failing the gate on them would force every neighbor to join the platform.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/check.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
       "aliases": [],
       "cites": []
     }

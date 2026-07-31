@@ -25,7 +25,7 @@ architecture convention, an import fence — is a development convention
 ## Requirement id format
 
 Requirement ids are `KEY-NNN` where `NNN` is a 3-digit, zero-padded number:
-`CHRT-001`, `BILLING-010`. Two-digit shorthand seen in old planning notes
+`CHRT-007`, `BILLING-010`. Two-digit shorthand seen in old planning notes
 (`CHRT-01`) is a label, never a real id. Ids are permanent — a requirement is
 superseded or deprecated, never renumbered and never deleted.
 
@@ -315,6 +315,12 @@ time and by `spec check`.
    If your statement fits no row, you have not yet decided what triggers the
    behavior or what observably happens — which is the problem the shape exists
    to catch.
+
+   A statement may end with a trailing `so <observable consequence>` clause
+   ("…shall report NO_SPEC_CONFIG at warning severity, so a lone warning never
+   fails the gate") when the consequence is itself observable. Rationale —
+   *why the behavior exists* — still belongs in the why, never in the
+   statement.
 3. **It must make sense on its own.** A reader seeing only this one statement —
    in search results, in a report — understands it. If it says "the
    normalization" or "that prefix" without naming the subject, it fails.
@@ -341,7 +347,7 @@ Six promises the whole system leans on, each a real requirement in its domain:
 |---|--------|-------------|-----------|
 | 1 | INDX | INDX-007 | Cold-rebuild identity — deleting `.spec-engine/` and rebuilding yields an identical result. |
 | 2 | CHCK | CHCK-014 | `spec check --ci` builds fresh — correctness never trusts a cached or warm index. |
-| 3 | SCHM | SCHM-011 | One shared schema — every read/write surface validates the same envelope. |
-| 4 | INDX | INDX-008 | `build_id` is deterministic for identical inputs. |
+| 3 | SCHM | SCHM-013 | One shared schema — every read/write surface validates the same envelope. |
+| 4 | INDX | INDX-008 | Spec defects become diagnostics — a duplicate id or broken supersede never crashes the index build. |
 | 5 | SCHM | SCHM-012 | One model, one storage seam — CLI, webapp, and MCP can never disagree. |
 | 6 | PROP | PROP-004 | The drift definition is the propagation contract, computed by a SQL view. |

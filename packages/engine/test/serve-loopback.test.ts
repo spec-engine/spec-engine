@@ -125,7 +125,6 @@ describe("serve.ts source invariants (T-5-05-01 loopback bind)", () => {
 // ---------- 2. composeServeApp real-serve smoke ----------
 
 // @spec SERV-011
-// @spec SERV-012
 describe("composeServeApp (real serve mode composition)", () => {
   test("composeServeApp(storage) returns a Hono that answers /api/coverage on 127.0.0.1", async () => {
     const dbPath = resolve(clone, ".spec-engine", "index.sqlite");
@@ -210,6 +209,7 @@ describe("spec serve — pre-index guidance (RED-11)", () => {
 // ---------- RED-14 dead-end audit ----------
 
 describe("spec serve — probe branch + bind-failure branch (RED-14)", () => {
+  // @spec SERV-012 unit
   test("--probe binds loopback:0, self-fetches the placeholder, exits 0 (D-14)", async () => {
     // Until now the probe branch was only exercised by CI smoke 5 against
     // the compiled binary — never by `bun test`.

@@ -1,7 +1,7 @@
 {
   "key": "TERM",
   "owner": null,
-  "specVersion": 5,
+  "specVersion": 6,
   "updated": "2026-07-30",
   "scope": "The reserved glossary domain: durable TERMs — a headword, its definition (carried in the requirement statement), aliases, and pinned cites — that requirements reference and that are drift-checked against their pinned version, but that are EXCLUDED from code coverage (a term is a requirement row, never an @spec-tagged code obligation). Belongs here: glossary term entries (TERM-NNN) with their aliases and citations; the term-drift concern. Does not belong here: a feature requirement ABOUT the term store — the schema fields belong in SCHM, the spec term authoring CLI in REQ, the check diagnostics in CHCK, the query surface in QURY — those are dogfood requirements in their concept domains, never TERM data rows. Boundary case: the TERM-01 schema-fields promise lives in SCHM (concept wins), while the glossary data rows TERM-001..N live here.",
   "requirements": [
@@ -184,14 +184,14 @@
     {
       "id": "TERM-012",
       "status": "active",
-      "statement": "`active` (in force), `draft` (not yet approved), `superseded` (replaced by a successor), `retired` (deliberately ended, no successor).",
+      "statement": "`active` (in force), `draft` (not yet approved), `superseded` (replaced by a successor), `deprecated` (deliberately ended, no successor — via `spec deprecate`).",
       "why": null,
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
       "livesIn": [],
       "issues": [],
-      "changedAtVersion": 1,
+      "changedAtVersion": 6,
       "term": "Statuses",
       "aliases": [],
       "cites": [],
@@ -232,7 +232,7 @@
     {
       "id": "TERM-015",
       "status": "active",
-      "statement": "deliberate end-of-life without a successor; requires owner approval.",
+      "statement": "deliberate end-of-life without a successor: `spec deprecate` marks the entry `deprecated`, records why, and emits the cleanup worklist of tags still bound to the id.",
       "why": null,
       "supersedes": null,
       "supersededBy": null,
@@ -240,7 +240,7 @@
       "livesIn": [],
       "issues": [],
       "changedAtVersion": 1,
-      "term": "Retire",
+      "term": "Deprecate",
       "aliases": [],
       "cites": [],
       "section": "Requirement lifecycle"

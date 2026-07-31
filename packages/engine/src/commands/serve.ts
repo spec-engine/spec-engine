@@ -75,7 +75,7 @@ export function composeServeApp(storage: Storage, platformDir: string = process.
  * are conceptually independent and share no state.
  *
  * @spec SERV-011
- # @spec SERV-012
+ * @spec SERV-012
  */
 async function runProbe(): Promise<void> {
   const app = createApp();

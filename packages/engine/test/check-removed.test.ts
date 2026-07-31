@@ -1,7 +1,7 @@
 // packages/engine/test/check-removed.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec GUARD-014 unit
+// @spec CHCK-023 unit
 //
 // GOV-01 unit cases for the pure `requirementRemoved()` detector. Drives the
 // function directly with hand-built SpecRequirement[] — no git, no Storage, no

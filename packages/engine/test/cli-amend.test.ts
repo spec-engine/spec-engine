@@ -349,6 +349,7 @@ describe("spec amend — TERM fields in place (Wave B)", () => {
     return JSON.parse(readFileSync(join(tmp, "spec-engine", "TERM", "SPEC.json"), "utf8"));
   }
 
+  // @spec REQ-034 unit
   test("--term/--aliases/--def revise the fields in place; same id, specVersion untouched", async () => {
     writeTermDomain();
     await amendRun({

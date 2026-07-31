@@ -26,10 +26,10 @@ by the data model, outside-in.
 
 ## Requirement lifecycle
 
-- **Statuses** — `active` (in force), `draft` (not yet approved), `superseded` (replaced by a successor), `retired` (deliberately ended, no successor).
+- **Statuses** — `active` (in force), `draft` (not yet approved), `superseded` (replaced by a successor), `deprecated` (deliberately ended, no successor — via `spec deprecate`).
 - **Supersede** — the only legal way an active requirement stops applying with a successor: mints the new id, marks the old `supersededBy`, and emits the retag worklist. The supersede edge is what advances the domain's derived version; on the reserved TERM domain it also bumps the authored `specVersion`.
 - **Amend** — in-place revision of an unshipped entry's fields; same id, no version bump.
-- **Retire** — deliberate end-of-life without a successor; requires owner approval.
+- **Deprecate** — deliberate end-of-life without a successor: `spec deprecate` marks the entry `deprecated`, records why, and emits the cleanup worklist of tags still bound to the id.
 
 ## Derived machinery
 

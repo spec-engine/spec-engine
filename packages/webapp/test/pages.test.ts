@@ -407,7 +407,7 @@ describe("shared nav (W4)", () => {
 // storage (the shared beforeAll storage stays pinned to platform-fixture).
 // ---------------------------------------------------------------------------
 
-// @spec SERV-013 integration
+// @spec SERV-017 integration
 describe("Setup scan-mode detection (RED-93)", () => {
   /** Index `platformDir` into a throwaway storage and serve it. */
   async function appOver(platformDir: string): Promise<{ app: Hono; close: () => void }> {

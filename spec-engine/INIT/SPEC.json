@@ -391,16 +391,17 @@
     },
     {
       "id": "INIT-025",
-      "status": "active",
+      "status": "superseded",
       "statement": "If a manifest encountered during the context walk is malformed, then context detection shall fail loudly rather than classify the directory.",
       "why": "A silent fallback on a corrupt manifest would classify the repo wrongly and write a pin against the wrong platform — an error surfaced only later as inexplicable drift.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-029",
       "relates": [],
       "livesIn": [
         "packages/engine/src/onboarding/context.ts"
       ],
       "issues": [],
+      "supersededAtVersion": 14,
       "aliases": [],
       "cites": []
     },
@@ -446,6 +447,22 @@
       "relates": [],
       "livesIn": [
         "packages/engine/src/indexer/discover.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-029",
+      "status": "active",
+      "statement": "If a domain SPEC.json encountered during the context walk is malformed, then context detection shall derive the platform version from the remaining domains.",
+      "why": "A context walk that throws on one corrupt domain file takes every command down with it in that repo, while the corrupt file itself still surfaces loudly at parse and check time — detection stays usable and the defect is still reported.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/onboarding/context.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,

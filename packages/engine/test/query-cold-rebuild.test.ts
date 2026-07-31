@@ -39,7 +39,7 @@ afterEach(() => {
   rmSync(clone, { recursive: true, force: true });
 });
 
-// @spec QURY-007 unit
+// @spec QURY-009 unit
 describe("spec query cold-rebuild (Pitfall 2 regression)", () => {
   test("warm index: searchFts('renewal charge') top hit is BILLING-009", async () => {
     const s = openStorage(dbPath);

@@ -296,6 +296,7 @@ LEFT JOIN tags t
 -- cell. The Q4 ORPHAN_REQ / Q5 UNVERIFIED_REQ queries (sqlite.ts) carry the
 -- SAME literal exclusion so a term never fires a coverage ERROR. The match is
 -- the exact literal 'TERM' — never a real domain key.
+-- @spec SCHM-017
 WHERE r.key != 'TERM'
 GROUP BY r.id, repos.name;
 

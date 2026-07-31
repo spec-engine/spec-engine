@@ -99,8 +99,6 @@ export function parseGlossary(md: string): GlossaryTerm[] {
  * each `## {section}` heading once when it changes, a `- **{term}** — {statement}`
  * bullet per term, single trailing newline. LLM-free, no Date/random.
  * @spec CHCK-020
- # @spec CHCK-022
- # @spec CHCK-021
  */
 export function generateGlossary(terms: GlossaryTerm[]): string {
   const parts: string[] = ["# Glossary", "", GLOSSARY_INTRO];
@@ -155,6 +153,7 @@ function glossaryPath(platformDir: string): string {
  * One-time migration: parse the committed GLOSSARY.md into TERM-001..N and write
  * them through the VAL-01 seam. Idempotent — skips when the TERM domain already
  * holds entries (so re-running never doubles the store).
+ * @spec CHCK-021
  */
 async function migrateGlossary(platformDir: string, json: boolean): Promise<void> {
   const relFile = `spec-engine/${TERM_KEY}/SPEC.json`;
@@ -225,7 +224,7 @@ async function writeGlossary(platformDir: string, json: boolean): Promise<void> 
  * diagnostic when they disagree. Same byte-comparison as `--check` below, but
  * surfaced inside every `spec check` run instead of only this repo's CI fence.
  */
-// @spec CHCK-010
+// @spec CHCK-024
 export function glossaryDriftDiagnostic(platformDir: string): Diagnostic | null {
   const terms = readStoreTerms(platformDir);
   if (terms.length === 0) return null;
@@ -250,7 +249,7 @@ export function glossaryDriftDiagnostic(platformDir: string): Diagnostic | null 
  * The drift fence: regenerate into a buffer and compare byte-for-byte with the
  * committed GLOSSARY.md. Exit 1 (data-level failure) on any drift, 0 clean. This
  * is what fence_glossary_roundtrip (arch-fences.sh) shells out to.
- * @spec CHCK-020
+ * @spec CHCK-022
  */
 function checkGlossary(platformDir: string, json: boolean): void {
   const generated = generateGlossary(readStoreTerms(platformDir));

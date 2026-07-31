@@ -4,7 +4,7 @@
 // @spec CHCK-012
 // @spec CHCK-013
 // @spec CHCK-014
-// @spec CHCK-015
+// @spec CHCK-025
 //
 // `spec check [platformDir] [--out <path>] [--ci] [--json]` — citty
 // subcommand for the cross-repo integrity check (CHCK-01 / CHCK-02 /
@@ -577,7 +577,7 @@ export const checkCommand = defineCommand({
       // diffed against HEAD whenever git resolves; outside git (or with no
       // commits yet) this stays silent — the same never-fail-non-git posture
       // as spec guard. An explicit --base already ran the full gate above.
-      // @spec CHCK-011
+      // @spec CHCK-023
       if (!args.base && gitRefResolves(platformDir, "HEAD")) {
         const change = await collectChangeReqs(join(platformDir, "spec-engine"));
         // Base-side parse problems are NOT this run's news: HEAD is committed

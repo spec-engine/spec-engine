@@ -95,7 +95,6 @@ export const SpecRequirementSchema = z
     // orderDomain whitelist below or it is silently stripped on write (the
     // scope/IN-01 strip-trap). `.strict()` stays intact (T-06-01 mitigation).
     // @spec SCHM-016
-    // @spec SCHM-017
     term: z.string().optional(),
     aliases: z.array(z.string()).optional().default([]),
     cites: z.array(SpecCiteSchema).optional().default([]),

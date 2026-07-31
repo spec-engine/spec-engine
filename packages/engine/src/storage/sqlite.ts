@@ -358,6 +358,7 @@ WHERE r.status = 'Active'
   -- code-coverage obligation — exclude the reserved TERM domain so a migrated
   -- term never fires ORPHAN_REQ. Literal 'TERM' only, never a real domain key;
   -- mirrors the coverage VIEW exclusion (WHERE r.key != 'TERM') in schema.ts.
+  -- @spec SCHM-017
   AND r.key != 'TERM'
   AND NOT EXISTS (
     SELECT 1 FROM tags t WHERE t.req_id = r.id AND t.kind != 'documents'
@@ -445,7 +446,6 @@ ORDER BY rel.source_file, rel.line, rel.from_id, rel.to_id
 // depth against a term_id that points at a non-TERM / deleted row. repo is NULL
 // (the defect is in the SPEC's cites field, not a member repo).
 // @spec CHCK-016
-// @spec CHCK-017
 const Q8_UNDEFINED_TERM_SQL = `
 SELECT
   'UNDEFINED_TERM'                                            AS code,
@@ -470,7 +470,7 @@ ORDER BY tc.source_file, tc.line, tc.req_id
 // red the gate the instant the glossary lands (RESEARCH Pitfall 4). Only Active
 // terms (a Draft/Retired term is not a live obligation). ORDER BY (key, seq)
 // matches Q4/Q5.
-// @spec CHCK-016
+// @spec CHCK-017
 const Q9_ORPHAN_TERM_SQL = `
 SELECT
   'ORPHAN_TERM'                                               AS code,
@@ -529,7 +529,7 @@ ORDER BY td.source_file, td.line, td.req_id
 // `severity === 'error'` predicate. term.key='TERM' keeps it scoped to the
 // reserved glossary domain; detail names the successor (superseded_by). repo is
 // NULL (the stale citation is in the SPEC's cites field, not a member repo).
-// @spec CHCK-018
+// @spec CHCK-019
 const Q11_SUPERSEDED_TERM_REFERENCED_SQL = `
 SELECT
   'SUPERSEDED_TERM_REFERENCED'                               AS code,
@@ -719,7 +719,8 @@ ORDER BY repos.name
 // into build_id.
 //
 // @spec QURY-008
-// @spec QURY-007
+// @spec QURY-009
+// @spec QURY-006
 // @spec QURY-004
 const FTS_SEARCH_SQL = `SELECT r.id AS req_id, r.key AS key, r.text AS text, r.why AS why, r.source_file AS source_file, r.line AS line, bm25(requirements_fts, 1.0, 0.5) AS rank FROM requirements_fts JOIN requirements r ON r.rowid = requirements_fts.rowid WHERE requirements_fts MATCH $query AND r.status NOT IN ('Superseded', 'Deprecated') ORDER BY rank ASC LIMIT $limit`;
 

@@ -16,11 +16,11 @@
 //      `spec check --ci` (severity==='error' predicate) stays exit 0 post-migration.
 
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type { Diagnostic } from "@spec-engine/shared";
-import { generateGlossary, parseGlossary } from "../src/commands/glossary";
+import { generateGlossary, glossaryCommand, parseGlossary } from "../src/commands/glossary";
 import { runIndex } from "../src/indexer/pipeline";
 import { openStorage } from "../src/storage/sqlite";
 
@@ -85,8 +85,6 @@ async function diagnose(platformDir: string): Promise<Diagnostic[]> {
 }
 
 describe("TERM-06 — GLOSSARY round-trip (migrate + generate + fence)", () => {
-  // @spec CHCK-020 integration
-  // @spec CHCK-022 integration
   // @spec CHCK-021 integration
   test("migrate: parses bullets in document order with section + collapsed statement", () => {
     const terms = parseGlossary(FIXTURE);
@@ -103,6 +101,7 @@ describe("TERM-06 — GLOSSARY round-trip (migrate + generate + fence)", () => {
     );
   });
 
+  // @spec CHCK-020 integration
   test("generate: deterministic (byte-identical) across two runs", () => {
     const terms = parseGlossary(FIXTURE);
     const a = generateGlossary(terms);
@@ -116,6 +115,7 @@ describe("TERM-06 — GLOSSARY round-trip (migrate + generate + fence)", () => {
     expect(a).toContain("- **Alpha** — a one-line definition.");
   });
 
+  // @spec CHCK-020 integration
   test("fence: generation over the REAL store equals the committed GLOSSARY.md", () => {
     const generated = generateGlossary(storeTerms());
     const committed = readFileSync(GLOSSARY_MD, "utf8");
@@ -128,5 +128,64 @@ describe("TERM-06 — GLOSSARY round-trip (migrate + generate + fence)", () => {
     // UNDEFINED_TERM must not fire. The `spec check --ci` exit contract is
     // exactly `rows.some(d => d.severity === "error")`.
     expect(rows.some((d) => d.severity === "error")).toBe(false);
+  });
+
+  // @spec CHCK-022 integration
+  test("--check: exit 1 on byte drift, no exit when committed equals generated", async () => {
+    const plat = mkdtempSync(join(tmpdir(), "spec-glossary-check-"));
+    const originalExit = process.exit;
+    const originalErr = console.error;
+    const originalLog = console.log;
+    class ExitError extends Error {
+      constructor(public code: number) {
+        super(`process.exit(${code})`);
+      }
+    }
+    try {
+      mkdirSync(join(plat, "spec-engine", "TERM"), { recursive: true });
+      const term = { term: "Alpha", statement: "a one-line definition.", section: "First section" };
+      writeFileSync(
+        join(plat, "spec-engine", "TERM", "SPEC.json"),
+        `${JSON.stringify(
+          {
+            key: "TERM",
+            owner: null,
+            specVersion: 1,
+            updated: "2026-07-30",
+            requirements: [{ id: "TERM-001", status: "active", ...term }],
+          },
+          null,
+          2,
+        )}\n`,
+      );
+      (process as unknown as { exit: (code?: number) => never }).exit = (code?: number) => {
+        throw new ExitError(code ?? 0);
+      };
+      console.error = () => {};
+      console.log = () => {};
+      const run = (
+        glossaryCommand as unknown as {
+          run: (ctx: { args: Record<string, unknown>; rawArgs: string[] }) => Promise<void>;
+        }
+      ).run;
+      // Clean: committed file IS the generated output — check returns, no exit.
+      writeFileSync(join(plat, "GLOSSARY.md"), generateGlossary([term]));
+      await run({ args: { platformDir: plat, check: true }, rawArgs: [] });
+      // Drift: committed file differs by one byte-level edit — exit 1.
+      writeFileSync(join(plat, "GLOSSARY.md"), "# Glossary\n\ndrifted\n");
+      let code: number | null = null;
+      try {
+        await run({ args: { platformDir: plat, check: true }, rawArgs: [] });
+      } catch (e) {
+        if (e instanceof ExitError) code = e.code;
+        else throw e;
+      }
+      expect(code).toBe(1);
+    } finally {
+      process.exit = originalExit;
+      console.error = originalErr;
+      console.log = originalLog;
+      rmSync(plat, { recursive: true, force: true });
+    }
   });
 });

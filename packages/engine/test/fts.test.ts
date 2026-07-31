@@ -61,6 +61,22 @@ describe("storage.searchFts against canonical platform-fixture", () => {
     }
   });
 
+  // @spec QURY-006 unit
+  test("superseded requirements never surface: BILLING-001 shares BILLING-009's text but is excluded", async () => {
+    // BILLING-001 (superseded) and BILLING-009 (its active successor) carry
+    // near-identical statements in the fixture — a query matching both must
+    // return only the live one.
+    const storage = await buildFixtureStorage();
+    try {
+      const hits = storage.searchFts("renewal charge");
+      expect(hits.length).toBeGreaterThan(0);
+      expect(hits.map((h: FtsHit) => h.req_id)).not.toContain("BILLING-001");
+      expect(hits.map((h: FtsHit) => h.req_id)).toContain("BILLING-009");
+    } finally {
+      storage.close();
+    }
+  });
+
   test("porter sanity: 'renews charge' also returns BILLING-009 as top hit", async () => {
     // Sanity check that porter does not LOSE matches it would have had under
     // the default unicode61 tokenizer — both the stemmed and un-stemmed

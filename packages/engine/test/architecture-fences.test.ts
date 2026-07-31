@@ -48,7 +48,6 @@ describe("architecture fences (2.1 — scripts/arch-fences.sh)", () => {
   });
 
   // @spec SCHM-020 unit — the authored-specVersion gate: fence_no_authored_specversion
-  // @spec SCHM-021 unit
   // fails the build if any non-TERM domain envelope in the real corpus carries a
   // specVersion (the version is DAG-derived; only TERM keeps an authored counter).
   // Proven two ways: the real tree passes (OK marker present in the runner's

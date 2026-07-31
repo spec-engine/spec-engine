@@ -84,6 +84,21 @@ describe("flag off — routes are off, not just the nav link", () => {
     expect(put.status).toBe(404);
   });
 
+  // @spec SERV-006 integration
+  test("the flagged READ endpoints answer 404 too — every surface, not just the write plane", async () => {
+    const cases: Array<[string, string]> = [
+      ["/api/query?q=renewal", "query"],
+      ["/api/relations", "relations"],
+      ["/api/provenance", "provenance"],
+      ["/api/provenance/by-issue?issue=RED-1", "provenance"],
+    ];
+    for (const [path, key] of cases) {
+      const res = await app.request(path);
+      expect(res.status).toBe(404);
+      expect(((await res.json()) as { error: string }).error).toContain(`SPEC_FLAGS=${key}`);
+    }
+  });
+
   test("the nav renders the feature as coming soon, not a link", async () => {
     const res = await app.request("/");
     const body = await res.text();
@@ -107,6 +122,14 @@ describe("flag on — the same surfaces work", () => {
 
     const nav = await app.request("/");
     expect(await nav.text()).toContain('href="/editor"');
+  });
+
+  // @spec SERV-006 integration
+  test("SPEC_FLAGS on: the read endpoints answer 200 again", async () => {
+    process.env.SPEC_FLAGS = "query,relations,provenance";
+    expect((await app.request("/api/query?q=renewal")).status).toBe(200);
+    expect((await app.request("/api/relations")).status).toBe(200);
+    expect((await app.request("/api/provenance")).status).toBe(200);
   });
 
   test("SPEC_FLAGS=query serves the real query page instead of the stub", async () => {

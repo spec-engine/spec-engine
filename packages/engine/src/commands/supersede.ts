@@ -199,6 +199,7 @@ function resolveSuccessorFields(
  * headword + synonyms). The whole object still re-validates through
  * validateDomainFile (T-06-07), so this branch injects no unchecked key.
  * @spec REQ-033
+ * @spec REQ-034
  */
 function resolveSuccessorTermFields(
   args: Record<string, unknown>,

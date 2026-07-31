@@ -30,7 +30,13 @@ const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "fixtures", "relates-
 let clone: string;
 let storage: Storage;
 
+let priorFlags: string | undefined;
+
 beforeAll(async () => {
+  // D4a / SERV-006: the relations read API is feature-flagged; this suite
+  // tests the ON behavior (the OFF 404 is locked in feature-flags.test.ts).
+  priorFlags = process.env.SPEC_FLAGS;
+  process.env.SPEC_FLAGS = "relations";
   clone = cloneFixture(FIXTURE);
   // Strip any stale committed-index leftovers — the derived DB owns
   // nothing; this run's index is built fresh from the cloned spec.
@@ -40,6 +46,8 @@ beforeAll(async () => {
 });
 
 afterAll(() => {
+  if (priorFlags === undefined) delete process.env.SPEC_FLAGS;
+  else process.env.SPEC_FLAGS = priorFlags;
   storage.close();
   rmSync(clone, { recursive: true, force: true });
 });

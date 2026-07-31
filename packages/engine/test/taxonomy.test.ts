@@ -103,7 +103,7 @@ describe("TAXONOMY.md — requirement-authoring standard (CHRT-02)", () => {
 describe("TAXONOMY.md — six headline invariants by post-reorg domain (CHRT-06)", () => {
   test("lists the six invariants by their live requirement ids", async () => {
     const doc = await loadTaxonomy();
-    for (const id of ["INDX-007", "CHCK-014", "SCHM-011", "INDX-008", "SCHM-012", "PROP-004"]) {
+    for (const id of ["INDX-007", "CHCK-014", "SCHM-013", "INDX-008", "SCHM-012", "PROP-004"]) {
       expect(doc).toContain(id);
     }
   });

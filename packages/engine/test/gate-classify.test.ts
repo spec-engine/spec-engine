@@ -146,7 +146,7 @@ describe("classifyGate", () => {
     expect(out.detail).toContain("BILLING-009");
   });
 
-  // @spec GATE-007 unit
+  // @spec GATE-009 unit
   test("Test 5b — DEPRECATED: a deprecated req fails the gate, never PASSes through the version comparison", () => {
     // Before the branch existed, Deprecated fell through to VERSION_PIN/PASS —
     // changed_at_version <= pin would approve building against a dead promise.

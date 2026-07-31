@@ -7,14 +7,14 @@
 // byte-stable --json contract directly against hand-built facts.
 //
 // Verifies:
-// @spec GUARD-014
+// @spec GUARD-023
 // @spec GUARD-015
 // @spec GUARD-016
 // @spec GUARD-017
 // @spec GUARD-018
 // @spec GUARD-020
 // @spec GUARD-021
-// @spec GUARD-012
+// @spec GUARD-022
 
 import { describe, expect, test } from "bun:test";
 import type { SpecRequirement } from "@spec-engine/shared";
