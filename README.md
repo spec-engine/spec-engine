@@ -163,12 +163,16 @@ spec: serving on http://127.0.0.1:4319
 ```
 
 `--port 0` (the default) picks an ephemeral port; pass a fixed port for a stable URL.
-The pages: `/` (coverage matrix, carrying the per-domain rollup),
-`/requirements` and `/requirements/:id`, `/query` (full-text search — term definitions
-render beside requirement hits), `/relations`, `/propagation/:id`, `/provenance`. The
-same routes are available as JSON under `/api/*` (`/api/coverage`, `/api/report`,
-`/api/requirements[/:id]`, `/api/query?q=`, `/api/resolve?files=…`, `/api/relations`,
-`/api/propagation/:id`). The webapp reads the index; run `spec index . --fresh` after
+The always-on pages: `/` (coverage matrix, carrying the per-domain rollup),
+`/requirements` and `/requirements/:id`, `/propagation/:id` — as JSON:
+`/api/coverage`, `/api/report`, `/api/requirements[/:id]`, `/api/propagation/:id`,
+`/api/resolve?files=…`. The rest of the webapp ships feature-flagged and OFF by
+default — `/query` (full-text search — term definitions render beside requirement
+hits), `/relations`, `/provenance`, and the editor: the nav shows "coming soon",
+the page serves a placeholder, and the feature's endpoints (`/api/query?q=`,
+`/api/relations`, `/api/provenance`) answer 404 until you opt in with a
+comma-separated `SPEC_FLAGS` env var, e.g. `SPEC_FLAGS=query,relations spec serve .`.
+The webapp reads the index; run `spec index . --fresh` after
 editing specs or tags so the UI reflects the change.
 
 ### Access model — there is no login or API key

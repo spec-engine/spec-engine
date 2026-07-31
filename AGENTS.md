@@ -421,12 +421,14 @@ edited specs or tags and need the answer to reflect it.
   locally with a comma-separated `SPEC_FLAGS` env var (e.g.
   `SPEC_FLAGS=editor,query spec serve .`); unknown keys are ignored. `--probe` boots on an ephemeral
   port, fetches `/` and checks the placeholder page renders, then exits
-  (0 OK / 1 failed). API routes:
+  (0 OK / 1 failed). API routes always on:
   `/api/coverage`, `/api/report` (per-domain rollup over Active reqs:
   `{ domain, active, implemented, verified, orphans, unverified }`),
   `/api/requirements[/:id]`, `/api/propagation/:id`,
-  `/api/query?q=&limit=`, `/api/resolve?files=…&files=…`,
-  `/api/relations[?format=mermaid]` (mirror of the CLI contracts; 400 on
+  `/api/resolve?files=…&files=…`. Flag-gated (404 until their feature is
+  enabled): `/api/query?q=&limit=`, `/api/relations[?format=mermaid]`,
+  `/api/provenance[?resolve=1]`, `/api/provenance/by-issue?issue=` (mirror
+  of the CLI contracts when on; 400 on
   bad input, never 500 for FTS5 syntax). SSR pages: `/` (coverage matrix,
   carrying the platform-health stats + per-member heat chips on domain
   rows — the retired `/report` page's visuals live here now),
