@@ -4,6 +4,7 @@ on:
   pull_request: {}
   push:
     branches: [main]
+    tags: ['v*']  # PUB-01: a version tag re-runs every gate, then publishes
 
 permissions:
   contents: read
@@ -1132,3 +1133,80 @@ jobs:
 
       - name: build (astro build — fails on a missing asset/broken ref)
         run: bun run build:site
+
+  # PUB-01 (mirrors platform-map): tag-gated keyless npm publish via OIDC
+  # trusted publishing. No stored token — `id-token: write` mints a
+  # short-lived OIDC credential per run; provenance auto-attaches from
+  # publishConfig.provenance in packages/engine/package.json.
+  #
+  # BUN PACKS, NPM PUBLISHES. packages/engine's devDependencies use the
+  # workspace: protocol, which npm cannot rewrite, and `bun publish` has no
+  # OIDC flow (token/web auth only). So `bun pm pack` builds the tarball —
+  # running prepack (build:npm) and rewriting workspace: deps, the two
+  # invariants CONTRIBUTING's release rules protect — and npm publishes that
+  # EXACT gate-validated artifact. npm bundled with Node 22 is 10.x, which
+  # silently falls back to token auth and dies ENEEDAUTH — the explicit
+  # upgrade to >= 11.5.1 is load-bearing.
+  #
+  # One-time operator gate: register the GitHub trusted publisher for
+  # @spec-engine/spec-engine on npmjs.com (org/user: spec-engine,
+  # repository: spec-engine, workflow filename: ci.yml, no environment)
+  # BEFORE the first tagged run.
+  publish:
+    name: publish to npm (tag-gated, OIDC keyless)
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-and-smoke, test-linux, site]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      id-token: write  # REQUIRED for npm OIDC trusted publishing
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: setup Bun (reads .bun-version)
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: '.bun-version'
+
+      - name: install (frozen lockfile)
+        run: bun install --frozen-lockfile
+
+      - name: tag ↔ package version parity
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG=$(bun -p 'require("./packages/engine/package.json").version')
+          test "$TAG" = "$PKG" || {
+            echo "tag v$TAG != packages/engine version $PKG — bump the version before tagging"; exit 1;
+          }
+
+      - name: "pack with bun (runs prepack, rewrites workspace: deps)"
+        run: cd packages/engine && bun pm pack
+
+      - name: rehearse the tarball (CONTRIBUTING release-loop step 3, mechanized)
+        run: |
+          cd packages/engine
+          TARBALL=$(ls spec-engine-spec-engine-*.tgz)
+          # The manifest must carry no workspace: protocol anywhere.
+          if tar -xOf "$TARBALL" package/package.json | grep -q "workspace:"; then
+            echo "FAIL: workspace: protocol survived in the published manifest"
+            tar -xOf "$TARBALL" package/package.json; exit 1
+          fi
+          # The file list must be dist/ + package.json/README.md/LICENSE only.
+          BAD=$(tar -tf "$TARBALL" | grep -vE '^package/(dist/|package\.json$|README\.md$|LICENSE$)' || true)
+          test -z "$BAD" || { echo "FAIL: unexpected files in tarball:"; echo "$BAD"; exit 1; }
+          echo "tarball rehearsal OK: $TARBALL"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: upgrade npm for OIDC (>= 11.5.1)
+        run: |
+          npm install -g npm@^11.5.1
+          npm --version
+
+      - name: publish (keyless OIDC + provenance)
+        run: cd packages/engine && npm publish ./spec-engine-spec-engine-*.tgz
