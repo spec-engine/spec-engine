@@ -164,7 +164,9 @@ Revise an unshipped requirement's fields in place — same ID, no version change
 
 Launch the local webapp over the derived index. Binds `127.0.0.1` only. `--probe` boots on an ephemeral port, smoke-tests, and exits.
 
-**API routes:** `/api/coverage`, `/api/report` (per-domain rollup over Active reqs), `/api/repos`, `/api/platform` (the derived platform version), `/api/requirements[/:id]`, `/api/propagation/:id`, `/api/query?q=&limit=`, `/api/resolve?files=...`, `/api/relations[?format=mermaid]`, `/api/provenance`
+**API routes (always on):** `/api/coverage`, `/api/report` (per-domain rollup over Active reqs), `/api/repos`, `/api/platform` (the derived platform version), `/api/requirements[/:id]`, `/api/propagation/:id`, `/api/resolve?files=...`
+
+**Feature-flagged routes:** `/api/query?q=&limit=`, `/api/relations[?format=mermaid]`, `/api/provenance`, and the editor's write routes answer **404** until their feature is enabled — the unshipped webapp features (query, relations, provenance, editor, glossary, logs) all default off. Opt in locally with a comma-separated `SPEC_FLAGS` env var: `SPEC_FLAGS=query,relations spec serve .` (unknown keys are ignored).
 
 **Exit codes:** 0 / 1 / 2
 
