@@ -77,24 +77,35 @@ bun packages/engine/src/cli.ts check . --ci
 
 Only `packages/engine` publishes — as **`@spec-engine/spec-engine`**, a single
 bundled package (the workspace packages inline into `dist/impl.js` at prepack;
-`shared`/`tracker`/`webapp`/`site` stay private forever). One-time
-prerequisites: the free npm **org `spec-engine`** must exist with you as a
-publisher, and you must be logged in (`npm login`).
+`shared`/`tracker`/`webapp`/`site` stay private forever).
 
-Release loop, from the repo root:
+**CI publishes on tag — keyless.** Pushing a `v<version>` tag re-runs every CI
+gate on the tagged commit, then the `publish` job (`.github/workflows/ci.yml`)
+ships to npm via **OIDC trusted publishing**: no stored token, provenance
+attached automatically (`publishConfig.provenance`). One-time prerequisites:
+the free npm **org `spec-engine`** exists, and the GitHub trusted publisher is
+registered for `@spec-engine/spec-engine` on npmjs.com (org/user
+`spec-engine`, repository `spec-engine`, workflow filename `ci.yml`, no
+environment).
 
-1. Bump `version` in `packages/engine/package.json`.
-2. `bun install` — refreshes `bun.lock` (bun resolves pack-time versions from
-   the lockfile; a stale one packs the wrong number).
-3. Rehearse: `cd packages/engine && bun pm pack --dry-run` — the file list must
-   be `dist/` + `package.json`/`README.md`/`LICENSE` only. Then
-   `bun pm pack && tar -xOf *.tgz package/package.json` and confirm no
-   `workspace:*` survives anywhere in the manifest; delete the tarball.
-4. Publish the **directory** (never a pre-packed tarball — that skips the
-   `prepack` build): `bun publish --access public --auth-type web` from
-   `packages/engine`. Always `bun publish`, never `npm publish` — only bun
-   rewrites any residual `workspace:` protocol.
-5. Tag and push: `git tag v<version> && git push --tags`.
+Release loop:
+
+1. Bump `version` in `packages/engine/package.json`, run `bun install` (a
+   stale lockfile packs the wrong number), and land the bump on `main`
+   through a normal PR.
+2. Tag and push: `git tag v<version> && git push --tags`. CI does the rest —
+   the publish job refuses a tag that doesn't match the package version, and
+   re-runs the pack rehearsal (file list is `dist/` +
+   `package.json`/`README.md`/`LICENSE` only; no `workspace:*` survives in the
+   manifest) before uploading.
+
+Inside the publish job, **bun packs and npm publishes**: `bun pm pack` runs
+`prepack` and rewrites the `workspace:` protocol (the two things the old
+manual rules protected), and `npm publish <tarball>` (npm ≥ 11.5.1) does the
+keyless OIDC upload — `bun publish` has no OIDC flow. Manual fallback, only
+if CI is unavailable: `bun publish --access public --auth-type web` from
+`packages/engine` (never `npm publish` from the directory — npm cannot
+rewrite `workspace:`).
 
 ## Reporting bugs
 
