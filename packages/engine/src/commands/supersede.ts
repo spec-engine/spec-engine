@@ -171,22 +171,19 @@ async function resolveSuccessorText(args: Record<string, unknown>, id: string): 
 }
 
 /**
- * Stage (b2): the successor's Why/Lives + binds. Flags win; otherwise carry
- * the old entry's values forward (bindings usually survive a revision).
- * `binds` has no JSON home (STOR-01) — it feeds the @-ref warner but is not
- * persisted.
+ * Stage (b2): the successor's Why/Lives. Flags win; otherwise carry the old
+ * entry's values forward (bindings usually survive a revision).
  */
 function resolveSuccessorFields(
   args: Record<string, unknown>,
   req: DomainRequirement,
-): { why: string; lives: string; binds: string } {
+): { why: string; lives: string } {
   const predWhy = typeof req.why === "string" ? req.why : "";
   const predLives =
     Array.isArray(req.livesIn) && req.livesIn.length > 0 ? String(req.livesIn[0]) : "";
   const why = ((args.why as string | undefined) ?? predWhy).trim();
   const lives = ((args.lives as string | undefined) ?? predLives).trim();
-  const binds = ((args.binds as string | undefined) ?? "").trim();
-  return { why, lives, binds };
+  return { why, lives };
 }
 
 /**
@@ -345,10 +342,6 @@ export const supersedeCommand = defineCommand({
       type: "string",
       description: "Successor's Why it matters (default: copied from the old entry)",
     },
-    binds: {
-      type: "string",
-      description: "Binds value (validated for @-refs; not persisted in JSON — STOR-01)",
-    },
     lives: {
       type: "string",
       description: "Successor's Lives in (default: copied from the old entry)",
@@ -386,11 +379,8 @@ export const supersedeCommand = defineCommand({
     // Statement-grammar gate (sentence 8): the successor's statement is new
     // text — judged against the domain's declared grammar before any write.
     await enforceStatementGrammar(platformDir, target.key, requirement, "spec supersede");
-    const { why, lives, binds } = resolveSuccessorFields(
-      args as Record<string, unknown>,
-      target.req,
-    );
-    warnUnresolvableRefs(platformDir, [requirement, why, binds, lives]);
+    const { why, lives } = resolveSuccessorFields(args as Record<string, unknown>, target.req);
+    warnUnresolvableRefs(platformDir, [requirement, why, lives]);
 
     const newId = await nextRequirementId(platformDir, target.key);
     // Wave B (06-02): only a TERM target carries the term/aliases branch — the

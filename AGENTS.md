@@ -127,7 +127,7 @@ Branch on exit codes, not on output text.
 | `spec init [repo]` | Write a member's `spec-engine.member.json` pin | yes (object) | 0 / 2 |
 | `spec domain new <KEY>` / `spec domain list` | Scaffold / list `spec-engine/<KEY>/SPEC.json` | `list`: yes (array) | 0 / 2 |
 | `spec migrate [platformDir]` | Hard-cutover every canonical `SPEC.md` to a schema-validated sibling `SPEC.json`, then delete the `SPEC.md` (idempotent; skips already-migrated dirs) | no | 0 / 2 |
-| `spec req <domain-prefix> [platformDir]` | Piped: print next unused ID. TTY: interactive authoring. `--text` (+`--why/--binds/--lives`): author non-interactively | yes (object) | 0 / 2 |
+| `spec req <domain-prefix> [platformDir]` | Piped: print next unused ID. TTY: interactive authoring. `--text` (+`--why/--lives`): author non-interactively | yes (object) | 0 / 2 |
 | `spec term <name> [platformDir]` / `spec term list` / `spec term revise <TERM-NNN>` / `spec term confirm <KEY-NNN> <TERM-NNN>` | Author a glossary TERM (definition in the statement, headword in `term`, `--aliases` synonyms), list terms, revise a definition in place with a version bump, or re-pin/re-point a requirement's citation (clears TERM_DRIFT / SUPERSEDED_TERM_REFERENCED) | yes (object/array) | 0 / 2 |
 | `spec glossary [platformDir]` | GENERATE GLOSSARY.md from the TERM store (byte-stable). `--migrate`: one-time parse of GLOSSARY.md into `TERM-001..N` (idempotent-skip). `--check`: fail on drift (committed != generated) | yes (object) | 0 / 1 / 2 |
 | `spec deprecate <KEY-NNN> --reason "…" [platformDir]` | Mark an Active/Draft requirement end-of-life, recording why on the entry; emits the cleanup worklist of tags still bound to the id | yes (object) | 0 / 2 |
@@ -172,15 +172,16 @@ edited specs or tags and need the answer to reflect it.
   Outside git the check stays quiet (never-fail-non-git). `--ci` deletes the DB first (cold
   rebuild — correctness never trusts a warm index). JSON rows:
   `{ code, severity, repo, source_file, line, req_id, detail }` (nullable
-  except `code`/`severity`/`detail`). Codes: `DUP_ID`, `BROKEN_SUPERSEDE`,
-  `CYCLIC_SUPERSEDE`, `DANGLING_TAG`, `BAD_STATUS`, `DRIFT`,
-  `SUPERSEDED_REFERENCED`, `DEPRECATED_REFERENCED`, `ORPHAN_REQ`, `UNVERIFIED_REQ`,
-  `SUPERSEDED_REFERENCED`, `DRAFT_REFERENCED`, `ORPHAN_REQ`, `UNVERIFIED_REQ`,
-  `GLOSSARY_DRIFT`,
-  `NO_SPEC_CONFIG`, `BROKEN_FILE_REF`, `BROKEN_RELATES`,
-  `RELATES_SUPERSEDED`, `SELF_RELATES`, `UNDEFINED_TERM`,
-  `ORPHAN_TERM`, `TERM_DRIFT`, `SUPERSEDED_TERM_REFERENCED`,
-  `STATEMENT_GRAMMAR`. The four
+  except `code`/`severity`/`detail`). Codes, in `DiagnosticCode` order:
+  `DUP_ID`, `BROKEN_SUPERSEDE`, `BAD_STATUS`, `DANGLING_TAG`,
+  `SUPERSEDED_REFERENCED`, `DEPRECATED_REFERENCED`, `STATEMENT_GRAMMAR`,
+  `DRAFT_REFERENCED`, `GLOSSARY_DRIFT`, `ORPHAN_REQ`, `UNVERIFIED_REQ`,
+  `DRIFT`, `NO_SPEC_CONFIG`, `BROKEN_FILE_REF`, `BROKEN_RELATES`,
+  `RELATES_SUPERSEDED`, `CYCLIC_SUPERSEDE`, `SELF_RELATES`,
+  `UNKNOWN_ROLE`, `UNSOURCED_CHANGE`, `INVALID_DOMAIN_FILE`,
+  `UNPROVEN_REQ`, `PROOFS_UNCONFIRMED`, `REQUIREMENT_REMOVED`,
+  `UNAPPROVED_STATUS_FLIP`, `PARTIAL_PROPAGATION`, `UNDEFINED_TERM`,
+  `ORPHAN_TERM`, `TERM_DRIFT`, `SUPERSEDED_TERM_REFERENCED`. The four
   term-store codes (Phase 6): `UNDEFINED_TERM`
   (**error** — a requirement's `cites` entry resolves to no TERM, so it
   gates `--ci`) and `ORPHAN_TERM` (**warning** — an Active TERM entry that
@@ -194,6 +195,14 @@ edited specs or tags and need the answer to reflect it.
   one level up, so it gates `--ci`). Both clear via `spec term confirm`; the
   drift predicate (`term.changed_at_version > citation.pinned`) lives in the
   ONE `term_drift` VIEW, cloned from the member-pin `drift` VIEW.
+  - **`BROKEN_FILE_REF`** (**error**) — an Active/Draft requirement's
+    `livesIn` entry does not resolve to a file under the platform root
+    (a traversal ref landing outside the root is broken even if it exists).
+    Read from the SPEC.json files, like the grammar pass: `livesIn` has no
+    index column. Terminal-status entries are exempt — the file a retired
+    requirement used to live in is expected to be gone. Scoped to `livesIn`
+    and NOT to free field text, where the @-ref grammar's slash rule cannot
+    tell a path from a scoped npm package name (`@spec-engine/spec-engine`).
   - **trusted-red (`--results <junit.xml>`)** — pass your test runner's JUnit
     XML and `check` enforces proof-of-passing: an active requirement is
     `PROVEN` only with ≥1 **passing** verifying tag; a tag on a failing or
@@ -292,7 +301,7 @@ edited specs or tags and need the answer to reflect it.
   `--json` prints `{ domain, next_id }` instead and forces the same
   zero-prompt / zero-write id query even on a TTY.
   **Non-interactive authoring:** `--text "<requirement>"` appends the entry
-  with zero prompts (TTY or not); `--why` / `--binds` / `--lives` fill the
+  with zero prompts (TTY or not); `--why` / `--lives` fill the
   other fields and `--issue <ticket>` records created-provenance (opaque id,
   never a requirement id); they error without `--text`. With `--json`
   the write confirms as `{ id, file }`. Unresolvable `@<path>` refs warn on
@@ -350,7 +359,7 @@ edited specs or tags and need the answer to reflect it.
 - **`spec supersede`** — the post-ship lifecycle move. Requires the target
   to be `Active` (already-superseded / Draft / Deprecated → exit 2 with
   guidance). Successor fields: `--text` is the new Requirement (mandatory
-  non-TTY; prompted on a TTY); `--why` / `--binds` / `--lives` default to
+  non-TTY; prompted on a TTY); `--why` / `--lives` default to
   COPIES of the old entry's values. `--issue <ticket>` records the ticket
   that caused the supersession — supersedes-via on the predecessor (what
   UNSOURCED_CHANGE inspects) and created on the successor.
@@ -387,7 +396,7 @@ edited specs or tags and need the answer to reflect it.
   no-op there. A TERM side keeps its authored `specVersion` bump and honors
   `--no-bump` (then that side's version is null).
 - **`spec amend`** — the pre-production counterpart to supersede. Field
-  flags (`--text` / `--why` / `--binds` / `--lives` / `--issue`, the last
+  flags (`--text` / `--why` / `--lives` / `--issue`, the last
   appending amends-via provenance) name what changes; at
   least one is required, untouched fields stay byte-identical. Only Active
   and Draft entries amend (superseded/deprecated → exit 2). Bumps frontmatter

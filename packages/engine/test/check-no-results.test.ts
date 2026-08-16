@@ -41,13 +41,17 @@ const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "fixtures", "platform
 
 // SOURCE OF TRUTH for the planted defect set against the canonical fixture.
 // Re-declared here (mirroring check-ci.test.ts) so the GATE-05 no-results path
-// is proven to leave the exact same 6-row --json stdout baseline — i.e. the
+// is proven to leave the exact same 10-row --json stdout baseline — i.e. the
 // PROOFS_UNCONFIRMED advisory must NOT appear as an element of this array.
 const EXPECTED_DIAGNOSTICS: Array<{
   code: DiagnosticCode;
   repo: string | null;
   req_id: string | null;
 }> = [
+  { code: "BROKEN_FILE_REF", repo: null, req_id: "AUTH-001" },
+  { code: "BROKEN_FILE_REF", repo: null, req_id: "BILLING-002" },
+  { code: "BROKEN_FILE_REF", repo: null, req_id: "BILLING-007" },
+  { code: "BROKEN_FILE_REF", repo: null, req_id: "BILLING-009" },
   { code: "DANGLING_TAG", repo: "admin", req_id: "BILLING-999" },
   { code: "DRIFT", repo: "mobile", req_id: "BILLING-001" },
   { code: "ORPHAN_REQ", repo: null, req_id: "AUTH-001" },

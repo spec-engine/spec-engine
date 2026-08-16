@@ -33,10 +33,12 @@ export const DiagnosticCode = {
   UNVERIFIED_REQ: "UNVERIFIED_REQ",
   DRIFT: "DRIFT",
   NO_SPEC_CONFIG: "NO_SPEC_CONFIG",
-  // 260605-tqz (D-03 / AUTHC-025): an `@<relative/path>` file reference in
-  // requirement field text does not resolve to an existing file under the
-  // platform root (traversal refs resolving OUTSIDE the root are also
-  // broken). Warning severity — authored prose may legitimately lag code.
+  // An Active/Draft requirement's `livesIn` entry does not resolve to an
+  // existing file under the platform root (a traversal ref resolving OUTSIDE
+  // the root is broken too). Error severity — a requirement pointing at a
+  // file that is not there is a broken link. Scoped to `livesIn`, not free
+  // field text, where a scoped npm package name is indistinguishable from a
+  // path under the @-ref grammar.
   BROKEN_FILE_REF: "BROKEN_FILE_REF",
   // RED-16: a `**Relates:**` entry points at a requirement id that does not
   // exist in the index. Warning severity — relations are advisory links,

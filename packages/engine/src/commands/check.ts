@@ -45,6 +45,7 @@ import {
 import { defineCommand } from "citty";
 import { gitLsTree, gitRefResolves, gitShow } from "../base/gitBase";
 import { parseCodeowners } from "../check/codeowners";
+import { brokenFileRefDiagnostics } from "../check/filerefs";
 import { renderDiagnostics } from "../check/format";
 import { statementGrammarDiagnostics } from "../check/grammar";
 import { changedRules, partialPropagation } from "../check/propagation-teeth";
@@ -537,6 +538,12 @@ export const checkCommand = defineCommand({
       // predicate — a domain opts into error severity explicitly.
       // @spec CHCK-008
       diagnostics.push(...(await statementGrammarDiagnostics(platformDir)));
+      // File-ref pass: an Active/Draft requirement's `livesIn` entries must
+      // resolve to files under the platform root. Error severity — a
+      // requirement pointing at a file that does not exist is a broken link,
+      // not a style preference.
+      // @spec CHCK-026
+      diagnostics.push(...(await brokenFileRefDiagnostics(platformDir)));
       // Glossary round-trip probe (drift audit, statement 5): a committed
       // GLOSSARY.md that no longer matches the TERM store surfaces in EVERY
       // check run, not just this repo's CI fence — adopters get the warning

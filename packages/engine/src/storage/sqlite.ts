@@ -773,6 +773,10 @@ const RESOLVE_BY_FILES_SQL_SUFFIX = ") ORDER BY r.key, r.seq";
 
 const LIST_REPOS_SQL = "SELECT name, path, pinned_spec_version FROM repos ORDER BY name";
 const GET_REPO_SQL = "SELECT name, path, pinned_spec_version FROM repos WHERE name = $name";
+const LIST_DOMAINS_SQL =
+  "SELECT key, owner, schema, spec_version, source_repo FROM domains ORDER BY key";
+const GET_DOMAIN_SQL =
+  "SELECT key, owner, schema, spec_version, source_repo FROM domains WHERE key = $key";
 
 // T7: real listTags (the Phase-1 stub returned [] forever). One statement,
 // NULL-tolerant filters — `$x IS NULL OR col = $x` keeps the bind shape
@@ -814,17 +818,10 @@ class SqliteStorage implements Storage {
     this.#db.close();
   }
 
-  // --- Phase 5 / plan 05-03 + Phase 6 / plan 06-01 read promotions ---
-  //
-  // `listRepos`, `listRequirements`, `getRequirement` were Phase 1 stubs
-  // returning [] / null because no member needed them yet. Plan 05-03's
-  // `/api/requirements*` HTTP routes (server/api.ts) read through these
-  // three methods, so they're now real prepared SELECTs over LIST_REPOS_SQL
-  // / LIST_REQUIREMENTS_SQL_* / GET_REQUIREMENT_SQL (defined module-scope
-  // above). Plan 06-01 promotes `getRepo` (consumed by `spec gate` —
-  // commands/gate.ts — for the GATE-01 VERSION_PIN check). The remaining
-  // stubs (`listDomains`, `getDomain`, `listTags`) stay Phase 1 placeholders
-  // — they have no member through Phase 6.
+  // Every read method below is a real prepared SELECT over its table. A
+  // method that cannot answer must throw, never return [] or null — an empty
+  // result is indistinguishable from "no rows matched" at the call site, so a
+  // placeholder returning one silently reports an empty platform.
 
   /** Plan 05-03 promotion: real SELECT over `repos`, alphabetic by name. */
   listRepos(): Repo[] {
@@ -837,11 +834,14 @@ class SqliteStorage implements Storage {
     const row = this.#db.query(GET_REPO_SQL).get({ name }) as Repo | null;
     return row ?? null;
   }
+  /** Real SELECT over `domains`, ordered by key. */
   listDomains(): Domain[] {
-    return [];
+    return this.#db.query(LIST_DOMAINS_SQL).all() as Domain[];
   }
-  getDomain(_key: string): Domain | null {
-    return null;
+  /** Real SELECT over `domains` by key; null if no row matches. */
+  getDomain(key: string): Domain | null {
+    const row = this.#db.query(GET_DOMAIN_SQL).get({ key }) as Domain | null;
+    return row ?? null;
   }
   /** Plan 05-03 promotion: real SELECT over `requirements` with optional
    *  `key` and `status` filters (combined via AND when both are set). The
