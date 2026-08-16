@@ -186,9 +186,13 @@ jobs:
           # malformed `**Issues:** ... bogus-no-colon ...` token on BILLING-002,
           # which the provenance parser surfaces as a warning-severity
           # UNKNOWN_ROLE diagnostic (PROV-05: surfaced at parse time AND dropped).
-          # It joins the planted-mess baseline, so the inverted CI set is 6 rows.
+          # It joins the planted-mess baseline, so the inverted CI set is 10 rows.
           # Source of truth duplicated from check-ci.test.ts::EXPECTED_DIAGNOSTICS.
-          EXPECTED=$(printf "%b\n%b\n%b\n%b\n%b\n%b" \
+          EXPECTED=$(printf "%b\n%b\n%b\n%b\n%b\n%b\n%b\n%b\n%b\n%b" \
+            "BROKEN_FILE_REF\t\tAUTH-001" \
+            "BROKEN_FILE_REF\t\tBILLING-002" \
+            "BROKEN_FILE_REF\t\tBILLING-007" \
+            "BROKEN_FILE_REF\t\tBILLING-009" \
             "DANGLING_TAG\tadmin\tBILLING-999" \
             "DRIFT\tmobile\tBILLING-001" \
             "ORPHAN_REQ\t\tAUTH-001" \
@@ -652,13 +656,13 @@ jobs:
           # the CLI surface (cli-check-unit.test.ts). This smoke is the final
           # defense-in-depth layer mirroring smoke 7: the COMPILED binary must
           # (A) emit ZERO UNSOURCED_CHANGE rows WITHOUT the flag — byte-identical
-          #     to smoke 7's 6-row inverted-CI baseline (off-by-default survives
+          #     to smoke 7's 10-row inverted-CI baseline (off-by-default survives
           #     `bun build --compile`), and
-          # (B) emit exactly the 6 + 1 {UNSOURCED_CHANGE, BILLING-001} set WITH
+          # (B) emit exactly the 10 + 1 {UNSOURCED_CHANGE, BILLING-001} set WITH
           #     --unsourced-change — proving citty's flag is wired through the
           #     `--compile` lazy-import boundary.
           # Like smoke 7, `spec check --ci` exits 1 here because the canonical
-          # fixture carries 5 ERROR-severity planted defects; the new
+          # fixture carries 9 ERROR-severity planted defects; the new
           # UNSOURCED_CHANGE row is WARNING and must NOT change that exit code.
           # We assert on the diagnostic SET (not exit 0), capturing exit via
           # `set +e` so pipefail does not kill us on the expected exit 1.
@@ -673,11 +677,15 @@ jobs:
             process.stdout.write(keys);
           '
 
-          # The same 6-row planted baseline smoke 7 asserts (source of truth:
+          # The same 10-row planted baseline smoke 7 asserts (source of truth:
           # packages/engine/test/check-ci.test.ts::EXPECTED_DIAGNOSTICS).
           # `printf "%b"` (NOT `%s`) so the `\t` escapes become real TABs that
           # match the tabs $GOT carries; `%s` would leave literal backslash-t.
-          EXPECTED_NOFLAG=$(printf "%b\n%b\n%b\n%b\n%b\n%b" \
+          EXPECTED_NOFLAG=$(printf "%b\n%b\n%b\n%b\n%b\n%b\n%b\n%b\n%b\n%b" \
+            "BROKEN_FILE_REF\t\tAUTH-001" \
+            "BROKEN_FILE_REF\t\tBILLING-002" \
+            "BROKEN_FILE_REF\t\tBILLING-007" \
+            "BROKEN_FILE_REF\t\tBILLING-009" \
             "DANGLING_TAG\tadmin\tBILLING-999" \
             "DRIFT\tmobile\tBILLING-001" \
             "ORPHAN_REQ\t\tAUTH-001" \
@@ -686,7 +694,7 @@ jobs:
             "UNVERIFIED_REQ\t\tBILLING-002" \
           )
 
-          # Part A — NO flag: must equal smoke 7's 6-row set byte-identically
+          # Part A — NO flag: must equal smoke 7's 10-row set byte-identically
           # (off-by-default at the dist layer; zero UNSOURCED_CHANGE rows).
           set +e
           OUT_A=$(./dist/spec check --ci fixtures/platform-fixture --json)
@@ -705,10 +713,14 @@ jobs:
             exit 1
           }
 
-          # The 6 + 1 flagged set: the same 6 PLUS one
+          # The 10 + 1 flagged set: the same 10 PLUS one
           #   UNSOURCED_CHANGE\t\tBILLING-001  (repo empty, req_id BILLING-001)
           # which sorts after UNKNOWN_ROLE and before UNVERIFIED_REQ.
-          EXPECTED_FLAG=$(printf "%b\n%b\n%b\n%b\n%b\n%b\n%b" \
+          EXPECTED_FLAG=$(printf "%b\n%b\n%b\n%b\n%b\n%b\n%b\n%b\n%b\n%b\n%b" \
+            "BROKEN_FILE_REF\t\tAUTH-001" \
+            "BROKEN_FILE_REF\t\tBILLING-002" \
+            "BROKEN_FILE_REF\t\tBILLING-007" \
+            "BROKEN_FILE_REF\t\tBILLING-009" \
             "DANGLING_TAG\tadmin\tBILLING-999" \
             "DRIFT\tmobile\tBILLING-001" \
             "ORPHAN_REQ\t\tAUTH-001" \
@@ -945,7 +957,7 @@ jobs:
           set -euo pipefail
           # GATE-05 / Phase 19: this phase MUST NOT perturb the pre-existing
           # no-results inverted-CI --json baseline. `spec check --ci --json` with
-          # NO --results must still emit EXACTLY the 6-row planted set smoke 7 / 18
+          # NO --results must still emit EXACTLY the 10-row planted set smoke 7 / 18
           # assert — PROOFS_UNCONFIRMED goes to STDERR, never the stdout diagnostic
           # array (check.ts:225-231). This step INDEPENDENTLY re-verifies smoke 7 /
           # smoke 18's baseline at the dist layer without editing their expected
@@ -961,10 +973,14 @@ jobs:
             const keys = rows.map(d => `${d.code}\t${d.repo ?? ""}\t${d.req_id ?? ""}`).sort().join("\n");
             process.stdout.write(keys);
           '
-          # The same 6-row planted baseline smoke 7 / smoke 18 assert (source of
+          # The same 10-row planted baseline smoke 7 / smoke 18 assert (source of
           # truth: packages/engine/test/check-ci.test.ts::EXPECTED_DIAGNOSTICS).
           # `printf "%b"` (NOT `%s`) so the `\t` escapes become real TABs.
-          EXPECTED_NOFLAG=$(printf "%b\n%b\n%b\n%b\n%b\n%b" \
+          EXPECTED_NOFLAG=$(printf "%b\n%b\n%b\n%b\n%b\n%b\n%b\n%b\n%b\n%b" \
+            "BROKEN_FILE_REF\t\tAUTH-001" \
+            "BROKEN_FILE_REF\t\tBILLING-002" \
+            "BROKEN_FILE_REF\t\tBILLING-007" \
+            "BROKEN_FILE_REF\t\tBILLING-009" \
             "DANGLING_TAG\tadmin\tBILLING-999" \
             "DRIFT\tmobile\tBILLING-001" \
             "ORPHAN_REQ\t\tAUTH-001" \
