@@ -18,19 +18,9 @@
 import { join } from "node:path";
 import { type Diagnostic, DiagnosticCode, parseEarsStatement } from "@spec-engine/shared";
 import { listDomainKeys } from "../authoring/domains";
+import { findRequirementIdLine } from "../parser/requirementLine";
 
 const CHECKED_STATUSES = new Set(["active", "draft"]);
-
-/** 1-based line of the literal `"id": "<id>"` in the raw JSON text (the same
- *  deterministic scan the parser uses); 0 when not found. */
-function lineOf(rawText: string, id: string): number {
-  const lines = rawText.split("\n");
-  const needle = `"id": "${id}"`;
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].includes(needle)) return i + 1;
-  }
-  return 0;
-}
 
 interface DeclaredDomain {
   raw: string;
@@ -65,8 +55,15 @@ async function readDeclaredDomain(
 /** The STATEMENT_GRAMMAR rows for one declared domain. */
 function rowsForDomain(key: string, domain: DeclaredDomain): Diagnostic[] {
   const rows: Diagnostic[] = [];
+  const rawLines = domain.raw.split("\n");
+  let lineCursor = 0;
   for (const req of domain.requirements) {
-    if (typeof req?.id !== "string" || typeof req.statement !== "string") continue;
+    if (typeof req?.id !== "string") continue;
+    // Resolve the line before the status filter so the cursor stays monotonic
+    // across entries this pass skips.
+    const found = findRequirementIdLine(rawLines, req.id, lineCursor);
+    if (found >= 0) lineCursor = found + 1;
+    if (typeof req.statement !== "string") continue;
     const status = typeof req.status === "string" ? req.status.toLowerCase() : "";
     if (!CHECKED_STATUSES.has(status)) continue;
     const result = parseEarsStatement(req.statement);
@@ -76,7 +73,7 @@ function rowsForDomain(key: string, domain: DeclaredDomain): Diagnostic[] {
       severity: domain.severity,
       repo: null,
       source_file: `spec-engine/${key}/SPEC.json`,
-      line: lineOf(domain.raw, req.id),
+      line: found >= 0 ? found + 1 : 0,
       req_id: req.id,
       detail: `${result.problem}. Expected one of:\n  ${result.expected}`,
     });
