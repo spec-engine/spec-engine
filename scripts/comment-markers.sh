@@ -26,11 +26,13 @@ sources() {
 }
 
 current() {
-  local f n
-  while IFS= read -r f; do
-    n=$(grep -cE "$MARKER" "$f" || true)
-    if [ "${n:-0}" -gt 0 ]; then printf '%s\t%s\n' "$n" "$f"; fi
-  done < <(sources)
+  local files=()
+  while IFS= read -r f; do files+=("$f"); done < <(sources)
+  # One grep over every source file rather than one per file: `-c` with several
+  # operands prints `<path>:<count>`, and /dev/null guarantees several so the
+  # path prefix is never dropped on a single-file tree.
+  grep -cE "$MARKER" /dev/null "${files[@]}" 2>/dev/null |
+    awk -F: '$2 > 0 { printf "%s\t%s\n", $2, $1 }' || true
 }
 
 # Self-tests: the pattern must catch a planted marker and must ignore a bare
