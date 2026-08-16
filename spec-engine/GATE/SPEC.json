@@ -2,7 +2,7 @@
   "key": "GATE",
   "owner": "drea",
   "updated": "2026-07-30",
-  "scope": "The `spec gate` approval command: the pass/fail decision order (NOT_FOUND → DRAFT → SUPERSEDED → VERSION_PIN → PASS), pin-equality passing. Belongs here: the approval decision. Does not belong here: proof-of-passing → PROOF; loss detection → GUARD.",
+  "scope": "The `spec gate` approval command: the pass/fail decision order (NOT_FOUND → DRAFT → SUPERSEDED → VERSION_PIN → PASS), pin-equality passing. Belongs here: the approval decision. Does not belong here: proof-of-passing → PROOF; loss detection → GUARD. Boundary case: an unknown repo name is a usage error (exit 2), not a gate failure — that contract belongs to GATE, not CHCK.",
   "grammar": "ears",
   "requirements": [
     {

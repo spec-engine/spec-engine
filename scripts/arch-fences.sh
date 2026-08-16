@@ -384,6 +384,19 @@ fence_agents_check_codes() {
   echo "AGENTS check-codes fence: OK (list == DiagnosticCode enum)"
 }
 
+# --- TAXONOMY.md per-domain charters are generated from the envelopes --------
+# The charter used to live in two hand-synced homes, and they had drifted in 17
+# of 19 domains. The envelope `scope` is canonical (it ships with adopters and
+# feeds `spec domain list` / `spec req`); the document is derived from it.
+fence_taxonomy_charters() {
+  if bun scripts/gen-charters.ts --check; then
+    echo "charter generation fence: OK (TAXONOMY.md == envelope scope fields)"
+  else
+    echo "FORBIDDEN: TAXONOMY.md drifted from the envelope scope fields (run \`bun scripts/gen-charters.ts\`)"
+    exit 1
+  fi
+}
+
 run "D-11 bun:sqlite outside engine"        fence_d11_bun_sqlite
 run "D-08 engine-internal bun:sqlite"       fence_d08_engine_internal
 run "SCHM-07 schema-constraint"             fence_schm07_schema_constraint
@@ -401,6 +414,7 @@ run "AUTHOR-003 llm-free engine"            fence_llmfree_engine
 run "TERM-06 glossary round-trip"           fence_glossary_roundtrip
 run "SCHM-008 no authored specVersion"      fence_no_authored_specversion
 run "AGENTS check-codes list"               fence_agents_check_codes
+run "CHRT charters generated"               fence_taxonomy_charters
 
 if [ "$fail" -ne 0 ]; then
   echo ""
