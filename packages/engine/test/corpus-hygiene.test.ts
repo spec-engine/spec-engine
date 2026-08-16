@@ -98,24 +98,20 @@ describe("corpus hygiene (STND-02 — citation retargeting)", () => {
   });
 });
 
-// Plan 04-03 / STND-03 — the AUTHC-017 eviction regression. The import-count
-// rule was reclassified as a dev convention (AGENTS.md + the D-08 CI fence),
-// not a spec-engine requirement. This locks the eviction: the id is gone from
-// the envelope, no binding @spec tag survives, its comment citations are
-// reworded to D-08, and the only surviving AUTHC-017 token is the audited
-// `@spec approve` guard tombstone. Matcher note: /@spec\s+AUTHC-017/ is
-// BINDING-specific — it does NOT match the `@spec approve AUTHC-017` form
-// (whitespace after @spec is followed by "approve", not the id).
-describe("corpus hygiene (STND-03 — AUTHC-017 eviction)", () => {
+// The import-count rule is a dev convention (AGENTS.md + the D-08 fence), not
+// a requirement. This locks its eviction: the AUTHC domain is gone, no binding
+// @spec tag survives, and no citation site carries the id.
+//
+// Matcher note: /@spec\s+AUTHC-017/ is BINDING-specific — it does not match
+// the `@spec approve AUTHC-017` form, where the whitespace after @spec is
+// followed by "approve" rather than the id.
+describe("corpus hygiene (AUTHC-017 eviction)", () => {
   const AUTHC_SPEC = join(SPEC_ENGINE, "AUTHC", "SPEC.json");
   const DOMAINS_TS = join(ENGINE_SRC, "authoring", "domains.ts");
   const BINDING_TAG_RE = /@spec\s+AUTHC-017/;
 
-  test("AUTHC-017 is absent from the AUTHC envelope", async () => {
-    const env = JSON.parse(await Bun.file(AUTHC_SPEC).text()) as {
-      requirements: Array<{ id: string }>;
-    };
-    expect(env.requirements.some((r) => r.id === "AUTHC-017")).toBe(false);
+  test("the AUTHC domain is absent from the platform", async () => {
+    expect(await Bun.file(AUTHC_SPEC).exists()).toBe(false);
   });
 
   test("the reworded citation sites carry no AUTHC-017 token", async () => {

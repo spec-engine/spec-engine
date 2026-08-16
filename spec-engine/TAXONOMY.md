@@ -283,13 +283,6 @@ an `@spec`-tagged code obligation.
   feature code is tagged `@spec SCHM-NNN`; glossary data is authored at
   `TERM-NNN`.
 
-### Archive domains — AUTHC, POC, GOV
-
-These three domains hold no Active requirements: every entry is superseded or
-deprecated. They are history — the permanent record of requirements that were
-reorganized into the domains above — and are never deleted. Do not mint new
-requirements in them.
-
 ---
 
 ## Requirement authoring standard
