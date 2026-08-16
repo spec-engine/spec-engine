@@ -74,7 +74,6 @@ describe("VAL-01 round-trip — appendEntry writes JSON the index reads back (ST
     const relFile = await appendEntry(tmp, "BILLING", id, {
       requirement: "Charge renewals at the current plan price",
       why: "Revenue correctness",
-      binds: "",
       lives: "@api/src/renew.ts",
     });
     expect(relFile).toBe("spec-engine/BILLING/SPEC.json");
@@ -99,7 +98,6 @@ describe("VAL-01 round-trip — appendEntry writes JSON the index reads back (ST
     await appendEntry(tmp, "BILLING", id, {
       requirement: "Charge renewals at the current plan price",
       why: "Revenue correctness",
-      binds: "",
       lives: "",
     });
 

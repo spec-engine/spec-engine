@@ -59,6 +59,13 @@ const EXPECTED_DIAGNOSTICS: Array<{
   repo: string | null;
   req_id: string | null;
 }> = [
+  // The fixture's Active entries carry bare-filename `livesIn` values
+  // (`session.ts`, `charge.ts`, `tax.ts`, `renew.ts`) that do not resolve
+  // against the platform root, so each is a planted BROKEN_FILE_REF.
+  { code: "BROKEN_FILE_REF", repo: null, req_id: "AUTH-001" },
+  { code: "BROKEN_FILE_REF", repo: null, req_id: "BILLING-002" },
+  { code: "BROKEN_FILE_REF", repo: null, req_id: "BILLING-007" },
+  { code: "BROKEN_FILE_REF", repo: null, req_id: "BILLING-009" },
   { code: "DANGLING_TAG", repo: "admin", req_id: "BILLING-999" },
   { code: "DRIFT", repo: "mobile", req_id: "BILLING-001" },
   { code: "ORPHAN_REQ", repo: null, req_id: "AUTH-001" },

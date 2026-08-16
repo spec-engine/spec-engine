@@ -9,8 +9,7 @@
 // VAL-01 (17-05): amend now mutates the requirement OBJECT in the domain's
 // SPEC.json and writes ONCE through validateAndWrite — no Markdown text
 // edit, no bespoke Bun.write. Field mapping: --text→statement, --why→why,
-// --lives→livesIn[]. `--binds` has no JSON home (STOR-01) — it is fed to
-// the @-ref warner but never persisted.
+// --lives→livesIn[].
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";

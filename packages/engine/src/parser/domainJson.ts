@@ -48,6 +48,7 @@ import {
   type TermAliasRow,
   validateDomainFile,
 } from "@spec-engine/shared";
+import { findRequirementIdLine } from "./requirementLine";
 import type { ParsedSpec, RawTermCitation } from "./types";
 
 // Lowercase authored JSON status → internal Capitalized RequirementStatus. A
@@ -193,7 +194,7 @@ interface TermAcc {
  * wrapper `parseDomainJsonFile` above does parse + validate + map for standalone
  * callers (e.g. the reader unit test). Both share this ONE mapping so the read
  * path cannot fork. The heavy per-requirement work is split into named helpers
- * (`deriveRequirementLine`, `mapRequirementRow`, `flattenRelates`,
+ * (`findRequirementIdLine`, `mapRequirementRow`, `flattenRelates`,
  * `flattenIssues`, `assignChangedAtVersion`) — this driver just wires them.
  */
 export function parseDomainJson(opts: ParseDomainJsonOptions): ParsedSpec {
@@ -215,9 +216,10 @@ export function parseDomainJson(opts: ParseDomainJsonOptions): ParsedSpec {
   const spec_version = deriveDomainVersion(data.requirements);
   const updated: string | null = data.updated ?? null;
 
-  // Deterministic `line` derivation (T-17-02): split the RAW text once; each
-  // requirement's line is located by `deriveRequirementLine`.
+  // Split the RAW text once; each requirement's line is located by
+  // `findRequirementIdLine` under a cursor that only moves forward.
   const rawLines = text.split("\n");
+  let lineCursor = 0;
 
   const working: Working[] = [];
   const relatesAcc: RelatesAcc = {
@@ -240,7 +242,10 @@ export function parseDomainJson(opts: ParseDomainJsonOptions): ParsedSpec {
 
   for (let idx = 0; idx < data.requirements.length; idx++) {
     const r = data.requirements[idx] as DomainRequirement;
-    const line = deriveRequirementLine(rawLines, r.id, idx);
+    const found = findRequirementIdLine(rawLines, r.id, lineCursor);
+    // An absent id still needs a stable positive integer: build_id hashes `line`.
+    const line = found >= 0 ? found + 1 : idx + 1;
+    if (found >= 0) lineCursor = found + 1;
     working.push(mapRequirementRow(r, key, sourceFile, spec_version, line));
     flattenRelates(r, sourceFile, line, relatesAcc);
     flattenIssues(r, sourceFile, line, issuesAcc);
@@ -275,20 +280,6 @@ export function parseDomainJson(opts: ParseDomainJsonOptions): ParsedSpec {
     term_aliases: termAcc.aliases,
     term_citations: termAcc.citations,
   };
-}
-
-/**
- * Deterministic `line` derivation (T-17-02, Pitfall 4): `JSON.parse` discards
- * source positions, so locate each requirement's `"id": "<id>"` via a LITERAL
- * substring search — NEVER a dynamically-built RegExp (the T-17-02 ReDoS
- * mitigation). `findIndex` returns -1 when absent (e.g. an id not on its own
- * `"id"` line); fall back to a fixed value so `line` stays a stable,
- * deterministic positive integer (build_id hashes it).
- */
-function deriveRequirementLine(rawLines: string[], id: string, idx: number): number {
-  const needle = `"id": "${id}"`;
-  const found = rawLines.findIndex((l) => l.includes(needle));
-  return found >= 0 ? found + 1 : idx + 1;
 }
 
 /**

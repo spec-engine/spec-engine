@@ -115,7 +115,7 @@ One-time hard cutover: convert every legacy canonical `SPEC.md` to a schema-vali
 
 ### `spec req <domain-prefix> [platformDir]`
 
-**Piped:** prints the next unused requirement ID (e.g. `BILLING-010`) — zero prompts, zero writes. **TTY:** interactive authoring. **`--text` (+ `--why` / `--binds` / `--lives`):** appends a born-active entry non-interactively through the validated write seam. Prefix is case-insensitive (`bil` → `BILLING`; ambiguous → exit 2). `spec req <domain>` alone prints the domain's charter before authoring.
+**Piped:** prints the next unused requirement ID (e.g. `BILLING-010`) — zero prompts, zero writes. **TTY:** interactive authoring. **`--text` (+ `--why` / `--lives`):** appends a born-active entry non-interactively through the validated write seam. Prefix is case-insensitive (`bil` → `BILLING`; ambiguous → exit 2). `spec req <domain>` alone prints the domain's charter before authoring.
 
 **Exit codes:** 0 / 2
 
@@ -140,7 +140,7 @@ The GLOSSARY.md round-trip. Default: **generate** GLOSSARY.md from the TERM stor
 
 ### `spec supersede <reqId> [platformDir]`
 
-The post-ship lifecycle move, mechanized. Flips the entry to superseded, mints the successor (`--text` required non-TTY; `--why`/`--binds`/`--lives` default to copies), reindexes, and prints the **retag worklist** — every code site still on the old ID. The target must be Active.
+The post-ship lifecycle move, mechanized. Flips the entry to superseded, mints the successor (`--text` required non-TTY; `--why`/`--lives` default to copies), reindexes, and prints the **retag worklist** — every code site still on the old ID. The target must be Active.
 
 On a requirement domain the reported `spec_version` is the **derived** domain version after the supersession — no authored counter is written, and `--no-bump` is a no-op (there is no counter to hold back). On the reserved TERM domain the authored `specVersion` still bumps (it is the term-drift pin) and `--no-bump` opts out.
 
@@ -156,7 +156,7 @@ Cross-domain supersede for taxonomy reorganization: mints the successor as the n
 
 ### `spec amend <reqId> [platformDir]`
 
-Revise an unshipped requirement's fields in place — same ID, no version change (the domain version only derives from supersessions). Field flags name what changes (`--text`/`--why`/`--binds`/`--lives`, at least one); untouched fields stay byte-identical. Only Active and Draft entries amend.
+Revise an unshipped requirement's fields in place — same ID, no version change (the domain version only derives from supersessions). Field flags name what changes (`--text`/`--why`/`--lives`, at least one); untouched fields stay byte-identical. Only Active and Draft entries amend.
 
 **Exit codes:** 0 / 2
 

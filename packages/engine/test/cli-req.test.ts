@@ -251,7 +251,7 @@ describe("spec req — platform guard (AUTHC-015)", () => {
 // ---------------------------------------------------------------------------
 
 describe("spec req — interactive authoring (AUTHC-019/021/022/024)", () => {
-  test("TTY append: four answers → parseable em-dash block, updated: bumped, id round-trips", async () => {
+  test("TTY append: three answers → parseable em-dash block, updated: bumped, id round-trips", async () => {
     writeDomain(tmp, "BILLING", [1, 9], "2020-01-01");
     // A resolvable @-ref target for the happy path (no warning expected).
     mkdirSync(join(tmp, "api", "src"), { recursive: true });
@@ -260,7 +260,6 @@ describe("spec req — interactive authoring (AUTHC-019/021/022/024)", () => {
     mockReadlineQueue([
       "Charge renewals at current price",
       "Revenue correctness",
-      "",
       "@api/src/renew.ts",
     ]);
 
@@ -274,7 +273,7 @@ describe("spec req — interactive authoring (AUTHC-019/021/022/024)", () => {
     expect(added.status).toBe("active");
     expect(added.statement).toBe("Charge renewals at current price");
     expect(added.why).toBe("Revenue correctness");
-    // `lives` (4th prompt) flows to livesIn[]; `binds` is not persisted in JSON.
+    // `lives` flows to livesIn[].
     expect(added.livesIn).toEqual(["@api/src/renew.ts"]);
     // …envelope updated: bumped to today's LOCAL date (WR-05)…
     expect(domain.updated).toBe(localToday());
@@ -444,7 +443,6 @@ describe("spec req — domain with no SPEC.json (D2)", () => {
       await appendEntry(tmp, "GHOST", "GHOST-001", {
         requirement: "x",
         why: "",
-        binds: "",
         lives: "",
       });
     } catch (e) {
@@ -501,7 +499,7 @@ describe("spec req --json — machine mode", () => {
 // ----------------------------------------------------------------------------
 // L1 (lifecycle pass) — non-interactive authoring via field flags. With
 // `--text`, the entry appends WITHOUT prompting (even non-TTY); --why /
-// --binds / --lives fill the remaining fields (default empty). This is the
+// --lives fill the remaining fields (default empty). This is the
 // agent write-path: one invocation, zero readline.
 // ----------------------------------------------------------------------------
 
@@ -518,7 +516,6 @@ describe("spec req — field-flag authoring (L1)", () => {
         platformDir: tmp,
         text: "Charge renewals at the current plan price",
         why: "revenue path",
-        binds: "plans.price",
         lives: "lib-billing/renew.ts",
       },
       rawArgs: [],
@@ -531,7 +528,7 @@ describe("spec req — field-flag authoring (L1)", () => {
     expect(added.status).toBe("active");
     expect(added.statement).toBe("Charge renewals at the current plan price");
     expect(added.why).toBe("revenue path");
-    // `lives` → livesIn[]; `binds` (plans.price) is not persisted in JSON.
+    // `lives` → livesIn[].
     expect(added.livesIn).toEqual(["lib-billing/renew.ts"]);
     // The append round-trips and advances the allocator.
     expect(await nextRequirementId(tmp, "BILLING")).toBe("BILLING-011");
@@ -571,7 +568,7 @@ describe("spec req — field-flag authoring (L1)", () => {
     expect(added.statement).toBe("tty flag-authored");
   });
 
-  test("--why/--binds/--lives without --text is a usage error (exit 2, nothing written)", async () => {
+  test("--why/--lives without --text is a usage error (exit 2, nothing written)", async () => {
     setIsTTY(undefined);
     const before = readFileSync(join(tmp, "spec-engine", "BILLING", "SPEC.json"), "utf8");
     await expectExit2(() =>

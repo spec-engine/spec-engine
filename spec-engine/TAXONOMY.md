@@ -10,9 +10,12 @@ concept (named subject area, owner, charter); a *spec* is the
 `spec-engine/<KEY>/SPEC.json` artifact recording it; a *requirement* is the
 durable `KEY-NNN` unit.
 
-Charters travel two ways: this document, and the `scope` field on each
-`SPEC.json` envelope — so the charter ships with every adopter's spec,
-`spec domain list --json` emits it, and `spec req` prints it at authoring time.
+The `scope` field on each `SPEC.json` envelope is the canonical charter: it
+ships with every adopter's spec, `spec domain list --json` emits it, and
+`spec req` prints it at authoring time. The per-domain sections below are
+GENERATED from those fields by `bun scripts/gen-charters.ts` and gated by a
+CI fence, so this document cannot drift from them. Edit a charter in its
+envelope, then regenerate.
 
 ## Placement rule: the concept wins
 
@@ -36,259 +39,279 @@ superseded or deprecated, never renumbered and never deleted.
 Each entry gives the domain's scope sentence, a **belongs here** list, and a
 **does not belong here** list with at least one named boundary case.
 
-### INDX — derivation pipeline & index lifecycle
+Generated from the envelope `scope` fields — do not hand-edit below this
+line. Run `bun scripts/gen-charters.ts` after changing a domain's scope.
 
-**Scope.** The derivation pipeline and index lifecycle: cold-rebuild identity,
-`build_id` determinism, structural integrity at index time, and `spec index`.
+<!-- BEGIN GENERATED CHARTERS -->
 
-- **Belongs here:** cold-rebuild equivalence (delete `.spec-engine/` → identical
-  result); `build_id` determinism for identical inputs; the index-time structural
-  integrity checks; `spec index` itself; the stale-index warning on read commands.
-- **Does not belong here:** `spec check`'s diagnostic *severity* semantics
-  (→ CHCK); the SPEC.json envelope *shape* (→ SCHM). Boundary case: cold-rebuild
-  identity is an **INDX** promise even though the model it rebuilds is defined in
-  SCHM.
+### AUTHOR
 
-### SCHM — shared data model
+**Scope.** The brief→mint authoring pipeline: the three surfaces that turn a
+vague brief/ticket into well-formed requirements — the AGENTS.md authoring
+playbook (AUTHOR-001), the .claude/skills/req-author skill (AUTHOR-002), and
+the spec mcp author_requirements MCP prompt template (AUTHOR-003) — plus the
+hard constraint that the engine stays LLM-free.
 
-**Scope.** The shared data model: the SPEC.json envelope, the DDL, the coverage
-view, and the promise that CLI, webapp, and MCP read one model through one
-storage seam and can never disagree.
+- **Belongs here:** the authoring-workflow surfaces (playbook doc, skill, MCP
+  prompt template) and the LLM-free engine fence.
+- **Does not belong here:** the requirement-lifecycle mechanics themselves
+  (spec req/supersede/amend → REQ), the domain scaffold (spec domain new →
+  DOMAIN), and the charter/authoring-standard doc (→ CHRT). Boundary case: the
+  MCP prompt is engine CODE, but it owns the authoring template text only,
+  never the mint — the actual requirement write is REQ's promise.
 
-- **Belongs here:** the `@spec-engine/shared` schema every read/write surface
-  shares; the DDL; the coverage SQL view; the envelope's grammar declaration
-  fields.
-- **Does not belong here:** the **drift definition** (→ PROP — it is the
-  propagation contract, not the model); **cold-rebuild identity** (→ INDX);
-  **loopback-only** binding (→ SERV). Boundary case: the one-model promise is
-  SCHM's, but cold-rebuild identity stays an INDX promise and loopback-only
-  stays a SERV promise.
+### CHCK
 
-### CHCK — `spec check` diagnostics & CI-gate semantics
+**Scope.** spec check diagnostics and CI-gate semantics, plus the GLOSSARY.md
+round-trip: the diagnostic codes and their severities, the --ci cold-rebuild
+gate, which severity drives exit 1, and the spec glossary
+generate/--migrate/--check behaviors whose drift the GLOSSARY_DRIFT gate
+enforces.
 
-**Scope.** `spec check` diagnostics and CI-gate semantics.
+- **Belongs here:** the diagnostic codes and severities; the --ci gate; the
+  exit-1 contract.
+- **Does not belong here:** membership discovery itself (→ INIT). Boundary
+  case: check-severity semantics stay in CHCK even when the discovery path
+  (INIT) emits the diagnostic, as with the NO_SPEC_CONFIG finding.
 
-- **Belongs here:** the diagnostic codes and their severities; the `--ci`
-  cold-rebuild gate; which severity drives exit 1; default deletion detection;
-  the statement-grammar check.
-- **Does not belong here:** membership discovery itself (→ INIT). Boundary case:
-  check-severity semantics belong to CHCK even when discovery (INIT) emits the
-  diagnostic — the `NO_SPEC_CONFIG` finding originates in the discovery path,
-  but its severity is a CHCK promise.
+### CHRT
 
-### PROOF — proof of passing
+**Scope.** Domain charters and the requirement-authoring standard: the
+TAXONOMY.md charter doc, the per-envelope scope field, and the CLI surfaces
+(spec domain list --json, spec req) that carry a domain's charter to the
+author at authoring time.
 
-**Scope.** Proof that requirements are backed by passing tests: JUnit
-ingestion, the PROVEN/UNPROVEN determination, and proof enforcement under
-`--ci`.
+- **Belongs here:** what tells an author whether a requirement belongs in a
+  domain.
+- **Does not belong here:** the requirement lifecycle mechanics themselves
+  (spec req/supersede/amend → REQ) or the domain scaffold (spec domain new →
+  DOMAIN); this domain owns the charter, not the plumbing. Boundary case: a
+  single domain's charter TEXT is that domain's own business, while the rule
+  that every charter carries a scope sentence, both lists, and a named
+  boundary case is CHRT's.
 
-- **Belongs here:** `--results <junit.xml>` ingestion; the PROVEN/UNPROVEN
-  determination; proof-of-passing enforcement under `--ci`.
-- **Does not belong here:** the bare structural gate with no results file
-  (CHCK's plain diagnostic path). Boundary case: a requirement with zero
-  verifying tags is UNVERIFIED (CHCK's business); UNPROVEN applies only when a
-  verifying tag exists but its test is failing or missing.
+### DIST
 
-### GATE — the `spec gate` approval command
+**Scope.** The npm distribution surface: what the published
+@spec-engine/spec-engine artifact contains (the Bun bundle, the guarded bin
+entry, the embedded docs payload) and the CLI surfaces that exist only because
+of it (spec docs, the non-Bun runtime guard).
 
-**Scope.** The `spec gate` approval command.
+- **Belongs here:** the tarball-content promises, the bin wrapper's runtime
+  guard, and the offline docs command.
+- **Does not belong here:** the webapp routes the artifact embeds (→ SERV),
+  the compiled-binary channel (root build:cli, CI-owned), or the docs site's
+  content itself (packages/site, not spec-governed). Boundary case: `spec
+  docs` binds loopback-only like `spec serve`, but the promise lives here — it
+  is a distribution surface over static files, not a view over the index.
 
-- **Belongs here:** the pass/fail decision order (NOT_FOUND → DRAFT →
-  SUPERSEDED → DEPRECATED → VERSION_PIN → PASS); pin-equality passing.
-- **Does not belong here:** proof-of-passing (→ PROOF); loss detection
-  (→ GUARD). Boundary case: an unknown repo name is a *usage error* (exit 2),
-  not a gate failure — that contract belongs to GATE, not CHCK.
+### DOMAIN
 
-### GUARD — loss detection
+**Scope.** Domain lifecycle: spec domain new / spec domain list and charter
+editing.
+
+- **Belongs here:** the born-valid scaffold (spec domain new); the domain list
+  output; the scope charter field on the envelope.
+- **Does not belong here:** requirement authoring (spec req/supersede/amend →
+  REQ). Boundary case: minting a requirement id is REQ, scaffolding the domain
+  that holds it is DOMAIN.
+
+### GATE
+
+**Scope.** The `spec gate` approval command: the pass/fail decision order
+(NOT_FOUND → DRAFT → SUPERSEDED → VERSION_PIN → PASS), pin-equality passing.
+
+- **Belongs here:** the approval decision.
+- **Does not belong here:** proof-of-passing → PROOF; loss detection → GUARD.
+  Boundary case: an unknown repo name is a usage error (exit 2), not a gate
+  failure — that contract belongs to GATE, not CHCK.
+
+### GUARD
 
 **Scope.** Loss detection: diffing the requirement derivation at a git ref
-against the working tree to block a change that would silently lose a
-requirement, its last implementation, or its last test.
+against the working tree to block requirements about to be steamrolled.
 
 - **Belongs here:** REQUIREMENT_REMOVED / IMPL_LOST / VERIFY_LOST /
-  SPEC_FILE_DELETED; the rule that a loss is suppressed only by superseding or
-  deprecating the requirement in the same change; never failing outside git.
-- **Does not belong here:** *who may* approve a supersession (→ OWNER, the
-  CODEOWNERS policy). Boundary case: the same disappearance concept is enforced
-  at two points — pre-commit against the working tree (this domain) and in
-  `spec check` against HEAD (CHCK) — unified on one diagnostic code.
+  SPEC_FILE_DELETED; the supersession and spec deprecate suppression paths;
+  never-fail-non-git. Boundary case: GOV-01 (an Active req never disappears
+  without approved supersession) folds in here — it names the same concept as
+  GUARD-002 at a second enforcement point (CI/base-ref via check/removed.ts vs
+  pre-commit/working-tree via guard/losses.ts), unified on one diagnostic code
+  (REQUIREMENT_REMOVED).
+- **Does not belong here:** who may approve a supersession (that is OWNER, the
+  CODEOWNERS policy).
 
-### OWNER — approval policy
+### INDX
 
-**Scope.** Approval policy: who may end or supersede a requirement
-(CODEOWNERS).
+**Scope.** The derivation pipeline and index lifecycle: cold-rebuild identity,
+build_id determinism, structural integrity at index time, and spec index.
+
+- **Belongs here:** cold-rebuild equivalence (delete .spec-engine/ yields an
+  identical result); build_id determinism for identical inputs; the index-time
+  structural integrity checks; spec index itself.
+- **Does not belong here:** spec check's diagnostic severity semantics (→
+  CHCK) or the SPEC.json envelope shape (→ SCHM). Boundary case: cold-rebuild
+  identity is an INDX promise even though the model it rebuilds is defined in
+  SCHM.
+
+### INIT
+
+**Scope.** Membership, discovery, and onboarding, plus the adoption rungs.
+
+- **Belongs here:** spec init pin authoring; member discovery; the
+  progressive-disclosure adoption rungs (rung 1: a lone repo local-only; rung
+  2: + the CI gate; rung 3: + a second repo forming a platform with shared
+  requirements).
+- **Does not belong here:** check-severity semantics (→ CHCK, INIT-007).
+  Boundary case: the adoption rungs are three per-rung INIT requirements, each
+  independently testable, and stay in INIT.
+
+### MAP
+
+**Scope.** The spec map requirement × repo coverage matrix.
+
+- **Belongs here:** the matrix rows; the src / test / src+test / — rendering;
+  the future webapp matrix-view requirements.
+- **Does not belong here:** FTS retrieval (→ QURY). Boundary case: MAP stays a
+  separate domain rather than folding into a generic read domain because it
+  will accrue the webapp matrix-view requirements.
+
+### OWNER
+
+**Scope.** Approval policy: who may retire or supersede a requirement (the
+CODEOWNERS policy).
 
 - **Belongs here:** the CODEOWNERS approval policy only.
 - **Does not belong here:** the loss-detection mechanism itself (→ GUARD).
+  Boundary case: OWNER keeps only the CODEOWNERS approval policy while
+  GOV-01's disappearance-detection concept lives in GUARD.
 
-### DOMAIN — domain lifecycle
+### PROOF
 
-**Scope.** Domain lifecycle: `spec domain new`, `spec domain list`, and the
-charter field.
+**Scope.** Trusted-red: JUnit ingestion, the PROVEN/UNPROVEN determination,
+and rule-reproof under --ci.
 
-- **Belongs here:** the scaffold that always produces a schema-valid envelope;
-  `domain list` output; the `scope` charter field on the envelope.
-- **Does not belong here:** requirement authoring (→ REQ). Boundary case:
-  minting a requirement id is REQ; scaffolding the domain that holds it is
-  DOMAIN.
+- **Belongs here:** --results <junit.xml> ingestion; the PROVEN/UNPROVEN
+  status; proof-of-passing enforcement under --ci.
+- **Does not belong here:** the bare structural gate with no results file (→
+  CHCK's plain diagnostic path). Boundary case: an active requirement with a
+  verifying tag but no results file is CHCK's structural check, not a PROOF
+  proof.
 
-### REQ — requirement lifecycle
-
-**Scope.** Requirement lifecycle: `spec req`, `spec supersede`, `spec amend`,
-`spec deprecate`, `spec move`, and `@`-path references.
-
-- **Belongs here:** next-id allocation; non-interactive authoring; supersede /
-  move / amend / deprecate; `@path` file-reference resolution; write-time
-  statement-grammar enforcement.
-- **Does not belong here:** scaffolding a whole domain (→ DOMAIN).
-
-### INIT — membership, discovery, onboarding
-
-**Scope.** Membership, discovery, onboarding, and the adoption steps (a lone
-repo local-only; adding the CI gate; adding a second repo to form a platform).
-
-- **Belongs here:** `spec init` pin authoring; member discovery; the adoption
-  steps.
-- **Does not belong here:** check-severity semantics (→ CHCK).
-
-### PROP — propagation & migration state
+### PROP
 
 **Scope.** Propagation and migration state, including the drift definition.
 
-- **Belongs here:** the per-repo migrated/drifted state; `spec propagation`;
-  the drift definition itself.
+- **Belongs here:** the per-repo migrated/drifted state; spec propagation; the
+  drift definition itself.
 - **Does not belong here:** the SPEC.json model shape (→ SCHM). Boundary case:
-  the drift definition belongs to PROP, not SCHM — it is the propagation
-  contract; the SQL view computing it is merely enforcement.
+  the drift definition lands in PROP, not SCHM — it is the propagation
+  contract, and the SQL view computing it is merely enforcement.
 
-### MAP — the coverage-matrix read command
+### PROV
 
-**Scope.** The `spec map` requirement × repo coverage matrix.
-
-- **Belongs here:** the matrix rows; the `src` / `test` / `src+test` / `—`
-  rendering; webapp matrix-view requirements as they land.
-- **Does not belong here:** full-text search (→ QURY).
-
-### QURY — the full-text retrieval read command
-
-**Scope.** The `spec query` full-text retrieval command.
-
-- **Belongs here:** the search syntax contract; result ordering; which
-  statuses are excluded from live results; `--limit` bounds.
-- **Does not belong here:** file→requirement resolution (→ RSLV). Boundary
-  case: a search-syntax error is a QURY usage-error (exit 2) contract.
-
-### RSLV — the file→requirement read command
-
-**Scope.** The `spec resolve` files → requirements command and its `--req`
-reverse query.
-
-- **Belongs here:** file→requirement mapping; the `--req` reverse tag-site
-  query; path-containment normalization.
-- **Does not belong here:** full-text search (→ QURY). Boundary case: an
-  absolute path resolving outside the platform directory is an RSLV exit-2
-  contract, never a silent `[]`.
-
-### SERV — the local webapp / API
-
-**Scope.** The `spec serve` local webapp and `/api/*` routes over the index,
-including the feature-flag surface.
-
-- **Belongs here:** the SSR pages; the `/api/*` route contracts; loopback-only
-  binding; the rule that a flagged-off feature refuses every surface (nav,
-  page, and endpoints together).
-- **Does not belong here:** the one-model promise (→ SCHM). Boundary case:
-  loopback-only stays a SERV promise even though the data model it serves is
-  defined in SCHM.
-
-### PROV — provenance surface & issue-link opacity
-
-**Scope.** The `spec provenance` matrix and the issue-link provenance model:
-per-requirement creating/revising ticket links surfaced beside backing tests
-and the git pointer, with the ticket id held as an opaque external payload.
+**Scope.** The spec provenance matrix and the issue-link provenance model,
+with issue_id held as an opaque external payload.
 
 - **Belongs here:** the provenance matrix rows and their sort/render; the
-  issue-role model (created / supersedes-via / amends-via); the doctrine that
-  a ticket id is opaque — displayed and filtered, never a key, never routing,
-  never a requirement id.
-- **Does not belong here:** the tracker fetch/cache that resolves a ticket id
-  to a title (→ TRK). Boundary case: a ticket id shaped like a requirement id
-  (`BILLING-001` used as a ticket name) stays an opaque string and is never
-  resolved against the requirements table.
+  **Issues:** role:ID parse into (req_id, issue_id, role); the doctrine that
+  issue_id is opaque — projected only, never a PK/FK/UNIQUE/index/JOIN key.
+- **Does not belong here:** the tracker fetch/cache that resolves an issue id
+  to a title (→ TRK); requirement identity/routing (issue ids are provenance,
+  never identity). Boundary case: a KEY-NNN-shaped issue id stays an opaque
+  string in PROV and is never resolved against the requirements table.
 
-### TRK — issue-tracker integration
+### QURY
 
-**Scope.** The `@spec-engine/tracker` package: the offline-default adapter and
-the optional read-only Linear integration that resolves an opaque ticket id to
-a title and URL for display.
+**Scope.** The spec query full-text retrieval command.
 
-- **Belongs here:** the adapter interface and offline default; the single read
-  query to the tracker; the `SPEC_TRACKER_TOKEN` handling and no-token
-  short-circuit; the sidecar cache and its staleness labeling; the boundary
-  that engine internals never import the tracker and the derivation path makes
-  no network call.
-- **Does not belong here:** the provenance matrix and opacity model (→ PROV);
-  any write back to the tracker (forbidden — the integration is read-only).
+- **Belongs here:** FTS5 MATCH semantics; rank-ascending results; superseded
+  exclusion; --limit bounds.
+- **Does not belong here:** file→requirement resolution (→ RSLV). Boundary
+  case: a bare AND OR FTS5 grammar error is a QURY usage-error (exit 2)
+  contract.
 
-### AUTHOR — the brief→mint authoring pipeline
+### REQ
 
-**Scope.** The surfaces that turn a rough brief or ticket into well-formed
-requirements — the AGENTS.md authoring playbook, the `req-author` skill, and
-the `author_requirements` MCP prompt — plus the constraint that the engine
-itself runs no language model.
+**Scope.** Requirement lifecycle: spec req, spec supersede, spec amend, and
+@-refs.
 
-- **Belongs here:** the authoring-workflow surfaces and the engine-runs-no-model
-  fence.
-- **Does not belong here:** the requirement-lifecycle commands themselves
-  (→ REQ); the domain scaffold (→ DOMAIN); this document (→ CHRT). Boundary
-  case: the `author_requirements` prompt is engine code, but it owns the
-  template text only — the actual write is REQ's promise.
+- **Belongs here:** next-id allocation; non-interactive authoring; supersede /
+  move / amend; @path file-ref resolution.
+- **Does not belong here:** scaffolding a whole domain (spec domain new →
+  DOMAIN). Boundary case: minting a requirement id is REQ, scaffolding the
+  domain that holds it is DOMAIN.
 
-### CHRT — the charter document and authoring standard
+### RSLV
 
-**Scope.** This document's own machinery: the per-domain charter model, the
-charter's two homes (this file and the envelope `scope` field), and the
-authoring standard below.
+**Scope.** The spec resolve files→requirements command and its --req reverse
+query.
 
-- **Belongs here:** the charter field round-trip; the charter echo at
-  authoring time; the requirement-authoring standard.
-- **Does not belong here:** any single domain's charter content (that is the
-  domain's own business).
+- **Belongs here:** file→requirement mapping; the --req reverse tag-site
+  query; path-containment normalization.
+- **Does not belong here:** full-text search (→ QURY). Boundary case: an
+  absolute path resolving outside platformDir is an RSLV exit-2 contract,
+  never a silent [].
 
-### DIST — distribution
+### SCHM
 
-**Scope.** How Spec Engine reaches users: the npm package contents, the
-compiled binary, and the offline documentation site (`spec docs`).
+**Scope.** The shared data model: the SPEC.json envelope, the DDL, the
+coverage view, and the one-model-one-seam promise (CLI, webapp, and MCP can
+never disagree — one model, one storage seam).
 
-- **Belongs here:** the published package contents; `spec docs` serving the
-  prebuilt site over loopback; resolution of the docs root.
-- **Does not belong here:** the live webapp over the index (→ SERV).
+- **Belongs here:** the @spec-engine/shared schema every read/write surface
+  shares; the DDL; the coverage SQL view; the one-model-one-seam promise.
+- **Does not belong here:** the drift definition (→ PROP), cold-rebuild
+  identity (→ INDX), or loopback-only binding (→ SERV). Boundary case:
+  one-model-one-seam is restated here as a promise, but cold-rebuild identity
+  stays an INDX promise and loopback-only stays a SERV promise.
 
-### TERM — reserved glossary domain
+### SERV
 
-**Scope.** The reserved glossary domain: durable terms — a headword, its
-definition (carried in the statement field), aliases, and pinned citations —
+**Scope.** The spec serve local webapp + /api/* over the index.
+
+- **Belongs here:** the SSR pages; the /api/* route contracts; loopback-only
+  binding.
+- **Does not belong here:** the one-model-one-seam promise (→ SCHM). Boundary
+  case: loopback-only stays a SERV promise even though the data model it
+  serves is defined in SCHM.
+
+### TERM
+
+**Scope.** The reserved glossary domain: durable TERMs — a headword, its
+definition (carried in the requirement statement), aliases, and pinned cites —
 that requirements reference and that are drift-checked against their pinned
-version. Terms are excluded from code coverage: a term is a definition, never
-an `@spec`-tagged code obligation.
+version, but that are EXCLUDED from code coverage (a term is a requirement
+row, never an @spec-tagged code obligation).
 
 - **Belongs here:** glossary term entries (TERM-NNN) with their aliases and
-  citations; the term-drift concern (a citation pinned behind the term's
-  current version).
-- **Does not belong here:** feature requirements *about* the term store — the
-  schema fields (→ SCHM), the term authoring CLI (→ REQ), the term-check
-  diagnostics (→ CHCK), the term search surface (→ QURY). Boundary case: the
-  schema-fields promise lives in SCHM (it protects the one-model schema),
-  while the glossary data rows live here. The two id spaces never collide:
-  feature code is tagged `@spec SCHM-NNN`; glossary data is authored at
-  `TERM-NNN`.
+  citations; the term-drift concern.
+- **Does not belong here:** a feature requirement ABOUT the term store — the
+  schema fields belong in SCHM, the spec term authoring CLI in REQ, the check
+  diagnostics in CHCK, the query surface in QURY — those are dogfood
+  requirements in their concept domains, never TERM data rows. Boundary case:
+  the TERM-01 schema-fields promise lives in SCHM (concept wins), while the
+  glossary data rows TERM-001..N live here.
 
-### Archive domains — AUTHC, POC, GOV
+### TRK
 
-These three domains hold no Active requirements: every entry is superseded or
-deprecated. They are history — the permanent record of requirements that were
-reorganized into the domains above — and are never deleted. Do not mint new
-requirements in them.
+**Scope.** The @spec-engine/tracker package: the offline-default adapter and
+the optional Linear read integration that resolves an opaque issue_id to a
+title/URL for display.
+
+- **Belongs here:** the adapter interface + offline noop adapter; the single
+  read query to the tracker; the SPEC_TRACKER_TOKEN auth + no-token
+  short-circuit; the sidecar cache; the engine-isolation boundary (engine
+  internals never import the tracker; no external network from the derivation
+  path).
+- **Does not belong here:** how a display surface labels expired-cache data in
+  its own output (→ PROV); the provenance matrix + issue-id opacity model
+  itself (→ PROV); any write back to the tracker (forbidden — the integration
+  is one-way/read-only). Boundary case: resolving an issue_id to a title is a
+  TRK concern, but the opacity of that id inside the engine's index stays a
+  PROV promise.
+
+<!-- END GENERATED CHARTERS -->
 
 ---
 

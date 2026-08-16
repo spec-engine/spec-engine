@@ -19,8 +19,8 @@ description: Diagnostic codes and what they mean
 | `ORPHAN_REQ` | error | An active requirement has no implementing `@spec` tag |
 | `UNVERIFIED_REQ` | error | An active requirement is implemented but has no verifying test tag |
 | `DRIFT` | error | A member is pinned behind the version at which a requirement it references changed |
+| `BROKEN_FILE_REF` | error | An active or draft requirement's `livesIn` entry does not resolve to a file under the platform root (a terminal-status entry is exempt) |
 | `NO_SPEC_CONFIG` | warning | A sibling repo-root under the platform has no `spec-engine.member.json` |
-| `BROKEN_FILE_REF` | warning | An `@<path>` reference in requirement text does not resolve |
 | `BROKEN_RELATES` | warning | A `relates` entry points at a nonexistent requirement ID |
 | `RELATES_SUPERSEDED` | warning | A `relates` entry points at a superseded requirement |
 | `SELF_RELATES` | warning | A `relates` entry names its own requirement (dropped, but surfaced) |

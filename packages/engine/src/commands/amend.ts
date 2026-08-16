@@ -18,8 +18,7 @@
 // documents-kind mention is not code binding (RED-15 / orphan semantics).
 //
 //   - Field flags (--text / --why / --lives) name what changes; untouched
-//     fields stay byte-identical. At least one is required. (--binds has no
-//     JSON home per STOR-01 — it feeds the @-ref warner but is not persisted.)
+//     fields stay byte-identical. At least one is required.
 //   - Envelope `updated` bumps to the local date; `specVersion` is NEVER
 //     bumped here (that is supersede's move).
 //   - `--json` → { id, file, fields_changed } (sorted field keys).
@@ -69,13 +68,12 @@ interface DomainEnvelope {
   [k: string]: unknown;
 }
 
-/** Which persistable fields the invocation touched (STOR-01: `--binds` is not one). */
+/** Which persistable fields the invocation touched. */
 interface AmendFields {
   hasText: boolean;
   hasIssue: boolean;
   hasWhy: boolean;
   hasLives: boolean;
-  hasBinds: boolean;
   // Wave B (06-02): the glossary-term fields. amend is domain-generic, so
   // `--term`/`--aliases` revise a TERM entry's headword/synonyms in place
   // (same id, no specVersion bump) exactly as `--text`/`--why`/`--lives` do
@@ -110,10 +108,6 @@ export const amendCommand = defineCommand({
     },
     text: { type: "string", description: "New Requirement (statement) field value" },
     why: { type: "string", description: "New Why it matters field value" },
-    binds: {
-      type: "string",
-      description: "Binds value (validated for @-refs; not persisted in JSON — STOR-01)",
-    },
     lives: { type: "string", description: "New Lives in (livesIn) field value" },
     issue: {
       type: "string",
@@ -189,17 +183,14 @@ export const amendCommand = defineCommand({
 
 /**
  * Resolve which persistable fields the invocation touched and enforce the two
- * argument gates (exit 2 on failure). At least one PERSISTABLE field is
- * required: `--binds` alone is NOT an amend — it has no JSON home (STOR-01)
- * and only participates in @-ref validation, so it never counts toward
- * "something changed". `--text`, when present, must be non-empty.
+ * argument gates (exit 2 on failure). At least one field is required;
+ * `--text`, when present, must be non-empty.
  */
 function validateAmendFields(args: Record<string, unknown>): AmendFields {
   const hasText = typeof args.text === "string";
   const hasIssue = typeof args.issue === "string" && (args.issue as string).trim() !== "";
   const hasWhy = typeof args.why === "string";
   const hasLives = typeof args.lives === "string";
-  const hasBinds = typeof args.binds === "string";
   const hasTerm = typeof args.term === "string";
   const hasAliases = typeof args.aliases === "string";
 
@@ -217,7 +208,7 @@ function validateAmendFields(args: Record<string, unknown>): AmendFields {
     console.error("spec amend: --term must be a non-empty headword");
     process.exit(EXIT.USAGE);
   }
-  return { hasText, hasWhy, hasLives, hasBinds, hasTerm, hasAliases, hasIssue };
+  return { hasText, hasWhy, hasLives, hasTerm, hasAliases, hasIssue };
 }
 
 /**
@@ -291,8 +282,7 @@ async function assertUnshipped(platformDir: string, id: string): Promise<void> {
 /**
  * Apply the whitelisted field mutations, tracking what changed (for the
  * fields_changed report) and the values to run through the @-ref warner.
- * Keeps the trim + why-empty→null + lives-empty→[] semantics EXACTLY, and
- * `--binds` participates in refValues ONLY (not persisted — STOR-01).
+ * Keeps the trim + why-empty→null + lives-empty→[] semantics EXACTLY.
  */
 function applyAmendMutations(
   req: DomainRequirement,
@@ -318,10 +308,6 @@ function applyAmendMutations(
     req.livesIn = v === "" ? [] : [v];
     fieldsChanged.push("lives");
     refValues.push(v);
-  }
-  if (fields.hasBinds) {
-    // Not persisted (STOR-01) — validated for @-refs only.
-    refValues.push((args.binds as string).trim());
   }
   // Wave B (06-02): glossary-term fields. `--term` sets the headword; `--aliases`
   // splits on comma into aliases[]. Whitelisted mutations only — the whole

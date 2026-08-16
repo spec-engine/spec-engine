@@ -359,6 +359,57 @@ fence_no_authored_specversion() {
   echo "authored-specVersion fence: OK (no non-TERM envelope carries a counter)"
 }
 
+# --- The AGENTS.md diagnostic-code list matches the DiagnosticCode enum -------
+# The list is hand-written prose beside a machine-readable enum, so it drifts:
+# it had three codes twice over and was missing eight. This compares the two
+# sets (order and duplicates are prose's business, membership is not).
+fence_agents_check_codes() {
+  local enum_codes agents_codes
+  enum_codes="$(grep -oE '^  [A-Z_]+: "' packages/shared/src/diagnostics.ts \
+    | sed -E 's/^  ([A-Z_]+): "$/\1/' | sort -u)"
+  # The code list lives in the `spec check` bullet, between "Codes," and the
+  # sentence that follows it. Every code is fenced in backticks.
+  agents_codes="$(sed -n '/Codes, in `DiagnosticCode` order:/,/The four/p' AGENTS.md \
+    | grep -oE '`[A-Z_]+`' | tr -d '`' | sort -u)"
+  # Negative self-test: the extractor must find something on both sides.
+  if [ -z "$enum_codes" ] || [ -z "$agents_codes" ]; then
+    echo "FENCE SELF-TEST FAILED: a code extractor matched nothing"
+    exit 1
+  fi
+  if [ "$enum_codes" != "$agents_codes" ]; then
+    echo "FORBIDDEN: the AGENTS.md diagnostic-code list disagrees with the DiagnosticCode enum. Difference (< enum only, > AGENTS.md only):"
+    diff <(printf '%s\n' "$enum_codes") <(printf '%s\n' "$agents_codes") || true
+    exit 1
+  fi
+  echo "AGENTS check-codes fence: OK (list == DiagnosticCode enum)"
+}
+
+# --- TAXONOMY.md per-domain charters are generated from the envelopes --------
+# The charter used to live in two hand-synced homes, and they had drifted in 17
+# of 19 domains. The envelope `scope` is canonical (it ships with adopters and
+# feeds `spec domain list` / `spec req`); the document is derived from it.
+fence_taxonomy_charters() {
+  if bun scripts/gen-charters.ts --check; then
+    echo "charter generation fence: OK (TAXONOMY.md == envelope scope fields)"
+  else
+    echo "FORBIDDEN: TAXONOMY.md drifted from the envelope scope fields (run \`bun scripts/gen-charters.ts\`)"
+    exit 1
+  fi
+}
+
+# --- Process markers in source comments --------------------------------------
+# A comment naming a plan, phase, wave, pitfall, or review round records how the
+# code arrived rather than what constrains it. 65 files still carry them, so
+# this is a ratchet over a ledger rather than a ban: the count can only fall.
+fence_comment_markers() {
+  if bash scripts/comment-markers.sh; then
+    :
+  else
+    echo "FORBIDDEN: process markers in source comments (see the comment policy in AGENTS.md)"
+    exit 1
+  fi
+}
+
 run "D-11 bun:sqlite outside engine"        fence_d11_bun_sqlite
 run "D-08 engine-internal bun:sqlite"       fence_d08_engine_internal
 run "SCHM-07 schema-constraint"             fence_schm07_schema_constraint
@@ -375,6 +426,9 @@ run "STOR-04 no SPEC.md parse path"         fence_stor04_no_spec_md_parse
 run "AUTHOR-003 llm-free engine"            fence_llmfree_engine
 run "TERM-06 glossary round-trip"           fence_glossary_roundtrip
 run "SCHM-008 no authored specVersion"      fence_no_authored_specversion
+run "AGENTS check-codes list"               fence_agents_check_codes
+run "CHRT charters generated"               fence_taxonomy_charters
+run "COMMENT process-marker ratchet"        fence_comment_markers
 
 if [ "$fail" -ne 0 ]; then
   echo ""

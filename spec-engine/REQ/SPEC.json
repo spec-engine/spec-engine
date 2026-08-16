@@ -94,7 +94,7 @@
       "id": "REQ-006",
       "status": "superseded",
       "statement": "spec req on a non-platform directory prints the friendly not-a-platform message and exits 2.",
-      "why": "Same boundary contract as AUTHC-009.",
+      "why": "Same command-boundary pattern as map/index/check.",
       "supersedes": null,
       "supersededBy": "REQ-027",
       "relates": [],

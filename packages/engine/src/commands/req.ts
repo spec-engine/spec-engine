@@ -32,7 +32,7 @@
 //   - AUTHC-014 — next id is max(seq)+1 over SPEC.json, padded to 3 digits.
 //   - AUTHC-015 — non-platform dir → formatNotASpecPlatform + exit 2.
 //   - AUTHC-019 — TTY gate (D-01): stdin isTTY → per-field prompt flow
-//     (Requirement / Why it matters / Binds / Lives in) via node:readline,
+//     (Requirement / Why it matters / Lives in) via node:readline,
 //     prompts rendered to STDERR (T-10-03 — stdout stays machine-parseable);
 //     the allocated id + `— Active` status are displayed but not editable.
 //   - AUTHC-020 — non-TTY fallback (D-02): prints the next unused id, exit 0;
@@ -104,10 +104,6 @@ export const reqCommand = defineCommand({
       type: "string",
       description: "Why it matters field (only with --text)",
     },
-    binds: {
-      type: "string",
-      description: "Binds field (only with --text)",
-    },
     lives: {
       type: "string",
       description: "Lives in field (only with --text)",
@@ -143,12 +139,11 @@ export const reqCommand = defineCommand({
     const textFlag = args.text as string | undefined;
     const hasFieldFlags =
       typeof args.why === "string" ||
-      typeof args.binds === "string" ||
       typeof args.lives === "string" ||
       typeof args.issue === "string";
     if (textFlag === undefined && hasFieldFlags) {
       console.error(
-        "spec req: --why/--binds/--lives/--issue require --text (the Requirement field is mandatory)",
+        "spec req: --why/--lives/--issue require --text (the Requirement field is mandatory)",
       );
       process.exit(EXIT.USAGE);
       return;
@@ -156,7 +151,6 @@ export const reqCommand = defineCommand({
     if (textFlag !== undefined) {
       await authorFromFieldFlags(platformDir, key, nextId, textFlag, {
         why: args.why as string | undefined,
-        binds: args.binds as string | undefined,
         lives: args.lives as string | undefined,
         issue: args.issue as string | undefined,
         json: Boolean(args.json),
@@ -198,18 +192,16 @@ export const reqCommand = defineCommand({
       return;
     }
     const why = (await askLine("Why it matters: ")).trim();
-    const binds = (await askLine("Binds: ")).trim();
     const lives = (await askLine("Lives in: ")).trim();
 
     // AUTHC-024 (D-03): authoring-time @-ref validation — warn per
     // unresolvable ref, NEVER block the save. The index pipeline emits the
     // matching BROKEN_FILE_REF diagnostic on the next `spec index`.
-    warnUnresolvableRefs(platformDir, [requirement, why, binds, lives]);
+    warnUnresolvableRefs(platformDir, [requirement, why, lives]);
 
     const relFile = await appendEntry(platformDir, key, nextId, {
       requirement,
       why,
-      binds,
       lives,
     });
     console.log(`appended ${nextId} to ${relFile}`);
@@ -261,7 +253,6 @@ async function authorFromFieldFlags(
   textFlag: string,
   opts: {
     why: string | undefined;
-    binds: string | undefined;
     lives: string | undefined;
     issue: string | undefined;
     json: boolean;
@@ -275,13 +266,11 @@ async function authorFromFieldFlags(
   // @spec CHRT-012: charter echo on the --text authoring path (stderr chrome).
   await printResolvedCharter(platformDir, key);
   const why = (opts.why ?? "").trim();
-  const binds = (opts.binds ?? "").trim();
   const lives = (opts.lives ?? "").trim();
-  warnUnresolvableRefs(platformDir, [requirement, why, binds, lives]);
+  warnUnresolvableRefs(platformDir, [requirement, why, lives]);
   const relFile = await appendEntry(platformDir, key, nextId, {
     requirement,
     why,
-    binds,
     lives,
     issue: (opts.issue ?? "").trim() || undefined,
   });
@@ -344,19 +333,13 @@ export function warnUnresolvableRefs(platformDir: string, fieldValues: string[])
  * same INVALID_DOMAIN_FILE the index emits — VAL-02). Returns the
  * platform-relative spec path.
  *
- * NOTE the `binds` field has no home in the JSON requirement shape (STOR-01)
- * and is NOT persisted — the Markdown parser already ignored `Binds:`
- * (spec.ts:356). It still flows into `warnUnresolvableRefs` for @-ref
- * validation at the call sites. The signature is kept STABLE (same four args)
- * so `spec supersede` (17-05) composes.
- *
  * Shared by the interactive prompt flow and the L1 field-flag path.
  */
 export async function appendEntry(
   platformDir: string,
   key: string,
   id: string,
-  fields: { requirement: string; why: string; binds: string; lives: string; issue?: string },
+  fields: { requirement: string; why: string; lives: string; issue?: string },
 ): Promise<string> {
   const relFile = `spec-engine/${key}/SPEC.json`;
   const specPath = join(platformDir, "spec-engine", key, "SPEC.json");

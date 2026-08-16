@@ -4,7 +4,7 @@ Canonical names for Spec Engine concepts. When prose, code comments, diagnostics
 docs need one of these ideas, use the term below — not a synonym. Terms are ordered
 by the data model, outside-in.
 
-## The three core nouns — not interchangeable
+## The three core nouns
 
 - **Domain** — a named *subject area* of requirements, keyed by an UPPERCASE key (`BILLING`, `GUARD`). A domain is the concept: it has an owner, a charter (what belongs in it, what doesn't), and a set of requirements. Use "domain" when talking about grouping, taxonomy, or ownership.
 - **Spec** — the *artifact* that records one domain's requirements: the `spec-engine/<KEY>/SPEC.json` file (the "domain envelope"). One spec per domain. Use "spec" when talking about the file or its schema. A requirement domain's version is not authored on the spec — it is derived from the supersede DAG; only the reserved TERM domain carries an authored `specVersion`, the pin term-drift is measured against.
