@@ -42,6 +42,19 @@ bun packages/engine/src/cli.ts check . --ci   # the self-gate
   (`fence_d08_engine_internal` in `scripts/arch-fences.sh`) — which is broader
   than the authoring path: it forbids `bun:sqlite` anywhere in
   `packages/engine/src` except `storage/sqlite.ts`.
+- **Comments carry constraints, never provenance.** Before writing one, ask
+  what would hold the knowledge better: a named function with one
+  responsibility, a test stating the behavior as an executable claim, or an
+  `@spec KEY-NNN` tag binding the line to its requirement. Nearly everything
+  that feels like it needs a comment needs one of those instead. What is left
+  for a comment is a mechanical gotcha the code cannot state itself. A comment
+  never restates a requirement, names a plan, phase, wave, pitfall, or review
+  round, or narrates how the code arrived at its current shape. Behavior lives
+  in `spec-engine/<DOMAIN>/SPEC.json`, where it is versioned and gate-checked;
+  a comment that duplicates it drifts silently, which is the exact failure this
+  repo exists to cure. Enforced by `fence_comment_markers`, a ratchet over
+  `scripts/comment-marker-debt.txt`: a file absent from the ledger must carry
+  zero markers, and a listed file's count may only fall.
 
 ## Invocation
 

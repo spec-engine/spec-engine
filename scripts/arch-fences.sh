@@ -397,6 +397,19 @@ fence_taxonomy_charters() {
   fi
 }
 
+# --- Process markers in source comments --------------------------------------
+# A comment naming a plan, phase, wave, pitfall, or review round records how the
+# code arrived rather than what constrains it. 65 files still carry them, so
+# this is a ratchet over a ledger rather than a ban: the count can only fall.
+fence_comment_markers() {
+  if bash scripts/comment-markers.sh; then
+    :
+  else
+    echo "FORBIDDEN: process markers in source comments (see the comment policy in AGENTS.md)"
+    exit 1
+  fi
+}
+
 run "D-11 bun:sqlite outside engine"        fence_d11_bun_sqlite
 run "D-08 engine-internal bun:sqlite"       fence_d08_engine_internal
 run "SCHM-07 schema-constraint"             fence_schm07_schema_constraint
@@ -415,6 +428,7 @@ run "TERM-06 glossary round-trip"           fence_glossary_roundtrip
 run "SCHM-008 no authored specVersion"      fence_no_authored_specversion
 run "AGENTS check-codes list"               fence_agents_check_codes
 run "CHRT charters generated"               fence_taxonomy_charters
+run "COMMENT process-marker ratchet"        fence_comment_markers
 
 if [ "$fail" -ne 0 ]; then
   echo ""
