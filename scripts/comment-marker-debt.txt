@@ -41,7 +41,6 @@
 20	packages/engine/src/server/api.ts
 65	packages/engine/src/storage/sqlite.ts
 1	packages/shared/src/config.ts
-16	packages/shared/src/diagnostics.ts
 7	packages/shared/src/domain.ts
 2	packages/shared/src/gate.ts
 1	packages/shared/src/indexResult.ts
