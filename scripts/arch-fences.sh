@@ -359,6 +359,31 @@ fence_no_authored_specversion() {
   echo "authored-specVersion fence: OK (no non-TERM envelope carries a counter)"
 }
 
+# --- The AGENTS.md diagnostic-code list matches the DiagnosticCode enum -------
+# The list is hand-written prose beside a machine-readable enum, so it drifts:
+# it had three codes twice over and was missing eight. This compares the two
+# sets (order and duplicates are prose's business, membership is not).
+fence_agents_check_codes() {
+  local enum_codes agents_codes
+  enum_codes="$(grep -oE '^  [A-Z_]+: "' packages/shared/src/diagnostics.ts \
+    | sed -E 's/^  ([A-Z_]+): "$/\1/' | sort -u)"
+  # The code list lives in the `spec check` bullet, between "Codes," and the
+  # sentence that follows it. Every code is fenced in backticks.
+  agents_codes="$(sed -n '/Codes, in `DiagnosticCode` order:/,/The four/p' AGENTS.md \
+    | grep -oE '`[A-Z_]+`' | tr -d '`' | sort -u)"
+  # Negative self-test: the extractor must find something on both sides.
+  if [ -z "$enum_codes" ] || [ -z "$agents_codes" ]; then
+    echo "FENCE SELF-TEST FAILED: a code extractor matched nothing"
+    exit 1
+  fi
+  if [ "$enum_codes" != "$agents_codes" ]; then
+    echo "FORBIDDEN: the AGENTS.md diagnostic-code list disagrees with the DiagnosticCode enum. Difference (< enum only, > AGENTS.md only):"
+    diff <(printf '%s\n' "$enum_codes") <(printf '%s\n' "$agents_codes") || true
+    exit 1
+  fi
+  echo "AGENTS check-codes fence: OK (list == DiagnosticCode enum)"
+}
+
 run "D-11 bun:sqlite outside engine"        fence_d11_bun_sqlite
 run "D-08 engine-internal bun:sqlite"       fence_d08_engine_internal
 run "SCHM-07 schema-constraint"             fence_schm07_schema_constraint
@@ -375,6 +400,7 @@ run "STOR-04 no SPEC.md parse path"         fence_stor04_no_spec_md_parse
 run "AUTHOR-003 llm-free engine"            fence_llmfree_engine
 run "TERM-06 glossary round-trip"           fence_glossary_roundtrip
 run "SCHM-008 no authored specVersion"      fence_no_authored_specversion
+run "AGENTS check-codes list"               fence_agents_check_codes
 
 if [ "$fail" -ne 0 ]; then
   echo ""

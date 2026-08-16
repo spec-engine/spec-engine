@@ -53,6 +53,7 @@ import { proofsUnconfirmedWarning, provenDetermination } from "../check/proven";
 import { requirementRemoved } from "../check/removed";
 import { collectDiagnostics } from "../check/sqlDiagnostics";
 import { unapprovedStatusFlip } from "../check/statusflip";
+import { supersedesPointerDiagnostics } from "../check/supersedes";
 import { unsourcedChanges } from "../check/unsourced";
 import { EXIT, isContainedPath, OUT_HELP, resolveDbPath } from "../constants";
 import { assertSpecPlatform, formatNotASpecPlatform } from "../indexer/discover";
@@ -544,6 +545,11 @@ export const checkCommand = defineCommand({
       // not a style preference.
       // @spec CHCK-026
       diagnostics.push(...(await brokenFileRefDiagnostics(platformDir)));
+      // Forward-pointer pass: a non-null `supersedes` is the one field a
+      // hand-edit can use to excuse a deletion, so it must name a real
+      // requirement.
+      // @spec CHCK-029
+      diagnostics.push(...(await supersedesPointerDiagnostics(platformDir)));
       // Glossary round-trip probe (drift audit, statement 5): a committed
       // GLOSSARY.md that no longer matches the TERM store surfaces in EVERY
       // check run, not just this repo's CI fence — adopters get the warning

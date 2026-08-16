@@ -195,6 +195,14 @@ edited specs or tags and need the answer to reflect it.
   one level up, so it gates `--ci`). Both clear via `spec term confirm`; the
   drift predicate (`term.changed_at_version > citation.pinned`) lives in the
   ONE `term_drift` VIEW, cloned from the member-pin `drift` VIEW.
+  - **`BROKEN_SUPERSEDE`** (**error**) covers BOTH stored directions of the
+    supersede edge: a `supersededBy` naming an id that does not exist, and a
+    non-null `supersedes` naming one that does not exist or naming the
+    declaring requirement itself. The forward pointer is checked because the
+    loss gates honor it as a removal exemption, which makes it the one field a
+    hand-edit can use to excuse deleting a requirement. It is NOT required to
+    point back — the legal delete-and-replace path leaves no predecessor to
+    carry the return pointer.
   - **`BROKEN_FILE_REF`** (**error**) — an Active/Draft requirement's
     `livesIn` entry does not resolve to a file under the platform root
     (a traversal ref landing outside the root is broken even if it exists).

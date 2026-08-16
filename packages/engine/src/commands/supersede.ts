@@ -262,7 +262,6 @@ function applySupersedeEdit(
     livesIn: lives === "" ? [] : [lives],
     // The same ticket created the successor.
     issues: issue ? [{ role: "created", id: issue }] : [],
-    changedAtVersion: 1,
   };
   // Wave B (06-02): a TERM successor carries its headword + synonyms forward
   // (copied unless overridden) — otherwise the fresh requirement shape above
@@ -282,18 +281,39 @@ function applySupersedeEdit(
   //    so that counter is the only pin a citation's drift can lag, and --no-bump
   //    still opts out of it.
   // @spec REQ-036
-  let reportedVersion: number | null;
-  if (domain.key === "TERM") {
-    const currentVersion = typeof domain.specVersion === "number" ? domain.specVersion : 1;
-    reportedVersion = noBump ? null : currentVersion + 1;
-    if (reportedVersion !== null) domain.specVersion = reportedVersion;
-    req.supersededAtVersion = reportedVersion ?? currentVersion;
-  } else {
-    reportedVersion = deriveDomainVersion(requirements);
-    req.supersededAtVersion = reportedVersion;
-  }
+  const reportedVersion = applyVersionStage(target, successor, noBump);
   domain.updated = localToday();
   return reportedVersion;
+}
+
+/**
+ * Stage (c3): version both sides of the supersession and stamp the successor's
+ * changed-at value. Returns the version to report (null under --no-bump on a
+ * TERM domain, where the authored counter is the thing being held back).
+ */
+function applyVersionStage(
+  target: SupersedeTarget,
+  successor: DomainRequirement,
+  noBump: boolean,
+): number | null {
+  const { domain, requirements, req } = target;
+  if (domain.key !== "TERM") {
+    const derived = deriveDomainVersion(requirements);
+    req.supersededAtVersion = derived;
+    // No changedAtVersion is authored here: the index derives it for a
+    // requirement domain, so a stored number would be ignored and could
+    // disagree with the derived one.
+    return derived;
+  }
+  const currentVersion = typeof domain.specVersion === "number" ? domain.specVersion : 1;
+  const reported = noBump ? null : currentVersion + 1;
+  if (reported !== null) domain.specVersion = reported;
+  req.supersededAtVersion = reported ?? currentVersion;
+  // A TERM entry's changed-at stamp IS authored — it is the pin every citing
+  // requirement drifts against — so the successor carries the version it was
+  // minted at.
+  successor.changedAtVersion = reported ?? currentVersion;
+  return reported;
 }
 
 /**

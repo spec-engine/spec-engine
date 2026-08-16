@@ -459,6 +459,26 @@
       ],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "CHCK-029",
+      "status": "active",
+      "statement": "If a requirement's supersedes pointer names an id that does not exist or names the requirement itself, then spec check shall report BROKEN_SUPERSEDE at error severity.",
+      "why": "The loss gates honor supersedes as a removal exemption, so an unchecked forward pointer is the one field a hand-edit can use to excuse deleting a requirement.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/check/supersedes.ts"
+      ],
+      "issues": [
+        {
+          "role": "created",
+          "id": "RED-169"
+        }
+      ],
+      "aliases": [],
+      "cites": []
     }
   ]
 }
