@@ -56,7 +56,7 @@ Spec Engine is a derived-index pipeline. Truth lives in git as `spec-engine/<KEY
 | Authoring | Domain scaffolds, next-id allocation, `@` file refs, statement grammar at write time | `packages/engine/src/authoring/` |
 | Projections | One directory per computed answer, each with a `format.ts` for text mode | `map/`, `query/`, `resolve/`, `relations/`, `propagation/`, `provenance/`, `gate/`, `results/` |
 | HTTP API | Hono routes over `Storage`, read routes always on, write routes flag-gated | `packages/engine/src/server/api.ts` |
-| MCP server | Seven tools and one prompt, same JSON as the CLI's `--json` | `packages/engine/src/server/mcp.ts` |
+| MCP server | Nine tools and one prompt, same JSON as the CLI's `--json` | `packages/engine/src/server/mcp.ts` |
 | Webapp | Server-rendered pages. No filesystem, no sqlite, no engine import | `packages/webapp/src/` |
 | Tracker | Optional read-only Linear adapter with a cache sidecar | `packages/tracker/src/` |
 | Docs site | This site, served offline by `spec docs` | `packages/site/` |
@@ -76,8 +76,20 @@ An operation takes typed input and returns typed data or a typed refusal. It nev
 | `nextId` | platform dir, domain key or prefix | the resolved key and next unused id, or `usage` | `spec req` | | `spec_next_id` |
 | `mint` | platform dir, key, statement, why, lives-in, issue | the new id and file, or `not_found` / `usage` / `invalid_domain_file` | `spec req --text` | `POST /api/requirements` | |
 | `amend` | platform dir, id, fields, a fresh-tags callback | the changed fields, or `not_found` / `conflict` / `invalid_domain_file` | `spec amend` | `PUT /api/requirements/:id` | |
+| `supersede` | platform dir, id, successor statement and fields, a fresh-tags callback | the successor id, the domain version, the retag worklist, or `not_found` / `conflict` / `usage` / `invalid_domain_file` | `spec supersede` | `POST /api/requirements/:id/supersede` | `spec_supersede` |
+| `move` | platform dir, id, target domain key, optional successor fields, a fresh-tags callback | both files, both versions, the retag worklist, or `usage` / `not_found` / `conflict` / `invalid_domain_file` | `spec move` | | |
+| `deprecate` | platform dir, id, reason, a fresh-tags callback | the file and the tags still bound, or `not_found` / `conflict` / `invalid_domain_file` | `spec deprecate` | `POST /api/requirements/:id/deprecate` | `spec_deprecate` |
+| `mintTerm`, `listTerms`, `reviseTerm`, `confirmTerm` | platform dir, term fields or ids | the term id, the store rows, the bumped version, or the re-pinned citation; `not_found` / `conflict` / `invalid_domain_file` | `spec term` | | |
+| `coverageMatrix` | storage | requirement × repo rows | `spec map` | `GET /api/coverage` | |
+| `relations` | storage | `relates` links | `spec relations` | `GET /api/relations` | |
+| `provenance` | storage, optional issue id | provenance matrix rows | `spec provenance` | `GET /api/provenance` | |
+| `guard` | storage, platform dir, git ref | the losses a change is about to cause | `spec guard` | | |
+| `gate` | storage, platform dir, repo, requirement id | the gate outcome and `build_id`, or `usage` for an unknown repo | `spec gate` | | |
+| `resolveMemberPin`, `writeMemberConfig` | repo dir, pin override, force | the pin and its source; wrote or already configured, or `usage` / `conflict` | `spec init` | | |
+| `newDomain`, `listDomains` | platform dir, key | the scaffolded file, or `usage` / `conflict` / `invalid_domain_file`; the `{ key, scope }` rows | `spec domain` | | |
+| `writeGlossary`, `migrateGlossary`, `checkGlossary` | platform dir | the generated count, the migrated count or a skip, clean or drift | `spec glossary` | | |
 
-Reads take an open `Storage` handle because the surface owns the handle's lifetime: the CLI and MCP open one per call through `withIndex`, the API keeps one for the life of the server. Writes take the platform directory because they edit `SPEC.json` files. The lifecycle verbs (`supersede`, `move`, `deprecate`, `term`) and the single-surface commands still run in their command files and move onto this layer next.
+Reads take an open `Storage` handle because the surface owns the handle's lifetime: the CLI and MCP open one per call through `withIndex`, the API keeps one for the life of the server. Writes take the platform directory because they edit `SPEC.json` files. A lifecycle write takes a fresh-tags callback for its worklist, so a one-shot surface cold-rebuilds a throwaway index while the API re-indexes into the handle it keeps. Every guard runs before the first byte is written (REQ-038 <!-- @spec REQ-038 -->), and `operations-parity.test.ts` proves each surface writes the same envelope.
 
 ## The single seams
 
@@ -89,7 +101,7 @@ Each of these exists exactly once, and a grep fence in `scripts/arch-fences.sh` 
 | `validateAndWrite` | Every write of a `SPEC.json` file | `VAL-01 validateAndWrite seam` |
 | `bun:sqlite` import | Only `storage/sqlite.ts` may import it | `D-08 engine-internal bun:sqlite`, `D-11 bun:sqlite outside engine` |
 | `Storage` interface | Every read the CLI, API, and MCP make | the webapp import fence in `packages/webapp/test/` |
-| Operations | The write seam and the id allocator are reached only through `operations/` from the server | `OPS-01 write seam under operations` |
+| Operations | The write seam and the id allocator are reached only through `operations/`; no command, route, or tool imports them | `OPS-01 write seam under operations` |
 | No model calls | The engine never runs an LLM. The MCP authoring prompt is a text template | `AUTHOR-003 llm-free engine` |
 | Derived versions | No authored `specVersion` on requirement domains | `SCHM-008 no authored specVersion` |
 | Generated docs | `GLOSSARY.md` and the TAXONOMY charters are regenerated, never hand-edited | `TERM-06 glossary round-trip`, `CHRT charters generated` |

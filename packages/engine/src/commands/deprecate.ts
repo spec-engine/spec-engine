@@ -1,82 +1,18 @@
 // packages/engine/src/commands/deprecate.ts
 //
-// `spec deprecate <KEY-NNN> --reason "..."` — the end-of-life command (D1,
-// 2026-07-30). A requirement is never deleted; when its behavior is being
-// removed with no successor, this command marks it deprecated and records
-// WHY, on the entry itself. The reason lives in SPEC.json — not in a code
-// comment — because the code carrying a comment is exactly what is about to
-// be deleted.
-//
-// After this write:
-//   - `spec gate` FAILS the id (reason DEPRECATED),
-//   - a code tag still on the id is a DEPRECATED_REFERENCED error in
-//     `spec check` — the emitted worklist below is that list,
-//   - the id leaves live search, and
-//   - `spec guard` allows the bound code to be deleted in the same change
-//     (the entry survives as the record; only Active promises demand code).
-//
-// Guards run before any write. Only an Active or Draft entry deprecates:
-// a superseded entry is already history, an already-deprecated entry is a
-// no-op error. VAL-01: the single object edit writes ONCE through
-// validateAndWrite. Exit codes 0 / 2. D-08: no bun:sqlite import.
+// `spec deprecate <KEY-NNN> --reason "..."`: end a requirement with a recorded
+// reason and print the tags still bound to it. The command checks the input
+// shape and renders; the gates and the write live in operations/deprecate.ts.
 
-import { existsSync } from "node:fs";
-import { validateAndWrite } from "@spec-engine/shared";
 import { defineCommand } from "citty";
-import { localToday } from "../authoring/edit";
-import { EXIT, specPaths } from "../constants";
+import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
+import { coldFreshTags } from "../operations/_index";
+import { deprecate } from "../operations/deprecate";
 import { ID_RE } from "../parser/grammar";
-import { type ReqTagRow, renderReqTags } from "../resolve/format";
+import { renderReqTags } from "../resolve/format";
 import { platformDirArg, resolvePlatformDir } from "./_args";
-import { handleNotAPlatform, reindexAndListTags } from "./_shared";
-
-/** A requirement object inside the JSON envelope (loose — the seam re-validates). */
-interface DomainRequirement {
-  id: string;
-  status?: string;
-  deprecatedReason?: string;
-  [k: string]: unknown;
-}
-
-interface DomainEnvelope {
-  requirements?: DomainRequirement[];
-  updated?: string;
-  [k: string]: unknown;
-}
-
-/** Resolve + guard the deprecation target. Every failure prints and exits 2;
- *  a normal return means an Active/Draft entry ready to flip. */
-async function resolveDeprecateTarget(
-  platformDir: string,
-  id: string,
-): Promise<{ domain: DomainEnvelope; req: DomainRequirement; specPath: string; relFile: string }> {
-  const key = id.slice(0, id.indexOf("-"));
-  const { abs: specPath, rel: relFile } = specPaths(platformDir, key);
-  if (!existsSync(specPath)) {
-    console.error(`spec deprecate: no domain ${key} (expected ${relFile} under ${platformDir})`);
-    process.exit(EXIT.USAGE);
-  }
-  const domain = JSON.parse(await Bun.file(specPath).text()) as DomainEnvelope;
-  const requirements = Array.isArray(domain.requirements) ? domain.requirements : [];
-  const req = requirements.find((r) => r?.id === id);
-  if (req === undefined) {
-    console.error(`spec deprecate: no entry ${id} in ${relFile}`);
-    process.exit(EXIT.USAGE);
-  }
-  const statusLc = (typeof req.status === "string" ? req.status : "").toLowerCase();
-  if (statusLc === "deprecated" || statusLc === "retired") {
-    console.error(`spec deprecate: ${id} is already deprecated`);
-    process.exit(EXIT.USAGE);
-  }
-  if (statusLc !== "active" && statusLc !== "draft") {
-    console.error(
-      `spec deprecate: ${id} is ${req.status} — only Active/Draft entries deprecate (a superseded entry is already history)`,
-    );
-    process.exit(EXIT.USAGE);
-  }
-  return { domain, req, specPath, relFile };
-}
+import { exitOnFailure, handleNotAPlatform } from "./_shared";
 
 export const deprecateCommand = defineCommand({
   meta: {
@@ -121,36 +57,15 @@ export const deprecateCommand = defineCommand({
       handleNotAPlatform(e);
     }
 
-    const { domain, req, specPath, relFile } = await resolveDeprecateTarget(platformDir, id);
-
-    // The single object edit (VAL-01): status + reason, envelope date bump.
-    // @spec REQ-021
-    req.status = "deprecated";
-    req.deprecatedReason = reason;
-    domain.updated = localToday();
-    const res = await validateAndWrite(specPath, domain, relFile);
-    if (!res.ok) {
-      for (const diag of res.diagnostics) console.error(`spec deprecate: ${diag.detail}`);
-      process.exit(EXIT.USAGE);
-    }
-
-    // Fresh reindex + the cleanup worklist: every tag still on the id is now
-    // a DEPRECATED_REFERENCED error until the code is removed or retagged.
-    const tags = await reindexAndListTags(platformDir, id);
-    const sites: ReqTagRow[] = tags.map(({ req_id, repo, file, line, kind, level }) => ({
-      req_id,
-      repo,
-      file,
-      line,
-      kind: kind as string,
-      level: (level ?? null) as string | null,
-    }));
+    const result = await deprecate({ platformDir, id, reason }, coldFreshTags(platformDir));
+    if (!result.ok) exitOnFailure("spec deprecate", result);
+    const { file, sites } = result;
 
     if (args.json) {
-      console.log(JSON.stringify({ id, file: relFile, reason, sites }));
+      console.log(JSON.stringify({ id, file, reason, sites }));
       return;
     }
-    console.log(`deprecated ${id} in ${relFile} — reason recorded`);
+    console.log(`deprecated ${id} in ${file} — reason recorded`);
     if (sites.length > 0) {
       console.error(
         `${sites.length} code tag(s) still bind ${id} — remove or retag them (spec check reports each as DEPRECATED_REFERENCED):`,

@@ -493,7 +493,7 @@ are ignored.
 | `query` | `/query`, `/api/query?q=&limit=` |
 | `relations` | `/relations`, `/api/relations[?format=mermaid]` |
 | `provenance` | `/provenance`, `/api/provenance[?resolve=1]`, `/api/provenance/by-issue?issue=` |
-| `editor` | `/editor`, `POST` and `PUT /api/requirements` |
+| `editor` | `/editor`, `POST` and `PUT /api/requirements`, `POST /api/requirements/:id/supersede`, `POST /api/requirements/:id/deprecate` |
 | `glossary`, `logs` | Placeholder pages |
 
 Exit: 0 / 1 / 2.
@@ -523,6 +523,8 @@ MCP server over stdio. Register it as
 | `spec_check` | diagnostic rows |
 | `spec_propagation` | per-repo migration state |
 | `spec_next_id` | `{ domain, next_id }`, nothing written |
+| `spec_supersede` | `{ old_id, new_id, file, spec_version, retag }`, the `spec supersede --json` shape |
+| `spec_deprecate` | `{ id, file, reason, sites }`, the `spec deprecate --json` shape |
 
 Every tool call reindexes fresh. stdout is the protocol channel; chrome goes to
 stderr. One prompt, `author_requirements` (`brief` required, `domain`

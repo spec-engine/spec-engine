@@ -172,6 +172,6 @@ Launch the local webapp over the derived index. Binds `127.0.0.1` only. `--probe
 
 ### `spec mcp [platformDir]`
 
-Serve Spec Engine as a Model Context Protocol server over stdio. Tools: `spec_query`, `spec_resolve`, `spec_req_tags`, `spec_coverage_report`, `spec_check`, `spec_propagation`, `spec_next_id` — the same JSON the CLI's `--json` modes emit, reindexed fresh per call. Also advertises the `author_requirements` prompt (a static authoring playbook; the engine itself runs no model).
+Serve Spec Engine as a Model Context Protocol server over stdio. Tools: `spec_query`, `spec_resolve`, `spec_req_tags`, `spec_coverage_report`, `spec_check`, `spec_propagation`, `spec_next_id`, `spec_supersede`, `spec_deprecate` — the same JSON the CLI's `--json` modes emit, reindexed fresh per call. Also advertises the `author_requirements` prompt (a static authoring playbook; the engine itself runs no model).
 
 **Exit codes:** 0 / 2

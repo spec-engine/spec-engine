@@ -1,260 +1,35 @@
 // packages/engine/src/commands/move.ts
 //
-// `spec move <KEY-NNN> <NEW-DOMAIN>` (4.7) — the cross-domain counterpart of
-// `spec supersede`. `supersede` mints a successor in the SAME domain; `move`
-// mints it in a DIFFERENT one, carrying the source entry's fields forward, and
-// marks the source `Superseded by <NEW-ID>`. It exists so a taxonomy
-// reorganization (this repo's own AUTHC→DOMAIN+REQ, POC dissolution, GATE→PROOF)
-// is a real, auditable supersession with a retag worklist — not a hand-edited
-// rename that loses history.
-//
-// Mechanics (all guards run BEFORE any write):
-//   1. Flip the source entry to status:"superseded", supersededBy:NEW.
-//   2. Mint NEW as the next unused id IN THE TARGET DOMAIN and append it Active,
-//      copying the source's statement/why/livesIn — flags override so a
-//      non-standalone requirement can be rewritten AS it moves (4.8).
-//   3. Bump BOTH envelopes' specVersion (+1) and updated — the source lost a
-//      requirement, the target gained one. --no-bump opts out of both.
-//   4. Pre-validate both envelopes, then write both through the ONE
-//      validateAndWrite seam (VAL-01), fresh-reindex, and emit the RETAG
-//      WORKLIST: every tag site still on the old id (the sites `spec check`
-//      flags as SUPERSEDED_REFERENCED until retagged to NEW).
-//
-// Cross-domain supersededBy is just an id string — the schema already permits
-// it, and the index resolves supersededBy globally, so check/propagation treat
-// the moved id exactly like an in-domain supersession.
-//
-// Exit codes: 0 success, 2 usage/guard errors. D-08: no bun:sqlite import.
+// `spec move <KEY-NNN> <NEW-DOMAIN>`: the cross-domain supersede. The command
+// normalizes the target key and renders; the guards, both writes, and the
+// retag worklist live in operations/move.ts.
 
-import { existsSync } from "node:fs";
-import { type Diagnostic, validateAndWrite, validateDomainFile } from "@spec-engine/shared";
 import { defineCommand } from "citty";
-import { nextRequirementId, normalizeDomainKey } from "../authoring/domains";
-import { localToday } from "../authoring/edit";
-import { enforceStatementGrammar } from "../authoring/grammar";
-import { EXIT, specPaths } from "../constants";
+import { normalizeDomainKey } from "../authoring/domains";
+import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
-import { toReqTagRows } from "../operations/reads";
-import { deriveDomainVersion } from "../parser/domainJson";
+import { coldFreshTags } from "../operations/_index";
+import { type MoveInput, move } from "../operations/move";
 import { ID_RE } from "../parser/grammar";
-import { type ReqTagRow, renderReqTags } from "../resolve/format";
+import { renderReqTags } from "../resolve/format";
 import { platformDirArg, resolvePlatformDir } from "./_args";
-import { handleNotAPlatform, reindexAndListTags } from "./_shared";
-import { warnUnresolvableRefs } from "./req";
+import { exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
 
-/** A requirement object inside the JSON envelope (loose — the seam re-validates). */
-interface DomainRequirement {
-  id: string;
-  status?: string;
-  statement?: string;
-  why?: string | null;
-  supersedes?: string | null;
-  supersededBy?: string | null;
-  relates?: string[];
-  livesIn?: string[];
-  issues?: unknown[];
-  changedAtVersion?: number;
-  [k: string]: unknown;
-}
-interface DomainEnvelope {
-  specVersion?: number;
-  requirements?: DomainRequirement[];
-  updated?: string;
-  [k: string]: unknown;
-}
-
-/** One side of a move: the parsed envelope plus the paths to write it back. */
-interface DomainSide {
-  domain: DomainEnvelope;
-  requirements: DomainRequirement[];
-  specPath: string;
-  relFile: string;
-  key: string;
-}
-
-/** Read + JSON-parse a domain envelope, exiting 2 on a missing/unparseable
- *  file (all guards fail before any write). */
-async function loadDomainSide(platformDir: string, key: string): Promise<DomainSide | null> {
-  const { abs: specPath, rel: relFile } = specPaths(platformDir, key);
-  if (!existsSync(specPath)) return null;
-  const domain = JSON.parse(await Bun.file(specPath).text()) as DomainEnvelope;
-  const requirements = Array.isArray(domain.requirements) ? domain.requirements : [];
-  return { domain, requirements, specPath, relFile, key };
-}
-
-/** Resolved move target: both domain sides plus the located Active source entry. */
-interface MoveTarget {
-  source: DomainSide;
-  target: DomainSide;
-  req: DomainRequirement;
-}
-
-/**
- * Resolve + guard the move. Owns the ID_RE guard, the platform pre-flight, both
- * domain-file existence checks, the same-domain guard, the entry lookup, and the
- * Active-only status guard. A normal return means every guard passed.
- */
-async function resolveMoveTarget(
-  id: string,
-  rawTargetKey: string,
-  platformDir: string,
-): Promise<MoveTarget> {
-  if (!ID_RE.test(id)) {
-    console.error(`spec move: id must be a requirement id (KEY-NNN); got ${id}`);
-    process.exit(EXIT.USAGE);
-  }
-  const targetKey = normalizeDomainKey(rawTargetKey);
-  if (targetKey === "") {
-    console.error(
-      `spec move: <NEW-DOMAIN> must be a domain key; got ${JSON.stringify(rawTargetKey)}`,
-    );
-    process.exit(EXIT.USAGE);
-  }
-
-  try {
-    assertSpecPlatform(platformDir);
-  } catch (e) {
-    handleNotAPlatform(e);
-  }
-
-  const sourceKey = id.slice(0, id.indexOf("-"));
-  if (sourceKey === targetKey) {
-    console.error(
-      `spec move: ${id} is already in ${targetKey} — use spec supersede for an in-domain revision`,
-    );
-    process.exit(EXIT.USAGE);
-  }
-
-  const source = await loadDomainSide(platformDir, sourceKey);
-  if (source === null) {
-    console.error(
-      `spec move: no domain ${sourceKey} (expected spec-engine/${sourceKey}/SPEC.json)`,
-    );
-    process.exit(EXIT.USAGE);
-  }
-  const target = await loadDomainSide(platformDir, targetKey);
-  if (target === null) {
-    console.error(
-      `spec move: no target domain ${targetKey} — run \`spec domain new ${targetKey}\` first`,
-    );
-    process.exit(EXIT.USAGE);
-  }
-
-  const req = source.requirements.find((r) => r?.id === id);
-  if (req === undefined) {
-    console.error(`spec move: no entry ${id} in ${source.relFile}`);
-    process.exit(EXIT.USAGE);
-  }
-  const statusLc = (typeof req.status === "string" ? req.status : "").toLowerCase();
-  if (statusLc !== "active") {
-    const display = req.status ? String(req.status) : "unknown";
-    console.error(
-      `spec move: ${id} is ${display} — only Active requirements move (superseded/retired entries stay as history)`,
-    );
-    process.exit(EXIT.USAGE);
-  }
-
-  return { source, target, req };
-}
-
-/** Successor fields: copy the source's, override with any provided flags (a move
- *  preserves the requirement, but flags let a non-standalone one be rewritten as
- *  it moves — 4.8). */
-function resolveSuccessorFields(
+/** Flags to the operation's input. An absent flag leaves the field to be copied from the source. */
+function inputFromArgs(
   args: Record<string, unknown>,
-  req: DomainRequirement,
-): { statement: string; why: string; lives: string } {
-  const srcStatement = typeof req.statement === "string" ? req.statement : "";
-  const srcWhy = typeof req.why === "string" ? req.why : "";
-  const srcLives =
-    Array.isArray(req.livesIn) && req.livesIn.length > 0 ? String(req.livesIn[0]) : "";
-  return {
-    statement: ((args.text as string | undefined) ?? srcStatement).trim(),
-    why: ((args.why as string | undefined) ?? srcWhy).trim(),
-    lives: ((args.lives as string | undefined) ?? srcLives).trim(),
-  };
-}
-
-/** Reject a blank statement, and — when `--text` supplied NEW text — judge it
- *  against the target domain's declared grammar (sentence 8). A move that
- *  carries the source statement verbatim is never blocked on old prose. */
-async function assertMovableStatement(
   platformDir: string,
   id: string,
   targetKey: string,
-  statement: string,
-  args: Record<string, unknown>,
-): Promise<void> {
-  if (statement === "") {
-    console.error(`spec move: ${id} has an empty Requirement — cannot move a blank statement`);
-    process.exit(EXIT.USAGE);
+): MoveInput {
+  const input: MoveInput = { platformDir, id, targetKey, noBump: Boolean(args.noBump) };
+  if (typeof args.text === "string") input.statement = args.text;
+  if (typeof args.why === "string") input.why = args.why;
+  if (typeof args.lives === "string") {
+    const lives = args.lives.trim();
+    input.livesIn = lives === "" ? [] : [lives];
   }
-  if (typeof args.text === "string") {
-    await enforceStatementGrammar(platformDir, targetKey, statement, "spec move");
-  }
-}
-
-/** Resolve the version to report for one side of a move. A requirement
- *  (non-TERM) domain's version is the DAG-derived projection over its OWN
- *  requirements after the edit — no authored counter is written (SCHM-008 /
- *  REQ-016); adding an Active successor adds no edge, so a target domain's
- *  derived version is unchanged while the source's advances by the one edge it
- *  gained. The reserved TERM domain keeps its authored specVersion bump (the
- *  drift pin; a revise adds no edge to derive), honoring --no-bump. Always
- *  advances `updated`. */
-function resolveMoveVersion(domain: DomainEnvelope, key: string, noBump: boolean): number | null {
-  domain.updated = localToday();
-  if (key !== "TERM") {
-    // @spec REQ-036
-    return deriveDomainVersion(domain.requirements ?? []);
-  }
-  if (noBump) return null;
-  const current = typeof domain.specVersion === "number" ? domain.specVersion : 1;
-  const next = current + 1;
-  domain.specVersion = next;
-  return next;
-}
-
-/** Apply the in-memory edits to both sides (all guards have passed). Mutates
- *  both envelopes and returns the two new specVersions. */
-function applyMoveEdit(
-  target: MoveTarget,
-  newId: string,
-  fields: { statement: string; why: string; lives: string },
-  noBump: boolean,
-): { sourceVersion: number | null; targetVersion: number | null } {
-  // 1. Flip the source entry forward (cross-domain supersededBy is a plain id).
-  const sourceCurrent =
-    typeof target.source.domain.specVersion === "number" ? target.source.domain.specVersion : 1;
-  target.req.status = "superseded";
-  target.req.supersededBy = newId;
-  // 2. Append the successor Active in the target domain.
-  target.target.requirements.push({
-    id: newId,
-    status: "active",
-    statement: fields.statement,
-    why: fields.why === "" ? null : fields.why,
-    supersedes: null,
-    supersededBy: null,
-    relates: [],
-    livesIn: fields.lives === "" ? [] : [fields.lives],
-    issues: [],
-  });
-  target.target.domain.requirements = target.target.requirements;
-  // 3. Version each side (derive for requirement domains; TERM keeps its bump).
-  const sourceVersion = resolveMoveVersion(target.source.domain, target.source.key, noBump);
-  const targetVersion = resolveMoveVersion(target.target.domain, target.target.key, noBump);
-  // Stamp the source's died-at version. Non-TERM: the DAG-derived source version
-  // (the supersede edge just added is now counted). TERM under --no-bump: the
-  // unchanged current. See supersede.ts for the semantics.
-  target.req.supersededAtVersion = sourceVersion ?? sourceCurrent;
-  return { sourceVersion, targetVersion };
-}
-
-/** Fresh reindex (canonical truth just changed on two files) + collect the retag
- *  worklist for the old id. */
-async function reindexAndCollectRetag(platformDir: string, id: string): Promise<ReqTagRow[]> {
-  return toReqTagRows(await reindexAndListTags(platformDir, id));
+  return input;
 }
 
 export const moveCommand = defineCommand({
@@ -302,55 +77,49 @@ export const moveCommand = defineCommand({
     const rawTargetKey = args.newDomain as string;
     const platformDir = resolvePlatformDir(args);
 
-    const target = await resolveMoveTarget(id, rawTargetKey, platformDir);
-    const fields = resolveSuccessorFields(args as Record<string, unknown>, target.req);
-    await assertMovableStatement(platformDir, id, target.target.key, fields.statement, args);
-    warnUnresolvableRefs(platformDir, [fields.statement, fields.why, fields.lives]);
-
-    const newId = await nextRequirementId(platformDir, target.target.key);
-    const { sourceVersion, targetVersion } = applyMoveEdit(
-      target,
-      newId,
-      fields,
-      Boolean(args.noBump),
-    );
-
-    // VAL-01: pre-validate BOTH envelopes before writing EITHER, so a reject on
-    // the second file can never leave the first half-applied. Then write both
-    // through the one validateAndWrite seam.
-    const diagnostics: Diagnostic[] = [];
-    const srcCheck = validateDomainFile(target.source.domain, target.source.relFile);
-    if (!srcCheck.ok) diagnostics.push(...srcCheck.diagnostics);
-    const tgtCheck = validateDomainFile(target.target.domain, target.target.relFile);
-    if (!tgtCheck.ok) diagnostics.push(...tgtCheck.diagnostics);
-    if (diagnostics.length > 0) {
-      for (const diag of diagnostics) console.error(`spec move: ${diag.detail}`);
+    if (!ID_RE.test(id)) {
+      console.error(`spec move: id must be a requirement id (KEY-NNN); got ${id}`);
       process.exit(EXIT.USAGE);
-      return;
+    }
+    const targetKey = normalizeDomainKey(rawTargetKey);
+    if (targetKey === "") {
+      console.error(
+        `spec move: <NEW-DOMAIN> must be a domain key; got ${JSON.stringify(rawTargetKey)}`,
+      );
+      process.exit(EXIT.USAGE);
+    }
+    try {
+      assertSpecPlatform(platformDir);
+    } catch (e) {
+      handleNotAPlatform(e);
     }
 
-    await validateAndWrite(target.target.specPath, target.target.domain, target.target.relFile);
-    await validateAndWrite(target.source.specPath, target.source.domain, target.source.relFile);
+    const result = await move(
+      inputFromArgs(args, platformDir, id, targetKey),
+      coldFreshTags(platformDir),
+    );
+    if (!result.ok) exitOnFailure("spec move", result);
+    printWarnings("spec move", result.warnings);
 
-    const retag = await reindexAndCollectRetag(platformDir, id);
-
+    const { newId, fromFile, toFile, sourceSpecVersion, targetSpecVersion, retag } = result;
+    const sourceKey = id.slice(0, id.indexOf("-"));
     if (args.json) {
       console.log(
         JSON.stringify({
           old_id: id,
           new_id: newId,
-          from_file: target.source.relFile,
-          to_file: target.target.relFile,
-          source_spec_version: sourceVersion,
-          target_spec_version: targetVersion,
+          from_file: fromFile,
+          to_file: toFile,
+          source_spec_version: sourceSpecVersion,
+          target_spec_version: targetSpecVersion,
           retag,
         }),
       );
     } else {
-      console.log(`moved ${id} → ${newId} (${target.source.key} → ${target.target.key})`);
-      if (sourceVersion !== null || targetVersion !== null) {
+      console.log(`moved ${id} → ${newId} (${sourceKey} → ${targetKey})`);
+      if (sourceSpecVersion !== null || targetSpecVersion !== null) {
         console.log(
-          `specVersion: ${target.source.key}→${sourceVersion}, ${target.target.key}→${targetVersion}`,
+          `specVersion: ${sourceKey}→${sourceSpecVersion}, ${targetKey}→${targetSpecVersion}`,
         );
       }
       if (retag.length > 0) {

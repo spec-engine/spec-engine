@@ -26,12 +26,12 @@ import { collectDiagnostics } from "../check/sqlDiagnostics";
 import { unapprovedStatusFlip } from "../check/statusflip";
 import { supersedesPointerDiagnostics } from "../check/supersedes";
 import { unsourcedChanges } from "../check/unsourced";
-import { glossaryDriftDiagnostic } from "../commands/glossary";
 import { CANONICAL_SPECS_DIR, SPEC_FILENAME } from "../constants";
 import { runIndex } from "../indexer/pipeline";
 import { parseJUnit, type TestCaseResult } from "../results/junit";
 import { findDomainJsonFiles, isPathIgnored } from "../scanner/fs";
 import { fail, type OpFailure } from "./_result";
+import { glossaryDriftDiagnostic } from "./glossary";
 
 export interface CheckInput {
   platformDir: string;

@@ -29,8 +29,18 @@ import { derivePlatformVersion } from "../indexer/discover";
 import { runIndex } from "../indexer/pipeline";
 import { type OpFailure, STATUS_FOR_REASON } from "../operations/_result";
 import { type AmendFields, amend } from "../operations/amend";
+import { deprecate } from "../operations/deprecate";
 import { mint } from "../operations/mint";
-import { coverageReport, propagation, query, reqTags } from "../operations/reads";
+import {
+  coverageMatrix,
+  coverageReport,
+  propagation,
+  provenance,
+  query,
+  relations,
+  reqTags,
+} from "../operations/reads";
+import { supersede } from "../operations/supersede";
 import { renderProvenanceDecorated } from "../provenance/format";
 import { resolveAndCache } from "../provenance/resolve";
 import { renderRelations, sortRelations } from "../relations/format";
@@ -355,7 +365,7 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
 
   app.get(
     "/api/coverage",
-    guarded((c) => c.json(storage.coverageMatrix())),
+    guarded((c) => c.json(coverageMatrix(storage).rows)),
   );
 
   // --- /api/repos ---------------------------------------------------------
@@ -419,13 +429,9 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
 
   // --- POST /api/requirements (VAL-03 create) ----------------------------
   //
-  // Create a requirement in the target domain's SPEC.json through the SINGLE
-  // `validateAndWrite` seam, then re-derive the index. The requirement object
-  // is built EXACTLY as commands/req.ts appendEntry does (status "active",
-  // why||null, empty relates/issues, changedAtVersion 1) so the CLI and webapp
-  // author byte-identical envelopes (one engine). On a structural reject the
-  // route returns the SAME diagnostics validateDomainFile emits (VAL-02 — no
-  // re-validation, no reshaping).
+  // Create a requirement in the target domain's SPEC.json through the mint
+  // operation, then re-derive the index. On a structural reject the route
+  // returns the diagnostics the shared validator emits, unreshaped.
   app.post(
     "/api/requirements",
     guarded(async function createRequirement(c) {
@@ -506,6 +512,99 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
     }),
   );
 
+  // --- POST /api/requirements/:id/supersede -------------------------------
+  //
+  // The lifecycle write: flip the Active entry to superseded, mint its
+  // successor, and answer with the retag worklist, the same shape as
+  // `spec supersede --json`. The operation re-indexes into this handle for the
+  // worklist, so the index is current when the response goes out.
+  app.post(
+    "/api/requirements/:id/supersede",
+    guarded(async function supersedeRequirement(c) {
+      if (!featureEnabled("editor")) {
+        return c.json({ error: featureDisabledMessage("editor") }, 404);
+      }
+      const originReject = rejectCrossOrigin(c);
+      if (originReject) return originReject;
+      const headerReject = rejectBadWriteHeaders(c);
+      if (headerReject) return headerReject;
+      const parsed = await readJsonBody(c);
+      if (!parsed.ok) return parsed.res;
+      const body = parsed.body;
+
+      const id = c.req.param("id") ?? "";
+      if (!ID_RE.test(id)) return c.json({ error: "id must be a requirement id (KEY-NNN)" }, 400);
+      const statement = typeof body.statement === "string" ? body.statement.trim() : "";
+      if (statement === "") return c.json({ error: "statement is required (non-empty)" }, 400);
+
+      return withWriteLock(async () => {
+        const r = await supersede(
+          {
+            platformDir,
+            id,
+            statement,
+            why: typeof body.why === "string" ? body.why : undefined,
+            livesIn: "livesIn" in body ? toLivesIn(body.livesIn) : undefined,
+            issue:
+              typeof body.issue === "string" && body.issue.trim() !== ""
+                ? body.issue.trim()
+                : undefined,
+          },
+          async (reqId) => {
+            await runIndex({ platformDir, storage });
+            return storage.listTags({ req_id: reqId });
+          },
+        );
+        if (!r.ok) return failureResponse(c, r);
+        return c.json(
+          {
+            ok: true,
+            old_id: r.oldId,
+            new_id: r.newId,
+            file: r.file,
+            spec_version: r.specVersion,
+            retag: r.retag,
+          },
+          201,
+        );
+      });
+    }),
+  );
+
+  // --- POST /api/requirements/:id/deprecate -------------------------------
+  //
+  // End a requirement with a recorded reason; the answer lists the code tags
+  // still bound to it, the same shape as `spec deprecate --json`.
+  app.post(
+    "/api/requirements/:id/deprecate",
+    guarded(async function deprecateRequirement(c) {
+      if (!featureEnabled("editor")) {
+        return c.json({ error: featureDisabledMessage("editor") }, 404);
+      }
+      const originReject = rejectCrossOrigin(c);
+      if (originReject) return originReject;
+      const headerReject = rejectBadWriteHeaders(c);
+      if (headerReject) return headerReject;
+      const parsed = await readJsonBody(c);
+      if (!parsed.ok) return parsed.res;
+      const body = parsed.body;
+
+      const id = c.req.param("id") ?? "";
+      if (!ID_RE.test(id)) return c.json({ error: "id must be a requirement id (KEY-NNN)" }, 400);
+      const reason = typeof body.reason === "string" ? body.reason.trim() : "";
+      if (reason === "") return c.json({ error: "reason is required (non-empty)" }, 400);
+
+      return withWriteLock(async () => {
+        const r = await deprecate({ platformDir, id, reason }, async (reqId) => {
+          await runIndex({ platformDir, storage });
+          return storage.listTags({ req_id: reqId });
+        });
+        if (!r.ok) return failureResponse(c, r);
+        return c.json({ ok: true, id: r.id, file: r.file, reason: r.reason, sites: r.sites }, 200);
+      });
+    }),
+  );
+
   // --- /api/propagation/:id ----------------------------------------------
 
   app.get(
@@ -554,7 +653,7 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
       if (format !== undefined && format !== "mermaid") {
         return c.json({ error: 'format must be "mermaid" when provided' }, 400);
       }
-      const rows = storage.listRelations();
+      const rows = relations(storage).rows;
       if (format === "mermaid") {
         return c.text(renderRelations(rows, "mermaid"));
       }
@@ -583,7 +682,7 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
       if (resolveParam !== undefined && resolveParam !== "1") {
         return c.json({ error: 'resolve must be "1" when provided' }, 400);
       }
-      const rows = storage.provenanceMatrix();
+      const rows = provenance(storage).rows;
       if (resolveParam === "1") {
         // Resolution is engine-side. With no SPEC_TRACKER_TOKEN this degrades to
         // the bare ids + the token hint with NO network call (resolveAndCache is
@@ -612,7 +711,7 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
       }
       const issue = (c.req.query("issue") ?? "").trim();
       if (issue === "") return c.json({ error: "issue is required (non-empty)" }, 400);
-      return c.json(storage.provenanceByIssue(issue));
+      return c.json(provenance(storage, issue).rows);
     }),
   );
 

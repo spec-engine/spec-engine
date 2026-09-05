@@ -57,14 +57,13 @@ fence_d08_engine_internal() {
 }
 
 # --- OPS-01: the write seam belongs to the operations layer -------------------
-# An HTTP route or a command may parse, call an operation, and render. It may
-# not mint or amend a requirement itself: the write seam and the id allocator
-# are imported only under operations/ and the lifecycle commands still to be
-# migrated.
+# An HTTP route, an MCP tool, or a command may parse, call an operation, and
+# render. None of them may write a domain file or allocate an id itself: the
+# write seam and the id allocator are imported only under operations/.
 fence_ops01_write_seam() {
-  OFFENDERS=$(grep -RlzE 'import \{[^}]*(validateAndWrite|nextRequirementId)[^}]*\}' packages/engine/src/server 2>/dev/null || true)
+  OFFENDERS=$(grep -RlE 'validateAndWrite|nextRequirementId' packages/engine/src/server packages/engine/src/commands 2>/dev/null || true)
   if [ -n "$OFFENDERS" ]; then
-    echo "FORBIDDEN: server/ reaches the write seam directly instead of an operation (OPS-01): $OFFENDERS"
+    echo "FORBIDDEN: a surface reaches the write seam directly instead of an operation (OPS-01): $OFFENDERS"
     exit 1
   fi
 }

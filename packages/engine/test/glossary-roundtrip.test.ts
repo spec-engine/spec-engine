@@ -20,8 +20,9 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type { Diagnostic } from "@spec-engine/shared";
-import { generateGlossary, glossaryCommand, parseGlossary } from "../src/commands/glossary";
+import { glossaryCommand } from "../src/commands/glossary";
 import { runIndex } from "../src/indexer/pipeline";
+import { generateGlossary, parseGlossary } from "../src/operations/glossary";
 import { openStorage } from "../src/storage/sqlite";
 
 // The real repo root (contains spec-engine/ + the committed GLOSSARY.md).

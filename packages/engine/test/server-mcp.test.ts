@@ -118,17 +118,19 @@ async function call(name: string, args: Record<string, unknown> = {}): Promise<u
 }
 
 describe("spec mcp — tool surface (L4)", () => {
-  test("lists the seven read tools", async () => {
+  test("lists the nine tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
       "spec_check",
       "spec_coverage_report",
+      "spec_deprecate",
       "spec_next_id",
       "spec_propagation",
       "spec_query",
       "spec_req_tags",
       "spec_resolve",
+      "spec_supersede",
     ]);
   });
 
@@ -247,7 +249,7 @@ describe("spec mcp — tool surface (L4)", () => {
 // registered on the McpServer yet, so `prompts/list` omits it and `prompts/get`
 // rejects it — each assertion fails as a clean protocol/content failure. Wave 2
 // registers the prompt (a static template, engine stays LLM-free) and greens
-// them. Prompts are NOT tools — the "lists the seven read tools" assertion above
+// them. Prompts are NOT tools — the "lists the nine tools" assertion above
 // is deliberately left untouched.
 // @spec AUTHOR-008 unit
 // @spec AUTHOR-009 unit

@@ -7,10 +7,11 @@
 import { defineCommand } from "citty";
 import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
+import { coldFreshTags } from "../operations/_index";
 import { type AmendFields, amend } from "../operations/amend";
 import { ID_RE } from "../parser/grammar";
 import { jsonArg, platformDirArg, resolvePlatformDir } from "./_args";
-import { exitOnFailure, handleNotAPlatform, printWarnings, reindexAndListTags } from "./_shared";
+import { exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
 
 export const amendCommand = defineCommand({
   meta: {
@@ -56,9 +57,7 @@ export const amendCommand = defineCommand({
 
     const fields = fieldsFromArgs(args);
 
-    const result = await amend({ platformDir, id, fields }, (reqId) =>
-      reindexAndListTags(platformDir, reqId),
-    );
+    const result = await amend({ platformDir, id, fields }, coldFreshTags(platformDir));
     if (!result.ok) exitOnFailure("spec amend", result);
     printWarnings("spec amend", result.warnings);
     if (args.json) {

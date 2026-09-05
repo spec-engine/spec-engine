@@ -18,7 +18,7 @@
 
 import { existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
-import type { Storage } from "@spec-engine/shared";
+import type { Storage, Tag } from "@spec-engine/shared";
 import { CANONICAL_SPECS_DIR, defaultIndexPath, SPEC_FILENAME } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
 import { runIndex } from "../indexer/pipeline";
@@ -99,4 +99,17 @@ function staleIndexWarning(platformDir: string, dbPath: string): string | null {
     // Staleness detection must never break a read.
   }
   return null;
+}
+
+/** Every tag site for one requirement, from an index that reflects the current tree. */
+export type FreshTags = (reqId: string) => Promise<Tag[]>;
+
+/**
+ * The fresh-tags provider a one-shot surface (the CLI, an MCP call) hands to a
+ * lifecycle operation: cold-rebuild the index, answer, close. A long-lived
+ * surface (the HTTP API) supplies its own over the handle it keeps.
+ */
+export function coldFreshTags(platformDir: string): FreshTags {
+  return (reqId) =>
+    withIndex({ platformDir, build: "fresh" }, (h) => h.storage.listTags({ req_id: reqId }));
 }
