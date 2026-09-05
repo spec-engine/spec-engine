@@ -1,16 +1,8 @@
 // packages/engine/src/constants.ts
 //
 // Engine-owned filesystem layout, process exit codes, and derived path
-// helpers. Before this module the on-disk contract (`.spec-engine/`,
-// `spec-engine/`, `SPEC.json`, the two config/manifest filenames) was
-// re-spelled as a bare literal at 40+ sites (see the magic-string audit),
-// so a rename meant a find-and-replace across every command with real
-// drift risk between the code path and the copy-pasted `--out` help text.
-// Everything that encodes the layout now derives from here.
-//
-// Domain VOCABULARY (statuses, severities, tag kinds, query limits) lives in
-// @spec-engine/shared next to its type unions — this file owns only the
-// engine's filesystem + CLI conventions.
+// helpers. Domain vocabulary (statuses, severities, tag kinds, query limits)
+// lives in @spec-engine/shared next to its type unions.
 
 import { rmSync, statSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
@@ -46,6 +38,19 @@ export const EXIT = { OK: 0, FAILURE: 1, USAGE: 2 } as const;
 /** Default derived-index path for a platform: `<dir>/.spec-engine/index.sqlite`. */
 export function defaultIndexPath(platformDir: string): string {
   return join(platformDir, INDEX_DIR, INDEX_DB_FILENAME);
+}
+
+/** A domain's spec file, absolute and platform-relative (`spec-engine/<KEY>/SPEC.json`). */
+export function specPaths(platformDir: string, key: string): { abs: string; rel: string } {
+  return {
+    abs: join(platformDir, CANONICAL_SPECS_DIR, key, SPEC_FILENAME),
+    rel: `${CANONICAL_SPECS_DIR}/${key}/${SPEC_FILENAME}`,
+  };
+}
+
+/** A member repo's opt-in config file. */
+export function memberConfigPath(repoDir: string): string {
+  return join(repoDir, MEMBER_CONFIG_FILENAME);
 }
 
 /**

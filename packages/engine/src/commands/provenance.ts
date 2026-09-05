@@ -37,6 +37,7 @@ import { OUT_HELP, resolveDbPath } from "../constants";
 import { maybePromptForOnboarding } from "../onboarding/prompt";
 import { renderProvenance, renderProvenanceDecorated } from "../provenance/format";
 import { resolveAndCache } from "../provenance/resolve";
+import { platformDirArg } from "./_args";
 import { assertContainedPath, withReadStorage } from "./_shared";
 
 /** B.1-style empty-state message (stderr, exit 0) — provenance-specific:
@@ -73,11 +74,7 @@ export const provenanceCommand = defineCommand({
       required: false,
       description: "Opaque issue id to reverse-lookup, e.g., ENG-1432",
     },
-    platformDir: {
-      type: "positional",
-      required: false,
-      description: "Platform directory containing spec-engine/ + members (default: cwd)",
-    },
+    platformDir: platformDirArg,
     out: {
       type: "string",
       description: OUT_HELP,

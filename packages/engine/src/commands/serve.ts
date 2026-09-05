@@ -31,7 +31,7 @@
 // through `openStorage` (Storage seam from @spec-engine/shared).
 
 import { existsSync, mkdirSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname } from "node:path";
 import type { Storage } from "@spec-engine/shared";
 import { createApp, mountWebapp } from "@spec-engine/webapp/server";
 import { defineCommand } from "citty";
@@ -42,6 +42,7 @@ import { runIndex } from "../indexer/pipeline";
 import { maybePromptForOnboarding } from "../onboarding/prompt";
 import { mountApi } from "../server/api";
 import { openStorage } from "../storage/sqlite";
+import { platformDirArg, resolvePlatformDir } from "./_args";
 import { assertContainedPath, handleNotAPlatform, handleStorageUnavailable } from "./_shared";
 
 /**
@@ -123,11 +124,7 @@ export const serveCommand = defineCommand({
       "Run the local webapp. Binds 127.0.0.1 on --port (loopback only — no --host). --probe is the SERV-04 asset-embedding smoke.",
   },
   args: {
-    platformDir: {
-      type: "positional",
-      required: false,
-      description: "Platform directory (default: cwd)",
-    },
+    platformDir: platformDirArg,
     port: {
       type: "string",
       default: "4000",
@@ -174,7 +171,7 @@ export const serveCommand = defineCommand({
       return;
     }
 
-    const platformDir = resolve((args.platformDir as string | undefined) ?? process.cwd());
+    const platformDir = resolvePlatformDir(args);
     const outArg = args.out as string | undefined;
     // WR-01: resolve --out relative to platformDir (NOT cwd) — mirrors
     // commands/query.ts and commands/map.ts.

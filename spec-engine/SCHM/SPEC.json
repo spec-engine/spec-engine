@@ -1,14 +1,14 @@
 {
   "key": "SCHM",
   "owner": null,
-  "updated": "2026-07-30",
+  "updated": "2026-09-05",
   "scope": "The shared data model: the SPEC.json envelope, the DDL, the coverage view, and the promise that CLI, webapp, and MCP never disagree. Belongs here: the @spec-engine/shared schema every surface shares; the DDL; the coverage SQL view; one model, one storage seam. Does not belong here: the drift definition (PROP); cold-rebuild identity (INDX); loopback-only binding (SERV). Boundary case: one-model-one-seam is stated here; cold-rebuild identity stays INDX's and loopback-only stays SERV's.",
   "grammar": "ears",
   "requirements": [
     {
       "id": "SCHM-001",
       "status": "superseded",
-      "statement": "Coverage is a SQL VIEW projected from tags \u2014 never authored, never materialized.",
+      "statement": "Coverage is a SQL VIEW projected from tags — never authored, never materialized.",
       "why": "A projection cannot drift from the tags it describes.",
       "supersedes": null,
       "supersededBy": "SCHM-011",
@@ -26,7 +26,7 @@
       "id": "SCHM-002",
       "status": "superseded",
       "statement": "CLI and webapp read through one shared storage interface and schema types; the webapp never opens the DB or the filesystem itself.",
-      "why": "One engine, not two \u2014 forked logic drifts between surfaces.",
+      "why": "One engine, not two — forked logic drifts between surfaces.",
       "supersedes": null,
       "supersededBy": "SCHM-012",
       "relates": [],
@@ -60,7 +60,7 @@
       "id": "SCHM-004",
       "status": "superseded",
       "statement": "spec writes every domain envelope through the single validateAndWrite seam, so a schema-invalid or partially-applied write (for example a rejected cross-domain move) never persists to a SPEC.json file.",
-      "why": "If a write bypassed the seam, a malformed or half-written envelope could land on disk and corrupt the derived index \u2014 the exact drift the tool exists to prevent.",
+      "why": "If a write bypassed the seam, a malformed or half-written envelope could land on disk and corrupt the derived index — the exact drift the tool exists to prevent.",
       "supersedes": null,
       "supersededBy": "SCHM-015",
       "relates": [],
@@ -91,8 +91,8 @@
     {
       "id": "SCHM-006",
       "status": "superseded",
-      "statement": "A requirement's version is derived from its position in its supersede chain \u2014 the number of supersededBy links from the domain's original entry to it \u2014 and is never read from an authored per-entry or per-envelope counter; the authored specVersion / changedAtVersion / supersededAtVersion fields are retired as sources of truth.",
-      "why": "An authored counter can be hand-edited to disagree with the actual supersede history, so a displayed version would lie about how many times a requirement has really been superseded \u2014 and the derived index would no longer be reconstructible from SPEC.json + tags alone.",
+      "statement": "A requirement's version is derived from its position in its supersede chain — the number of supersededBy links from the domain's original entry to it — and is never read from an authored per-entry or per-envelope counter; the authored specVersion / changedAtVersion / supersededAtVersion fields are retired as sources of truth.",
+      "why": "An authored counter can be hand-edited to disagree with the actual supersede history, so a displayed version would lie about how many times a requirement has really been superseded — and the derived index would no longer be reconstructible from SPEC.json + tags alone.",
       "supersedes": null,
       "supersededBy": "SCHM-018",
       "relates": [],
@@ -125,7 +125,7 @@
     {
       "id": "SCHM-008",
       "status": "superseded",
-      "statement": "A requirement (non-TERM) domain's SPEC.json envelope carries no authored specVersion \u2014 its version is the DAG-derived projection (SCHM-007) \u2014 and a deterministic gate fails the build when an authored specVersion is reintroduced on any non-TERM domain; only the reserved TERM domain carries one, as the pin its term-drift is measured against.",
+      "statement": "A requirement (non-TERM) domain's SPEC.json envelope carries no authored specVersion — its version is the DAG-derived projection (SCHM-007) — and a deterministic gate fails the build when an authored specVersion is reintroduced on any non-TERM domain; only the reserved TERM domain carries one, as the pin its term-drift is measured against.",
       "why": "While a requirement domain carries both an authored specVersion and the DAG-derived domain version, the two can silently disagree; a hand-edited authored counter then misreports the supersede history, and a member pin can resolve against a number nothing else honors.",
       "supersedes": null,
       "supersededBy": "SCHM-020",
@@ -141,7 +141,7 @@
     {
       "id": "SCHM-009",
       "status": "superseded",
-      "statement": "The platform version is derived as the maximum of the domains' DAG-derived versions across spec-engine/*/SPEC.json (default 1 when no domain parses); no authored platform-wide version counter exists \u2014 a stray spec-engine.platform.json manifest is ignored, never parsed, with a stderr warning naming the derived version.",
+      "statement": "The platform version is derived as the maximum of the domains' DAG-derived versions across spec-engine/*/SPEC.json (default 1 when no domain parses); no authored platform-wide version counter exists — a stray spec-engine.platform.json manifest is ignored, never parsed, with a stderr warning naming the derived version.",
       "why": "An authored platform counter beside derived domain versions is two sources of truth: nothing bumps it, so init default pins, the canonical row, and the self-member silently anchor to a number the domains have long derived past.",
       "supersedes": null,
       "supersededBy": "SCHM-022",
@@ -158,7 +158,7 @@
       "id": "SCHM-010",
       "status": "active",
       "statement": "Where a domain envelope declares grammar and grammarSeverity, the shared schema shall validate and preserve both fields through every read and write.",
-      "why": "A silently stripped declaration turns the grammar check off without anyone noticing \u2014 config that vanishes on the next write is worse than no config.",
+      "why": "A silently stripped declaration turns the grammar check off without anyone noticing — config that vanishes on the next write is worse than no config.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
@@ -173,7 +173,7 @@
       "id": "SCHM-011",
       "status": "active",
       "statement": "The spec engine shall derive every coverage answer from the scanned @spec tags at read time, never from authored or materialized coverage data.",
-      "why": "Stored coverage can keep reporting implemented or verified for tags that no longer exist \u2014 drift the tags themselves can never correct.",
+      "why": "Stored coverage can keep reporting implemented or verified for tags that no longer exist — drift the tags themselves can never correct.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
@@ -236,7 +236,7 @@
       "id": "SCHM-015",
       "status": "active",
       "statement": "If any envelope touched by a write operation fails schema validation, then the spec CLI shall persist no changes to any SPEC.json file.",
-      "why": "A half-written or malformed envelope on disk corrupts the derived index at the next build \u2014 the exact spec-code disagreement the tool exists to prevent.",
+      "why": "A half-written or malformed envelope on disk corrupts the derived index at the next build — the exact spec-code disagreement the tool exists to prevent.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
@@ -368,6 +368,21 @@
       "relates": [],
       "livesIn": [
         "packages/engine/src/indexer/discover.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-024",
+      "status": "active",
+      "statement": "When a requirement is authored or amended through the CLI, the HTTP API, or the MCP server, the spec engine shall write the same envelope for the same inputs.",
+      "why": "A second copy of the authoring logic in any surface silently produces a different SPEC.json than the CLI, and the index cannot tell which one is true.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/mint.ts"
       ],
       "issues": [],
       "aliases": [],

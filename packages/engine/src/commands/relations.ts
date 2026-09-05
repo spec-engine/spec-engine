@@ -20,11 +20,11 @@
 // D-08 grep-fence: this file does NOT import bun:sqlite. DB access goes
 // exclusively through the Storage interface from @spec-engine/shared.
 
-import { resolve } from "node:path";
 import { defineCommand } from "citty";
 import { OUT_HELP, resolveDbPath } from "../constants";
 import { maybePromptForOnboarding } from "../onboarding/prompt";
 import { renderRelations } from "../relations/format";
+import { platformDirArg, resolvePlatformDir } from "./_args";
 import { assertContainedPath, withReadStorage } from "./_shared";
 
 /** B.1-style empty-state message (stderr, exit 0) — relations-specific:
@@ -44,11 +44,7 @@ export const relationsCommand = defineCommand({
       "Render the Relates links between requirements as a mermaid entity diagram. --json emits the sorted relation rows.",
   },
   args: {
-    platformDir: {
-      type: "positional",
-      required: false,
-      description: "Platform directory containing spec-engine/ + members (default: cwd)",
-    },
+    platformDir: platformDirArg,
     out: {
       type: "string",
       description: OUT_HELP,
@@ -69,7 +65,7 @@ export const relationsCommand = defineCommand({
     },
   },
   async run({ args }) {
-    const platformDir = resolve((args.platformDir as string | undefined) ?? process.cwd());
+    const platformDir = resolvePlatformDir(args);
     const outArg = args.out as string | undefined;
     // WR-01: resolve --out relative to platformDir (NOT cwd) — mirrors
     // commands/check.ts. See check.ts for full rationale.

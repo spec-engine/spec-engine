@@ -56,6 +56,19 @@ fence_d08_engine_internal() {
   fi
 }
 
+# --- OPS-01: the write seam belongs to the operations layer -------------------
+# An HTTP route or a command may parse, call an operation, and render. It may
+# not mint or amend a requirement itself: the write seam and the id allocator
+# are imported only under operations/ and the lifecycle commands still to be
+# migrated.
+fence_ops01_write_seam() {
+  OFFENDERS=$(grep -RlzE 'import \{[^}]*(validateAndWrite|nextRequirementId)[^}]*\}' packages/engine/src/server 2>/dev/null || true)
+  if [ -n "$OFFENDERS" ]; then
+    echo "FORBIDDEN: server/ reaches the write seam directly instead of an operation (OPS-01): $OFFENDERS"
+    exit 1
+  fi
+}
+
 # --- SCHM-07: no CHECK/FK/UNIQUE on domain fields ----------------------------
 fence_schm07_schema_constraint() {
   if grep -E '(CHECK\(|FOREIGN KEY|^\s*UNIQUE\()' packages/shared/src/schema.ts; then
@@ -429,6 +442,7 @@ run "SCHM-008 no authored specVersion"      fence_no_authored_specversion
 run "AGENTS check-codes list"               fence_agents_check_codes
 run "CHRT charters generated"               fence_taxonomy_charters
 run "COMMENT process-marker ratchet"        fence_comment_markers
+run "OPS-01 write seam under operations"    fence_ops01_write_seam
 
 if [ "$fail" -ne 0 ]; then
   echo ""

@@ -17,11 +17,12 @@
 // with literal PropagationState.* constants (no string smell-tests).
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { type PropagationRow, PropagationState, type Storage } from "@spec-engine/shared";
 import { runIndex } from "../src/indexer/pipeline";
+import { PROP_REPO_STATES_SQL } from "../src/storage/sql/propagation";
 import { openStorage } from "../src/storage/sqlite";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "fixtures", "platform-fixture");
@@ -163,10 +164,6 @@ describe("propagationFor (PROP-02 — 5-state classifier)", () => {
     // (e.g., 'just make the CTE recurse until convergence'), this fails
     // before runtime would. The grep-style assertion matches the same
     // substring the plan's acceptance criteria locks.
-    const source = readFileSync(
-      resolve(import.meta.dir, "..", "src", "storage", "sqlite.ts"),
-      "utf8",
-    );
-    expect(source).toContain("a.depth < 16");
+    expect(PROP_REPO_STATES_SQL).toContain("a.depth < 16");
   });
 });

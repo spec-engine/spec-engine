@@ -27,20 +27,19 @@
 // Exit codes: 0 success, 2 usage/guard errors. D-08: no bun:sqlite import.
 
 import { existsSync } from "node:fs";
-import { join, resolve } from "node:path";
 import { type Diagnostic, validateAndWrite, validateDomainFile } from "@spec-engine/shared";
 import { defineCommand } from "citty";
 import { nextRequirementId, normalizeDomainKey } from "../authoring/domains";
 import { localToday } from "../authoring/edit";
 import { enforceStatementGrammar } from "../authoring/grammar";
-import { defaultIndexPath, EXIT } from "../constants";
+import { EXIT, specPaths } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
-import { runIndex } from "../indexer/pipeline";
+import { toReqTagRows } from "../operations/reads";
 import { deriveDomainVersion } from "../parser/domainJson";
 import { ID_RE } from "../parser/grammar";
 import { type ReqTagRow, renderReqTags } from "../resolve/format";
-import { openStorage } from "../storage/sqlite";
-import { coldResetDb, handleNotAPlatform } from "./_shared";
+import { platformDirArg, resolvePlatformDir } from "./_args";
+import { handleNotAPlatform, reindexAndListTags } from "./_shared";
 import { warnUnresolvableRefs } from "./req";
 
 /** A requirement object inside the JSON envelope (loose — the seam re-validates). */
@@ -76,8 +75,7 @@ interface DomainSide {
 /** Read + JSON-parse a domain envelope, exiting 2 on a missing/unparseable
  *  file (all guards fail before any write). */
 async function loadDomainSide(platformDir: string, key: string): Promise<DomainSide | null> {
-  const relFile = `spec-engine/${key}/SPEC.json`;
-  const specPath = join(platformDir, "spec-engine", key, "SPEC.json");
+  const { abs: specPath, rel: relFile } = specPaths(platformDir, key);
   if (!existsSync(specPath)) return null;
   const domain = JSON.parse(await Bun.file(specPath).text()) as DomainEnvelope;
   const requirements = Array.isArray(domain.requirements) ? domain.requirements : [];
@@ -256,22 +254,7 @@ function applyMoveEdit(
 /** Fresh reindex (canonical truth just changed on two files) + collect the retag
  *  worklist for the old id. */
 async function reindexAndCollectRetag(platformDir: string, id: string): Promise<ReqTagRow[]> {
-  const dbPath = defaultIndexPath(platformDir);
-  coldResetDb(dbPath);
-  const storage = openStorage(dbPath);
-  try {
-    await runIndex({ platformDir, storage });
-    return storage.listTags({ req_id: id }).map(({ req_id, repo, file, line, kind, level }) => ({
-      req_id,
-      repo,
-      file,
-      line,
-      kind: kind as string,
-      level: (level ?? null) as string | null,
-    }));
-  } finally {
-    storage.close();
-  }
+  return toReqTagRows(await reindexAndListTags(platformDir, id));
 }
 
 export const moveCommand = defineCommand({
@@ -291,11 +274,7 @@ export const moveCommand = defineCommand({
       required: true,
       description: "The target domain key (must already exist; spec domain new <KEY> first)",
     },
-    platformDir: {
-      type: "positional",
-      required: false,
-      description: "Platform directory containing spec-engine/ (default: cwd)",
-    },
+    platformDir: platformDirArg,
     text: {
       type: "string",
       description: "Rewrite the successor's Requirement (default: copied from the source)",
@@ -321,7 +300,7 @@ export const moveCommand = defineCommand({
   async run({ args }) {
     const id = args.id as string;
     const rawTargetKey = args.newDomain as string;
-    const platformDir = resolve((args.platformDir as string | undefined) ?? process.cwd());
+    const platformDir = resolvePlatformDir(args);
 
     const target = await resolveMoveTarget(id, rawTargetKey, platformDir);
     const fields = resolveSuccessorFields(args as Record<string, unknown>, target.req);

@@ -35,17 +35,18 @@
 // D-08: no bun:sqlite import — index access goes through openStorage.
 
 import { existsSync } from "node:fs";
-import { join, resolve } from "node:path";
 import { validateAndWrite } from "@spec-engine/shared";
 import { defineCommand } from "citty";
 import { nextRequirementId } from "../authoring/domains";
 import { localToday } from "../authoring/edit";
 import { enforceStatementGrammar } from "../authoring/grammar";
-import { EXIT } from "../constants";
+import { EXIT, specPaths } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
+import { toReqTagRows } from "../operations/reads";
 import { deriveDomainVersion } from "../parser/domainJson";
 import { ID_RE } from "../parser/grammar";
 import { type ReqTagRow, renderReqTags } from "../resolve/format";
+import { platformDirArg, resolvePlatformDir } from "./_args";
 import { handleNotAPlatform, reindexAndListTags } from "./_shared";
 import { askLine, warnUnresolvableRefs } from "./req";
 
@@ -103,8 +104,7 @@ async function resolveSupersedeTarget(id: string, platformDir: string): Promise<
   // Domain key is the id's prefix; the entry must live in that domain's
   // SPEC.json (the KEY-NNN ⊂ spec-engine/KEY/ convention).
   const key = id.slice(0, id.indexOf("-"));
-  const relFile = `spec-engine/${key}/SPEC.json`;
-  const specPath = join(platformDir, "spec-engine", key, "SPEC.json");
+  const { abs: specPath, rel: relFile } = specPaths(platformDir, key);
   if (!existsSync(specPath)) {
     console.error(`spec supersede: no domain ${key} (expected ${relFile} under ${platformDir})`);
     process.exit(EXIT.USAGE);
@@ -325,15 +325,7 @@ function applyVersionStage(
  * ReqTagRow projection its worklist renderer needs.
  */
 async function reindexAndCollectRetag(platformDir: string, id: string): Promise<ReqTagRow[]> {
-  const tags = await reindexAndListTags(platformDir, id);
-  return tags.map(({ req_id, repo, file, line, kind, level }) => ({
-    req_id,
-    repo,
-    file,
-    line,
-    kind: kind as string,
-    level: (level ?? null) as string | null,
-  }));
+  return toReqTagRows(await reindexAndListTags(platformDir, id));
 }
 
 export const supersedeCommand = defineCommand({
@@ -348,11 +340,7 @@ export const supersedeCommand = defineCommand({
       required: true,
       description: "The requirement id to supersede (KEY-NNN; must be Active)",
     },
-    platformDir: {
-      type: "positional",
-      required: false,
-      description: "Platform directory containing spec-engine/ (default: cwd)",
-    },
+    platformDir: platformDirArg,
     text: {
       type: "string",
       description:
@@ -392,7 +380,7 @@ export const supersedeCommand = defineCommand({
   },
   async run({ args }) {
     const id = args.id as string;
-    const platformDir = resolve((args.platformDir as string | undefined) ?? process.cwd());
+    const platformDir = resolvePlatformDir(args);
 
     const target = await resolveSupersedeTarget(id, platformDir);
     const requirement = await resolveSuccessorText(args as Record<string, unknown>, id);

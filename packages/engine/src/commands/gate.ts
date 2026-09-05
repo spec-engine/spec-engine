@@ -51,7 +51,7 @@
 // goes exclusively through the Storage interface from @spec-engine/shared.
 
 import { existsSync, mkdirSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join } from "node:path";
 import type { GateOutcome } from "@spec-engine/shared";
 import { defineCommand } from "citty";
 import { EXIT, OUT_HELP, resolveDbPath } from "../constants";
@@ -61,6 +61,7 @@ import { formatNotASpecPlatform } from "../indexer/discover";
 import { runIndex } from "../indexer/pipeline";
 import { maybePromptForOnboarding } from "../onboarding/prompt";
 import { openStorage } from "../storage/sqlite";
+import { platformDirArg, resolvePlatformDir } from "./_args";
 import { assertContainedPath, coldResetDb } from "./_shared";
 
 // WR-03: identify broken-pipe write failures so a piped member that
@@ -114,7 +115,7 @@ function resolveGateArgs(args: GateRawArgs): GateArgs {
     process.exit(EXIT.USAGE);
   }
 
-  const platformDir = resolve((args.platformDir as string | undefined) ?? process.cwd());
+  const platformDir = resolvePlatformDir(args);
 
   // WR-04 / WR-05 / WR-06: validate platformDir up front, BEFORE any FS
   // write (mkdirSync or the unconditional cold reset). Without this,
@@ -226,11 +227,7 @@ export const gateCommand = defineCommand({
       required: true,
       description: "Target requirement id (e.g., BILLING-009)",
     },
-    platformDir: {
-      type: "positional",
-      required: false,
-      description: "Platform directory containing spec-engine/ + members (default: cwd)",
-    },
+    platformDir: platformDirArg,
     out: {
       type: "string",
       description: OUT_HELP,

@@ -21,14 +21,14 @@
 // validateAndWrite. Exit codes 0 / 2. D-08: no bun:sqlite import.
 
 import { existsSync } from "node:fs";
-import { join, resolve } from "node:path";
 import { validateAndWrite } from "@spec-engine/shared";
 import { defineCommand } from "citty";
 import { localToday } from "../authoring/edit";
-import { EXIT } from "../constants";
+import { EXIT, specPaths } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
 import { ID_RE } from "../parser/grammar";
 import { type ReqTagRow, renderReqTags } from "../resolve/format";
+import { platformDirArg, resolvePlatformDir } from "./_args";
 import { handleNotAPlatform, reindexAndListTags } from "./_shared";
 
 /** A requirement object inside the JSON envelope (loose — the seam re-validates). */
@@ -52,8 +52,7 @@ async function resolveDeprecateTarget(
   id: string,
 ): Promise<{ domain: DomainEnvelope; req: DomainRequirement; specPath: string; relFile: string }> {
   const key = id.slice(0, id.indexOf("-"));
-  const relFile = `spec-engine/${key}/SPEC.json`;
-  const specPath = join(platformDir, "spec-engine", key, "SPEC.json");
+  const { abs: specPath, rel: relFile } = specPaths(platformDir, key);
   if (!existsSync(specPath)) {
     console.error(`spec deprecate: no domain ${key} (expected ${relFile} under ${platformDir})`);
     process.exit(EXIT.USAGE);
@@ -91,11 +90,7 @@ export const deprecateCommand = defineCommand({
       required: true,
       description: "Requirement id to deprecate (KEY-NNN)",
     },
-    platformDir: {
-      type: "positional",
-      required: false,
-      description: "Platform directory (default: cwd)",
-    },
+    platformDir: platformDirArg,
     reason: {
       type: "string",
       description: "Why this requirement is end-of-life (required — the durable record)",
@@ -107,7 +102,7 @@ export const deprecateCommand = defineCommand({
   },
   async run({ args }) {
     const id = args.id as string;
-    const platformDir = resolve((args.platformDir as string | undefined) ?? process.cwd());
+    const platformDir = resolvePlatformDir(args);
     const reason = ((args.reason as string | undefined) ?? "").trim();
 
     if (!ID_RE.test(id)) {
