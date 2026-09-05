@@ -29,16 +29,16 @@ export interface SupersedeInput {
   /** The successor's statement. */
   statement: string;
   /** Absent: copied from the predecessor. */
-  why?: string;
+  why?: string | undefined;
   /** Absent: the predecessor's first `livesIn` entry is carried forward. */
-  livesIn?: string[];
+  livesIn?: string[] | undefined;
   /** TERM ids only. Absent: copied from the predecessor. */
-  term?: string;
-  aliases?: string[];
+  term?: string | undefined;
+  aliases?: string[] | undefined;
   /** TERM domain only: keep the authored `specVersion`. A no-op elsewhere. */
-  noBump?: boolean;
+  noBump?: boolean | undefined;
   /** Recorded as `supersedes-via` on the predecessor and `created` on the successor. */
-  issue?: string;
+  issue?: string | undefined;
 }
 
 export interface SupersedeResult {

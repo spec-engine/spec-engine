@@ -34,11 +34,11 @@ export interface MoveInput {
   /** The normalized target domain key. Must already exist. */
   targetKey: string;
   /** Absent: copied from the source. */
-  statement?: string;
-  why?: string;
-  livesIn?: string[];
+  statement?: string | undefined;
+  why?: string | undefined;
+  livesIn?: string[] | undefined;
   /** TERM domain only: keep the authored `specVersion`. A no-op elsewhere. */
-  noBump?: boolean;
+  noBump?: boolean | undefined;
 }
 
 export interface MoveResult {

@@ -33,8 +33,8 @@ export function getRecord(storage: Storage, id: string): GetRecordResult {
 
 export interface ListRecordsFilter {
   /** A normalized domain key. */
-  key?: string;
-  status?: RequirementStatus;
+  key?: string | undefined;
+  status?: RequirementStatus | undefined;
 }
 
 export interface ListRecordsResult {

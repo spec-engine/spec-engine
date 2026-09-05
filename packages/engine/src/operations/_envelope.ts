@@ -82,7 +82,7 @@ export async function locateEntry(
 /** The successor entry both `supersede` and `move` append, in the envelope's field order. */
 export function successorEntry(
   id: string,
-  fields: { statement: string; why: string; livesIn: string[]; issue?: string },
+  fields: { statement: string; why: string; livesIn: string[]; issue?: string | undefined },
 ): SpecRequirement {
   return {
     id,

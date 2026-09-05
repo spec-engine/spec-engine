@@ -24,7 +24,7 @@ export interface MemberPinInput {
   /** The absolute member repo directory as the caller resolved it. */
   repoDir: string;
   /** A pin the caller supplied; taken as-is (the caller validates its shape). */
-  override?: string;
+  override?: string | undefined;
 }
 
 export type PinSource = "override" | "derived" | "fallback";
@@ -167,11 +167,11 @@ export interface WriteMemberConfigInput {
   canonical: string;
   pin: string;
   /** Rewrite an existing config, keeping its `ignore` list. */
-  force?: boolean;
+  force?: boolean | undefined;
   /** Repo-relative directory prefixes the scanner skips. Written on a fresh config only. */
-  ignore?: string[];
+  ignore?: string[] | undefined;
   /** A glob that expands each matching subdirectory into its own member. Written on a fresh config only. */
-  members?: string;
+  members?: string | undefined;
 }
 
 export type WriteMemberConfigResult =
@@ -228,8 +228,8 @@ function preservedIgnore(
 
 interface MemberConfigFields {
   specs: string;
-  ignore?: string[];
-  members?: string;
+  ignore?: string[] | undefined;
+  members?: string | undefined;
 }
 
 async function write(configPath: string, fields: MemberConfigFields): Promise<void> {

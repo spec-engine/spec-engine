@@ -35,13 +35,13 @@ import { glossaryDriftDiagnostic } from "./glossary";
 export interface CheckInput {
   platformDir: string;
   /** Absolute path to a JUnit XML file, already containment-checked by the surface. */
-  resultsPath?: string;
+  resultsPath?: string | undefined;
   /** Git ref for the governance diff. Absent: deletion detection against HEAD when git resolves. */
-  base?: string;
+  base?: string | undefined;
   /** Comma-separated approver handles for the status-flip gate. Empty is fail-closed. */
-  approvedBy?: string;
-  requireOwnerApproval?: boolean;
-  unsourcedChange?: boolean;
+  approvedBy?: string | undefined;
+  requireOwnerApproval?: boolean | undefined;
+  unsourcedChange?: boolean | undefined;
 }
 
 export interface CheckResult {

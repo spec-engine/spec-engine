@@ -43,7 +43,7 @@ export interface MintTermInput {
   term: string;
   definition: string;
   aliases: string[];
-  section?: string;
+  section?: string | undefined;
 }
 
 export interface MintTermResult {
@@ -113,7 +113,7 @@ export interface ReviseTermInput {
   id: string;
   definition: string;
   /** Keep the authored `specVersion`; the entry's `changedAtVersion` stays too. */
-  noBump?: boolean;
+  noBump?: boolean | undefined;
 }
 
 export interface ReviseTermResult {

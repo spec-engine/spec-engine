@@ -420,7 +420,7 @@ function flattenCites(r: DomainRequirement, sourceFile: string, line: number, ac
  * successor id lives — the count is over this domain's own edges.
  */
 export function deriveDomainVersion(
-  requirements: readonly { supersededBy?: string | null }[],
+  requirements: readonly { supersededBy?: string | null | undefined }[],
 ): number {
   // @spec SCHM-018
   // @spec SCHM-019

@@ -32,13 +32,13 @@ export interface MintInput {
   why: string;
   livesIn: string[];
   /** Originating ticket, recorded as `created` provenance. Opaque, never an id. */
-  issue?: string;
+  issue?: string | undefined;
   /** Defaults to `active`. A `draft` is a promise not yet agreed; code may not bind it. */
-  status?: "active" | "draft";
+  status?: "active" | "draft" | undefined;
   /** Ids this requirement relates to; rendered by `spec relations`. */
-  relates?: string[];
+  relates?: string[] | undefined;
   /** Pinned glossary citations. */
-  cites?: SpecCite[];
+  cites?: SpecCite[] | undefined;
 }
 
 export interface MintResult {

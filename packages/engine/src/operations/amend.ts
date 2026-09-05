@@ -24,15 +24,15 @@ export type { FreshTags } from "./_index";
 
 /** The fields an amend may change. An absent key leaves the field byte-identical. */
 export interface AmendFields {
-  statement?: string;
+  statement?: string | undefined;
   /** `null` clears the field. */
-  why?: string | null;
-  livesIn?: string[];
+  why?: string | null | undefined;
+  livesIn?: string[] | undefined;
   /** Appended as `amends-via` provenance. */
-  issue?: string;
+  issue?: string | undefined;
   /** TERM ids only. */
-  term?: string;
-  aliases?: string[];
+  term?: string | undefined;
+  aliases?: string[] | undefined;
 }
 
 export interface AmendInput {

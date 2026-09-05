@@ -20,7 +20,7 @@ const TOKEN = "lin_test_dummy_token";
 /** A captured request from the injected stub. */
 interface Captured {
   url: string;
-  method?: string;
+  method?: string | undefined;
   headers: Record<string, string>;
   body: string;
 }

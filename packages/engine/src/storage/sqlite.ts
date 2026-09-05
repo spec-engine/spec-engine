@@ -109,14 +109,14 @@ export const BUSY_TIMEOUT_MS = 2_000;
  */
 function rebuildAfterSchemaMismatch(db: Database, path: string, onDiskVersion: number): void {
   db.close();
-  // WR-01 (phase 06): use `force: true` to close the TOCTOU window
+  // Use `force: true` to close the TOCTOU window
   // between any existsSync probe and rmSync — a concurrent process
   // (parallel `spec` invocation, build watcher, test runner) deleting
   // the file between check and unlink would otherwise throw ENOENT.
   for (const suffix of ["", "-shm", "-wal"]) {
     rmSync(path + suffix, { force: true });
   }
-  // WR-04: assert post-rmSync state so we never silently re-attach to a
+  // Assert post-rmSync state so we never silently re-attach to a
   // surviving WAL sibling (which would replay a transaction and
   // resurrect the old _schema_version row → infinite recursion under
   // the prior implementation).
@@ -144,7 +144,7 @@ function rebuildAfterSchemaMismatch(db: Database, path: string, onDiskVersion: n
  * subsequent opens inherit it. `synchronous = NORMAL` is the WAL-safe perf
  * companion knob.
  *
- * Schema-mismatch rebuild (WR-04): the prior implementation recursed without
+ * Schema-mismatch rebuild: the prior implementation recursed without
  * a depth bound, which on a partial rmSync could in theory spin forever.
  * The retry is now an in-function loop with a max-1-retry bound and an
  * explicit post-rmSync assertion that no stale siblings survived.
@@ -159,7 +159,7 @@ export function openStorage(path: string): Storage {
   // Up to 1 retry after a schema-mismatch silent rebuild — the second open
   // is guaranteed to hit the fresh-DB branch because we asserted the files
   // were removed. Anything beyond that is a deeper FS problem worth
-  // surfacing (WR-04).
+  // surfacing.
   for (let attempt = 0; attempt < 2; attempt++) {
     const db = new Database(path, { create: true, strict: true });
     // Per-connection lock-wait budget — set FIRST, before readSchemaVersion:
@@ -170,7 +170,7 @@ export function openStorage(path: string): Storage {
     const onDiskVersion = readSchemaVersion(db);
 
     if (onDiskVersion === null) {
-      // Fresh DB path: enable WAL (CLAUDE.md mandate — see WR-02), exec DDL,
+      // Fresh DB path: enable WAL, exec DDL,
       // and write the schema version. WAL pragma must be issued BEFORE the
       // DDL transaction so the journal_mode flag persists into the file
       // header alongside the schema.
@@ -192,7 +192,7 @@ export function openStorage(path: string): Storage {
     // already-WAL files; but it covers the case where the file was created
     // by an earlier build that did not set WAL on open.
     //
-    // WR-02 (iter3): `PRAGMA journal_mode = WAL` is NOT a true no-op on a
+    // `PRAGMA journal_mode = WAL` is NOT a true no-op on a
     // hot DB — SQLite acquires an exclusive lock to verify/switch journal
     // mode. If `spec query` (read) runs while `spec serve` (long-lived
     // reader) holds the DB open, the unconditional write can contend for
@@ -237,7 +237,7 @@ export function openStorage(path: string): Storage {
  *
  * FALLBACKS: when the file is absent there is nothing to preserve — remove
  * any orphaned -wal/-shm siblings so stale journal pages cannot contaminate
- * the fresh build (Pitfall 8). When the file cannot be opened or wiped
+ * the fresh build. When the file cannot be opened or wiped
  * (corrupt / NOTADB / truncated), unlink the trio: a reader holding a
  * corrupt DB is already broken, and deletion is the only reset that works.
  */
@@ -310,11 +310,11 @@ class SqliteStorage implements Storage {
   // result is indistinguishable from "no rows matched" at the call site, so a
   // placeholder returning one silently reports an empty platform.
 
-  /** Plan 05-03 promotion: real SELECT over `repos`, alphabetic by name. */
+  /** Real SELECT over `repos`, alphabetic by name. */
   listRepos(): Repo[] {
     return this.#db.query(LIST_REPOS_SQL).all() as Repo[];
   }
-  /** Plan 06-01 promotion: real SELECT over `repos` by name; null if no row
+  /** Real SELECT over `repos` by name; null if no row
    *  matches. Used by `spec gate` (commands/gate.ts) to read
    *  pinned_spec_version per GATE-01 VERSION_PIN check. */
   getRepo(name: string): Repo | null {
@@ -330,12 +330,15 @@ class SqliteStorage implements Storage {
     const row = this.#db.query(GET_DOMAIN_SQL).get({ key }) as Domain | null;
     return row ?? null;
   }
-  /** Plan 05-03 promotion: real SELECT over `requirements` with optional
+  /** Real SELECT over `requirements` with optional
    *  `key` and `status` filters (combined via AND when both are set). The
    *  four (key?, status?) cases are dispatched to four discrete prepared
    *  SQL constants (LIST_REQUIREMENTS_SQL_*) — easier to grep, perf
    *  irrelevant at PoC scale. ORDER BY key, seq for deterministic output. */
-  listRequirements(opts?: { key?: string; status?: RequirementStatus }): Requirement[] {
+  listRequirements(opts?: {
+    key?: string | undefined;
+    status?: RequirementStatus | undefined;
+  }): Requirement[] {
     const key = opts?.key;
     const status = opts?.status;
     if (key !== undefined && status !== undefined) {
@@ -351,7 +354,7 @@ class SqliteStorage implements Storage {
     }
     return this.#db.query(LIST_REQUIREMENTS_SQL_ALL).all() as Requirement[];
   }
-  /** Plan 05-03 promotion: real SELECT over `requirements` by id; null if
+  /** Real SELECT over `requirements` by id; null if
    *  no row matches. Used by `/api/requirements/:id`. */
   getRequirement(id: string): Requirement | null {
     const row = this.#db.query(GET_REQUIREMENT_SQL).get({ id }) as Requirement | null;
@@ -367,16 +370,16 @@ class SqliteStorage implements Storage {
       file: opts?.file ?? null,
     }) as Tag[];
   }
-  // --- Phase 3 / plan 03-02 — prepared SELECTs against the populated DB ---
+  // --- Prepared SELECTs against the populated DB ---------------------------
   // listDriftRows reads the `drift` VIEW directly (CHCK-03: one predicate, one
   // place). listDiagnostics returns the structural diagnostics persisted by
-  // Phase 2's runIndex into parse_diagnostics. coverageMatrix reads the
+  // runIndex into parse_diagnostics. coverageMatrix reads the
   // pre-existing `coverage` VIEW; ordering is the member's responsibility
-  // (map/format.ts in plan 03-04 sorts by domain_key → req seq → repo).
+  // (map/format.ts sorts by domain_key → req seq → repo).
   // listSemanticDiagnostics (the UNION of Q1..Q5) lands in Task 3. D-08 keeps
   // SQL in this file.
   //
-  // Phase 4 / plan 04-02 — propagationFor is wired real here. The classifier
+  // propagationFor: the classifier
   // SQL (PROP_REPO_STATES_SQL above) emits state + via_pred + via_other per
   // member repo; the TS body collapses the two via_* columns into a single
   // `via_req_id` and overlays `drifted` from a SEPARATE `this.listDriftRows()`
@@ -414,13 +417,13 @@ class SqliteStorage implements Storage {
       // RED-16: Relates diagnostics — both warning severity.
       Q6_BROKEN_RELATES_SQL,
       Q7_RELATES_SUPERSEDED_SQL,
-      // TERM-04 (Phase 6): term reference-integrity. UNDEFINED_TERM is error
+      // Term reference-integrity. UNDEFINED_TERM is error
       // (gates --ci); ORPHAN_TERM is warning (a freshly-migrated term is not a
       // defect). The `severity === 'error'` exit predicate in check.ts is
       // untouched — appending here is the ONLY edit needed.
       Q8_UNDEFINED_TERM_SQL,
       Q9_ORPHAN_TERM_SQL,
-      // TERM-05 (Phase 6, Wave E): citation drift. TERM_DRIFT is warning (a
+      // Citation drift. TERM_DRIFT is warning (a
       // lagging pin is a re-confirmation prompt, not a build-breaker);
       // SUPERSEDED_TERM_REFERENCED is error (clone of Q2, gates --ci). The
       // `severity === 'error'` exit predicate in check.ts is untouched —
@@ -471,20 +474,19 @@ class SqliteStorage implements Storage {
   /**
    * QURY-01 + QURY-02: FTS5 retrieval over the `requirements_fts` virtual
    * table (external-content over `requirements`, `tokenize='porter unicode61'`
-   * — porter tokenizer landed in plan 04-01). Column weights are tuned in
+   * — porter tokenizer). Column weights are tuned in
    * the prepared SQL (text primary, why half-weight). Results sort by rank
    * ascending per SQLite's negative-multiplier bm25 convention. The rowid
    * JOIN back to `requirements` is mandatory because external-content FTS5
    * stores only the index — column values come from the base table
-   * (04-RESEARCH Pitfall 4). FTS5 grammar errors surface as typed `Error`s
-   * (04-RESEARCH Pitfall 8 — never silently swallow).
+   * FTS5 grammar errors surface as typed `Error`s (never silently swallowed).
    */
   searchFts(text: string, limit: number = 10): FtsHit[] {
     try {
       return this.#db.query(FTS_SEARCH_SQL).all({ query: text, limit }) as FtsHit[];
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      // WR-01: Narrow the wrapping to actual FTS5 grammar errors (SQLite
+      // Narrow the wrapping to actual FTS5 grammar errors (SQLite
       // reports these with `SQLITE_ERROR` and an `fts5:` / "syntax error"
       // message). Operational errors (database is locked, disk I/O,
       // corruption, OOM) must pass through unchanged so callers aren't
@@ -536,19 +538,19 @@ class SqliteStorage implements Storage {
    * resolve to BILLING-XXX).
    *
    * Output is sorted deterministically by `(r.key, r.seq)` so callers
-   * (formatter in plan 05-02, HTTP route in 05-03) never have to re-sort.
+   * (the formatter, the HTTP route) never have to re-sort.
    * Empty input short-circuits with no SQL parse cost. Inputs flow through
    * SQLite bind parameters via the spread; the SQL string itself is
    * built from module-scope constants (T-5-01-01: no string concat of
    * caller input into SQL).
    *
-   * 05-RESEARCH Pitfall 5: SQLite's `SQLITE_MAX_VARIABLE_NUMBER` is 32766
+   * SQLite's `SQLITE_MAX_VARIABLE_NUMBER` is 32766
    * in Bun's compiled build. PoC inputs are 5-20 paths; v2 may chunk
    * `files` if it ever approaches that ceiling.
    */
   resolveByFiles(files: string[]): Requirement[] {
     if (files.length === 0) return [];
-    // WR-04 (iter2) / WR-01 (iter3): defense-in-depth cap at the storage
+    // Defense-in-depth cap at the storage
     // seam. Both upstream sites (commands/resolve.ts, server/api.ts) already
     // enforce FILES_MAX — but a future caller (new HTTP route, indexer step,
     // webapp feature) could forget. Refuse loudly rather than let the
@@ -647,14 +649,14 @@ class SqliteStorage implements Storage {
   }
 
   #makeWriteHandle(): WriteHandle {
-    // Phase 2 fills in the actual upserts. Prepared statements are created once
+    // Prepared statements are created once
     // here and reused across rows by the transaction's caller.
     //
     // D-08 invariant: this is the only file allowed to touch bun:sqlite.
     // strict: true (sqlite.ts:34) means a typo in any $named bind key throws
     // at run time — surfaces wrong-column bugs immediately.
     //
-    // Pitfall 3 (BAD_STATUS): `requirements.status` is TEXT NOT NULL with NO
+    // BAD_STATUS: `requirements.status` is TEXT NOT NULL with NO
     // CHECK constraint (SCHM-07 / Invariant #4) — bad strings land verbatim so
     // `spec check` can later diagnose them.
     const db = this.#db;
@@ -687,7 +689,7 @@ class SqliteStorage implements Storage {
       "INSERT INTO relations (from_id, to_id, source_file, line) " +
         "VALUES ($from, $to, $file, $line)",
     );
-    // TERM-01 (Phase 6): term_aliases.id / term_citations.id are AUTOINCREMENT
+    // term_aliases.id / term_citations.id are AUTOINCREMENT
     // noise (excluded from build_id); every index run starts from a clearAll'd
     // table. term_id is bound verbatim (nullable) — no FK, so an unresolved
     // citation lands and is diagnosed at check time (Invariant #4).
@@ -710,11 +712,11 @@ class SqliteStorage implements Storage {
       clearAll() {
         // Order: children → parents. There are no FKs, but this order also
         // mirrors the FTS5 trigger semantics — DELETE FROM requirements fires
-        // requirements_ad per row (Pitfall 2), keeping requirements_fts in sync.
+        // requirements_ad per row, keeping requirements_fts in sync.
         for (const tbl of [
           "tags",
           "relations",
-          // TERM-01 (Phase 6): the two term-store derived tables clear alongside
+          // The two term-store derived tables clear alongside
           // relations/provenance every rebuild (they own nothing — Invariant #1).
           "term_aliases",
           "term_citations",
@@ -726,7 +728,7 @@ class SqliteStorage implements Storage {
         ]) {
           db.exec(`DELETE FROM ${tbl};`);
         }
-        // Pitfall 1: reset AUTOINCREMENT so tags.id and parse_diagnostics.id
+        // Reset AUTOINCREMENT so tags.id and parse_diagnostics.id
         // restart at 1 every rebuild. Essential for cold-rebuild determinism
         // even though those id columns are excluded from build_id — without
         // this, subsequent inserts get drifting rowids across runs.
@@ -840,7 +842,7 @@ export interface SchemaInspection {
 }
 
 export function inspectSchema(path: string): SchemaInspection {
-  // WR-07: wrap in try/finally so the Database handle is released even if
+  // Wrap in try/finally so the Database handle is released even if
   // the query throws (corrupt file, schema-not-yet-initialized partial
   // write). Matches the listRepoNamesFromDb pattern already established
   // in this file.
@@ -878,7 +880,7 @@ export function inspectSchema(path: string): SchemaInspection {
 /** Overwrite the on-disk `_schema_version` row. Used by the hidden
  *  `__schema-mismatch-smoke` CI command to trigger D-12's silent rebuild. */
 export function poisonSchemaVersion(path: string, badVersion: number): void {
-  // WR-07: release the handle on UPDATE failure (matches the
+  // Release the handle on UPDATE failure (matches the
   // listRepoNamesFromDb pattern).
   const db = new Database(path);
   try {
@@ -888,17 +890,17 @@ export function poisonSchemaVersion(path: string, badVersion: number): void {
   }
 }
 
-// Phase 3 / plan 03-05 test helper. INSERTs a synthetic `repos` row used by
+// Test helper. INSERTs a synthetic `repos` row used by
 // the cold-rebuild proof test for `spec check --ci`. Kept here per D-08 —
-// touches `bun:sqlite`. Mirrors the `poisonSchemaVersion` pattern from
-// Phase 1. The injected row is intentionally bogus (`path = "/dev/null"`,
+// touches `bun:sqlite`. Mirrors the `poisonSchemaVersion` pattern. The
+// injected row is intentionally bogus (`path = "/dev/null"`,
 // `pinned_spec_version = 999`) so no real scan input could ever produce it
 // — the cold-rebuild test asserts `--ci` wipes it.
 /** Insert a synthetic `repos` row that no real scan input could produce.
  *  Used by `check-ci-cold-rebuild.test.ts` to prove `--ci` cold-resets the
  *  full derivation (in-place wipe + re-DDL, not just `DELETE FROM repos`). */
 export function poisonRepoRow(path: string, name: string): void {
-  // WR-07: release the handle on INSERT failure (matches the
+  // Release the handle on INSERT failure (matches the
   // listRepoNamesFromDb pattern).
   const db = new Database(path);
   try {
@@ -931,7 +933,7 @@ export function listRepoNamesFromDb(path: string): string[] {
   }
 }
 
-// --- Phase 2 deterministic build_id helper (INDX-03 / CI-02) -------------
+// --- Deterministic build_id helper (INDX-03 / CI-02) ---------------------
 //
 // computeBuildId(storage) returns a 64-char lowercase hex SHA-256 over a
 // canonical SQL projection of the derived index. It lives here (alongside
@@ -1009,7 +1011,7 @@ export function computeBuildId(storage: Storage): string {
       },
       {
         label: "term_aliases",
-        // TERM-01 (Phase 6): term_aliases.id (AUTOINCREMENT) excluded like
+        // term_aliases.id (AUTOINCREMENT) excluded like
         // relations.id. The aliases are derived content, so they MUST hash into
         // build_id for cold-rebuild equivalence to cover them. Present-and-empty
         // until Wave C — an empty section still hashes deterministically (the
@@ -1018,7 +1020,7 @@ export function computeBuildId(storage: Storage): string {
       },
       {
         label: "term_citations",
-        // TERM-01 (Phase 6): term_citations.id (AUTOINCREMENT) excluded. The
+        // term_citations.id (AUTOINCREMENT) excluded. The
         // pinned citations are derived content and MUST hash into build_id. The
         // ORDER BY carries the full composite key (req_id, term_id, cited_as,
         // source_file, line) matching LIST_TERM_CITATIONS_SQL and the pipeline
@@ -1034,8 +1036,8 @@ export function computeBuildId(storage: Storage): string {
         // The build_id hash consumes THIS SQL row order verbatim, so the only
         // requirement is that it be DETERMINISTIC and stable across cold
         // rebuilds — which a fully-specified lexicographic ORDER BY
-        // (req_id, role, issue_id, source_file, line) guarantees. WR-02
-        // (13-REVIEW review-fix): this lexicographic SQL order is NOT
+        // (req_id, role, issue_id, source_file, line) guarantees. This
+        // lexicographic SQL order is NOT
         // byte-equal to the formatter's RENDERED order for multi-digit seqs
         // (the formatter's sortProvenance sorts req_id by NUMERIC seq via
         // compareReqIds; SQL sorts it as text). That divergence is fine here
@@ -1049,7 +1051,7 @@ export function computeBuildId(storage: Storage): string {
       {
         label: "parse_diagnostics",
         // parse_diagnostics.id (AUTOINCREMENT) excluded for the same reason.
-        // WR-02 review-fix: req_id included in the projection AND in ORDER BY
+        // req_id is included in the projection AND in ORDER BY
         // so the build_id deterministically reflects which requirement each
         // structural diagnostic implicates.
         sql:
@@ -1073,7 +1075,6 @@ export function computeBuildId(storage: Storage): string {
     // CR-01 (iter2): wrap the body in try/finally so the read-only handle
     // is released even if a row iteration throws (corrupted page, schema
     // mismatch mid-read, JSON.stringify on a non-stringifiable column).
-    // Same defect class as iter1 WR-07; that fix missed this helper.
     db.close();
   }
 }

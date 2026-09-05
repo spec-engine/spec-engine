@@ -146,7 +146,13 @@ async function mintInteractively(platformDir: string, key: string, id: string): 
 async function mintAndReport(
   platformDir: string,
   key: string,
-  fields: { statement: string; why: string; livesIn: string[]; issue?: string; json: boolean },
+  fields: {
+    statement: string;
+    why: string;
+    livesIn: string[];
+    issue?: string | undefined;
+    json: boolean;
+  },
 ): Promise<void> {
   const result = await mint({ platformDir, key, ...fields });
   if (!result.ok) exitOnFailure("spec req", result);

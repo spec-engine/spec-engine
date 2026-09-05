@@ -9,7 +9,7 @@
 // Suppression gate (any one suppresses, all three required for interactive
 // path):
 //   - args.ci               → explicit CI flag (only `check` registers this)
-//   - args.noPrompt         → user opt-out (Plan 10-02 registers on all 8)
+//   - args.noPrompt         → user opt-out (registered on all 8)
 //   - !process.stdin.isTTY  → pipes / daemons / redirections
 //
 // On the interactive path: discoverRepos(platformDir) → for each
@@ -18,11 +18,11 @@
 // documented "spec: <name>/ has no spec-engine.member.json — run `spec init
 // <name>` first, or re-run non-interactively to skip with a warning" message.
 //
-// Pitfall 4: rl.close() MUST run in a `finally` block (NOT inside the
+// rl.close() MUST run in a `finally` block (NOT inside the
 // Promise executor) — calling rl.question after rl.close throws in Node's
 // readline and hangs the test runner / outer command.
 //
-// Pitfall 5: pass ONLY `{ repo: s.path }` to initRun. NEVER spread
+// Pass ONLY `{ repo: s.path }` to initRun. NEVER spread
 // opts.args — forwarding --force / --ci / --no-prompt into init would
 // trigger wrong code paths or silent data loss.
 //
@@ -38,8 +38,8 @@ import { initCommand } from "../commands/init";
 import { discoverRepos } from "../indexer/discover";
 
 export interface PromptArgs {
-  ci?: boolean;
-  noPrompt?: boolean;
+  ci?: boolean | undefined;
+  noPrompt?: boolean | undefined;
 }
 
 export interface MaybePromptOpts {
@@ -78,10 +78,10 @@ export async function maybePromptForOnboarding(opts: MaybePromptOpts): Promise<v
       `${s.name}/ has no spec-engine.member.json — run \`spec init ${s.name}\` now? (y/N) `,
     );
     if (answer === "y") {
-      // Inline init — pass ONLY `repo` (Pitfall 5). The init flow's own
+      // Inline init — pass ONLY `repo`. The init flow's own
       // process.exit(2) paths propagate cleanly: a refused sibling
       // terminates the outer command, which is the desired behavior
-      // (silently masking would hide a real error — Pitfall 6).
+      // (silently masking would hide a real error).
       type RunFn = (ctx: { args: Record<string, unknown>; rawArgs: string[] }) => Promise<void>;
       const initRun = (initCommand as unknown as { run: RunFn }).run;
       await initRun({ args: { repo: s.path }, rawArgs: [] });
@@ -103,7 +103,7 @@ export async function maybePromptForOnboarding(opts: MaybePromptOpts): Promise<v
  *
  * Output sent to stderr (T-10-03) — keeps stdout clean for --json consumers.
  *
- * Pitfall 4: rl.close() in `finally`, NEVER inside the Promise executor.
+ * rl.close() in `finally`, NEVER inside the Promise executor.
  * Calling rl.question after rl.close throws in Node's readline and hangs
  * the event loop past process.exit calls in Bun under some conditions.
  */
