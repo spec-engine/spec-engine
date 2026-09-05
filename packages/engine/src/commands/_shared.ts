@@ -4,7 +4,7 @@
 // operation returns as warnings, and map the errors it lets propagate onto
 // the exit-code contract. Nothing below decides behavior.
 
-import type { Storage, Tag } from "@spec-engine/shared";
+import type { Storage } from "@spec-engine/shared";
 import { NotASpecPlatformError } from "@spec-engine/shared";
 import { EXIT, isContainedPath } from "../constants";
 import { formatNotASpecPlatform } from "../indexer/discover";
@@ -88,9 +88,4 @@ export async function withReadStorage(
     handleStorageUnavailable(e, dbPath);
     handleNotAPlatform(e);
   }
-}
-
-/** Cold-reindex the platform and return every tag site bound to one requirement id. */
-export async function reindexAndListTags(platformDir: string, reqId: string): Promise<Tag[]> {
-  return withIndex({ platformDir, build: "fresh" }, (h) => h.storage.listTags({ req_id: reqId }));
 }

@@ -12,10 +12,12 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { DEFAULT_QUERY_LIMIT, LIMIT_MAX } from "@spec-engine/shared";
 import { z } from "zod";
 import { domainScope, listDomainKeys, normalizeDomainKey } from "../authoring/domains";
-import { withIndex } from "../operations/_index";
+import { coldFreshTags, withIndex } from "../operations/_index";
 import { check } from "../operations/check";
+import { deprecate } from "../operations/deprecate";
 import { nextId } from "../operations/nextId";
 import { coverageReport, propagation, query, reqTags, resolveFiles } from "../operations/reads";
+import { supersede } from "../operations/supersede";
 import { ID_RE } from "../parser/grammar";
 import { renderAuthorPrompt } from "./authorPrompt";
 
@@ -144,6 +146,78 @@ export function buildMcpServer(platformDir: string): McpServer {
     async ({ domain }) => {
       const r = await nextId(platformDir, domain);
       return r.ok ? jsonResult({ domain: r.key, next_id: r.nextId }) : errorResult(r.detail);
+    },
+  );
+
+  server.registerTool(
+    "spec_supersede",
+    {
+      title: "Supersede a shipped requirement",
+      description:
+        "Flip an Active requirement to superseded, mint its successor in the same domain, and return the retag worklist (the tag sites spec check reports as SUPERSEDED_REFERENCED until retagged). The same JSON as `spec supersede --json`.",
+      inputSchema: {
+        req_id: z.string().describe("The Active requirement id to supersede (KEY-NNN)"),
+        statement: z.string().min(1).describe("The successor's statement"),
+        why: z
+          .string()
+          .optional()
+          .describe("Successor's why (default: copied from the predecessor)"),
+        lives_in: z
+          .array(z.string())
+          .optional()
+          .describe("Successor's livesIn paths (default: copied from the predecessor)"),
+        issue: z
+          .string()
+          .optional()
+          .describe(
+            "Ticket recorded as supersedes-via on the predecessor and created on the successor",
+          ),
+      },
+    },
+    async ({ req_id, statement, why, lives_in, issue }) => {
+      if (!ID_RE.test(req_id)) {
+        return errorResult(`req_id must be a requirement id (KEY-NNN); got ${req_id}`);
+      }
+      const r = await supersede(
+        { platformDir, id: req_id, statement, why, livesIn: lives_in, issue },
+        coldFreshTags(platformDir),
+      );
+      if (!r.ok) return errorResult(r.detail);
+      for (const w of r.warnings) console.error(`spec_supersede: ${w.text}`);
+      return jsonResult({
+        old_id: r.oldId,
+        new_id: r.newId,
+        file: r.file,
+        spec_version: r.specVersion,
+        retag: r.retag,
+      });
+    },
+  );
+
+  server.registerTool(
+    "spec_deprecate",
+    {
+      title: "Deprecate a requirement",
+      description:
+        "Mark an Active or Draft requirement deprecated with a recorded reason and return the code tags still bound to it (each a DEPRECATED_REFERENCED error in spec check until removed). The same JSON as `spec deprecate --json`.",
+      inputSchema: {
+        req_id: z.string().describe("The requirement id to deprecate (KEY-NNN)"),
+        reason: z.string().min(1).describe("Why the requirement ended; the durable record"),
+      },
+    },
+    async ({ req_id, reason }) => {
+      if (!ID_RE.test(req_id)) {
+        return errorResult(`req_id must be a requirement id (KEY-NNN); got ${req_id}`);
+      }
+      const trimmed = reason.trim();
+      if (trimmed === "") return errorResult("reason must be non-empty");
+      const r = await deprecate(
+        { platformDir, id: req_id, reason: trimmed },
+        coldFreshTags(platformDir),
+      );
+      return r.ok
+        ? jsonResult({ id: r.id, file: r.file, reason: r.reason, sites: r.sites })
+        : errorResult(r.detail);
     },
   );
 

@@ -21,7 +21,7 @@ import { defineCommand } from "citty";
 import { domainScope } from "../authoring/domains";
 import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
-import { mint, unresolvableRefWarnings } from "../operations/mint";
+import { mint } from "../operations/mint";
 import { nextId } from "../operations/nextId";
 import { jsonArg, platformDirArg, resolvePlatformDir } from "./_args";
 import { exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
@@ -169,11 +169,6 @@ async function printResolvedCharter(platformDir: string, key: string): Promise<v
   } else {
     console.error(`spec req: no charter set for ${key}`);
   }
-}
-
-/** Warn per unresolvable `@<path>` ref; never block. Shared with the lifecycle commands. */
-export function warnUnresolvableRefs(platformDir: string, fieldValues: string[]): void {
-  printWarnings("spec req", unresolvableRefWarnings(platformDir, fieldValues));
 }
 
 /** Read one line from stdin with the prompt on stderr. */

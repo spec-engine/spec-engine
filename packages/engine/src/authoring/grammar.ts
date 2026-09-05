@@ -7,7 +7,7 @@
 
 import { join } from "node:path";
 import { parseEarsStatement } from "@spec-engine/shared";
-import { CANONICAL_SPECS_DIR, EXIT, SPEC_FILENAME } from "../constants";
+import { CANONICAL_SPECS_DIR, SPEC_FILENAME } from "../constants";
 
 interface GrammarConfig {
   grammar: "ears" | "freeform";
@@ -76,23 +76,4 @@ export function grammarRefusalText(
   v: Extract<GrammarVerdict, { ok: false }>,
 ): string {
   return `${cmdName}: ${v.message}\n(${v.key} sets grammarSeverity: "error", so the write is refused)`;
-}
-
-/**
- * The CLI form: print the warning and return, or print the refusal and exit 2.
- * Used by the lifecycle commands that have not moved onto the operations layer.
- */
-export async function enforceStatementGrammar(
-  platformDir: string,
-  key: string,
-  statement: string,
-  cmdName: string,
-): Promise<void> {
-  const verdict = await judgeStatementGrammar(platformDir, key, statement);
-  if (verdict.ok) return;
-  if (verdict.severity === "error") {
-    console.error(grammarRefusalText(cmdName, verdict));
-    process.exit(EXIT.USAGE);
-  }
-  console.error(grammarWarningText(cmdName, verdict));
 }

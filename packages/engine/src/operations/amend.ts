@@ -8,31 +8,19 @@
 // asks the caller for the requirement's tags from a freshly derived index, so
 // a draft amend never touches the index at all.
 
-import { existsSync } from "node:fs";
-import { type Tag, validateAndWrite } from "@spec-engine/shared";
+import { validateAndWrite } from "@spec-engine/shared";
 import { localToday } from "../authoring/edit";
 import {
   grammarRefusalText,
   grammarWarningText,
   judgeStatementGrammar,
 } from "../authoring/grammar";
-import { specPaths } from "../constants";
+import { displayStatus, domainKeyOf, type EnvelopeRequirement, locateEntry } from "./_envelope";
+import type { FreshTags } from "./_index";
 import { fail, type OpFailure, type OpWarning } from "./_result";
 import { unresolvableRefWarnings } from "./mint";
 
-interface DomainRequirement {
-  id: string;
-  status?: string;
-  statement?: string;
-  why?: string | null;
-  livesIn?: string[];
-  [k: string]: unknown;
-}
-interface DomainEnvelope {
-  requirements?: DomainRequirement[];
-  updated?: string;
-  [k: string]: unknown;
-}
+export type { FreshTags } from "./_index";
 
 /** The fields an amend may change. An absent key leaves the field byte-identical. */
 export interface AmendFields {
@@ -62,44 +50,10 @@ export interface AmendResult {
   warnings: OpWarning[];
 }
 
-function displayStatus(raw: string): string {
-  return raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : raw;
-}
-
-/** Every tag site for one requirement, from an index that reflects the current tree. */
-export type FreshTags = (reqId: string) => Promise<Tag[]>;
-
-interface Located {
-  ok: true;
-  specPath: string;
-  relFile: string;
-  domain: DomainEnvelope;
-  req: DomainRequirement;
-}
-
-/** The domain file and the entry the id names. */
-async function locate(platformDir: string, id: string): Promise<Located | OpFailure> {
-  const key = id.slice(0, id.indexOf("-"));
-  const { abs: specPath, rel: relFile } = specPaths(platformDir, key);
-  if (!existsSync(specPath)) {
-    return fail("not_found", `no domain ${key} (expected ${relFile} under ${platformDir})`);
-  }
-  let domain: DomainEnvelope;
-  try {
-    domain = JSON.parse(await Bun.file(specPath).text()) as DomainEnvelope;
-  } catch {
-    return fail("invalid_domain_file", `${relFile} is not valid JSON`);
-  }
-  const requirements = Array.isArray(domain.requirements) ? domain.requirements : [];
-  const req = requirements.find((r) => r?.id === id);
-  if (req === undefined) return fail("not_found", `no entry ${id} in ${relFile}`);
-  return { ok: true, specPath, relFile, domain, req };
-}
-
 /** Status gate, then the bound-tag gate for an Active entry. Null when the amend may proceed. */
 async function gateRejection(
   id: string,
-  req: DomainRequirement,
+  req: EnvelopeRequirement,
   freshTags: FreshTags,
 ): Promise<OpFailure | null> {
   const rawStatus = typeof req.status === "string" ? req.status : "";
@@ -125,7 +79,7 @@ async function gateRejection(
 
 /** Apply the named fields; returns what changed and the values to scan for `@` refs. */
 function applyFields(
-  req: DomainRequirement,
+  req: EnvelopeRequirement,
   fields: AmendFields,
 ): { fieldsChanged: string[]; refValues: string[] } {
   const fieldsChanged: string[] = [];
@@ -178,7 +132,7 @@ export async function amend(
   freshTags: FreshTags,
 ): Promise<AmendResult | OpFailure> {
   const { platformDir, id, fields } = input;
-  const located = await locate(platformDir, id);
+  const located = await locateEntry(platformDir, id);
   if (!located.ok) return located;
   const { specPath, relFile, domain, req } = located;
 
@@ -187,7 +141,7 @@ export async function amend(
 
   const warnings: OpWarning[] = [];
   if (fields.statement !== undefined) {
-    const key = id.slice(0, id.indexOf("-"));
+    const key = domainKeyOf(id);
     const verdict = await judgeStatementGrammar(platformDir, key, fields.statement);
     if (!verdict.ok) {
       if (verdict.severity === "error") {
