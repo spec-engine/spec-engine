@@ -410,7 +410,7 @@ Writes `spec-engine.member.json`.
 | Flag | Effect |
 | --- | --- |
 | `--specs spec-engine@N` | Override the pin. |
-| `--force` | Rewrite an existing config, preserving `ignore`. Any other extra key, `members` included, refuses. |
+| `--force` | Rewrite an existing config, preserving `ignore` and `members`. Any other key refuses, as does a malformed `ignore` or `members`. |
 
 `--json`: `{ action: "wrote", path, pin, source }` or
 `{ action: "already-configured", path, pin, extra_fields }`.

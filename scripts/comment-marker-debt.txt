@@ -15,7 +15,6 @@
 4	packages/engine/src/parser/types.ts
 6	packages/engine/src/provenance/format.ts
 3	packages/engine/src/provenance/resolve.ts
-1	packages/shared/src/config.ts
 2	packages/shared/src/gate.ts
 1	packages/shared/src/indexResult.ts
 22	packages/shared/src/schema.ts

@@ -9,6 +9,7 @@
 
 import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
+import { SpecConfigSchema } from "@spec-engine/shared";
 import { z } from "zod";
 import packageJson from "../../package.json" with { type: "json" };
 import { MEMBER_CONFIG_FILENAME } from "../constants";
@@ -112,7 +113,7 @@ function canonicalize(repoDir: string): { ok: true; canonical: string } | OpFail
  * @spec INIT-016
  * @spec INIT-018
  * @spec INIT-020
- * @spec INIT-021
+ * @spec INIT-031
  */
 export async function resolveMemberPin(input: MemberPinInput): Promise<MemberPin | OpFailure> {
   const canon = canonicalize(input.repoDir);
@@ -166,7 +167,7 @@ export async function resolveMemberPin(input: MemberPinInput): Promise<MemberPin
 export interface WriteMemberConfigInput {
   canonical: string;
   pin: string;
-  /** Rewrite an existing config, keeping its `ignore` list. */
+  /** Rewrite an existing config, keeping its `ignore` list and `members` glob. */
   force?: boolean | undefined;
   /** Repo-relative directory prefixes the scanner skips. Written on a fresh config only. */
   ignore?: string[] | undefined;
@@ -186,7 +187,7 @@ export type WriteMemberConfigResult =
       extraFields: string[];
     };
 
-const KNOWN_KEYS = new Set(["specs", "ignore"]);
+const KNOWN_KEYS = new Set<string>(SpecConfigSchema.keyof().options);
 
 /** The existing config as a raw object; never through the schema, which would strip unknown keys. */
 async function readRawConfig(
@@ -210,21 +211,31 @@ async function readRawConfig(
   return { ok: true, raw: raw as Record<string, unknown> };
 }
 
-/** A valid `ignore` list to carry forward, or the refusal when the field is malformed. */
-function preservedIgnore(
+type PreservedFields = Pick<MemberConfigFields, "ignore" | "members">;
+
+/** The valid `ignore` list and `members` glob to carry forward, or the refusal when either is malformed. */
+function preservedFields(
   configPath: string,
   raw: Record<string, unknown>,
-): { ok: true; ignore?: string[] } | OpFailure {
-  const rawIgnore = raw.ignore;
-  if (rawIgnore === undefined) return { ok: true };
-  const isEntry = (e: unknown): e is string => typeof e === "string" && e.length > 0;
-  if (!Array.isArray(rawIgnore) || !rawIgnore.every(isEntry)) {
-    return fail(
+): ({ ok: true } & PreservedFields) | OpFailure {
+  const refuse = (field: string, expected: string): OpFailure =>
+    fail(
       "conflict",
-      `existing ${configPath} has an invalid ignore field (expected an array of non-empty strings); refusing to overwrite. Edit manually.`,
+      `existing ${configPath} has an invalid ${field} field (expected ${expected}); refusing to overwrite. Edit manually.`,
     );
+  const out: { ok: true } & PreservedFields = { ok: true };
+  const isEntry = (e: unknown): e is string => typeof e === "string" && e.length > 0;
+  if (raw.ignore !== undefined) {
+    if (!Array.isArray(raw.ignore) || !raw.ignore.every(isEntry)) {
+      return refuse("ignore", "an array of non-empty strings");
+    }
+    out.ignore = raw.ignore;
   }
-  return { ok: true, ignore: rawIgnore };
+  if (raw.members !== undefined) {
+    if (!isEntry(raw.members)) return refuse("members", "a non-empty glob string");
+    out.members = raw.members;
+  }
+  return out;
 }
 
 interface MemberConfigFields {
@@ -242,8 +253,9 @@ async function write(configPath: string, fields: MemberConfigFields): Promise<vo
 
 /**
  * Without `force` an existing config is reported, not touched. With `force`
- * the pin is rewritten and a valid `ignore` list preserved; unknown keys or a
- * malformed `ignore` refuse, since overwriting them would lose user data.
+ * the pin is rewritten and a valid `ignore` list and `members` glob preserved;
+ * unknown keys or a malformed field refuse, since overwriting them would lose
+ * user data.
  * @spec INIT-017
  * @spec INIT-019
  * @spec INIT-027
@@ -283,8 +295,8 @@ export async function writeMemberConfig(
       `existing ${configPath} has extra fields (${extraFields.join(", ")}); refusing to overwrite. Edit manually.`,
     );
   }
-  const ignoreRes = preservedIgnore(configPath, rawRes.raw);
-  if (!ignoreRes.ok) return ignoreRes;
-  await write(configPath, { specs: pin, ignore: ignoreRes.ignore });
+  const kept = preservedFields(configPath, rawRes.raw);
+  if (!kept.ok) return kept;
+  await write(configPath, { specs: pin, ignore: kept.ignore, members: kept.members });
   return { ok: true, action: "wrote", path: configPath, pin };
 }
