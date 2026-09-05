@@ -61,6 +61,9 @@ bun packages/engine/src/cli.ts check . --ci
 
 1. Fork and branch from `main` (`type/short-description`).
 2. Make your change. Add or update tests — this repo dogfoods its own `@spec` protocol.
+   A test lives beside the file it tests (`foo.ts` → `foo.test.ts`, or
+   `foo.<aspect>.test.ts` for a second file); shared helpers go in
+   `packages/<pkg>/src/testing/`. See AGENTS.md for the full rule.
 3. Keep the gates green:
    ```bash
    bun test

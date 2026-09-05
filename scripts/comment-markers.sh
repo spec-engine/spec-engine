@@ -10,7 +10,8 @@
 # round. `@spec KEY-NNN` is the sanctioned way to point a line at its behavior
 # and is never matched here.
 #
-# This is a ratchet, not a ban, because 65 files still carry markers. A file
+# This is a ratchet, not a ban, because 52 files still carry markers. Co-located
+# tests and the helpers under src/testing/ are outside its scope. A file
 # absent from the ledger must carry zero. A listed file may not exceed its
 # recorded count, and may not sit under it either, so stripping a file moves
 # the ledger in the same commit and the number can only fall.
@@ -22,7 +23,7 @@ DEBT="scripts/comment-marker-debt.txt"
 MARKER='(WR-[0-9]+|Pitfall [0-9]+|Phase [0-9]+|[Ww]ave [0-9]+|[Pp]lan [0-9]{2}-[0-9]{2}|review-fix)'
 
 sources() {
-  git ls-files -- packages | grep -E '^packages/[^/]+/src/.*\.tsx?$'
+  git ls-files -- packages | grep -E '^packages/[^/]+/src/.*\.tsx?$' | grep -vE '\.test\.tsx?$|/src/testing/'
 }
 
 current() {

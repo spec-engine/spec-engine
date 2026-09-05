@@ -12,7 +12,8 @@
 // doesn't cover, this grep test fails before the build merges.
 //
 // Defense-in-depth pattern from 05-RESEARCH § Import-Guard Mechanics
-// (lines 736-744). Test files live in `packages/webapp/test/` which the
+// (lines 736-744). Co-located tests (`src/**/*.test.ts`) and the helpers under
+// `src/testing/` are skipped: they may import the engine for harness use, and the
 // biome.json scopes OUT of the noRestrictedImports rule (override applies
 // to `src/**/*.ts` only); tests can import @spec-engine/spec-engine for harness use.
 
@@ -53,6 +54,7 @@ describe("webapp import fence (D-09 / WORK-04 / Invariant #5)", () => {
     const offenders: Array<{ file: string; line: number; match: string }> = [];
 
     for await (const rel of glob.scan({ cwd: WEBAPP_ROOT })) {
+      if (rel.endsWith(".test.ts") || rel.startsWith("src/testing/")) continue;
       const abs = join(WEBAPP_ROOT, rel);
       const src = await Bun.file(abs).text();
       const lines = src.split("\n");
@@ -119,6 +121,7 @@ describe("webapp import fence (D-09 / WORK-04 / Invariant #5)", () => {
     const glob = new Bun.Glob("src/**/*.ts");
     const found = new Set<string>();
     for await (const rel of glob.scan({ cwd: WEBAPP_ROOT })) {
+      if (rel.endsWith(".test.ts") || rel.startsWith("src/testing/")) continue;
       found.add(rel);
     }
     for (const expected of [
