@@ -6,7 +6,7 @@
 // @spec INIT-017
 // @spec INIT-018
 // @spec INIT-019
-// @spec INIT-021
+// @spec INIT-031
 // @spec INIT-020
 // @spec INIT-027
 // @spec INIT-030
@@ -402,6 +402,38 @@ describe("spec init × ignore field", () => {
     const code = await runInit({ repo: tmp, force: true });
     expect(code).toBe(2);
     expect(errs.some((m) => m.includes("extra fields") && m.includes("customField"))).toBe(true);
+  });
+});
+
+describe("spec init × members field", () => {
+  test("no-force: a config with specs+members is 'already configured' with NO extra-fields warning", async () => {
+    const mono = await TestPlatform.at(tmp).member("mono", { pin: "spec-engine@2", members: "*" });
+    const code = await runInit({ repo: mono.dir });
+    expect(code).toBe(0);
+    expect(logs.some((m) => m.includes("already configured"))).toBe(true);
+    expect(logs.some((m) => m.includes("extra fields"))).toBe(false);
+  });
+
+  test("--force rewrites the pin but preserves the members glob", async () => {
+    const mono = await TestPlatform.at(tmp).member("mono", {
+      pin: "spec-engine@2",
+      ignore: ["generated"],
+      members: "*",
+    });
+    const code = await runInit({ repo: mono.dir, force: true, specs: "spec-engine@3" });
+    expect(code).toBe(0);
+    const written = JSON.parse(await Bun.file(join(mono.dir, "spec-engine.member.json")).text());
+    expect(written).toEqual({ specs: "spec-engine@3", ignore: ["generated"], members: "*" });
+  });
+
+  test("--force refuses (exit 2) a non-string members field, naming it", async () => {
+    writeFileSync(
+      join(tmp, "spec-engine.member.json"),
+      JSON.stringify({ specs: "spec-engine@2", members: 1 }),
+    );
+    const code = await runInit({ repo: tmp, force: true });
+    expect(code).toBe(2);
+    expect(errs.some((m) => m.includes("invalid members field"))).toBe(true);
   });
 });
 

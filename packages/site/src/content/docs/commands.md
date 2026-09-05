@@ -105,7 +105,7 @@ Approval primitive. Passes iff `<reqId>` is Active AND `<repo>`'s pin covers the
 
 ### `spec init [repo]`
 
-Scaffold `spec-engine.member.json` into a member repo. Pin resolution: `--specs <pin>` wins; else the **derived platform version** (the max of the enclosing platform's domain versions); else `spec-engine@1` with a printed note. An existing config is left untouched ("already configured", exit 0); `--force` rewrites the pin while preserving an `ignore` list. The config may also carry `"members": "<glob>"` for monorepo workspace expansion — each matching subdirectory becomes its own coverage column.
+Scaffold `spec-engine.member.json` into a member repo. Pin resolution: `--specs <pin>` wins; else the **derived platform version** (the max of the enclosing platform's domain versions); else `spec-engine@1` with a printed note. An existing config is left untouched ("already configured", exit 0); `--force` rewrites the pin while preserving an `ignore` list and a `members` glob. The config may also carry `"members": "<glob>"` for monorepo workspace expansion — each matching subdirectory becomes its own coverage column.
 
 **Exit codes:** 0 / 2 (never exit 1)
 

@@ -328,16 +328,17 @@
     },
     {
       "id": "INIT-021",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec init --force overwrites a config carrying only known keys, it shall rewrite the pin while preserving the repo's ignore list.",
       "why": "A --force that dropped the ignore list would silently re-include directories the operator deliberately excluded from tag scanning.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-031",
       "relates": [],
       "livesIn": [
         "packages/engine/src/commands/init.ts"
       ],
       "issues": [],
+      "supersededAtVersion": 15,
       "aliases": [],
       "cites": []
     },
@@ -474,6 +475,21 @@
       "status": "active",
       "statement": "Where the platform root's package.json is named @spec-engine/spec-engine, spec init shall judge the spec-engine path-segment refusal against the member's path below the platform root, so the engine can scaffold its own members.",
       "why": "The refusal reads every segment of the resolved path, so a checkout named spec-engine cannot spec init any of its own members and their configs had to be written by hand.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/init.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-031",
+      "status": "active",
+      "statement": "When spec init --force overwrites a config carrying only known keys, it shall rewrite the pin while preserving the repo's ignore list and members glob.",
+      "why": "A --force that dropped the ignore list or the members glob would silently re-include excluded directories or collapse a monorepo's packages into one coverage column.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
