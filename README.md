@@ -2,10 +2,9 @@
 
 **Catch cross-repo spec drift in one local command.**
 
-Spec Engine walks a whole platform — a canonical `spec-engine/` spec repo plus every
-member repo that pins it — and tells you, across all of them at once, who shipped a
-requirement, who verified it, and who's still stuck on a superseded version. It's the
-view a single-repo file scan can't give you.
+Spec Engine walks a whole platform, a canonical `spec-engine/` spec repo plus every
+member repo that pins it, and tells you across all of them at once who shipped a
+requirement, who verified it, and who is still stuck on a superseded version.
 
 ```console
 $ spec propagation BILLING-009 ./platform
@@ -15,11 +14,9 @@ api     MIGRATED_VERIFIED    —            no
 mobile  ON_PREDECESSOR       BILLING-001  yes     ← drifted: still on the superseded req
 ```
 
-`BILLING-009` shipped. `api` migrated and proved it. `admin` doesn't use it. `mobile`
-is still pinned to `BILLING-001`, the requirement `BILLING-009` replaced — **drift**,
-found in one command instead of three repo reviews and a Slack thread.
-
----
+`BILLING-009` shipped. `api` migrated and proved it. `admin` does not use it. `mobile`
+is still on `BILLING-001`, the requirement `BILLING-009` replaced. That is drift, found
+in one command.
 
 ## The idea
 
@@ -34,22 +31,24 @@ Everything in Spec Engine follows from eight statements:
 7. Tickets are not requirements. A ticket is temporary work; requirements outlive it.
 8. Requirements are written in a fixed shape (when X happens, the system shall do Y).
 
-Everything else — the file format, the tags, the commands — is implementation of these.
+The file format, the tags, and the commands are implementation of these.
 
----
+## Install
 
-## 30 seconds to value
-
-Spec Engine ships as one npm package. With [Bun](https://bun.sh) installed (the engine is
-Bun-only — it uses `bun:sqlite`), there is nothing to clone and nothing to build:
+One npm package. Needs [Bun](https://bun.sh) 1.3 or newer (the engine uses `bun:sqlite`
+and does not run under Node).
 
 ```bash
 bunx @spec-engine/spec-engine --help    # run without installing
 bun add -g @spec-engine/spec-engine     # or install the `spec` bin globally
 ```
 
-That one package carries the `spec` CLI, the local coverage webapp (`spec serve`), and the
-full documentation site offline (`spec docs`). Point it at any repo of your own:
+The package carries the `spec` CLI, the local webapp (`spec serve`), and the docs site
+offline (`spec docs`).
+
+## First run
+
+In any repo of your own:
 
 ```bash
 spec domain new ORDERS                                       # scaffold a domain
@@ -61,17 +60,17 @@ spec check .                                                 # integrity gate
 
 ### Or explore the planted fixtures
 
-This repo ships `fixtures/platform-fixture` — a canonical `spec-engine/` and three
-member repos (`admin`, `api`, `mobile`) — with drift deliberately planted. The fixtures
-are test data and aren't in the npm package, so this path wants a checkout:
+This repo ships `fixtures/platform-fixture`: a canonical `spec-engine/` and three member
+repos (`admin`, `api`, `mobile`) with drift deliberately planted. Fixtures are test data,
+not part of the npm package, so this path needs a checkout:
 
 ```bash
 git clone https://github.com/spec-engine/spec-engine && cd spec-engine
 bun install
-alias spec="bun packages/engine/src/cli.ts"     # or: bun build --compile packages/engine/src/cli.ts --outfile=dist/spec
+alias spec="bun packages/engine/src/cli.ts"     # or: bun run build:cli && ./dist/spec
 ```
 
-**1. The coverage matrix** — every requirement × every repo:
+The coverage matrix, every requirement by every repo:
 
 ```console
 $ spec map fixtures/platform-fixture
@@ -85,7 +84,7 @@ BILLING  BILLING-009  Active      —         src+test  —       —
 
 Each cell: `src` (implemented), `test` (verified), `src+test` (both), `—` (nothing).
 
-**2. Integrity** — dangling tags, drift, orphans, superseded references:
+Integrity: dangling tags, drift, orphans, superseded references:
 
 ```console
 $ spec check fixtures/platform-fixture
@@ -96,42 +95,41 @@ ORPHAN_REQ                    spec-engine/AUTH/SPEC.json:8  AUTH-001  active req
 UNVERIFIED_REQ                spec-engine/BILLING/SPEC.json  BILLING-002  implemented but never verified
 ```
 
-That's the whole loop: **write specs, tag code, check the platform.**
-
----
+That is the whole loop: write specs, tag code, check the platform.
 
 ## How it works
 
-Three moving parts, and the important one owns nothing:
+Three parts. The important one owns nothing.
 
-1. **Canonical specs** live in a `spec-engine/` repo as `spec-engine/<DOMAIN>/SPEC.json`.
-   Each requirement is a durable id — `BILLING-009` — with a status (`Active`,
-   `Superseded by …`). This is the only source of truth.
-2. **Code points back** with a `@spec` tag: `// @spec BILLING-009`. What the tag
-   means comes from where it sits — in a source file it implements the
-   requirement; in a test file it proves it. Never write "implements" or
-   "verifies" in the tag itself.
-3. **A derived index** (`.spec-engine/`, a disposable `bun:sqlite` db) is built from 1 + 2.
-   Delete it and rebuild — you get a byte-identical result. Coverage is a SQL **view**
-   over the tags, so it can never drift from what the tags actually say.
+1. **Canonical specs** live in `spec-engine/<DOMAIN>/SPEC.json`. Each requirement has a
+   permanent id like `BILLING-009` and a status (`active`, `superseded`, `draft`,
+   `deprecated`). This is the only source of truth.
+2. **Code points back** with a tag: `// @spec BILLING-009`. A tag in source code
+   implements the requirement. A tag in a test file proves it. You never write those
+   words in the tag.
+3. **A derived index** (`.spec-engine/`, a disposable SQLite database) is built from 1
+   and 2. Delete it and rebuild and you get a byte-identical result. Coverage is a SQL
+   view over the tags, so it cannot drift from them.
 
-Member repos pin a version in `spec-engine.member.json` (`{ "specs": "spec-engine@1" }`) —
-one platform-wide scalar compared, per requirement the repo references, against the
-version at which that requirement last changed (derived locally within its own domain).
-Nobody authors these numbers: a domain's version is **derived** from its supersede history,
-so it advances exactly when a requirement is superseded and can only ever move forward.
-Supersede `BILLING-001`, the domain derives to `@2`, and every member still pinned at `@1`
-lights up as drift — the cross-repo loop this tool exists to prove. Because the version is
-read from the supersede graph rather than a counter someone maintains, it cannot be
-hand-edited into disagreeing with what actually happened. The platform version is derived
-the same way — the max across domains, what `spec init` writes as a fresh member's default
-pin; there is no authored platform counter. A sibling directory that exists
-but never opts in (no `spec-engine.member.json`) surfaces as a `NO_SPEC_CONFIG` warning
-rather than silently vanishing from the platform view.
+| Thing | Where it lives | Who writes it |
+| --- | --- | --- |
+| Requirement | `spec-engine/<DOMAIN>/SPEC.json` | You, through `spec req`, `spec supersede`, `spec amend` |
+| Tag | `// @spec KEY-NNN` in code | You |
+| Index | `.spec-engine/index.sqlite` | The engine. Never commit it, never edit it |
+| Member pin | `spec-engine.member.json`, `{ "specs": "spec-engine@N" }` | `spec init` |
+| Domain version | Derived from the domain's supersede history | Nobody. It advances by one per supersession |
+| Platform version | The highest domain version | Nobody. It is what `spec init` pins a new member to |
 
-`SPEC.json` is the sole spec format — a one-time `spec migrate` performed the JSON
-cutover from the legacy Markdown specs, so every read and write surface now shares one
-schema.
+Drift is a member pinned below the version at which a requirement it references last
+changed. Supersede `BILLING-001` and every member still pinned at `@1` that references
+it lights up. A sibling directory with no `spec-engine.member.json` is reported as
+`NO_SPEC_CONFIG` rather than silently ignored.
+
+`SPEC.json` is the only spec format. `spec migrate` was the one-time cutover from the
+legacy Markdown specs.
+
+See the [architecture page](https://docs.spec-engine.dev/architecture/) for the
+components, the single seams, and the invariants.
 
 ## Commands
 
@@ -139,88 +137,24 @@ schema.
 |---|---|
 | `spec map <dir>` | Platform-wide coverage matrix (requirement × repo) |
 | `spec check <dir>` | Integrity + drift diagnostics; `--ci` for a cold, gate-able run |
-| `spec guard <dir>` | Loss detection: block a change that deletes a requirement, its last tag, or its test without superseding |
+| `spec guard <dir>` | Block a change that deletes a requirement, its last tag, or its test without superseding |
 | `spec propagation <REQID> <dir>` | Per-member migration state for one requirement |
 | `spec query <text> <dir>` | Full-text search across requirements |
-| `spec resolve <files…>` | Map changed files → the requirements they touch |
-| `spec req` / `spec supersede` / `spec amend` | Author and evolve requirements |
-| `spec init <repo>` | Scaffold `spec-engine.member.json` into a member |
+| `spec resolve <files…>` | Map changed files to the requirements they touch |
+| `spec req` / `spec supersede` / `spec amend` / `spec deprecate` | Author and evolve requirements |
+| `spec init <repo>` | Write `spec-engine.member.json` into a member |
 | `spec gate` / `spec relations` / `spec provenance` | Approval gate, cross-refs, provenance |
-| `spec serve <dir>` | Local read-only webapp for the matrix and detail views |
-| `spec mcp` | Expose the engine to agents over MCP |
+| `spec serve <dir>` | Local webapp over the index |
+| `spec mcp` | The same engine over the Model Context Protocol |
 
-Run any command with `--help` for full flags. `--json` on the read commands emits
-deterministic, chrome-free output for scripting.
-
-## Local webapp
-
-`spec serve <dir>` runs a local web UI over the derived index — the coverage matrix and
-the detail views, rendered server-side:
-
-```console
-$ spec serve . --port 4319
-spec: serving on http://127.0.0.1:4319
-```
-
-`--port 0` (the default) picks an ephemeral port; pass a fixed port for a stable URL.
-The always-on pages: `/` (coverage matrix, carrying the per-domain rollup),
-`/requirements` and `/requirements/:id`, `/propagation/:id` — as JSON:
-`/api/coverage`, `/api/report`, `/api/requirements[/:id]`, `/api/propagation/:id`,
-`/api/resolve?files=…`. The rest of the webapp ships feature-flagged and OFF by
-default — `/query` (full-text search — term definitions render beside requirement
-hits), `/relations`, `/provenance`, and the editor: the nav shows "coming soon",
-the page serves a placeholder, and the feature's endpoints (`/api/query?q=`,
-`/api/relations`, `/api/provenance`) answer 404 until you opt in with a
-comma-separated `SPEC_FLAGS` env var, e.g. `SPEC_FLAGS=query,relations spec serve .`.
-The webapp reads the index; run `spec index . --fresh` after
-editing specs or tags so the UI reflects the change.
-
-### Access model — there is no login or API key
-
-The webapp has **no password, bearer token, or session** — and it does not need one.
-Access is gated by *where the request comes from*, in three layers:
-
-1. **Loopback-only bind.** The server binds `127.0.0.1` and nothing else. There is no
-   `--host` flag by design, so it is never reachable from another machine. To use it
-   remotely, forward the port over SSH (`ssh -L 4319:127.0.0.1:4319 you@host`) — the tunnel
-   endpoint stays loopback on both ends.
-2. **Host-header pin (anti-DNS-rebinding).** A request whose own `Host` header is not a
-   loopback name is rejected, so a malicious web page that rebinds its DNS to `127.0.0.1`
-   cannot drive your local server.
-3. **Same-origin guard on write routes.** The editor's POST routes reject a cross-origin
-   `Origin` (a drive-by page cannot auto-submit to your local instance); read routes are
-   open to anything that can already reach loopback — i.e. only you, on this machine.
-
-So the "auth" is: be on the same machine (or an SSH tunnel to it), and same-origin for
-writes. There is deliberately no shareable secret to expose it publicly.
-
-### The one secret — `SPEC_TRACKER_TOKEN` (tracker provenance, *not* webapp auth)
-
-The only header secret in the system is unrelated to reaching the webapp: it authenticates
-Spec Engine to your **issue tracker** so `spec provenance` (and the webapp's provenance
-view) can resolve an issue id like `ENG-1234` into its title/state/URL. Set it in the
-environment before serving:
-
-```bash
-export SPEC_TRACKER_TOKEN="<your-Linear-API-key>"
-spec serve . --port 4319
-```
-
-- It is read once from `process.env.SPEC_TRACKER_TOKEN` and sent as a **raw `Authorization`
-  header** (no `Bearer ` prefix — a Linear quirk) to `https://api.linear.app/graphql`,
-  as a **read-only** GraphQL query. It is never written to a log.
-- **It is optional.** With no token, provenance degrades gracefully to the bare opaque
-  issue ids plus a "set `SPEC_TRACKER_TOKEN`" hint — every other page works unchanged.
-- Issue ids are provenance annotations only; the engine never treats them as identity or
-  routing, so a missing/invalid token never affects coverage, drift, or the gate.
+`--help` on any command lists its flags. `--json` on the read commands emits
+deterministic output for scripting.
 
 ## CI gate
 
-`spec check <dir> --ci` builds a fresh index from scratch (never trusting a warm one)
-and exits non-zero when the platform has unresolved drift or integrity problems. Feed
-it your test results with `--results` to arm the **trusted-red** gate — an Active
-requirement counts as proven only when it has a *passing* verifying test, so a tag on a
-red or missing test fails the build:
+`spec check <dir> --ci` builds a fresh index and exits 1 on any error-severity
+diagnostic. Add `--results` with your test runner's JUnit XML to arm the trusted-red
+gate: a requirement counts as proven only when a passing test verifies it.
 
 ```bash
 bun test --reporter=junit --reporter-outfile=.spec-engine/results.xml
@@ -229,11 +163,10 @@ spec check . --ci --results .spec-engine/results.xml
 
 ## Loss guard
 
-`spec check` sees the world as it *is* — the derived index has no memory, so a change
-that deletes an Active requirement together with its `@spec` tags and its tests rebuilds
-into an index that is simply consistent-but-smaller, and nothing alarms. `spec guard`
-gives it a memory: it diffs the requirement derivation at a git ref (default `HEAD`)
-against your working tree and blocks what's about to be lost.
+`spec check` sees only the current tree, so deleting a requirement together with its
+tags and tests leaves a smaller index that is still consistent. `spec guard` diffs the
+requirement derivation at a git ref (default `HEAD`) against your working tree and
+blocks what is about to be lost.
 
 ```console
 $ spec guard .
@@ -243,13 +176,11 @@ Either run `spec supersede BILLING-009` with a successor, or run
 `spec deprecate BILLING-009 --reason "..."` to end it with a recorded reason.
 ```
 
-It exits `1` on any loss, `0` when clean (or when run outside a git repo — it never fails
-a non-git context). There is no override comment. A loss is suppressed only by ending the
-requirement properly in the same change: supersede it with a successor, or run
-`spec deprecate BILLING-009 --reason "..."` — which records why on the entry itself, the
-one place the reason survives the code being deleted.
+- Exit 1 on any loss, 0 when clean. Outside a git repo it warns and exits 0.
+- There is no override comment. A loss is suppressed only by ending the requirement in
+  the same change: `spec supersede` with a successor, or `spec deprecate --reason`.
 
-Wire it as a **pre-commit hook** (lefthook shown; a bare `.git/hooks/pre-commit` works too):
+As a pre-commit hook (lefthook shown; a bare `.git/hooks/pre-commit` works too):
 
 ```yaml
 # lefthook.yml
@@ -259,8 +190,7 @@ pre-commit:
       run: spec guard . || exit 1
 ```
 
-…or as a **Claude Code `PostToolUse` hook** so a coding agent is stopped the moment its
-edit would lose a requirement:
+As a Claude Code hook, so an agent is stopped the moment an edit would lose a requirement:
 
 ```jsonc
 // .claude/settings.json
@@ -274,21 +204,63 @@ edit would lose a requirement:
 }
 ```
 
+## Local webapp
+
+```console
+$ spec serve . --port 4319
+spec: serving on http://127.0.0.1:4319
+```
+
+`--port 0` (the default) picks a free port. The webapp reads the index, so run
+`spec index . --fresh` after editing specs or tags.
+
+| Route | Status |
+| --- | --- |
+| `/`, `/requirements`, `/requirements/:id`, `/propagation/:id` | Always on |
+| `/api/coverage`, `/api/report`, `/api/repos`, `/api/platform`, `/api/requirements[/:id]`, `/api/propagation/:id`, `/api/resolve?files=…` | Always on |
+| `/query`, `/api/query?q=` | `SPEC_FLAGS=query` |
+| `/relations`, `/api/relations` | `SPEC_FLAGS=relations` |
+| `/provenance`, `/api/provenance` | `SPEC_FLAGS=provenance` |
+| `/editor`, `POST` / `PUT /api/requirements` | `SPEC_FLAGS=editor` |
+| `/glossary`, `/logs` | `SPEC_FLAGS=glossary`, `SPEC_FLAGS=logs` (placeholders) |
+
+Flags are comma-separated: `SPEC_FLAGS=query,relations spec serve .`. An off feature
+shows "coming soon" in the nav and answers 404 on its endpoints.
+
+### Access
+
+There is no login or API key. Access is decided by where the request comes from:
+
+- The server binds `127.0.0.1` only. There is no `--host` flag. Use an SSH tunnel to
+  reach it from another machine.
+- A request whose `Host` header is not a loopback name is rejected, which blocks DNS
+  rebinding.
+- Write routes reject a cross-origin `Origin` header.
+
+### Tracker token
+
+`SPEC_TRACKER_TOKEN` is the one secret in the system, and it is not for the webapp. It
+lets `spec provenance` and the provenance page resolve an issue id like `ENG-1234` to its
+title, state, and URL.
+
+- Optional. Without it, provenance shows the bare issue ids and a hint.
+- Read once from the environment. Sent as a raw `Authorization` header (no `Bearer`
+  prefix, a Linear quirk) in a read-only GraphQL query.
+- Never logged. Never affects coverage, drift, or the gate.
+
 ## For agents
 
-Spec Engine is built to be driven by coding agents. See **[AGENTS.md](AGENTS.md)**
-for the machine-facing reference: the route → tag → check loop, exit-code contract, and
-`--json` schemas. `spec mcp` exposes the same engine over the Model Context Protocol.
+[AGENTS.md](AGENTS.md) is the machine-facing reference: the route → tag → check loop,
+the exit-code contract, and every `--json` shape. `spec mcp` exposes the same engine over
+the Model Context Protocol.
 
 ## Status
 
-This is a proof-of-concept. It runs locally on [Bun](https://bun.com) with zero native
-deps; the spec format and command surface are pre-1.0 and may change.
+Proof of concept. Pre-1.0: the spec format and command surface may change.
 
-**Supported platforms: macOS and Linux.** The scanner matches `/`-separated paths, so
-Windows is not yet supported (paths would misclassify and break the byte-equality joins
-the derived index relies on). CI runs on `macos-14` (Apple Silicon) and `ubuntu-latest`.
+Supported platforms: macOS and Linux. The scanner matches `/`-separated paths, so
+Windows is not yet supported. CI runs on `macos-14` and `ubuntu-latest`.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
