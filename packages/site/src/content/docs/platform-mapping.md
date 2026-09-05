@@ -7,7 +7,7 @@ description: How Spec Engine decides what a platform is, which repositories belo
 This model lands with RED-187 (2 of 2), the ticket that moves discovery onto `@spec-engine/platform-map`.
 :::
 
-Spec Engine does not have its own idea of what a platform is. It takes membership and shape from [`@spec-engine/platform-map`](https://www.npmjs.com/package/@spec-engine/platform-map), the same package every tool built on Spec Engine uses, and adds exactly one fact of its own per member: the version pin. This page states the model in platform-map's vocabulary and names the requirement each rule carries.
+Spec Engine does not have its own idea of what a platform is. It takes membership and shape from [`@spec-engine/platform-map`](https://www.npmjs.com/package/@spec-engine/platform-map), the same package every tool built on Spec Engine uses, and adds exactly one fact of its own per member: the version pin. platform-map is a dependency of the engine and is called as a library: `spec init` declares members through it, `spec check` runs its checks underneath, and no `spec` workflow asks you to run a platform-map command yourself. This page states the model in platform-map's vocabulary and names the requirement each rule carries.
 
 ## Two files, one convention
 
@@ -25,7 +25,7 @@ platform-map works from two small committed files that share one name, `platform
 { "platform": "acme", "member": "api" }
 ```
 
-Neither file contains a path. Members are child directories of the platform root, named after their member name. A checkout that lives somewhere else is recorded in the per-user file `~/.config/platform-map/platforms.json`, written by `platform-map link` and never committed.
+Neither file contains a path. Members are child directories of the platform root, named after their member name. A checkout that lives somewhere else is recorded in the per-user file `~/.config/platform-map/platforms.json`, which Spec Engine writes through platform-map's `link` and which is never committed or edited by hand.
 
 Spec Engine adds one more committed file per member, `spec-engine.member.json`. It carries the member's pin and its scan ignore list, and it says nothing about membership:
 
@@ -43,9 +43,22 @@ The platform version is derived, never authored. It is the maximum of the domain
 
 A member is a name in the platform file's `members` list. Nothing else makes a directory a member: not a `.git` entry, not a `package.json`, not a `spec-engine.member.json`. A repository sitting in the platform folder that nobody declared is platform-map's `UNLISTED_REPO`, and `spec check` reports it so the repository's `@spec` tags never go unscanned in silence.
 
-A declared member that has no `spec-engine.member.json` is a member without a pin. The index reports it as `NO_SPEC_CONFIG`, one warning per member, and suggests `spec init <name>`. <!-- @spec INIT-022 --> When stdin is a terminal and `--no-prompt` is absent, an index-building command offers to run `spec init` for each such member before it proceeds. The prompt covers declared members only; declaring a repository is `platform-map init`, not `spec init`. <!-- @spec INIT-023 -->
+`spec init <name>` is the one command that makes a repository a member. It declares the repository through platform-map's `init` (an entry in the platform file and a marker in the repository), then writes the repository's `spec-engine.member.json`. Run on a repository that is already declared, it only writes the pin.
 
-A member's pin is the `specs` string in its `spec-engine.member.json`, one platform-wide scalar `spec-engine@N`. Its `ignore` list names repo-relative directory prefixes the tag scanner skips inside that member. The platform file's own `ignore` list is different: it names directories platform-map skips during discovery, so they are never candidates and never `UNLISTED_REPO`.
+A declared member that has no `spec-engine.member.json` is a member without a pin. The index reports it as `NO_SPEC_CONFIG`, one warning per member, and suggests `spec init <name>`. <!-- @spec INIT-022 --> When stdin is a terminal and `--no-prompt` is absent, an index-building command offers to run `spec init <name>` before it proceeds, for each declared member without a pin and for each undeclared repository in the platform folder. <!-- @spec INIT-023 -->
+
+A member's pin is the `specs` string in its `spec-engine.member.json`, one platform-wide scalar `spec-engine@N`.
+
+### Two `ignore` lists
+
+Two files carry a field named `ignore`, and they mean different things.
+
+| File | Field | What it skips | Example |
+| --- | --- | --- | --- |
+| `platform-map.json` at the platform root | `ignore` | Directories platform-map never considers a repository, so they are never candidates and never `UNLISTED_REPO` | `"ignore": ["scratch"]` keeps a scratch folder out of the platform |
+| `spec-engine.member.json` in a member | `ignore` | Repo-relative directory prefixes the tag scanner skips inside that one member | `"ignore": ["generated"]` stops tags in generated code from counting |
+
+Neither list removes a member from the platform. To stop scanning a member entirely, remove it from the platform file.
 
 ## Monorepo members and their packages
 
@@ -86,8 +99,8 @@ platform-map reports what it finds as diagnostics on the map. `spec check` surfa
 | `MARKER_MISSING` | warning | warning | A declared member has no marker |
 | `PLATFORM_NOT_LOCATED` | warning | warning | A marker names a platform this machine cannot find |
 | `SCAN_TRUNCATED` | warning | warning | A directory walk hit its depth or entry cap |
-| `UNLISTED_REPO` | info | warning | A repository in the platform folder is not a member; its tags are not scanned |
-| `UNDECLARED_PLATFORM` | info | warning | A folder of repositories with no platform file; nothing in it is a member until `platform-map init` runs |
+| `UNLISTED_REPO` | info | warning | A repository in the platform folder is not a member; its tags are not scanned until `spec init <name>` declares it |
+| `UNDECLARED_PLATFORM` | info | warning | A folder of repositories with no platform file; nothing in it is a member until `spec init <name>` declares the first one |
 | `UNMATCHED_PATTERN` | info | not surfaced | A workspace glob matched no package |
 | `AMBIGUOUS_ECOSYSTEM` | info | not surfaced | A repo has manifests from more than one ecosystem |
 
@@ -95,7 +108,7 @@ The rule behind the table: every platform-map error and warning keeps its severi
 
 ## Where `spec init` may write
 
-`spec init <dir>` writes a member's `spec-engine.member.json`. It resolves symlinks, locates the platform root, and refuses two targets with exit 2: a directory inside a `spec-engine/` tree, because a pin there registers the requirement source as a member of itself, and the platform root itself, because the root is not a member. <!-- @spec INIT-018 -->
+`spec init <dir>` declares a member and writes its `spec-engine.member.json`. It resolves symlinks, locates the platform root, and refuses two targets with exit 2: a directory inside a `spec-engine/` tree, because a pin there registers the requirement source as a member of itself, and the platform root itself, because the root is not a member. <!-- @spec INIT-018 -->
 
 The refusal reads every path segment for the name `spec-engine`. On the engine's own checkout, whose root package is named `@spec-engine/spec-engine`, only the path below the platform root is judged, so a checkout named `spec-engine` can still scaffold its own packages. <!-- @spec INIT-030 -->
 
@@ -112,14 +125,13 @@ The Setup page's scan-mode tile is `map().mode` rendered in words: `monorepo` re
 ## Declaring a platform
 
 ```bash
-cd ~/clients/acme                         # the folder holding the repos
-npx @spec-engine/platform-map init --yes  # platform file plus one marker per repo
-spec domain new BILLING                   # the canonical tree makes it a Spec Engine platform
-spec init api && spec init webapp         # a pin per member
-spec index . && spec check . --ci         # membership and pins are now one gate
+cd ~/clients/acme                  # the folder holding the repos
+spec domain new BILLING            # the canonical tree makes it a Spec Engine platform
+spec init api && spec init webapp  # each: platform file entry, marker, pin
+spec index . && spec check . --ci  # membership and pins are now one gate
 ```
 
-`platform-map check .` in CI fails when the files and the disk disagree. `spec check . --ci` fails when a requirement, a tag, a pin, or the platform is broken.
+`spec check . --ci` runs platform-map's own check underneath, so one gate fails when a requirement, a tag, a pin, or the platform declaration is broken.
 
 ## A future input: `dependsOn`
 
