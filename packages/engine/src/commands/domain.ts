@@ -42,8 +42,9 @@ import {
   normalizeDomainKey,
   scaffoldDomainObject,
 } from "../authoring/domains";
-import { EXIT } from "../constants";
+import { EXIT, specPaths } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
+import { platformDirArg, resolvePlatformDir } from "./_args";
 import { handleNotAPlatform } from "./_shared";
 
 export const domainNewCommand = defineCommand({
@@ -58,16 +59,11 @@ export const domainNewCommand = defineCommand({
       description:
         "Domain name — normalized to uppercase with whitespace stripped, then validated against /^[A-Z][A-Z0-9]*$/",
     },
-    platformDir: {
-      type: "positional",
-      required: false,
-      description:
-        "Platform directory (default: cwd). SPEC.json is written under <platformDir>/spec-engine/<KEY>/",
-    },
+    platformDir: platformDirArg,
   },
   async run({ args }) {
     const raw = args.name as string;
-    const platformDir = resolve((args.platformDir as string | undefined) ?? process.cwd());
+    const platformDir = resolvePlatformDir(args);
 
     // AUTHC-001/002: normalize BEFORE validation; announce only on change.
     const key = normalizeDomainKey(raw);
@@ -82,7 +78,7 @@ export const domainNewCommand = defineCommand({
       return;
     }
 
-    const dest = join(platformDir, "spec-engine", key, "SPEC.json");
+    const dest = specPaths(platformDir, key).abs;
 
     // AUTHC-006: defense in depth — even though KEY_RE blocks `..` / slashes
     // / dots, confirm the resolved destination stays inside platformDir.
@@ -134,7 +130,7 @@ export const domainNewCommand = defineCommand({
     // through the same validateDomainFile the index uses (a dashed/invalid key
     // rejects as INVALID_DOMAIN_FILE, writing NOTHING) and serializes with a
     // fixed key order + single trailing newline — no bespoke Bun.write here.
-    const relFile = `spec-engine/${key}/SPEC.json`;
+    const relFile = specPaths(platformDir, key).rel;
     const res = await validateAndWrite(dest, scaffoldDomainObject(key, today), relFile);
     if (!res.ok) {
       for (const diag of res.diagnostics) {
@@ -153,19 +149,14 @@ export const domainListCommand = defineCommand({
     description: "List domain keys (sorted, read from the filesystem)",
   },
   args: {
-    platformDir: {
-      type: "positional",
-      required: false,
-      description:
-        "Platform directory (default: cwd). Domains are child dirs of <platformDir>/spec-engine/ that contain a SPEC.json (or legacy SPEC.md)",
-    },
+    platformDir: platformDirArg,
     json: {
       type: "boolean",
       description: "Print the domain keys as one sorted JSON array",
     },
   },
   async run({ args }) {
-    const platformDir = resolve((args.platformDir as string | undefined) ?? process.cwd());
+    const platformDir = resolvePlatformDir(args);
 
     // AUTHC-009: platform guard FIRST — same command-boundary pattern as
     // map/index/check (friendly message + exit 2, rethrow anything else).

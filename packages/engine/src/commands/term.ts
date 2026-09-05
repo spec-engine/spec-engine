@@ -43,12 +43,12 @@ import { validateAndWrite } from "@spec-engine/shared";
 import { defineCommand } from "citty";
 import { nextRequirementId } from "../authoring/domains";
 import { localToday } from "../authoring/edit";
-import { defaultIndexPath, EXIT } from "../constants";
+import { EXIT, specPaths } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
-import { runIndex } from "../indexer/pipeline";
+import { withIndex } from "../operations/_index";
 import { ID_RE } from "../parser/grammar";
-import { openStorage } from "../storage/sqlite";
-import { coldResetDb, handleNotAPlatform } from "./_shared";
+import { platformDirArg } from "./_args";
+import { handleNotAPlatform } from "./_shared";
 import { warnUnresolvableRefs } from "./req";
 
 const TERM_KEY = "TERM";
@@ -116,8 +116,7 @@ async function appendTermEntry(
   id: string,
   fields: { term: string; def: string; aliases: string[]; section: string | undefined },
 ): Promise<string> {
-  const relFile = `spec-engine/${TERM_KEY}/SPEC.json`;
-  const specPath = join(platformDir, "spec-engine", TERM_KEY, "SPEC.json");
+  const { abs: specPath, rel: relFile } = specPaths(platformDir, TERM_KEY);
   const domain = await readTermEnvelope(platformDir, "term");
   const requirements = Array.isArray(domain.requirements) ? domain.requirements : [];
   const entry: TermRequirement = {
@@ -260,8 +259,7 @@ async function resolveReviseTarget(
     process.exit(EXIT.USAGE);
   }
 
-  const relFile = `spec-engine/${TERM_KEY}/SPEC.json`;
-  const specPath = join(platformDir, "spec-engine", TERM_KEY, "SPEC.json");
+  const { abs: specPath, rel: relFile } = specPaths(platformDir, TERM_KEY);
   const domain = await readTermEnvelope(platformDir, "term revise");
   const requirements = Array.isArray(domain.requirements) ? domain.requirements : [];
   const req = requirements.find((r) => r?.id === id);
@@ -338,14 +336,7 @@ async function reviseTerm(opts: {
  * through openStorage, never a direct bun:sqlite import.
  */
 async function reindexFresh(platformDir: string): Promise<void> {
-  const dbPath = defaultIndexPath(platformDir);
-  coldResetDb(dbPath);
-  const storage = openStorage(dbPath);
-  try {
-    await runIndex({ platformDir, storage });
-  } finally {
-    storage.close();
-  }
+  await withIndex({ platformDir, build: "fresh" }, () => undefined);
 }
 
 /**
@@ -400,8 +391,7 @@ async function locateCitation(
   cite: { term: string; pinned: number };
 }> {
   const citKey = reqId.slice(0, reqId.indexOf("-"));
-  const relFile = `spec-engine/${citKey}/SPEC.json`;
-  const specPath = join(platformDir, "spec-engine", citKey, "SPEC.json");
+  const { abs: specPath, rel: relFile } = specPaths(platformDir, citKey);
   if (!existsSync(specPath)) {
     console.error(
       `spec term confirm: no domain ${citKey} (expected ${relFile} under ${platformDir})`,
@@ -499,11 +489,7 @@ export const termListCommand = defineCommand({
     description: "List the glossary TERM entries (id, name, status), sorted by id",
   },
   args: {
-    platformDir: {
-      type: "positional",
-      required: false,
-      description: "Platform directory containing spec-engine/ (default: cwd)",
-    },
+    platformDir: platformDirArg,
     json: {
       type: "boolean",
       description: "Emit a sorted array of { id, term, status } instead of the per-line text",
@@ -526,11 +512,7 @@ export const termReviseCommand = defineCommand({
       required: true,
       description: "The TERM id to revise (TERM-NNN)",
     },
-    platformDir: {
-      type: "positional",
-      required: false,
-      description: "Platform directory containing spec-engine/ (default: cwd)",
-    },
+    platformDir: platformDirArg,
     def: { type: "string", description: "The revised definition (statement)" },
     text: { type: "string", description: "Alias for --def (the revised definition)" },
     noBump: { type: "boolean", description: "Do not bump the envelope specVersion" },
@@ -567,11 +549,7 @@ export const termConfirmCommand = defineCommand({
       required: true,
       description: "The cited TERM id to re-confirm (TERM-NNN)",
     },
-    platformDir: {
-      type: "positional",
-      required: false,
-      description: "Platform directory containing spec-engine/ (default: cwd)",
-    },
+    platformDir: platformDirArg,
     json: {
       type: "boolean",
       description: "Emit { req_id, term_id, pinned, file } as JSON instead of the text summary",
@@ -603,12 +581,7 @@ export const termCommand = defineCommand({
       description:
         "The term's headword, or the literal `list` / `revise` verb. Without --def (author form), prints the next unused TERM id.",
     },
-    platformDir: {
-      type: "positional",
-      required: false,
-      description:
-        "Platform directory (author/list), or — after `revise` — the TERM-NNN id to revise, or — after `confirm` — the citing KEY-NNN id",
-    },
+    platformDir: platformDirArg,
     extra: {
       type: "positional",
       required: false,

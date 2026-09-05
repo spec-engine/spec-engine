@@ -13,11 +13,11 @@
 // The process serves until stdin closes (the harness disconnecting), which
 // is the normal MCP lifecycle — no port, no daemon, loopback-free.
 
-import { resolve } from "node:path";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { defineCommand } from "citty";
 import { assertSpecPlatform } from "../indexer/discover";
 import { buildMcpServer } from "../server/mcp";
+import { platformDirArg, resolvePlatformDir } from "./_args";
 import { handleNotAPlatform } from "./_shared";
 
 export const mcpCommand = defineCommand({
@@ -27,14 +27,10 @@ export const mcpCommand = defineCommand({
       "Serve Spec Engine as an MCP (Model Context Protocol) server over stdio — agent-native query/resolve/check/report tools.",
   },
   args: {
-    platformDir: {
-      type: "positional",
-      required: false,
-      description: "Platform directory containing spec-engine/ + members (default: cwd)",
-    },
+    platformDir: platformDirArg,
   },
   async run({ args }) {
-    const platformDir = resolve((args.platformDir as string | undefined) ?? process.cwd());
+    const platformDir = resolvePlatformDir(args);
 
     try {
       assertSpecPlatform(platformDir);

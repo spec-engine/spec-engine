@@ -34,8 +34,9 @@ import { join, resolve } from "node:path";
 import { type Diagnostic, DiagnosticCode, validateAndWrite } from "@spec-engine/shared";
 import { defineCommand } from "citty";
 import { localToday } from "../authoring/edit";
-import { EXIT } from "../constants";
+import { EXIT, specPaths } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
+import { platformDirArg } from "./_args";
 import { handleNotAPlatform } from "./_shared";
 
 const TERM_KEY = "TERM";
@@ -156,8 +157,7 @@ function glossaryPath(platformDir: string): string {
  * @spec CHCK-021
  */
 async function migrateGlossary(platformDir: string, json: boolean): Promise<void> {
-  const relFile = `spec-engine/${TERM_KEY}/SPEC.json`;
-  const specPath = join(platformDir, "spec-engine", TERM_KEY, "SPEC.json");
+  const { abs: specPath, rel: relFile } = specPaths(platformDir, TERM_KEY);
   if (!existsSync(specPath)) {
     console.error(`spec glossary: no TERM domain (expected ${relFile} under ${platformDir})`);
     process.exit(EXIT.USAGE);
@@ -273,11 +273,7 @@ export const glossaryCommand = defineCommand({
       "Generate GLOSSARY.md from the TERM store (byte-stable); --migrate parses GLOSSARY.md into TERM-001..N; --check fails on drift (committed != generated)",
   },
   args: {
-    platformDir: {
-      type: "positional",
-      required: false,
-      description: "Platform directory containing spec-engine/ (default: cwd)",
-    },
+    platformDir: platformDirArg,
     migrate: {
       type: "boolean",
       description: "One-time: parse the committed GLOSSARY.md into TERM-001..N (idempotent-skip)",

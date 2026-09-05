@@ -18,9 +18,9 @@
 //
 // Reads the SPEC.json files directly: `supersedes` has no index column.
 
-import { join } from "node:path";
 import { type Diagnostic, DiagnosticCode } from "@spec-engine/shared";
 import { listDomainKeys } from "../authoring/domains";
+import { specPaths } from "../constants";
 import { findRequirementIdLine } from "../parser/requirementLine";
 
 interface RawEntry {
@@ -36,7 +36,7 @@ async function entriesForDomain(platformDir: string, key: string): Promise<RawEn
   let raw: string;
   let reqs: Array<{ id?: unknown; supersedes?: unknown }>;
   try {
-    raw = await Bun.file(join(platformDir, "spec-engine", key, "SPEC.json")).text();
+    raw = await Bun.file(specPaths(platformDir, key).abs).text();
     const doc = JSON.parse(raw) as { requirements?: unknown };
     reqs = Array.isArray(doc.requirements) ? doc.requirements : [];
   } catch {
@@ -54,7 +54,7 @@ async function entriesForDomain(platformDir: string, key: string): Promise<RawEn
       id: r.id,
       supersedes: typeof r.supersedes === "string" ? r.supersedes : null,
       line: found >= 0 ? found + 1 : 0,
-      sourceFile: `spec-engine/${key}/SPEC.json`,
+      sourceFile: specPaths(platformDir, key).rel,
     });
   }
   return out;

@@ -30,6 +30,7 @@ const GIT_ENV = {
 };
 
 function git(cwd: string, ...args: string[]): void {
+  if (!cwd) throw new Error("git helper needs a cwd; refusing to run in the process cwd");
   const proc = Bun.spawnSync(["git", ...args], { cwd, env: GIT_ENV });
   if (proc.exitCode !== 0) {
     throw new Error(`git ${args.join(" ")} failed: ${proc.stderr.toString()}`);

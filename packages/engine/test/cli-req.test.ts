@@ -430,27 +430,22 @@ describe("spec new / spec id removed (AUTHC-018)", () => {
 // ----------------------------------------------------------------------------
 
 describe("spec req — domain with no SPEC.json (D2)", () => {
-  test("no SPEC.json → clean exit 2, not an ENOENT crash", async () => {
-    // A domain dir that lists but has no spec file at all: create the dir so
-    // listing sees it, then drive appendEntry indirectly is not possible (the
-    // command resolves via listDomainKeys). Instead assert appendEntry's typed
-    // error path directly by pointing at a key with an empty dir.
+  test("no SPEC.json → a typed not_found refusal, not an ENOENT crash", async () => {
+    // A domain dir that lists but has no spec file: the mint operation refuses
+    // with a typed failure the command turns into exit 2.
     mkdirSync(join(tmp, "spec-engine", "GHOST"), { recursive: true });
-    setIsTTY(undefined);
-    let caught: ExitError | null = null;
-    try {
-      const { appendEntry } = await import("../src/commands/req");
-      await appendEntry(tmp, "GHOST", "GHOST-001", {
-        requirement: "x",
-        why: "",
-        lives: "",
-      });
-    } catch (e) {
-      if (e instanceof ExitError) caught = e;
-      else throw e;
-    }
-    expect(caught?.code).toBe(2);
-    expect(errs.some((l) => l.includes("no domain GHOST"))).toBe(true);
+    const { mint } = await import("../src/operations/mint");
+    const result = await mint({
+      platformDir: tmp,
+      key: "GHOST",
+      statement: "x",
+      why: "",
+      livesIn: [],
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toBe("not_found");
+    expect(result.detail).toContain("no domain GHOST");
   });
 });
 

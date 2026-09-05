@@ -1,22 +1,13 @@
 // packages/engine/src/authoring/grammar.ts
 //
-// Write-time statement-grammar enforcement — the authoring half of the
-// STATEMENT_GRAMMAR check (check/grammar.ts owns the read half). When a
-// command is about to write a NEW statement into a domain that declares
-// `grammar: "ears"`, the statement is parsed against the five EARS shapes:
-//
-//   - warning severity (the default): the problem prints to stderr with the
-//     expected shapes and the write proceeds — a nudge, not a wall.
-//   - error severity: the write is refused (exit 2) — vagueness cannot enter
-//     the domain at all.
-//
-// Only NEW statement text is judged (`--text` on req/amend/supersede/move);
-// existing statements are the check pass's burn-down list, never a write
-// blocker.
+// Write-time statement-grammar judgment, the authoring half of the
+// STATEMENT_GRAMMAR check (check/grammar.ts owns the read half). Only NEW
+// statement text is judged; existing statements are the check pass's
+// burn-down list, never a write blocker.
 
 import { join } from "node:path";
 import { parseEarsStatement } from "@spec-engine/shared";
-import { EXIT } from "../constants";
+import { CANONICAL_SPECS_DIR, EXIT, SPEC_FILENAME } from "../constants";
 
 interface GrammarConfig {
   grammar: "ears" | "freeform";
@@ -28,7 +19,7 @@ interface GrammarConfig {
 async function grammarConfig(platformDir: string, key: string): Promise<GrammarConfig> {
   try {
     const doc = JSON.parse(
-      await Bun.file(join(platformDir, "spec-engine", key, "SPEC.json")).text(),
+      await Bun.file(join(platformDir, CANONICAL_SPECS_DIR, key, SPEC_FILENAME)).text(),
     ) as { grammar?: unknown; grammarSeverity?: unknown };
     return {
       grammar: doc.grammar === "ears" ? "ears" : "freeform",
@@ -39,13 +30,57 @@ async function grammarConfig(platformDir: string, key: string): Promise<GrammarC
   }
 }
 
+export type GrammarVerdict =
+  | { ok: true }
+  | { ok: false; severity: "warning" | "error"; key: string; message: string };
+
 /**
- * Validate a to-be-written statement against the domain's declared grammar.
- * Prints nothing and returns for freeform domains and conforming statements;
- * warns (and returns) or refuses (exit 2) for nonconforming ones, per the
- * domain's `grammarSeverity`. The TERM domain holds definitions, not behavior
- * statements — always exempt.
+ * Judge a to-be-written statement against the domain's declared grammar.
+ * Conforming statements, freeform domains, and the TERM domain (definitions,
+ * not behavior) are `ok`. A nonconforming statement carries the domain's
+ * severity and a message without any command prefix, so each surface can
+ * render it as a warning or a refusal.
  * @spec REQ-020
+ */
+export async function judgeStatementGrammar(
+  platformDir: string,
+  key: string,
+  statement: string,
+): Promise<GrammarVerdict> {
+  if (key === "TERM") return { ok: true };
+  const cfg = await grammarConfig(platformDir, key);
+  if (cfg.grammar !== "ears") return { ok: true };
+  const result = parseEarsStatement(statement);
+  if (result.ok) return { ok: true };
+  return {
+    ok: false,
+    severity: cfg.severity,
+    key,
+    message:
+      `the statement does not match the domain's EARS shape — ${result.problem}.\n` +
+      `Expected one of:\n  ${result.expected}`,
+  };
+}
+
+/** The warning line a surface prints for a nonconforming statement that was written anyway. */
+export function grammarWarningText(
+  cmdName: string,
+  v: Extract<GrammarVerdict, { ok: false }>,
+): string {
+  return `${cmdName}: ${v.message}\n(warning — written anyway; ${v.key} sets grammar: "ears")`;
+}
+
+/** The refusal line a surface prints when the domain's severity is `error`. */
+export function grammarRefusalText(
+  cmdName: string,
+  v: Extract<GrammarVerdict, { ok: false }>,
+): string {
+  return `${cmdName}: ${v.message}\n(${v.key} sets grammarSeverity: "error", so the write is refused)`;
+}
+
+/**
+ * The CLI form: print the warning and return, or print the refusal and exit 2.
+ * Used by the lifecycle commands that have not moved onto the operations layer.
  */
 export async function enforceStatementGrammar(
   platformDir: string,
@@ -53,18 +88,11 @@ export async function enforceStatementGrammar(
   statement: string,
   cmdName: string,
 ): Promise<void> {
-  if (key === "TERM") return;
-  const cfg = await grammarConfig(platformDir, key);
-  if (cfg.grammar !== "ears") return;
-  const result = parseEarsStatement(statement);
-  if (result.ok) return;
-
-  const message =
-    `${cmdName}: the statement does not match the domain's EARS shape — ${result.problem}.\n` +
-    `Expected one of:\n  ${result.expected}`;
-  if (cfg.severity === "error") {
-    console.error(`${message}\n(${key} sets grammarSeverity: "error", so the write is refused)`);
+  const verdict = await judgeStatementGrammar(platformDir, key, statement);
+  if (verdict.ok) return;
+  if (verdict.severity === "error") {
+    console.error(grammarRefusalText(cmdName, verdict));
     process.exit(EXIT.USAGE);
   }
-  console.error(`${message}\n(warning — written anyway; ${key} sets grammar: "ears")`);
+  console.error(grammarWarningText(cmdName, verdict));
 }
