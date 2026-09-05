@@ -6,7 +6,7 @@
 // tag sites `spec check` reports as SUPERSEDED_REFERENCED until retagged).
 // Every guard runs before the single write.
 
-import { validateAndWrite } from "@spec-engine/shared";
+import { type SpecDomain, type SpecRequirement, validateAndWrite } from "@spec-engine/shared";
 import { nextRequirementId } from "../authoring/domains";
 import { localToday } from "../authoring/edit";
 import {
@@ -16,14 +16,7 @@ import {
 } from "../authoring/grammar";
 import { deriveDomainVersion } from "../parser/domainJson";
 import type { ReqTagRow } from "../resolve/format";
-import {
-  displayStatus,
-  type Envelope,
-  type EnvelopeRequirement,
-  type LocatedEntry,
-  locateEntry,
-  successorEntry,
-} from "./_envelope";
+import { displayStatus, type LocatedEntry, locateEntry, successorEntry } from "./_envelope";
 import type { FreshTags } from "./_index";
 import { fail, type OpFailure, type OpWarning } from "./_result";
 import { unresolvableRefWarnings } from "./mint";
@@ -71,7 +64,7 @@ export async function supersedeTarget(
   const located = await locateEntry(platformDir, id);
   if (!located.ok) return located;
   const { req } = located;
-  const statusLc = (typeof req.status === "string" ? req.status : "").toLowerCase();
+  const statusLc = req.status.toLowerCase();
   if (statusLc === "superseded") {
     return fail(
       "conflict",
@@ -79,10 +72,9 @@ export async function supersedeTarget(
     );
   }
   if (statusLc !== "active") {
-    const display = req.status ? displayStatus(req.status) : String(req.status);
     return fail(
       "conflict",
-      `${id} is ${display} — only Active requirements supersede (amend a Draft in place)`,
+      `${id} is ${displayStatus(req.status)} — only Active requirements supersede (amend a Draft in place)`,
     );
   }
   return located;
@@ -91,12 +83,10 @@ export async function supersedeTarget(
 /** The successor's why and livesIn: the input's, else the predecessor's. */
 function successorFields(
   input: SupersedeInput,
-  req: EnvelopeRequirement,
+  req: SpecRequirement,
 ): { why: string; livesIn: string[] } {
-  const predWhy = typeof req.why === "string" ? req.why : "";
-  const predLives =
-    Array.isArray(req.livesIn) && req.livesIn.length > 0 ? String(req.livesIn[0]).trim() : "";
-  const why = (input.why ?? predWhy).trim();
+  const predLives = (req.livesIn[0] ?? "").trim();
+  const why = (input.why ?? req.why ?? "").trim();
   const livesIn = input.livesIn ?? (predLives === "" ? [] : [predLives]);
   return { why, livesIn };
 }
@@ -109,25 +99,18 @@ function successorFields(
  */
 function successorTermFields(
   input: SupersedeInput,
-  req: EnvelopeRequirement,
+  req: SpecRequirement,
 ): { term: string | undefined; aliases: string[] } {
-  const predTerm = typeof req.term === "string" ? req.term : undefined;
-  const term = (input.term ?? predTerm)?.trim() || predTerm;
-  const aliases =
-    input.aliases ?? (Array.isArray(req.aliases) ? req.aliases.map((a) => String(a)) : []);
-  return { term, aliases };
+  const term = (input.term ?? req.term)?.trim() || req.term;
+  return { term, aliases: input.aliases ?? req.aliases };
 }
 
 /** Flip the predecessor forward; the causing ticket rides along as provenance. */
 // @spec PROV-003
-function flipPredecessor(req: EnvelopeRequirement, newId: string, issue?: string): void {
+function flipPredecessor(req: SpecRequirement, newId: string, issue?: string): void {
   req.status = "superseded";
   req.supersededBy = newId;
-  if (issue) {
-    const issues = Array.isArray(req.issues) ? req.issues : [];
-    issues.push({ role: "supersedes-via", id: issue });
-    req.issues = issues;
-  }
+  if (issue) req.issues.push({ role: "supersedes-via", id: issue });
 }
 
 /**
@@ -139,18 +122,17 @@ function flipPredecessor(req: EnvelopeRequirement, newId: string, issue?: string
  * @spec REQ-036
  */
 function applyVersionStage(
-  domain: Envelope,
-  requirements: EnvelopeRequirement[],
-  req: EnvelopeRequirement,
-  successor: EnvelopeRequirement,
+  domain: SpecDomain,
+  req: SpecRequirement,
+  successor: SpecRequirement,
   noBump: boolean,
 ): number | null {
   if (domain.key !== "TERM") {
-    const derived = deriveDomainVersion(requirements);
+    const derived = deriveDomainVersion(domain.requirements);
     req.supersededAtVersion = derived;
     return derived;
   }
-  const currentVersion = typeof domain.specVersion === "number" ? domain.specVersion : 1;
+  const currentVersion = domain.specVersion ?? 1;
   const reported = noBump ? null : currentVersion + 1;
   if (reported !== null) domain.specVersion = reported;
   req.supersededAtVersion = reported ?? currentVersion;
@@ -195,14 +177,7 @@ export async function supersede(
     successor.aliases = termFields.aliases;
   }
   requirements.push(successor);
-  domain.requirements = requirements;
-  const specVersion = applyVersionStage(
-    domain,
-    requirements,
-    req,
-    successor,
-    Boolean(input.noBump),
-  );
+  const specVersion = applyVersionStage(domain, req, successor, Boolean(input.noBump));
   domain.updated = localToday();
 
   const res = await validateAndWrite(specPath, domain, relFile);

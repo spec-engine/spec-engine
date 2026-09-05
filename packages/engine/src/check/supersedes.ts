@@ -18,7 +18,7 @@
 //
 // Reads the SPEC.json files directly: `supersedes` has no index column.
 
-import { type Diagnostic, DiagnosticCode } from "@spec-engine/shared";
+import { type Diagnostic, DiagnosticCode, parseDomainText } from "@spec-engine/shared";
 import { listDomainKeys } from "../authoring/domains";
 import { specPaths } from "../constants";
 import { findRequirementIdLine } from "../parser/requirementLine";
@@ -33,28 +33,27 @@ interface RawEntry {
 /** One domain's entries. Malformed or unreadable files yield none —
  *  structural validation owns those. */
 async function entriesForDomain(platformDir: string, key: string): Promise<RawEntry[]> {
+  const { abs, rel } = specPaths(platformDir, key);
   let raw: string;
-  let reqs: Array<{ id?: unknown; supersedes?: unknown }>;
   try {
-    raw = await Bun.file(specPaths(platformDir, key).abs).text();
-    const doc = JSON.parse(raw) as { requirements?: unknown };
-    reqs = Array.isArray(doc.requirements) ? doc.requirements : [];
+    raw = await Bun.file(abs).text();
   } catch {
     return [];
   }
+  const parsed = parseDomainText(raw, rel);
+  if (!parsed.ok) return [];
 
   const out: RawEntry[] = [];
   const rawLines = raw.split("\n");
   let lineCursor = 0;
-  for (const r of reqs) {
-    if (typeof r?.id !== "string") continue;
+  for (const r of parsed.data.requirements) {
     const found = findRequirementIdLine(rawLines, r.id, lineCursor);
     if (found >= 0) lineCursor = found + 1;
     out.push({
       id: r.id,
-      supersedes: typeof r.supersedes === "string" ? r.supersedes : null,
+      supersedes: r.supersedes ?? null,
       line: found >= 0 ? found + 1 : 0,
-      sourceFile: specPaths(platformDir, key).rel,
+      sourceFile: rel,
     });
   }
   return out;

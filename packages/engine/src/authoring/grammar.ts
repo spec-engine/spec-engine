@@ -5,9 +5,8 @@
 // statement text is judged; existing statements are the check pass's
 // burn-down list, never a write blocker.
 
-import { join } from "node:path";
-import { parseEarsStatement } from "@spec-engine/shared";
-import { CANONICAL_SPECS_DIR, SPEC_FILENAME } from "../constants";
+import { parseDomainText, parseEarsStatement } from "@spec-engine/shared";
+import { specPaths } from "../constants";
 
 interface GrammarConfig {
   grammar: "ears" | "freeform";
@@ -17,17 +16,20 @@ interface GrammarConfig {
 /** The domain's grammar declaration, defaulting to freeform on any absence
  *  or read failure (structural validation owns malformed files). */
 async function grammarConfig(platformDir: string, key: string): Promise<GrammarConfig> {
+  const freeform: GrammarConfig = { grammar: "freeform", severity: "warning" };
+  const { abs, rel } = specPaths(platformDir, key);
+  let text: string;
   try {
-    const doc = JSON.parse(
-      await Bun.file(join(platformDir, CANONICAL_SPECS_DIR, key, SPEC_FILENAME)).text(),
-    ) as { grammar?: unknown; grammarSeverity?: unknown };
-    return {
-      grammar: doc.grammar === "ears" ? "ears" : "freeform",
-      severity: doc.grammarSeverity === "error" ? "error" : "warning",
-    };
+    text = await Bun.file(abs).text();
   } catch {
-    return { grammar: "freeform", severity: "warning" };
+    return freeform;
   }
+  const parsed = parseDomainText(text, rel);
+  if (!parsed.ok) return freeform;
+  return {
+    grammar: parsed.data.grammar === "ears" ? "ears" : "freeform",
+    severity: parsed.data.grammarSeverity === "error" ? "error" : "warning",
+  };
 }
 
 export type GrammarVerdict =

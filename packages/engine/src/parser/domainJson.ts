@@ -4,17 +4,10 @@
 // @spec SCHM-013
 // @spec SCHM-014
 //
-// POC-014: SPEC.json is the authoring/interchange format the engine ingests.
-// Re-homed here from the deleted `parser/spec.ts` in the Phase 18 hard
-// cutover (D2) — this JSON reader is now the SOLE domain-file format the
-// engine reads.
-//
-// STOR-01/STOR-02 (17-02): the JSON domain-file reader. Maps a `SPEC.json`
-// domain envelope `{ key, owner, specVersion, updated, requirements[] }` to the
-// UNCHANGED internal row shapes (`Requirement` / `RelationRow` / `ProvenanceRow`).
-// Post-cutover (Phase 18, D2) this is the ONLY spec read path — the Markdown
-// parser is deleted — so `computeBuildId`, the coverage VIEW, and every
-// Phase 3-16 member read exclusively from JSON-sourced rows.
+// The JSON domain-file reader, the engine's only spec read path. Maps a
+// `SPEC.json` envelope `{ key, owner, specVersion, updated, requirements[] }`
+// to the internal row shapes (`Requirement` / `RelationRow` / `ProvenanceRow`)
+// that `computeBuildId`, the coverage VIEW, and every member read from.
 //
 // Design notes:
 //   1. ONE structural validator (VAL-02): this reader delegates ALL structural
@@ -26,10 +19,10 @@
 //      Capitalized `RequirementStatus`; an UNKNOWN status casts through the seam
 //      verbatim (mirroring spec.ts:239-240) so `validateStructure` emits BAD_STATUS
 //      downstream. The `RequirementStatus` union is UNCHANGED.
-//   3. DETERMINISTIC line (T-17-02, Pitfall 4): `JSON.parse` discards source
-//      positions, so the reader derives `line` from the RAW text via a LITERAL
-//      substring search for `"id": "<id>"` — NEVER a dynamically-built RegExp
-//      (the T-17-02 ReDoS mitigation). build_id hashes `line`, so it must be stable.
+//   3. DETERMINISTIC line: `JSON.parse` discards source positions, so the
+//      reader derives `line` from the RAW text via a LITERAL substring search
+//      for `"id": "<id>"` — NEVER a dynamically-built RegExp (a ReDoS
+//      mitigation). build_id hashes `line`, so it must be stable.
 //   4. PURITY: no DB driver import, no `Bun.file` — this module transforms text →
 //      ParsedSpec. The pipeline owns the file read (mirrors spec.ts's purity note
 //      and the D-08 grep-fence, which forbids the sqlite driver import here).
@@ -39,14 +32,13 @@
 
 import {
   type Diagnostic,
-  DiagnosticCode,
   type ProvenanceRow,
+  parseDomainText,
   type RelationRow,
   type Requirement,
   type RequirementStatus,
   type SpecDomain,
   type TermAliasRow,
-  validateDomainFile,
 } from "@spec-engine/shared";
 import { findRequirementIdLine } from "./requirementLine";
 import type { ParsedSpec, RawTermCitation } from "./types";
@@ -107,32 +99,7 @@ export type ParseDomainJsonResult =
  *   3. Map the validated, defaults-applied `SpecDomain` → `ParsedSpec`.
  */
 export function parseDomainJsonFile(opts: ParseDomainJsonFileOptions): ParseDomainJsonResult {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(opts.text);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return {
-      ok: false,
-      diagnostics: [
-        {
-          code: DiagnosticCode.INVALID_DOMAIN_FILE,
-          source_file: opts.sourceFile,
-          // WR-02: storage-normalized `line` (0, not null) — mirrors
-          // validateDomainFile so every INVALID_DOMAIN_FILE the reader emits
-          // (parse failure OR structural reject) carries the SAME `line` shape
-          // the storage row (ParseDiagnostic.line: number) expects.
-          line: 0,
-          repo: null,
-          req_id: null,
-          detail: `not valid JSON: ${msg}`,
-          severity: "error",
-        },
-      ],
-    };
-  }
-
-  const validated = validateDomainFile(parsed, opts.sourceFile);
+  const validated = parseDomainText(opts.text, opts.sourceFile);
   if (!validated.ok) {
     return { ok: false, diagnostics: validated.diagnostics };
   }
@@ -186,8 +153,7 @@ interface TermAcc {
 /**
  * Map an ALREADY-VALIDATED `SpecDomain` → `ParsedSpec`: internal row
  * construction, relates/issues flatten, and the `changed_at_version` second
- * pass. (This mapping was the Markdown parser's job before the Phase 18 hard
- * cutover deleted that path — the JSON reader is now the sole producer.)
+ * pass.
  *
  * This is the pure mapper. The index pipeline calls `validateDomainFile` for the
  * structural gate (VAL-02) and then this function on success; the convenience
@@ -273,8 +239,8 @@ export function parseDomainJson(opts: ParseDomainJsonOptions): ParsedSpec {
     self_relates: relatesAcc.selfRelates,
     provenance: issuesAcc.provenance,
     unknown_roles: issuesAcc.unknownRoles,
-    // TERM-03 (Phase 6, Wave C): the `term`/`aliases` flatten (term_aliases) and
-    // the RAW `cites` flatten (term_citations, pre-resolution). The pipeline
+    // The `term`/`aliases` flatten (term_aliases) and the RAW `cites` flatten
+    // (term_citations, pre-resolution). The pipeline
     // aggregates the aliases into a name→term_id map and resolves each raw
     // citation's `cited_as` to a term_id (or null) across the whole platform.
     term_aliases: termAcc.aliases,

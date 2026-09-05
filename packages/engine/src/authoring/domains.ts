@@ -23,6 +23,7 @@
 
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { parseDomainText, type SpecDomain, type SpecRequirement } from "@spec-engine/shared";
 import { specPaths } from "../constants";
 
 // Canonical domain-key grammar (`KEY`): CANONICALLY defined in
@@ -41,11 +42,10 @@ export function normalizeDomainKey(raw: string): string {
 
 /**
  * AUTHC-007/008: enumerate domain keys from `<platformDir>/spec-engine/`.
- * A domain is a child DIRECTORY that contains a SPEC.json (the JSON write
- * format, 17-04). Post-cutover (Phase 18, D2) SPEC.json is the ONLY spec
- * format — the Markdown read path is deleted — so the listing (used by
- * `domain list` and `spec req` prefix resolution) recognizes SPEC.json
- * only. Returns the names sorted lexicographically. The caller is
+ * A domain is a child DIRECTORY that contains a SPEC.json, the only spec
+ * format, so the listing (used by `domain list` and `spec req` prefix
+ * resolution) recognizes SPEC.json only. Returns the names sorted
+ * lexicographically. The caller is
  * responsible for the platform guard (assertSpecPlatform) — this helper
  * assumes spec-engine/ exists.
  */
@@ -70,22 +70,21 @@ export function listDomainKeys(platformDir: string): string[] {
  * `spec check`'s job, not the listing's.)
  */
 export async function domainScope(platformDir: string, key: string): Promise<string | null> {
-  const jsonPath = specPaths(platformDir, key).abs;
+  const { abs: jsonPath, rel: relFile } = specPaths(platformDir, key);
   if (!existsSync(jsonPath)) return null;
+  let text: string;
   try {
-    const env = JSON.parse(await Bun.file(jsonPath).text()) as { scope?: unknown };
-    // Normalize blank-to-null once here so `domain list --json` and
-    // `spec req`'s charter print agree: a whitespace-only scope ≡ no charter.
-    if (typeof env.scope !== "string" || env.scope.trim() === "") return null;
-    return env.scope;
+    text = await Bun.file(jsonPath).text();
   } catch (e) {
-    // Malformed/partial JSON is the listing's business to ignore (the
-    // structural reject is `spec check`'s job). A real IO fault (permission /
-    // lock) is an environment problem worth surfacing on the chrome channel.
-    if (e instanceof SyntaxError) return null;
-    console.error(`spec: could not read scope for ${key}: ${(e as Error).message}`);
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`spec: could not read scope for ${key}: ${msg}`);
     return null;
   }
+  const parsed = parseDomainText(text, relFile);
+  if (!parsed.ok) return null;
+  const scope = parsed.data.scope;
+  // A whitespace-only scope is no charter, so `domain list --json` and `spec req` agree.
+  return scope === undefined || scope === null || scope.trim() === "" ? null : scope;
 }
 
 /**
@@ -113,7 +112,7 @@ export async function domainsWithScope(
  * (DOMAIN-010 / SCHM-008) — only the reserved TERM domain is seeded with
  * `specVersion` 1.
  */
-export function scaffoldDomainObject(key: string, today: string) {
+export function scaffoldDomainObject(key: string, today: string): SpecDomain {
   // @spec DOMAIN-019 — a requirement (non-TERM) domain is born WITHOUT an
   // authored specVersion: its version is the DAG-derived projection (SCHM-007)
   // and the schema rejects an authored counter on a non-TERM domain (SCHM-008).
@@ -125,18 +124,22 @@ export function scaffoldDomainObject(key: string, today: string) {
     owner: null,
     ...(key === "TERM" ? { specVersion: 1 } : {}),
     updated: today,
-    requirements: [] as unknown[],
+    requirements: [] as SpecRequirement[],
   };
 }
 
-/** Max requirement sequence number in one parsed domain document (0 if none). */
-function maxSeqOf(domain: { requirements?: Array<{ id?: unknown }> }): number {
-  const reqs = Array.isArray(domain.requirements) ? domain.requirements : [];
-  return reqs.reduce((m, r) => {
-    const id = typeof r?.id === "string" ? r.id : "";
-    const seq = Number(id.split("-")[1]);
+/** Max requirement sequence number across a domain's entries (0 if none). */
+function maxSeqOf(requirements: readonly SpecRequirement[]): number {
+  return requirements.reduce((m, r) => {
+    const seq = Number(r.id.split("-")[1]);
     return Number.isFinite(seq) ? Math.max(m, seq) : m;
   }, 0);
+}
+
+/** The entries of a domain file's bytes; none when the bytes fail the schema. */
+function requirementsOf(text: string, sourceFile: string): readonly SpecRequirement[] {
+  const parsed = parseDomainText(text, sourceFile);
+  return parsed.ok ? parsed.data.requirements : [];
 }
 
 /**
@@ -157,7 +160,7 @@ async function headMaxSeq(platformDir: string, key: string): Promise<number> {
     );
     const text = await new Response(proc.stdout).text();
     if ((await proc.exited) !== 0) return 0;
-    return maxSeqOf(JSON.parse(text));
+    return maxSeqOf(requirementsOf(text, specPaths(platformDir, key).rel));
   } catch {
     return 0;
   }
@@ -165,20 +168,17 @@ async function headMaxSeq(platformDir: string, key: string): Promise<number> {
 
 /**
  * AUTHC-014: next unused requirement id for `key`. Reads the domain's
- * `SPEC.json` (the sole spec format post-cutover, Phase 18 / D2) and
- * computes `max(seq)+1` across `requirements[].id`
+ * `SPEC.json` and computes `max(seq)+1` across `requirements[].id`
  * (seq = `Number(id.split("-")[1])`), padded to 3 digits — where the max is
  * taken over BOTH the working-tree file and the file at HEAD, so deleting an
  * entry never frees its id. Defensive `<KEY>-001` when no `SPEC.json` exists
  * (e.g. the dir vanished between the caller's listing and this read).
  */
 export async function nextRequirementId(platformDir: string, key: string): Promise<string> {
-  const jsonPath = specPaths(platformDir, key).abs;
+  const { abs: jsonPath, rel: relFile } = specPaths(platformDir, key);
   if (!existsSync(jsonPath)) return `${key}-001`;
-  const domain = JSON.parse(await Bun.file(jsonPath).text()) as {
-    requirements?: Array<{ id?: unknown }>;
-  };
-  const maxSeq = Math.max(maxSeqOf(domain), await headMaxSeq(platformDir, key));
+  const requirements = requirementsOf(await Bun.file(jsonPath).text(), relFile);
+  const maxSeq = Math.max(maxSeqOf(requirements), await headMaxSeq(platformDir, key));
   const next = String(maxSeq + 1).padStart(3, "0");
   return `${key}-${next}`;
 }

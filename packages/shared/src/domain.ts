@@ -201,6 +201,43 @@ export function validateDomainFile(
   return { ok: false, diagnostics };
 }
 
+export type ParseDomainTextResult =
+  | { ok: true; data: SpecDomain }
+  | { ok: false; reason: "not_json" | "schema"; diagnostics: Diagnostic[] };
+
+/**
+ * The one way bytes become a domain envelope: JSON, then the structural
+ * schema. Every SPEC.json reader calls this before touching a field, so no
+ * code path holds an unvalidated envelope.
+ * @spec SCHM-030
+ */
+export function parseDomainText(text: string, sourceFile: string): ParseDomainTextResult {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      ok: false,
+      reason: "not_json",
+      diagnostics: [
+        {
+          code: DiagnosticCode.INVALID_DOMAIN_FILE,
+          source_file: sourceFile,
+          line: 0,
+          repo: null,
+          req_id: null,
+          detail: `not valid JSON: ${msg}`,
+          severity: "error",
+        },
+      ],
+    };
+  }
+  const validated = validateDomainFile(parsed, sourceFile);
+  if (validated.ok) return validated;
+  return { ok: false, reason: "schema", diagnostics: validated.diagnostics };
+}
+
 /**
  * Assemble a NEW envelope object with keys in the canonical serialization order,
  * from the validated (defaults-applied) domain. Building a fresh object — rather

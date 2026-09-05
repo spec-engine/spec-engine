@@ -46,7 +46,7 @@ export async function deprecate(
   if (!located.ok) return located;
   const { specPath, relFile, domain, req } = located;
 
-  const statusLc = (typeof req.status === "string" ? req.status : "").toLowerCase();
+  const statusLc = req.status.toLowerCase();
   if (statusLc === "deprecated" || statusLc === "retired") {
     return fail("conflict", `${id} is already deprecated`);
   }

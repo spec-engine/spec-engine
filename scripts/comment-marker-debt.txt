@@ -1,4 +1,3 @@
-2	packages/engine/src/authoring/domains.ts
 2	packages/engine/src/authoring/edit.ts
 1	packages/engine/src/authoring/filerefs.ts
 1	packages/engine/src/base/gitBase.ts
@@ -20,7 +19,6 @@
 18	packages/engine/src/indexer/pipeline.ts
 5	packages/engine/src/onboarding/context.ts
 6	packages/engine/src/onboarding/prompt.ts
-7	packages/engine/src/parser/domainJson.ts
 4	packages/engine/src/parser/types.ts
 6	packages/engine/src/provenance/format.ts
 3	packages/engine/src/provenance/resolve.ts

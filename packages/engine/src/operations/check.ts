@@ -9,11 +9,10 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   type Diagnostic,
-  DiagnosticCode,
+  parseDomainText,
   type SpecRequirement,
   type Storage,
   type Tag,
-  validateDomainFile,
 } from "@spec-engine/shared";
 import { gitLsTree, gitRefResolves, gitShow } from "../base/gitBase";
 import { parseCodeowners } from "../check/codeowners";
@@ -78,27 +77,7 @@ function domainReqsFromText(
   text: string,
   platformRel: string,
 ): { reqs: readonly SpecRequirement[]; diagnostics: Diagnostic[] } {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return {
-      reqs: [],
-      diagnostics: [
-        {
-          code: DiagnosticCode.INVALID_DOMAIN_FILE,
-          source_file: platformRel,
-          line: 0,
-          repo: null,
-          req_id: null,
-          detail: `not valid JSON: ${msg}`,
-          severity: "error",
-        },
-      ],
-    };
-  }
-  const validated = validateDomainFile(parsed, platformRel);
+  const validated = parseDomainText(text, platformRel);
   if (!validated.ok) return { reqs: [], diagnostics: validated.diagnostics };
   return { reqs: validated.data.requirements, diagnostics: [] };
 }

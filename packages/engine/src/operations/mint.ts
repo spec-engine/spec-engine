@@ -21,6 +21,7 @@ import {
   judgeStatementGrammar,
 } from "../authoring/grammar";
 import { specPaths } from "../constants";
+import { readEnvelope } from "./_envelope";
 import { fail, type OpFailure, type OpWarning } from "./_result";
 
 export interface MintInput {
@@ -89,15 +90,13 @@ export async function mint(input: MintInput): Promise<MintResult | OpFailure> {
     warnings.push({ kind: "grammar", text: grammarWarningText("", verdict).slice(2) });
   }
 
-  let domain: { requirements?: unknown[]; updated?: string; [k: string]: unknown };
-  try {
-    domain = JSON.parse(await Bun.file(specPath).text());
-  } catch {
-    return fail("invalid_domain_file", `${relFile} is not valid JSON`, { warnings });
+  const file = await readEnvelope(platformDir, key);
+  if (!file.ok) {
+    return fail(file.reason, file.detail, { diagnostics: file.diagnostics, warnings });
   }
+  const { domain } = file;
   const id = await nextRequirementId(platformDir, key);
-  const requirements = Array.isArray(domain.requirements) ? domain.requirements : [];
-  requirements.push({
+  domain.requirements.push({
     id,
     status: input.status ?? "active",
     statement: input.statement,
@@ -108,9 +107,9 @@ export async function mint(input: MintInput): Promise<MintResult | OpFailure> {
     livesIn: input.livesIn,
     // @spec PROV-003
     issues: input.issue ? [{ role: "created", id: input.issue }] : [],
+    aliases: [],
     cites: input.cites ?? [],
   });
-  domain.requirements = requirements;
   domain.updated = localToday();
 
   const res = await validateAndWrite(specPath, domain, relFile);
