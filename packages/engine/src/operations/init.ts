@@ -7,11 +7,13 @@
 // writes `spec-engine.member.json`, or reports the one already there. Every
 // refusal is worded without a command prefix; the surface adds its own.
 
-import { existsSync, realpathSync, statSync } from "node:fs";
-import { join, sep } from "node:path";
+import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
+import { join, relative, sep } from "node:path";
+import { z } from "zod";
+import packageJson from "../../package.json" with { type: "json" };
 import { MEMBER_CONFIG_FILENAME } from "../constants";
 import { readRepoConfig, warnIfRetiredManifest } from "../indexer/discover";
-import { detectContext } from "../onboarding/context";
+import { detectContext, findPlatformDirUpward } from "../onboarding/context";
 import { fail, type OpFailure } from "./_result";
 
 function errMessage(err: unknown): string {
@@ -38,6 +40,41 @@ export interface MemberPin {
   platformVersion: number | null;
 }
 
+const ENGINE_PACKAGE_NAME: string = packageJson.name;
+const PackageNameSchema = z.object({ name: z.string() });
+
+/** Whether `platformDir` is the engine's own checkout: its package.json carries the engine's package name. */
+function isEnginePlatform(platformDir: string): boolean {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(readFileSync(join(platformDir, "package.json"), "utf8"));
+  } catch {
+    return false;
+  }
+  const parsed = PackageNameSchema.safeParse(raw);
+  return parsed.success && parsed.data.name === ENGINE_PACKAGE_NAME;
+}
+
+function hasSpecEngineSegment(path: string): boolean {
+  return path
+    .split(sep)
+    .filter((s) => s.length > 0)
+    .includes("spec-engine");
+}
+
+/**
+ * Whether `canonical` lies inside a spec-engine/ tree. On the engine's own
+ * checkout only the path below the platform root is judged, so the checkout's
+ * own name never counts.
+ * @spec INIT-030
+ */
+function insideSpecTree(canonical: string): boolean {
+  if (!hasSpecEngineSegment(canonical)) return false;
+  const platformDir = findPlatformDirUpward(canonical);
+  if (platformDir === null || !isEnginePlatform(platformDir)) return true;
+  return hasSpecEngineSegment(relative(platformDir, canonical));
+}
+
 /** The repo directory with symlinks resolved, or the refusal. */
 function canonicalize(repoDir: string): { ok: true; canonical: string } | OpFailure {
   let repoStat: ReturnType<typeof statSync>;
@@ -55,8 +92,13 @@ function canonicalize(repoDir: string): { ok: true; canonical: string } | OpFail
   } catch (err) {
     return fail("usage", `cannot resolve ${repoDir}: ${errMessage(err)}`);
   }
-  const segments = canonical.split(sep).filter((s) => s.length > 0);
-  if (segments.includes("spec-engine")) {
+  let inside: boolean;
+  try {
+    inside = insideSpecTree(canonical);
+  } catch (err) {
+    return fail("usage", `cannot resolve ${repoDir}: ${errMessage(err)}`);
+  }
+  if (inside) {
     return fail(
       "usage",
       `${repoDir} resolves to ${canonical}, which is inside a spec-engine/ tree — refusing to scaffold there.`,

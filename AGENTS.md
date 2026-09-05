@@ -52,6 +52,12 @@ Rules:
   still writes through `validateAndWrite`. A schema-invalid file lives under
   `src/testing/fixtures/`. Nothing else writes a `SPEC.json` by hand: the
   SCHM-026 fence scans every source file and every test.
+- **A member config is authored with `spec init`, never by hand.** This
+  checkout is the engine's own platform (the root `package.json` is
+  `@spec-engine/spec-engine`), so `spec init` judges the spec-engine/
+  path-segment refusal below the platform root and `spec init scripts` or
+  `spec init packages` work here (INIT-030). Rewrite a pin with
+  `spec init <dir> --force`.
 - **Every fence is a requirement.** Each `fence_*` function in
   `scripts/arch-fences.sh` carries the `@spec` tag of the requirement it
   enforces, and its `run` label starts with that id. `scripts/` is a member
@@ -397,7 +403,7 @@ Writes `spec-engine.member.json`.
 | Flag | Effect |
 | --- | --- |
 | `--specs spec-engine@N` | Override the pin. |
-| `--force` | Rewrite an existing config, preserving `ignore` and `members`. |
+| `--force` | Rewrite an existing config, preserving `ignore`. Any other extra key, `members` included, refuses. |
 
 `--json`: `{ action: "wrote", path, pin, source }` or
 `{ action: "already-configured", path, pin, extra_fields }`.
@@ -406,6 +412,9 @@ Exit: 0 wrote or already configured / 2. Branch on `action`, not the exit code.
 
 - Default pin: `--specs`, else the derived platform version, else
   `spec-engine@1` with a printed note.
+- A resolved path with a `spec-engine` segment is refused, except on the
+  engine's own checkout (root `package.json` named `@spec-engine/spec-engine`),
+  where only the path below the platform root is judged.
 - `ignore: ["dir", …]` excludes repo-relative directory prefixes from that
   repo's scans.
 - `members: "<glob>"` expands each matching subdirectory into its own member
