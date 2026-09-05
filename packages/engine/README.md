@@ -48,7 +48,8 @@ Run `spec <command> --help` for flags. Many commands support `--json` for machin
 | Path | Role |
 |------|------|
 | `cli.ts` | citty entrypoint. Lazy-imports every subcommand so the compiled binary starts fast. |
-| `commands/` | One file per subcommand, plus `_shared.ts` (the read-command scaffold). |
+| `commands/` | One file per subcommand, plus `_args.ts` (shared flag specs) and `_shared.ts` (the CLI adapters over the operations). |
+| `operations/` | One function per verb. The CLI, the HTTP API, and the MCP server all call these. |
 | `indexer/`, `parser/`, `scanner/` | Authored input to derived index: discovery, `SPEC.json` parsing, `@spec` tag scanning. |
 | `storage/` | The one `bun:sqlite` importer. |
 | `check/`, `guard/`, `gate/`, `map/`, `query/`, `resolve/`, `relations/`, `propagation/`, `provenance/`, `results/` | The read and gate projections, each with a `format.ts` for text mode. |
