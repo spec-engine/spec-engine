@@ -1,50 +1,38 @@
 // packages/engine/src/indexer/discover.ts
 //
-// Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec INIT-022
-//
-// INDX-01: platform discovery — enumerates the canonical `spec-engine/` dir
-// plus every sibling member that carries a `spec-engine.member.json`.
-// INDX-02: Zod validation — every member's pin string goes through
-// `SpecConfigSchema`.
-// RED-85: the platform version is DERIVED (max domain version, computed by
-// `derivePlatformVersion` below); the authored `spec-engine.platform.json`
-// manifest is retired and a stray one is ignored with a warning.
-//
-// Source pattern: 02-RESEARCH § Platform & repo discovery (lines 908-973).
-// Zod error surfacing: a malformed spec-engine.member.json must throw
-// a clear, location-tagged error rather than crashing deep inside Zod.
-//
-// Determinism: sibling directories are enumerated via Bun.Glob (iteration
-// order not guaranteed — Bun #10112) and sorted lexicographically before
-// returning. Downstream (pipeline.ts) re-sorts at the row layer; the sort
-// here keeps cold-rebuild equivalence stable at the discovery seam too.
-//
-// Engine-tier purity: this module reads JSON via Bun.file (not node:fs
-// readFileSync — CLAUDE.md mandates Bun-native I/O). The node:fs imports
-// are used ONLY for synchronous directory existence checks during
-// enumeration; no file content is loaded through node:fs.
-//
-// D-08: NEVER import bun:sqlite here.
+// Platform discovery. Membership and shape come from @spec-engine/platform-map
+// (this is the one engine file that imports its map() and locate()), each
+// member's pin comes from its spec-engine.member.json, and the platform
+// version is derived from the domain files. Nothing here touches the index.
 
 import { existsSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import {
+  type Locations,
+  locate,
+  type Diagnostic as MapDiagnostic,
+  type Repo as MapRepo,
+  map,
+  type PlatformMap,
+} from "@spec-engine/platform-map";
+import {
+  DiagnosticCode,
   NotASpecPlatformError,
+  type PlatformMode,
   type Repo,
-  type SkippedRepo,
   type SpecConfig,
   SpecConfigSchema,
 } from "@spec-engine/shared";
-import { isExistingDir, PLATFORM_MANIFEST_FILENAME } from "../constants";
+import {
+  CANONICAL_SPECS_DIR,
+  isExistingDir,
+  MEMBER_CONFIG_FILENAME,
+  PLATFORM_MANIFEST_FILENAME,
+} from "../constants";
 import { parseDomainJsonFile } from "../parser/domainJson";
 import { findDomainJsonFiles } from "../scanner/fs";
 
-/**
- * Friendly, actionable message for the not-a-Spec Engine-platform case. Shared by
- * the `map` / `index` / `check` command boundaries so the prose lives in one
- * place. Dependency-free (no bun:sqlite, no I/O) — pure string assembly.
- */
+/** The not-a-platform message the `map` / `index` / `check` boundaries print. */
 export function formatNotASpecPlatform(platformDir: string): string {
   return [
     `${platformDir} is not a Spec Engine platform yet (no spec-engine/ directory).`,
@@ -57,14 +45,7 @@ export function formatNotASpecPlatform(platformDir: string): string {
   ].join("\n");
 }
 
-/**
- * Friendly, actionable message for the indexed-but-empty case: the platform
- * directory IS a Spec Engine platform (spec-engine/ exists) but the derived index
- * holds zero requirements. RED-11: read commands (`map` / `query` / `resolve`
- * / `propagation`) emit this on stderr instead of silent blank output, still
- * exiting 0 — empty data is not an error, but a brand-new platform deserves
- * a pointer toward its first completed spec. Pure string assembly, no I/O.
- */
+/** The indexed-but-empty guidance a read command prints on stderr, still exiting 0. */
 export function formatNoRequirementsIndexed(platformDir: string): string {
   return [
     `No requirements indexed at ${platformDir}.`,
@@ -77,71 +58,18 @@ export function formatNoRequirementsIndexed(platformDir: string): string {
 }
 
 /**
- * Lightweight pre-flight guard: throws `NotASpecPlatformError` when
- * `<platformDir>/spec-engine` is absent (or not a directory), WITHOUT
- * touching the derived index or any member enumeration.
- *
- * Command boundaries (`map` / `index` / `check`) call this as their very
- * first step — BEFORE `mkdirSync(.spec-engine)` / `openStorage` — so pointing any
- * command at a non-platform directory throws → friendly message → exit 2
- * and leaves NO `.spec-engine/` artifact behind. This upholds the CLAUDE.md
- * invariant that the derived DB owns nothing: a failed build must leave no
- * artifact, and the not-a-platform case stays idempotent across runs
- * (no stale empty index can poison the second invocation).
- *
- * `discoverRepos` keeps its own identical existsSync/isDirectory check as
- * defense-in-depth for programmatic callers that bypass the command layer.
- *
- * D-08: dependency-free — no bun:sqlite, no derived-index access.
+ * Throws `NotASpecPlatformError` when `<platformDir>/spec-engine` is absent.
+ * A command boundary calls this before it creates `.spec-engine/` or opens
+ * the index, so a failed run leaves no artifact behind.
  */
 export function assertSpecPlatform(platformDir: string): void {
   const absPlatform = resolve(platformDir);
-  const canonicalPath = join(absPlatform, "spec-engine");
-  if (!isExistingDir(canonicalPath)) {
+  if (!isExistingDir(join(absPlatform, CANONICAL_SPECS_DIR))) {
     throw new NotASpecPlatformError(absPlatform);
   }
 }
 
-/**
- * Repo-root signal (RUNG1-02): a child directory of the platform root counts
- * as a sibling repo ONLY if it looks like a repo root — i.e. it carries a
- * `.git` entry (a directory for a normal clone, OR a file for a submodule /
- * worktree gitlink) or a `package.json`. This is a deliberate heuristic for
- * the PoC: a real unwired member repo always has `.git`/`package.json`, so
- * it still trips `NO_SPEC_CONFIG` (v1.1 intent preserved); a plain folder
- * that is part of the platform's OWN tree (`src/`, `test/`, `lib/`, `docs/`,
- * …) has neither marker, so it is NOT a sibling and must not enumerate as a
- * config-less "skipped" repo. Without this signal a single repo whose code
- * lives in `src/`/`test/` subdirs would enumerate those subdirs as skipped
- * siblings → `NO_SPEC_CONFIG src` / `NO_SPEC_CONFIG test`, AND would suppress
- * the self-member (because skipped.length > 0), leaving its `@spec` tags
- * unscanned (tags:0). Keying the marker on the CHILD (not on platformDir
- * itself) is what lets a self-contained repo self-consume.
- *
- * Marker set is `.git` (dir or file) + `package.json` — intentionally small
- * for the PoC; broaden only if a real member shape proves to need it.
- */
-function looksLikeRepoRoot(dirPath: string): boolean {
-  // `.git` may be a directory (ordinary clone) or a file (submodule / linked
-  // worktree gitlink). existsSync is true for both, which is exactly what we
-  // want — either form marks `dirPath` as the root of its own repository.
-  if (existsSync(join(dirPath, ".git"))) return true;
-  if (existsSync(join(dirPath, "package.json"))) return true;
-  return false;
-}
-
-/**
- * Read and validate a `spec-engine.member.json` at `configPath`.
- * Returns the parsed config; throws a clear, location-tagged error on
- * validation failure.
- *
- * Wraps the read in a try/catch so an ENOENT (file vanished
- * between the caller's existsSync check and this read — non-malicious
- * TOCTOU from a concurrent `git checkout`, fixture cleanup, etc.) is
- * surfaced as a clear "could not be read" message rather than a bare
- * Bun.file error that matches neither of the two clean error paths
- * this function advertises.
- */
+/** Read and validate a `spec-engine.member.json`; every failure is a location-tagged error. */
 export async function readRepoConfig(configPath: string): Promise<SpecConfig> {
   let text: string;
   try {
@@ -165,12 +93,7 @@ export async function readRepoConfig(configPath: string): Promise<SpecConfig> {
   }
 }
 
-/**
- * Extract the integer pin from a `spec-engine@N` string. Returns the
- * parsed integer; throws if the input does not match the regex. (The Zod
- * schema already guarantees the shape, but parsing the integer separately
- * keeps the indexer's intent explicit.)
- */
+/** The integer pin in a `spec-engine@N` string. */
 function extractPin(specs: string): number {
   const m = specs.match(/^spec-engine@(\d+)$/);
   if (!m) {
@@ -180,23 +103,16 @@ function extractPin(specs: string): number {
 }
 
 /**
- * Derive the PLATFORM version: the maximum of the domains' DAG-derived
- * versions (SCHM-007) across `spec-engine/<KEY>/SPEC.json`, default `1` when
- * the platform has no parseable domains. Every file goes through the ONE
- * reader (`parseDomainJsonFile`) so this number can never disagree with the
- * `spec_version` the index derives; a file the reader rejects contributes
- * nothing here — its loud INVALID_DOMAIN_FILE reject belongs to the parse
- * stage, not discovery.
- *
- * No authored counter exists at the platform level: an authored scalar beside
- * derived domain versions is the same two-sources-of-truth smell SCHM-008
- * kills one level down. The retired `spec-engine.platform.json` manifest is
- * ignored; command paths surface `warnIfRetiredManifest` beside this call.
+ * The derived platform version: the maximum of the domains' derived versions
+ * under `spec-engine/`, default 1. Every file goes through the one reader; a
+ * file the reader rejects contributes nothing here and is reported as
+ * INVALID_DOMAIN_FILE by the parse stage.
  */
 export async function derivePlatformVersion(platformDir: string): Promise<number> {
   // @spec SCHM-022
   // @spec SCHM-023
-  const canonicalPath = join(resolve(platformDir), "spec-engine");
+  // @spec INIT-029
+  const canonicalPath = join(resolve(platformDir), CANONICAL_SPECS_DIR);
   const jsonPaths = await findDomainJsonFiles(canonicalPath);
   let version = 1;
   for (const rel of jsonPaths) {
@@ -204,11 +120,11 @@ export async function derivePlatformVersion(platformDir: string): Promise<number
     try {
       text = await Bun.file(join(canonicalPath, rel)).text();
     } catch {
-      continue; // unreadable → contributes nothing; the parse stage owns the loud reject
+      continue;
     }
     const result = parseDomainJsonFile({
       text,
-      sourceFile: `spec-engine/${rel}`,
+      sourceFile: `${CANONICAL_SPECS_DIR}/${rel}`,
       fallbackKey: basename(dirname(rel)),
     });
     if (result.ok) version = Math.max(version, result.spec.spec_version);
@@ -216,14 +132,9 @@ export async function derivePlatformVersion(platformDir: string): Promise<number
   return version;
 }
 
-/**
- * RED-85: `spec-engine.platform.json` is retired — the platform version is
- * derived, never authored. A stray manifest is IGNORED (never parsed, never an
- * error); this warning tells the operator why editing it does nothing and how
- * to clean up. Emitted on stderr by the discovery and init paths.
- */
+/** A stray retired `spec-engine.platform.json` is ignored, never parsed; this says why on stderr. */
 export function warnIfRetiredManifest(platformDir: string, derivedVersion: number): void {
-  const manifestPath = join(resolve(platformDir), "spec-engine", PLATFORM_MANIFEST_FILENAME);
+  const manifestPath = join(resolve(platformDir), CANONICAL_SPECS_DIR, PLATFORM_MANIFEST_FILENAME);
   if (!existsSync(manifestPath)) return;
   console.error(
     `spec: warning: ${manifestPath} is retired and ignored — the platform version is ` +
@@ -231,243 +142,331 @@ export function warnIfRetiredManifest(platformDir: string, derivedVersion: numbe
   );
 }
 
-/**
- * 2.7: expand a monorepo member into its workspace sub-members. Called when a
- * member's `spec-engine.member.json` carries a `members` glob (relative to the
- * config's own directory). Each matching SUBDIRECTORY becomes its own Repo —
- * so `packages/*` gives engine/shared/tracker/webapp their OWN coverage
- * columns instead of collapsing into a single `packages` blob.
- *
- * Naming: a sub-member's `name` is its platform-relative path
- * (`${parentName}/${rel}`, e.g. `packages/engine`), which is exactly what the
- * tag scanner prepends to produce honest platform-relative tag paths
- * (`packages/engine/src/…`) — so `spec resolve packages/engine/src/foo.ts`
- * resolves naturally.
- *
- * Per-package pin: a sub-member inherits `parentPin` UNLESS it carries its own
- * nested `spec-engine.member.json`, whose pin (and `ignore`) then win — the
- * mechanism that lets one package sit on `spec-engine@2` while another lags on
- * `@1`. Glob matches that are files (the `spec-engine.member.json` itself) or a
- * `spec-engine` directory are dropped. Matches are sorted for determinism.
- */
-async function expandWorkspaceMembers(
-  repoPath: string,
-  parentName: string,
-  membersGlob: string,
-  parentPin: number,
-): Promise<Repo[]> {
-  const matches: string[] = [];
-  const glob = new Bun.Glob(membersGlob);
-  for await (const m of glob.scan({ cwd: repoPath, onlyFiles: false, dot: false })) {
-    matches.push(m);
-  }
-  matches.sort();
+/** A directory named by its platform-map member name. */
+export interface NamedDir {
+  name: string;
+  /** Absolute path on this machine. */
+  path: string;
+}
 
-  const subs: Repo[] = [];
-  for (const rel of matches) {
-    const subPath = join(repoPath, rel);
-    if (!isExistingDir(subPath)) continue; // a glob can match files, not just dirs
-    if (basename(subPath) === "spec-engine") continue; // never shadow the canonical row
+/** The platform-map codes `spec check` surfaces as rows of its own. */
+export type PlatformMapCode = Extract<
+  DiagnosticCode,
+  | "MALFORMED_FILE"
+  | "MEMBER_MISSING"
+  | "MARKER_MISSING"
+  | "MARKER_MISMATCH"
+  | "UNLISTED_REPO"
+  | "PLATFORM_NOT_LOCATED"
+  | "UNDECLARED_PLATFORM"
+  | "SCAN_TRUNCATED"
+>;
 
-    const subConfigPath = join(subPath, "spec-engine.member.json");
-    let pin = parentPin;
-    let ignore: string[] | undefined;
-    if (existsSync(subConfigPath)) {
-      const subCfg = await readRepoConfig(subConfigPath);
-      pin = extractPin(subCfg.specs);
-      ignore = subCfg.ignore && subCfg.ignore.length > 0 ? subCfg.ignore : undefined;
-    }
-    subs.push({
-      name: `${parentName}/${rel}`,
-      path: subPath,
-      pinned_spec_version: pin,
-      ...(ignore ? { ignore } : {}),
-    });
-  }
-  return subs;
+/** A platform-map diagnostic in Spec Engine's words: same code, the severity `spec check` reports. */
+export interface PlatformDiagnostic {
+  code: PlatformMapCode;
+  severity: "error" | "warning";
+  /** A member name, a package path, or a filename. */
+  subject: string;
+  detail: string;
+}
+
+export interface DiscoveredPlatform {
+  /** The `spec-engine/` row, pinned to the derived platform version. */
+  canonical: Repo;
+  platformVersion: number;
+  mode: PlatformMode;
+  /** One coverage column per member or workspace package, sorted by name. */
+  members: Repo[];
+  /** Declared members present on disk without a `spec-engine.member.json`. */
+  unpinned: NamedDir[];
+  /** Repositories in the platform folder that the platform file does not list. */
+  undeclared: NamedDir[];
+  diagnostics: PlatformDiagnostic[];
+}
+
+/** platform-map's map and the absolute paths that go with it. */
+export interface PlatformReading {
+  mapped: PlatformMap;
+  located: Locations;
 }
 
 /**
- * Tagged result of classifying one top-level sibling entry:
- *   - `member`:   carries a `spec-engine.member.json` → a configured member Repo
- *   - `expanded`: carries a config with a `members` glob → one Repo per
- *                 workspace sub-member (2.7)
- *   - `skipped`:  a repo root (.git/package.json) without a config → NO_SPEC_CONFIG
- *   - `ignored`:  not a sibling (the canonical dir, a loose file, or a plain
- *                 folder in platformDir's own tree) → dropped from enumeration
+ * platform-map's view of `dir`, or null when platform-map's starting directory
+ * is an ancestor of `dir`. A directory that is neither a repository root nor
+ * a declared platform (a spec tree kept inside a larger repository) is not a
+ * start platform-map recognizes, and Spec Engine maps it as a lone single repo.
  */
-type SiblingClassification =
-  | { kind: "member"; repo: Repo }
-  | { kind: "expanded"; repos: Repo[] }
-  | { kind: "skipped"; skipped: SkippedRepo }
-  | { kind: "ignored" };
+export function readPlatformMap(dir: string): PlatformReading | null {
+  const abs = resolve(dir);
+  const located = locate(abs);
+  if (located.root !== abs) return null;
+  return { mapped: map(abs), located };
+}
+
+/** The shape platform-map reports for `platformDir`. */
+export function platformMode(platformDir: string): PlatformMode {
+  return readPlatformMap(platformDir)?.mapped.mode ?? "single-repo";
+}
+
+/** Whether `dir` is the engine's own checkout: the map's root repo is the engine package. */
+export function isEnginePlatform(dir: string, enginePackageName: string): boolean {
+  const reading = readPlatformMap(dir);
+  return reading?.mapped.repos[0]?.packageName === enginePackageName;
+}
+
+/** Where a member directory belongs. */
+export interface MemberLocation {
+  /** The platform root: a directory holding `spec-engine/`. */
+  root: string;
+  /** The member name when platform-map lists `dir` as a member of `root`. */
+  member: string | null;
+  /** Whether `root` is the parent directory of `dir`. */
+  conventional: boolean;
+}
 
 /**
- * Classify a single enumerated sibling `name` (relative to `absPlatform`) into
- * one of the three sibling buckets. Owns the isExistingDir / configPath /
- * looksLikeRepoRoot checks and the per-member pin + T7 ignore assembly.
+ * The platform `dir` belongs to: the platform that lists it as a member (by
+ * the child-directory convention or through the per-user file); else its
+ * parent when the parent holds `spec-engine/`; else platform-map's located
+ * root when that holds `spec-engine/`; else null.
+ * @spec INIT-034
  */
-async function classifySibling(name: string, absPlatform: string): Promise<SiblingClassification> {
-  if (name === "spec-engine") return { kind: "ignored" };
-  const repoPath = join(absPlatform, name);
-  // Skip anything that isn't a directory (loose files at platform root).
-  if (!isExistingDir(repoPath)) return { kind: "ignored" };
-
-  const configPath = join(repoPath, "spec-engine.member.json");
-  // Three-bucket sibling classification (RUNG1-02 repo-root signal):
-  //   1. has spec-engine.member.json                       → configured MEMBER
-  //   2. no config BUT looksLikeRepoRoot (.git/pkg)  → SKIPPED sibling
-  //      (drives NO_SPEC_CONFIG — a real unwired member repo)
-  //   3. no config AND no repo-root marker           → NOT a sibling
-  //      (a plain folder belonging to platformDir's own tree: src/, test/,
-  //      lib/, docs/ …). Ignored from sibling enumeration entirely.
-  //
-  // Bucket 3 is the fix for the realistic single-repo shape: a lone repo
-  // with code in `src/`/`test/` subdirs must NOT enumerate those subdirs as
-  // config-less siblings, or it would (a) emit spurious `NO_SPEC_CONFIG
-  // src`/`NO_SPEC_CONFIG test`, and (b) suppress the self-member below
-  // (skipped.length would be > 0), leaving its `@spec` tags unscanned.
-  //
-  // The caller sorts `entries` lexicographically before folding, so the
-  // resulting `skipped[]` inherits lex-by-name ordering (Bun.Glob
-  // iteration is non-deterministic; the upstream sort is the determinism
-  // source). The diagnostics stage iterates `skipped[]` and emits one
-  // `NO_SPEC_CONFIG` warning-severity ParseDiagnostic per entry.
-  if (!existsSync(configPath)) {
-    if (looksLikeRepoRoot(repoPath)) {
-      // Bucket 2: a real repo root without a Spec Engine config → skipped sibling.
-      return { kind: "skipped", skipped: { name, path: repoPath } };
+export function locateMember(dir: string): MemberLocation | null {
+  const abs = resolve(dir);
+  const located = locate(abs);
+  const above = located.root !== abs;
+  if (above) {
+    const member = Object.entries(located.repos).find(([, path]) => path === abs)?.[0];
+    if (member !== undefined) {
+      return { root: located.root, member, conventional: dirname(abs) === located.root };
     }
-    // Bucket 3: plain folder, not a repo → silently ignored (it belongs to
-    // platformDir's own tree and is scanned as part of the self-member).
-    return { kind: "ignored" };
   }
-
-  const cfg = await readRepoConfig(configPath);
-  const parentPin = extractPin(cfg.specs);
-
-  // 2.7: a `members` glob expands this member into its workspace sub-members
-  // instead of registering the config's directory as a single member.
-  if (cfg.members) {
-    return {
-      kind: "expanded",
-      repos: await expandWorkspaceMembers(repoPath, name, cfg.members, parentPin),
-    };
+  const parent = dirname(abs);
+  if (parent !== abs && isExistingDir(join(parent, CANONICAL_SPECS_DIR))) {
+    return { root: parent, member: null, conventional: true };
   }
+  if (above && isExistingDir(join(located.root, CANONICAL_SPECS_DIR))) {
+    return { root: located.root, member: null, conventional: false };
+  }
+  return null;
+}
 
+/**
+ * The coverage-column name of the workspace package at `dir`, judged against
+ * the platform at `root`: a lone monorepo's package is named by its path, a
+ * member monorepo's package by `<member>/<path>`. Null when `dir` is no package.
+ */
+export function packageColumnName(root: string, dir: string): string | null {
+  const reading = readPlatformMap(root);
+  if (reading === null) return null;
+  const { mapped, located } = reading;
+  const homes: Array<{ prefix: string; path: string; repo: MapRepo }> =
+    mapped.mode === "multi-repo"
+      ? mapped.repos.flatMap((repo) => {
+          const path = located.repos[repo.name];
+          return path === undefined ? [] : [{ prefix: `${repo.name}/`, path, repo }];
+        })
+      : mapped.repos.map((repo) => ({ prefix: "", path: root, repo }));
+  for (const home of homes) {
+    const pkg = home.repo.packages.find((p) => join(home.path, p.path) === dir);
+    if (pkg !== undefined) return `${home.prefix}${pkg.path}`;
+  }
+  return null;
+}
+
+type Shape = Pick<
+  DiscoveredPlatform,
+  "mode" | "members" | "unpinned" | "undeclared" | "diagnostics"
+>;
+
+function byName(a: Repo, b: Repo): number {
+  return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+}
+
+function column(name: string, path: string, pin: number, ignore?: string[]): Repo {
   return {
-    kind: "member",
-    repo: {
-      name,
-      path: repoPath,
-      pinned_spec_version: parentPin,
-      // T7: per-repo scan-ignore hint — only attached when authored, so the
-      // returned shape stays byte-identical for ignore-less configs.
-      ...(cfg.ignore && cfg.ignore.length > 0 ? { ignore: cfg.ignore } : {}),
-    },
+    name,
+    path,
+    pinned_spec_version: pin,
+    ...(ignore && ignore.length > 0 ? { ignore } : {}),
+  };
+}
+
+/** A lone single repository is its own coverage column, named by its directory and pinned to the derived version. */
+function selfMember(absPlatform: string, platformVersion: number): Repo {
+  return {
+    name: basename(absPlatform),
+    path: absPlatform,
+    pinned_spec_version: platformVersion,
+    selfMember: true,
+  };
+}
+
+function loneSingleRepo(absPlatform: string, platformVersion: number): Shape {
+  return {
+    mode: "single-repo",
+    members: [selfMember(absPlatform, platformVersion)],
+    unpinned: [],
+    undeclared: [],
+    diagnostics: [],
   };
 }
 
 /**
- * Walks `platformDir` and returns:
- *   - canonical: the `spec-engine/` Repo row (mandatory; throws if absent)
- *   - platformVersion: the DERIVED platform version (max domain version via
- *     `derivePlatformVersion`; default `1` on a domain-less platform)
- *   - members: every sibling directory that carries a `spec-engine.member.json`,
- *     with the parsed pin integer, sorted lexicographically by name.
- *
- * Siblings without a `spec-engine.member.json` are skipped silently
- * (RESEARCH lines 947-955).
+ * One column per workspace package, named `<prefix><package path>`. A package
+ * inherits `parentPin` unless it carries its own `spec-engine.member.json`.
  */
-export async function discoverRepos(platformDir: string): Promise<{
-  canonical: Repo;
-  platformVersion: number;
-  members: Repo[];
-  skipped: SkippedRepo[];
-}> {
-  const absPlatform = resolve(platformDir);
-  const canonicalPath = join(absPlatform, "spec-engine");
+async function packageColumns(
+  repoPath: string,
+  prefix: string,
+  repo: MapRepo,
+  parentPin: number,
+): Promise<Repo[]> {
+  const out: Repo[] = [];
+  for (const pkg of repo.packages) {
+    const name = `${prefix}${pkg.path}`;
+    if (name === CANONICAL_SPECS_DIR) continue;
+    const path = join(repoPath, pkg.path);
+    const configPath = join(path, MEMBER_CONFIG_FILENAME);
+    if (!existsSync(configPath)) {
+      out.push(column(name, path, parentPin));
+      continue;
+    }
+    const cfg = await readRepoConfig(configPath);
+    out.push(column(name, path, extractPin(cfg.specs), cfg.ignore));
+  }
+  return out;
+}
 
+/** How each platform-map code reaches `spec check`: kept as is, promoted to warning, or not surfaced. */
+const SURFACED: Record<MapDiagnostic["code"], { code: PlatformMapCode; promote: boolean } | null> =
+  {
+    MALFORMED_FILE: { code: DiagnosticCode.MALFORMED_FILE, promote: false },
+    MEMBER_MISSING: { code: DiagnosticCode.MEMBER_MISSING, promote: false },
+    MARKER_MISSING: { code: DiagnosticCode.MARKER_MISSING, promote: false },
+    MARKER_MISMATCH: { code: DiagnosticCode.MARKER_MISMATCH, promote: false },
+    PLATFORM_NOT_LOCATED: { code: DiagnosticCode.PLATFORM_NOT_LOCATED, promote: false },
+    SCAN_TRUNCATED: { code: DiagnosticCode.SCAN_TRUNCATED, promote: false },
+    UNLISTED_REPO: { code: DiagnosticCode.UNLISTED_REPO, promote: true },
+    UNDECLARED_PLATFORM: { code: DiagnosticCode.UNDECLARED_PLATFORM, promote: true },
+    UNMATCHED_PATTERN: null,
+    AMBIGUOUS_ECOSYSTEM: null,
+  };
+
+/** The detail a row carries. A platform-map message that names a platform-map command is reworded to the `spec` command that does the same. */
+function describe(d: MapDiagnostic, mapped: PlatformMap): string {
+  const s = d.subject;
+  switch (d.code) {
+    case "UNLISTED_REPO":
+      return `"${s}" is a repository in the platform folder but not a member; its tags are not scanned until \`spec init ${s}\` declares it`;
+    case "UNDECLARED_PLATFORM":
+      return `${s}/ holds repositories (${mapped.repos.map((r) => r.name).join(", ")}) but no platform file; run \`spec init <name>\` for each one that belongs to the platform`;
+    case "MARKER_MISSING":
+      return `member "${s}" has no platform-map.json marker; run \`spec init ${s}\` to write it`;
+    case "MEMBER_MISSING":
+      return `member "${s}" is declared but not found on this machine; run \`spec init --platform <platform-dir>\` in its checkout if it lives elsewhere`;
+    case "PLATFORM_NOT_LOCATED":
+      return `platform "${s}" is not located on this machine; run \`spec init --platform <platform-dir>\` in this checkout`;
+    default:
+      return d.message;
+  }
+}
+
+/**
+ * The platform-map diagnostics `spec check` surfaces. Every error and warning
+ * keeps its severity; an info diagnostic is promoted to a warning only when it
+ * means a repository's tags are silently not being scanned.
+ * @spec CHCK-031
+ */
+function surfaced(mapped: PlatformMap): PlatformDiagnostic[] {
+  const out: PlatformDiagnostic[] = [];
+  for (const d of mapped.diagnostics) {
+    const rule = SURFACED[d.code];
+    if (rule === null) continue;
+    const severity = rule.promote || d.severity === "info" ? "warning" : d.severity;
+    out.push({ code: rule.code, severity, subject: d.subject, detail: describe(d, mapped) });
+  }
+  return out;
+}
+
+/**
+ * The coverage columns of a platform-map map: a declared platform's present,
+ * pinned members (each monorepo member as its packages); a preview folder's
+ * nothing; a lone repository's packages or its own single column.
+ */
+async function membersOf(
+  reading: PlatformReading,
+  absPlatform: string,
+  platformVersion: number,
+): Promise<Shape> {
+  const { mapped, located } = reading;
+  const diagnostics = surfaced(mapped);
+  if (mapped.mode !== "multi-repo") {
+    // @spec INIT-035
+    const repo = mapped.repos[0];
+    const members =
+      repo !== undefined && repo.mode === "monorepo" && repo.packages.length > 0
+        ? await packageColumns(absPlatform, "", repo, platformVersion)
+        : [selfMember(absPlatform, platformVersion)];
+    return { mode: mapped.mode, members, unpinned: [], undeclared: [], diagnostics };
+  }
+  if (!mapped.declared) {
+    const undeclared = mapped.repos.map((r) => ({ name: r.name, path: join(absPlatform, r.name) }));
+    return { mode: "multi-repo", members: [], unpinned: [], undeclared, diagnostics };
+  }
+  const members: Repo[] = [];
+  const unpinned: NamedDir[] = [];
+  for (const repo of mapped.repos) {
+    const path = located.repos[repo.name];
+    if (!repo.present || path === undefined) continue;
+    const configPath = join(path, MEMBER_CONFIG_FILENAME);
+    if (!existsSync(configPath)) {
+      unpinned.push({ name: repo.name, path });
+      continue;
+    }
+    const cfg = await readRepoConfig(configPath);
+    const pin = extractPin(cfg.specs);
+    if (repo.mode === "monorepo" && repo.packages.length > 0) {
+      members.push(...(await packageColumns(path, `${repo.name}/`, repo, pin)));
+    } else {
+      members.push(column(repo.name, path, pin, cfg.ignore));
+    }
+  }
+  members.sort(byName);
+  const undeclared = mapped.diagnostics
+    .filter((d) => d.code === "UNLISTED_REPO")
+    .map((d) => ({ name: d.subject, path: join(absPlatform, d.subject) }));
+  return { mode: "multi-repo", members, unpinned, undeclared, diagnostics };
+}
+
+/**
+ * The platform at `platformDir`: the canonical row, the derived version, and
+ * the coverage columns platform-map's map names, each pinned by its own
+ * `spec-engine.member.json` (a lone repository's columns by the derived
+ * version). Throws `NotASpecPlatformError` when `spec-engine/` is absent.
+ * @spec INIT-037
+ */
+export async function discoverRepos(platformDir: string): Promise<DiscoveredPlatform> {
+  const absPlatform = resolve(platformDir);
+  const canonicalPath = join(absPlatform, CANONICAL_SPECS_DIR);
   if (!isExistingDir(canonicalPath)) {
     throw new NotASpecPlatformError(absPlatform);
   }
-
   const platformVersion = await derivePlatformVersion(absPlatform);
   warnIfRetiredManifest(absPlatform, platformVersion);
 
   // @spec INIT-028
   const canonical: Repo = {
-    name: "spec-engine",
+    name: CANONICAL_SPECS_DIR,
     path: canonicalPath,
     pinned_spec_version: platformVersion,
   };
 
-  // Enumerate top-level entries deterministically. Bun.Glob does not
-  // guarantee iteration order; sort lexicographically before iterating
-  // so member discovery is stable across runs.
-  const entries: string[] = [];
-  const glob = new Bun.Glob("*");
-  for await (const m of glob.scan({ cwd: absPlatform, onlyFiles: false, dot: false })) {
-    entries.push(m);
-  }
-  entries.sort();
-
-  // Fold the three-bucket classifier over each sorted entry: configured
-  // members and skipped repo-roots accumulate; ignored entries drop out.
-  const members: Repo[] = [];
-  const skipped: SkippedRepo[] = [];
-  for (const name of entries) {
-    const result = await classifySibling(name, absPlatform);
-    if (result.kind === "member") members.push(result.repo);
-    else if (result.kind === "expanded") members.push(...result.repos);
-    else if (result.kind === "skipped") skipped.push(result.skipped);
-  }
-  // Determinism at the discovery seam: workspace expansion inserts several
-  // members at one entry, so re-sort by name (pipeline re-sorts too, but a
-  // stable order here keeps this seam's output diff-stable).
-  members.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
-
-  // RUNG1-01 (single-repo / "rung 1") self-member registration.
-  //
-  // Trigger (D-01): `spec-engine/` is present AND there are ZERO sibling
-  // members AND ZERO skipped siblings — i.e. a truly-lone repo that keeps
-  // its specs inline and tags its own code. In that shape we register the
-  // platform directory ITSELF as the lone member so its `@spec` tags show
-  // up as one coverage column (labeled by the platformDir basename) instead
-  // of the matrix being empty.
-  //
-  // Why both `members` AND `skipped` must be empty: if ANY sibling member
-  // exists, the platform already has a member to scan (multi-repo mode —
-  // unchanged). If a skipped sibling exists (a dir without spec-engine.member.json),
-  // that sibling drives NO_SPEC_CONFIG and the user is mid-onboarding, not
-  // running a lone repo — so self-member mode does NOT fire. Loose FILES at
-  // the platform root never populate either array (the isDirectory() filter
-  // in classifySibling drops them), so a `spec-engine/` + loose-files-only dir
-  // correctly IS a self-member. This is the regression guard for multi-repo
-  // output: whenever ≥1 sibling member or ≥1 skipped sibling exists, the push
-  // below never runs and the returned shape is byte-identical to today's.
-  //
-  // pin = platformVersion (D-03, revised by RED-85): the self-member is
-  // implicitly pinned to the DERIVED platform version (max domain version), so
-  // for requirement domains the drift VIEW predicate
-  // `changed_at_version > pinned_spec_version` is structurally impossible —
-  // a requirement's changed_at_version never exceeds its domain's derived
-  // version, which never exceeds the max. (Under the retired AUTHORED manifest
-  // this claim had silently become false: domains derive past a counter nothing
-  // bumps.) It needs no spec-engine.member.json.
-  //
-  // Out of scope (documented, not handled): a platformDir literally named
-  // "spec-engine" would collide with the canonical row's `name: "spec-engine"`.
-  // The canonical row already owns that name; we proceed with the basename and
-  // do NOT add disambiguator machinery — a non-goal for the PoC.
-  if (members.length === 0 && skipped.length === 0) {
-    members.push({
-      name: basename(absPlatform),
-      path: absPlatform,
-      pinned_spec_version: platformVersion,
-      selfMember: true,
-    });
-  }
-
-  return { canonical, platformVersion, members, skipped };
+  const reading = readPlatformMap(absPlatform);
+  const shape =
+    reading === null
+      ? loneSingleRepo(absPlatform, platformVersion)
+      : await membersOf(reading, absPlatform, platformVersion);
+  return { canonical, platformVersion, ...shape };
 }

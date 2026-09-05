@@ -111,16 +111,12 @@ async function makeCleanFixture(root: string): Promise<void> {
   });
 }
 
-/** Warning-only fixture: canonical spec-engine/ + one sibling directory
+/** Warning-only fixture: canonical spec-engine/ + one declared member
  *  WITHOUT spec-engine.member.json, which emits one NO_SPEC_CONFIG warning;
  *  no error-severity rows fire (no requirements means no ORPHAN_REQ either).
  *  Exercises the `severity === "error"` branch with a warning-only set. */
 function makeWarningOnlyFixture(root: string): void {
-  // `strangers/` must carry a repo-root marker (.git/package.json) to be
-  // classified as a SKIPPED sibling (a real unwired member repo). Without a
-  // marker it is a plain folder and is ignored — which would also make this
-  // a lone self-member instead of a warning fixture.
-  TestPlatform.at(root).file("strangers/package.json", JSON.stringify({ name: "strangers" }));
+  TestPlatform.at(root).unpinned("strangers");
 }
 
 /** Mixed fixture: orphan-requirement error (ORPHAN_REQ from makeOrphanFixture)

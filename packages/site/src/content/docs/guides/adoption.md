@@ -23,7 +23,7 @@ Multiplayer — planned as a paid hosted service; today rung 3 runs free on your
 
 ## Dogfooding note
 
-This repo is its own platform (monorepo mode): the root `spec-engine/` holds the requirement domains, and every `packages/*` workspace member carries the `@spec` tags that bind them — one coverage column per package via the `"members": "*"` expansion in `packages/spec-engine.member.json`.
+This repo is its own platform (a lone monorepo): the root `spec-engine/` holds the requirement domains, and every workspace package of the root `package.json` (`packages/*` and `scripts`) carries the `@spec` tags that bind them — one coverage column per package, named by its path, exactly as [platform-map](/platform-mapping/) lists them.
 
 ```shell
 $ spec map .                     # the requirement × package coverage matrix

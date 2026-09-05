@@ -14,10 +14,11 @@
 // cast over indexCommand.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { cloneFixture } from "../testing/cloneFixture";
+import { TestPlatform } from "../testing/platform";
 import { indexCommand } from "./index";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "platform-fixture");
@@ -155,12 +156,8 @@ describe("spec index (in-process, RED-14)", () => {
     // assertSpecPlatform passes, runIndex throws — the generic FAILED
     // branch must keep its exit-1 contract (distinct from the exit-2
     // not-a-platform path).
-    mkdirSync(join(tmp, "spec-engine"), { recursive: true });
-    mkdirSync(join(tmp, "member"), { recursive: true });
-    writeFileSync(
-      join(tmp, "member", "spec-engine.member.json"),
-      JSON.stringify({ specs: "bogus" }),
-    );
+    const member = await TestPlatform.at(tmp).member("member");
+    writeFileSync(join(member.dir, "spec-engine.member.json"), JSON.stringify({ specs: "bogus" }));
 
     const code = await runIndexCmd({ platformDir: tmp });
     expect(code).toBe(1);

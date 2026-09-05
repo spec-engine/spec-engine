@@ -19,13 +19,14 @@ import {
   ID_RE,
   isLoopbackHostname,
   LIMIT_MAX,
+  type PlatformInfo,
   REQUIREMENT_STATUSES,
   type RequirementStatus,
   type Storage,
 } from "@spec-engine/shared";
 import type { Context, Hono } from "hono";
 import { listDomainKeys, normalizeDomainKey } from "../authoring/domains";
-import { derivePlatformVersion } from "../indexer/discover";
+import { derivePlatformVersion, platformMode } from "../indexer/discover";
 import { runIndex } from "../indexer/pipeline";
 import { type OpFailure, STATUS_FOR_REASON } from "../operations/_result";
 import { type AmendFields, amend } from "../operations/amend";
@@ -380,13 +381,11 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
   );
 
   // --- /api/platform ------------------------------------------------------
-  // The platform version — DERIVED at request time as the max of the domains'
-  // DAG-derived versions (RED-85; the authored spec-engine.platform.json
-  // manifest is retired). Backs the Setup page's version row.
 
   app.get("/api/platform", async (c) => {
     const version = await derivePlatformVersion(platformDir);
-    return c.json({ version, source: "derived" });
+    const info: PlatformInfo = { version, source: "derived", mode: platformMode(platformDir) };
+    return c.json(info);
   });
 
   // --- /api/report ----------------------------------------------------------

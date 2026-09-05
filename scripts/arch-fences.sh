@@ -93,6 +93,34 @@ fence_schm030_schema_reads() {
   fi
 }
 
+# --- INIT-037: platform-map's map() and locate() enter through discover.ts --
+# Membership and shape have one reader in the engine. operations/init.ts may
+# import the write half (planInit, applyInit, planLink, applyLink) and the
+# pure probes (detect, discover); nothing else in production source imports
+# the package at all.
+# @spec INIT-037
+fence_init037_platform_map_seam() {
+  local importers readers
+  importers=$(engine_sources | xargs grep -lE 'from "@spec-engine/platform-map"' 2>/dev/null | sort)
+  expected=$(printf '%s\n' packages/engine/src/indexer/discover.ts packages/engine/src/operations/init.ts)
+  if [ "$importers" != "$expected" ]; then
+    echo "FORBIDDEN: @spec-engine/platform-map is imported outside indexer/discover.ts and operations/init.ts:"
+    diff <(printf '%s\n' "$expected") <(printf '%s\n' "$importers") || true
+    exit 1
+  fi
+  # The read half (map, locate) is imported in discover.ts only. The import
+  # statement spans lines, so the specifier list is matched on the joined file.
+  readers=$(for f in $importers; do
+    perl -0777 -ne 'while (/import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*"\@spec-engine\/platform-map"/g) { print "HIT\n" if $1 =~ /(^|[\s,])(map|locate)\s*(,|$)/m; }' "$f" \
+      | grep -q HIT && echo "$f"
+  done)
+  if [ "$readers" != "packages/engine/src/indexer/discover.ts" ]; then
+    echo "FORBIDDEN: map()/locate() from platform-map imported outside indexer/discover.ts (or the reader pattern no longer matches discover.ts): ${readers:-<none>}"
+    exit 1
+  fi
+  echo "platform-map seam fence: OK (readers: discover.ts; writers: operations/init.ts)"
+}
+
 # --- SCHM-028: no CHECK/FK/UNIQUE on domain fields -------------------------
 # @spec SCHM-028
 fence_schm07_schema_constraint() {
@@ -491,6 +519,7 @@ run "CHRT-007 charters generated from the envelopes"           fence_taxonomy_ch
 run "AUTHOR-011 process-marker ratchet"                        fence_comment_markers
 run "SCHM-027 write seam under operations"                     fence_ops01_write_seam
 run "SCHM-030 every SPEC.json read parses through the shared schema" fence_schm030_schema_reads
+run "INIT-037 platform-map map() and locate() enter through discover.ts" fence_init037_platform_map_seam
 
 if [ "$fail" -ne 0 ]; then
   echo ""

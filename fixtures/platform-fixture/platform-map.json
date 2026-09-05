@@ -1,0 +1,8 @@
+{
+  "name": "platform-fixture",
+  "members": [
+    "admin",
+    "api",
+    "mobile"
+  ]
+}

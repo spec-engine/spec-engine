@@ -1,7 +1,7 @@
 // packages/engine/src/onboarding/prompt.test.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec INIT-023
+// @spec INIT-033
 //
 // INIT-13: helper-level tests for the shared interactive onboarding prompt
 // (packages/engine/src/onboarding/prompt.ts — Plan 10-01 Task 2 GREEN
@@ -56,7 +56,7 @@
 // stays at exactly 1 src-side `bun:sqlite` import system-wide.
 
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { checkCommand } from "../commands/check";
@@ -67,6 +67,7 @@ import { propagationCommand } from "../commands/propagation";
 import { queryCommand } from "../commands/query";
 import { resolveCommand } from "../commands/resolve";
 import { serveCommand } from "../commands/serve";
+import { TestPlatform } from "../testing/platform";
 import { maybePromptForOnboarding } from "./prompt";
 
 let tmp: string;
@@ -151,18 +152,16 @@ afterEach(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 
-/** Build a tmp platform with one member slot + one skipped sibling.
- *  Verbatim shape from cli-check-unit.test.ts:141-146 makeWarningOnlyFixture,
- *  renamed for clarity. Produces ONE entry in discoverRepos.skipped[]. */
+/** A platform with one declared member that has no pin: the one entry in discoverRepos().unpinned. */
 function makeFixtureWithSkipped(root: string): { stranger: string } {
-  mkdirSync(join(root, "spec-engine"), { recursive: true });
-  mkdirSync(join(root, "strangers"), { recursive: true });
-  // RUNG1-02: `strangers/` must carry a repo-root marker (.git/package.json)
-  // to be classified as a SKIPPED sibling — a real unwired member repo that
-  // drives the onboarding prompt / NO_SPEC_CONFIG. A bare folder with no
-  // marker is a bucket-3 plain folder, ignored from sibling enumeration.
-  writeFileSync(join(root, "strangers", "package.json"), JSON.stringify({ name: "strangers" }));
-  return { stranger: join(root, "strangers") };
+  return { stranger: TestPlatform.at(root).unpinned("strangers").dir };
+}
+
+/** A platform with one declared member and one repository nobody declared: the one entry in discoverRepos().undeclared. */
+async function makeFixtureWithUndeclared(root: string): Promise<{ stranger: string }> {
+  const fx = TestPlatform.at(root);
+  await fx.member("api");
+  return { stranger: fx.repository("strangers").dir };
 }
 
 /** Override process.stdin.isTTY via property descriptor (Pitfall 3 — global
@@ -287,10 +286,50 @@ describe("INIT-13: maybePromptForOnboarding helper", () => {
     expect(errs).toHaveLength(0);
   });
 
-  test("empty skipped[] under interactive path returns cleanly without prompting", async () => {
+  test("nothing to offer under the interactive path returns cleanly without prompting", async () => {
     setIsTTY(true);
-    // Fixture with ONLY spec-engine/ — no strangers/ dir → discoverRepos returns skipped: [].
-    mkdirSync(join(tmp, "spec-engine"), { recursive: true });
+    TestPlatform.at(tmp);
+
+    const code = await runHelper({ ci: false, noPrompt: false });
+
+    expect(code).toBe(0);
+    expect(errs).toHaveLength(0);
+  });
+});
+
+describe("the prompt offers spec init for an undeclared repository in the platform folder", () => {
+  test("y declares the repository (platform file entry + marker) and writes its pin", async () => {
+    setIsTTY(true);
+    mockReadlineAnswer("y");
+    await makeFixtureWithUndeclared(tmp);
+
+    const code = await runHelper({ ci: false, noPrompt: false });
+
+    expect(code).toBe(0);
+    expect(existsSync(join(tmp, "strangers", "spec-engine.member.json"))).toBe(true);
+    expect(existsSync(join(tmp, "strangers", "platform-map.json"))).toBe(true);
+    const platformFile = JSON.parse(readFileSync(join(tmp, "platform-map.json"), "utf-8"));
+    expect(platformFile.members).toEqual(["api", "strangers"]);
+  });
+
+  test("n exits 1 naming the repository and spec init <name>", async () => {
+    setIsTTY(true);
+    mockReadlineAnswer("n");
+    await makeFixtureWithUndeclared(tmp);
+
+    const code = await runHelper({ ci: false, noPrompt: false });
+
+    expect(code).toBe(1);
+    expect(existsSync(join(tmp, "strangers", "spec-engine.member.json"))).toBe(false);
+    expect(errs.some((l) => l.includes("spec: strangers/ is not a member of the platform"))).toBe(
+      true,
+    );
+    expect(errs.some((l) => l.includes("run `spec init strangers` first"))).toBe(true);
+  });
+
+  test("a declared member is never offered", async () => {
+    setIsTTY(true);
+    await TestPlatform.at(tmp).member("api");
 
     const code = await runHelper({ ci: false, noPrompt: false });
 

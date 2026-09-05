@@ -12,9 +12,9 @@ by the data model, outside-in.
 
 ## Platform structure
 
-- **Platform** — a directory containing a canonical `spec-engine/` plus the member repos beside it. The unit `spec map` / `spec check` operate on.
+- **Platform** — the directory holding the canonical `spec-engine/` tree and, when declared, platform-map's platform file `platform-map.json` naming its members. The unit `spec map` / `spec check` operate on.
 - **Canonical spec repo** — the `spec-engine/` directory: the only source of truth. Everything else is derived from it plus tags.
-- **Member** — a repo that opts into the platform by carrying a `spec-engine.member.json` pinning a spec-engine version.
+- **Member** — a repository the platform file `platform-map.json` declares, carrying platform-map's `{ platform, member }` marker; its `spec-engine.member.json` pins it to a spec-engine version. A lone repository with no platform file is its own single member, or one member per workspace package.
 - **Pin** — a member's declared spec-engine version (`"specs": "spec-engine@N"`). N is one platform-wide scalar compared, for each requirement the member's tags reference, against that requirement's `changed_at_version` — the version, derived locally within the owning domain's supersede DAG, at which the requirement last changed; a referenced requirement whose `changed_at_version` exceeds the pin is drift. Cross-domain caveat: domains version independently, so the single scalar spans them all and names no one platform state — a pin covers changes through version N in every domain at once. Pinning current means the derived platform version (the max domain version), the default `spec init` writes.
 - **Adoption rungs** — progressive disclosure of the tool: rung 1, a lone repo self-consumes locally; rung 2, adds the CI gate; rung 3, a second repo onboards and the directory becomes a platform with shared requirements.
 

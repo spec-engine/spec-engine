@@ -344,49 +344,67 @@
     },
     {
       "id": "INIT-022",
-      "status": "active",
+      "status": "superseded",
       "statement": "When discovery skips a repo-root sibling for lacking spec-engine.member.json, the index shall emit one warning-severity NO_SPEC_CONFIG diagnostic naming the directory and suggesting spec init <name>.",
       "why": "The silent-skip failure mode — tag exists, index empty, exit 0, no signal — must be impossible; without the diagnostic a mistyped config hides a whole repo's coverage.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-032",
       "relates": [],
       "livesIn": [
         "packages/engine/src/indexer/discover.ts"
       ],
-      "issues": [],
+      "issues": [
+        {
+          "role": "supersedes-via",
+          "id": "RED-187"
+        }
+      ],
       "changedAtVersion": 1,
+      "supersededAtVersion": 16,
       "aliases": [],
       "cites": []
     },
     {
       "id": "INIT-023",
-      "status": "active",
+      "status": "superseded",
       "statement": "While stdin is a TTY and --no-prompt is absent, index-building commands shall offer an interactive onboarding prompt for each skipped sibling instead of only the NO_SPEC_CONFIG warning.",
       "why": "The moment discovery skips a repo is the one moment the CLI can teach the membership contract; losing it leaves the warning as the only, easily-ignored signal.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-033",
       "relates": [],
       "livesIn": [
         "packages/engine/src/onboarding/prompt.ts"
       ],
-      "issues": [],
+      "issues": [
+        {
+          "role": "supersedes-via",
+          "id": "RED-187"
+        }
+      ],
       "changedAtVersion": 1,
+      "supersededAtVersion": 17,
       "aliases": [],
       "cites": []
     },
     {
       "id": "INIT-024",
-      "status": "active",
+      "status": "superseded",
       "statement": "When classifying a directory as platform, member, or loose, context detection shall walk upward and terminate at the first of: a spec-engine/ directory, a .git boundary, or the filesystem root.",
       "why": "spec init must know where it is to pin correctly, and a .git boundary must stop the walk before an unrelated outer platform captures the repo.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-034",
       "relates": [],
       "livesIn": [
         "packages/engine/src/onboarding/context.ts"
       ],
-      "issues": [],
+      "issues": [
+        {
+          "role": "supersedes-via",
+          "id": "RED-187"
+        }
+      ],
       "changedAtVersion": 1,
+      "supersededAtVersion": 18,
       "aliases": [],
       "cites": []
     },
@@ -408,17 +426,23 @@
     },
     {
       "id": "INIT-026",
-      "status": "active",
+      "status": "superseded",
       "statement": "Where a platform directory is itself a lone repo with no member siblings, discovery shall register it as its own single member, so its @spec tags index with no member config and no CI gate.",
       "why": "If the lone-repo step needs any setup beyond having a spec-engine/ directory, the progressive-adoption ladder fails at first contact.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-035",
       "relates": [],
       "livesIn": [
         "packages/engine/src/indexer/discover.ts"
       ],
-      "issues": [],
+      "issues": [
+        {
+          "role": "supersedes-via",
+          "id": "RED-187"
+        }
+      ],
       "changedAtVersion": 1,
+      "supersededAtVersion": 19,
       "aliases": [],
       "cites": []
     },
@@ -463,9 +487,14 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/onboarding/context.ts"
+        "packages/engine/src/indexer/discover.ts"
       ],
-      "issues": [],
+      "issues": [
+        {
+          "role": "amends-via",
+          "id": "RED-187"
+        }
+      ],
       "changedAtVersion": 1,
       "aliases": [],
       "cites": []
@@ -487,8 +516,109 @@
     },
     {
       "id": "INIT-031",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec init --force overwrites a config carrying only known keys, it shall rewrite the pin while preserving the repo's ignore list and members glob.",
+      "why": "A --force that dropped the ignore list or the members glob would silently re-include excluded directories or collapse a monorepo's packages into one coverage column.",
+      "supersedes": null,
+      "supersededBy": "INIT-036",
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/init.ts"
+      ],
+      "issues": [
+        {
+          "role": "supersedes-via",
+          "id": "RED-187"
+        }
+      ],
+      "supersededAtVersion": 20,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-032",
+      "status": "active",
+      "statement": "When a declared member is present on disk without a spec-engine.member.json, the index shall emit one warning-severity NO_SPEC_CONFIG diagnostic naming the member and suggesting spec init <name>.",
+      "why": "A member the platform file declares but nothing pins is scanned by nobody; without the diagnostic its tags vanish from coverage with exit 0 and no signal.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/indexer/pipeline.ts"
+      ],
+      "issues": [
+        {
+          "role": "created",
+          "id": "RED-187"
+        }
+      ],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-033",
+      "status": "active",
+      "statement": "While stdin is a TTY and --no-prompt is absent, index-building commands shall offer to run spec init <name> for each declared member without a pin and for each undeclared repository in the platform folder, instead of only the warning.",
+      "why": "The moment discovery finds a repository that is not scanned is the one moment the CLI can teach the membership contract; losing it leaves the warning as the only, easily-ignored signal.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/onboarding/prompt.ts"
+      ],
+      "issues": [
+        {
+          "role": "created",
+          "id": "RED-187"
+        }
+      ],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-034",
+      "status": "active",
+      "statement": "When spec init resolves the platform a directory belongs to, it shall take the root from platform-map's locate(), the nearest platform-map.json or .git boundary with a marker resolved through the parent directory or the per-user file, and accept that root only when it holds spec-engine/.",
+      "why": "spec init must know where it is to pin correctly, and a second notion of the platform root beside platform-map's would let the pin and the map disagree about which platform a member belongs to.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/indexer/discover.ts"
+      ],
+      "issues": [
+        {
+          "role": "created",
+          "id": "RED-187"
+        }
+      ],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-035",
+      "status": "active",
+      "statement": "Where a platform directory is a lone repository with no platform file, discovery shall register the map's one repo as a single coverage column, or one column per workspace package when it is a monorepo, so its @spec tags index with no member config and no CI gate.",
+      "why": "If the lone-repo step needs any setup beyond having a spec-engine/ directory, the progressive-adoption ladder fails at first contact, and a monorepo whose packages collapse into one column cannot pin a package on its own.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/indexer/discover.ts"
+      ],
+      "issues": [
+        {
+          "role": "created",
+          "id": "RED-187"
+        }
+      ],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-036",
+      "status": "active",
+      "statement": "When spec init --force overwrites a config carrying only known keys, it shall rewrite the pin while preserving the repo's ignore list.",
       "why": "A --force that dropped the ignore list or the members glob would silently re-include excluded directories or collapse a monorepo's packages into one coverage column.",
       "supersedes": null,
       "supersededBy": null,
@@ -496,7 +626,72 @@
       "livesIn": [
         "packages/engine/src/operations/init.ts"
       ],
-      "issues": [],
+      "issues": [
+        {
+          "role": "created",
+          "id": "RED-187"
+        }
+      ],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-037",
+      "status": "active",
+      "statement": "When discovering the members of a platform, the spec engine shall take membership and shape from platform-map's map() and take each member's pin from its spec-engine.member.json, so every package built on Spec Engine shares one platform model.",
+      "why": "A second discovery heuristic beside platform-map's declaration would let Spec Engine and the other tools built on it disagree about which repositories are on the platform.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/indexer/discover.ts"
+      ],
+      "issues": [
+        {
+          "role": "created",
+          "id": "RED-187"
+        }
+      ],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-038",
+      "status": "active",
+      "statement": "When spec init targets a repository in the platform folder that the platform file does not list, the spec engine shall declare it through platform-map, a platform file entry and a marker, before writing its pin, so a user never runs a platform-map command.",
+      "why": "A pin in an undeclared repository is inert: nothing scans the repository and the warning that would say so is the only trace, so the declaration and the pin have to be one step.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/init.ts"
+      ],
+      "issues": [
+        {
+          "role": "created",
+          "id": "RED-187"
+        }
+      ],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-039",
+      "status": "active",
+      "statement": "When spec init is given --platform for a checkout that carries a member marker but lives outside the platform folder, the spec engine shall record the checkout's location in platform-map's per-user file, so the member indexes from wherever it is cloned.",
+      "why": "A declared member checked out elsewhere is reported missing and never scanned; without a spec-side way to record where it lives, the user is sent to a platform-map command.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/init.ts"
+      ],
+      "issues": [
+        {
+          "role": "created",
+          "id": "RED-187"
+        }
+      ],
       "aliases": [],
       "cites": []
     }

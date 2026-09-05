@@ -8,11 +8,11 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type { Storage, WriteHandle } from "@spec-engine/shared";
 import { openStorage } from "../storage/sqlite";
+import { TestPlatform } from "../testing/platform";
 import { runIndex } from "./pipeline";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "platform-fixture");
@@ -360,14 +360,10 @@ describe("runIndex tx rollback (INDX-04 end-to-end)", () => {
   });
 });
 
-describe("NO_SPEC_CONFIG emission (Phase 8 / DISC-03, DISC-04)", () => {
-  test("emits one warning-severity diagnostic per sibling-without-config", async () => {
+describe("NO_SPEC_CONFIG emission", () => {
+  test("emits one warning-severity diagnostic per declared member without a pin", async () => {
     const platDir = join(tmp, "platform");
-    await mkdir(join(platDir, "spec-engine"), { recursive: true });
-    await mkdir(join(platDir, "strangers"), { recursive: true });
-    // RUNG1-02: `strangers/` must carry a repo-root marker to be a skipped
-    // sibling (a real unwired member repo) that drives NO_SPEC_CONFIG.
-    await writeFile(join(platDir, "strangers", "package.json"), JSON.stringify({ name: "x" }));
+    TestPlatform.at(platDir).unpinned("strangers");
 
     const tmpDbPath = join(tmp, "platform-index.sqlite");
     const s = openStorage(tmpDbPath);
@@ -424,15 +420,11 @@ describe("NO_SPEC_CONFIG emission (Phase 8 / DISC-03, DISC-04)", () => {
     expect(count).toBe(0);
   });
 
-  test("two siblings without configs produce diagnostics in lex-by-name order across cold rebuilds", async () => {
+  test("two members without pins produce diagnostics in lex-by-name order across cold rebuilds", async () => {
     const platDir = join(tmp, "platform");
-    await mkdir(join(platDir, "spec-engine"), { recursive: true });
-    await mkdir(join(platDir, "zulu"), { recursive: true });
-    await mkdir(join(platDir, "alpha"), { recursive: true });
-    // RUNG1-02: both config-less siblings must carry a repo-root marker to be
-    // classified as skipped (real unwired member repos → NO_SPEC_CONFIG).
-    await writeFile(join(platDir, "zulu", "package.json"), JSON.stringify({ name: "zulu" }));
-    await writeFile(join(platDir, "alpha", "package.json"), JSON.stringify({ name: "alpha" }));
+    const fx = TestPlatform.at(platDir);
+    fx.unpinned("zulu");
+    fx.unpinned("alpha");
 
     const tmpDbPath = join(tmp, "platform-index.sqlite");
 

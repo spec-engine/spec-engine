@@ -1,17 +1,22 @@
 // packages/webapp/src/pages/setup.ts
 //
-// System → Setup (`GET /setup`) — the brand kit's "How Spec Engine reads your
-// code" view: the platform's scan mode, a summary of what's mapped, and the
-// table of member repositories. Everything is derived from read-only engine
-// seams (repos + requirements + coverage) fetched in-process via app.request
-// (Pitfall 6); the webapp stays hermetic (D-09 / Invariant #5 — only
-// @spec-engine/shared types + hono).
+// System → Setup (`GET /setup`): how Spec Engine reads your code. The scan
+// mode comes from `/api/platform`, which carries platform-map's mode; the
+// member table and the counts come from the same read-only routes the rest
+// of the webapp uses, fetched in-process. The webapp stays hermetic: only
+// @spec-engine/shared types and hono.
 
-import type { CoverageRow, Repo, Requirement } from "@spec-engine/shared";
+import type {
+  CoverageRow,
+  PlatformInfo,
+  PlatformMode,
+  Repo,
+  Requirement,
+} from "@spec-engine/shared";
 import type { Hono } from "hono";
 import { html, raw } from "hono/html";
 import { badge } from "./components";
-import { apiJson, CANONICAL_REPO_NAME, excludeCanonical } from "./data";
+import { apiJson, excludeCanonical } from "./data";
 import { navBar } from "./nav";
 import styleSheet from "./styles.css" with { type: "text" };
 
@@ -25,26 +30,18 @@ function modeTile(name: string, desc: string, on: boolean): ReturnType<typeof ht
   </div>`;
 }
 
-export type ScanMode = "platform" | "monorepo" | "single";
+/** The tile label and the reading note for each platform-map mode. */
+const MODE_TILES: Record<PlatformMode, { label: string; desc: string }> = {
+  "multi-repo": { label: "Platform", desc: "many repos · one namespace" },
+  monorepo: { label: "Monorepo", desc: "one repo · many packages" },
+  "single-repo": { label: "Single repo", desc: "one repo" },
+};
 
-/**
- * RED-93: classify the scan mode from the mapped rows. The canonical
- * `spec-engine` row is the spec store, not a code member — counting it made
- * a rung-1 single repo (two rows) read "platform". Workspace expansion is
- * the monorepo signal: a sub-member's name is its platform-relative path
- * (`packages/engine` — the discover.ts naming contract), so members that
- * all share one slashed root are one repository's packages, not sibling
- * repos. Mixed shapes (any flat sibling, or several roots) stay "platform".
- */
-// @spec SERV-017
-export function detectScanMode(repos: ReadonlyArray<Pick<Repo, "name">>): ScanMode {
-  const members = repos.filter((r) => r.name !== CANONICAL_REPO_NAME);
-  const oneWorkspaceRoot =
-    members.length > 0 &&
-    members.every((m) => m.name.includes("/")) &&
-    new Set(members.map((m) => m.name.split("/")[0])).size === 1;
-  if (oneWorkspaceRoot) return "monorepo";
-  return members.length <= 1 ? "single" : "platform";
+/** What the platform is reading, in words, for the note under the tiles. */
+export function readingNote(mode: PlatformMode, memberCount: number): string {
+  if (mode === "monorepo") return `${memberCount} workspace packages of one repository`;
+  if (mode === "single-repo") return "one repository";
+  return `${memberCount} member repositories`;
 }
 
 /** Mount the Setup page (`GET /setup`). */
@@ -53,24 +50,16 @@ export function mountSetup(app: Hono): void {
     const repos = await apiJson<Repo[]>(app, "/api/repos");
     const reqs = await apiJson<Requirement[]>(app, "/api/requirements");
     const cov = await apiJson<CoverageRow[]>(app, "/api/coverage");
-    const platform = await apiJson<{
-      version: number;
-      source: string;
-    }>(app, "/api/platform");
+    const platform = await apiJson<PlatformInfo>(app, "/api/platform");
 
     const domains = new Set(reqs.map((r) => r.key)).size;
-    const mode = detectScanMode(repos);
-    // The canonical spec store is the requirement manifest, not
-    // implementation territory — it never carries a bound spec, so it is
+    // @spec SERV-018
+    const mode = platform.mode;
+    // The canonical spec store holds requirement text, never code, so it is
     // excluded from the member table and every member count.
     const members = excludeCanonical(repos);
     const memberCount = members.length;
-    const readingNote =
-      mode === "monorepo"
-        ? `${memberCount} workspace packages of one repository`
-        : mode === "single"
-          ? "one repository"
-          : `${memberCount} member repositories`;
+    const note = readingNote(mode, memberCount);
 
     // Distinct requirements each repo actually implements (its "bound specs").
     const boundByRepo = new Map<string, Set<string>>();
@@ -97,12 +86,12 @@ export function mountSetup(app: Hono): void {
         <div class="card">
           <div class="card-label">Scan mode</div>
           <div class="mode-tiles">
-            ${modeTile("Platform", "many repos · one namespace", mode === "platform")}
-            ${modeTile("Monorepo", "one repo · many packages", mode === "monorepo")}
-            ${modeTile("Single repo", "one repo", mode === "single")}
+            ${(Object.keys(MODE_TILES) as PlatformMode[]).map((m) =>
+              modeTile(MODE_TILES[m].label, MODE_TILES[m].desc, mode === m),
+            )}
           </div>
           <p class="mode-note">
-            Reading <strong>${readingNote}</strong> under one requirement namespace.
+            Reading <strong>${note}</strong> under one requirement namespace.
           </p>
         </div>
 

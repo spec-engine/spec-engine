@@ -13,7 +13,7 @@
 // Adapter rule (03-RESEARCH § Diagnostic SQL § Structural diagnostics):
 // ParseDiagnostic rows describe SPEC.md spec-side defects (DUP_ID,
 // BROKEN_SUPERSEDE, BAD_STATUS). They have no `repo` (the defect is in the
-// SPEC, not in a member repo), so we fill `repo: null`. Per WR-02
+// SPEC, not in a member repo), so we fill `repo: null`.
 // (03-REVIEW), `req_id` is preserved from the parse pass — the parser
 // records the implicated id on every structural diagnostic it emits
 // (validateStructure in indexer/diagnostics.ts). If a future code is added
@@ -27,7 +27,19 @@
 //
 // D-08 grep-fence: this file does not import bun:sqlite.
 
-import type { Diagnostic, ParseDiagnostic, Storage } from "@spec-engine/shared";
+import type { Diagnostic, DiagnosticCode, ParseDiagnostic, Storage } from "@spec-engine/shared";
+
+/** The platform-map codes whose subject may name a member of the platform. */
+const PLATFORM_CODES: ReadonlySet<DiagnosticCode> = new Set<DiagnosticCode>([
+  "MALFORMED_FILE",
+  "MEMBER_MISSING",
+  "MARKER_MISSING",
+  "MARKER_MISMATCH",
+  "UNLISTED_REPO",
+  "PLATFORM_NOT_LOCATED",
+  "UNDECLARED_PLATFORM",
+  "SCAN_TRUNCATED",
+]);
 
 /**
  * Collect every diagnostic for `spec check` to print. Returns the union of:
@@ -40,10 +52,14 @@ import type { Diagnostic, ParseDiagnostic, Storage } from "@spec-engine/shared";
  */
 export function collectDiagnostics(storage: Storage): Diagnostic[] {
   const semantic = storage.listSemanticDiagnostics();
+  const repoNames = new Set(storage.listRepos().map((r) => r.name));
+  // @spec CHCK-031
+  const repoOf = (p: ParseDiagnostic): string | null =>
+    PLATFORM_CODES.has(p.code) && repoNames.has(p.source_file) ? p.source_file : null;
 
   // Adapt ParseDiagnostic → Diagnostic. Spec-side defects don't carry a
   // `repo` (the defect is in the SPEC); fill repo:null. `req_id` flows
-  // through verbatim per WR-02 (03-REVIEW) — it's populated upstream in
+  // through verbatim — it's populated upstream in
   // validateStructure for DUP_ID/BROKEN_SUPERSEDE/BAD_STATUS, and is still
   // nullable on the Diagnostic shape so the adapter passes the null
   // through unchanged when no id is known.
@@ -52,7 +68,7 @@ export function collectDiagnostics(storage: Storage): Diagnostic[] {
       code: p.code,
       source_file: p.source_file,
       line: p.line,
-      repo: null,
+      repo: repoOf(p),
       req_id: p.req_id,
       detail: p.detail,
       severity: p.severity,

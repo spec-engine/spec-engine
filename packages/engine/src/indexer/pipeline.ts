@@ -39,7 +39,6 @@ import type {
   RelationRow,
   Repo,
   Requirement,
-  SkippedRepo,
   Storage,
   Tag,
   TermAliasRow,
@@ -54,7 +53,7 @@ import { DEFAULT_EXTS, findCodeFiles, findDocFiles, findDomainJsonFiles } from "
 import { scanTagsInFile } from "../scanner/tags";
 import { computeBuildId } from "../storage/sqlite";
 import { validateStructure } from "./diagnostics";
-import { discoverRepos } from "./discover";
+import { discoverRepos, type NamedDir, type PlatformDiagnostic } from "./discover";
 
 export interface RunIndexOptions {
   platformDir: string;
@@ -89,15 +88,15 @@ export interface RunIndexOptions {
  */
 export async function runIndex(opts: RunIndexOptions): Promise<IndexResult> {
   const platformDir = resolve(opts.platformDir);
-  // DISC-02 + DISC-03: `discoverRepos` returns `skipped: SkippedRepo[]` — sibling
-  // directories that exist but lack `spec-engine.member.json`. Phase 8 emits one
-  // warning-severity NO_SPEC_CONFIG ParseDiagnostic per entry into the pre-sort
-  // `diagnostics` array (see `buildRows`), so the row participates in the existing
-  // (code, source_file, line, detail) sort and flows into `parse_diagnostics` via
-  // the established `recordParseDiagnostic` write path.
-  const { canonical, platformVersion, members, skipped } = await discoverRepos(platformDir);
+  const {
+    canonical,
+    platformVersion,
+    members,
+    unpinned,
+    diagnostics: platformDiagnostics,
+  } = await discoverRepos(platformDir);
 
-  // Stage 1 — read every SPEC.json through the ONE reader (WR-04: one engine).
+  // Stage 1 — read every SPEC.json through the ONE reader (one engine).
   const { specs, structuralDiagnostics } = await readSpecs(canonical);
 
   // Stage 2 — scan every member for @spec code tags + doc mentions (RED-15).
@@ -111,13 +110,14 @@ export async function runIndex(opts: RunIndexOptions): Promise<IndexResult> {
     specs,
     tagHits,
     structuralDiagnostics,
-    skipped,
+    unpinned,
+    platformDiagnostics,
   });
 
   // Stage 4 — the ONE atomic write (INDX-04).
   writeIndex(opts.storage, rows);
 
-  // Stage 5 — finalize: best-effort doctor.md (RED-15) + build_id hash (WR-03).
+  // Stage 5 — finalize: best-effort doctor.md (RED-15) + build_id hash.
   const build_id = await finalize({
     storage: opts.storage,
     docMentionCandidates,
@@ -138,7 +138,7 @@ export async function runIndex(opts: RunIndexOptions): Promise<IndexResult> {
 
 /**
  * Read every SPEC.json under the canonical dir through the ONE reader
- * (WR-04: one engine). Returns the parsed specs plus the structural
+ * (one engine). Returns the parsed specs plus the structural
  * INVALID_DOMAIN_FILE diagnostics collected along the way.
  *
  * The pipeline calls the SAME `parseDomainJsonFile` the reader unit test
@@ -155,13 +155,13 @@ export async function runIndex(opts: RunIndexOptions): Promise<IndexResult> {
 async function readSpecs(
   canonical: Repo,
 ): Promise<{ specs: ParsedSpec[]; structuralDiagnostics: Omit<ParseDiagnostic, "id">[] }> {
-  // D2 (Phase 18): SPEC.json is the SOLE spec format — the Markdown parse
+  // SPEC.json is the SOLE spec format — the Markdown parse
   // path is deleted, so `spec index` reads JSON only.
   const jsonPaths = await findDomainJsonFiles(canonical.path);
   const specs: ParsedSpec[] = [];
   // STOR-03 (17-02): structural INVALID_DOMAIN_FILE rows collected here, merged
   // into `diagnostics` in buildRows BEFORE the sort so they participate in the
-  // (code, source_file, line, req_id, detail) ordering (Pitfall 1).
+  // (code, source_file, line, req_id, detail) ordering.
   const structuralDiagnostics: Omit<ParseDiagnostic, "id">[] = [];
   for (const rel of jsonPaths) {
     const absPath = join(canonical.path, rel);
@@ -296,18 +296,29 @@ interface BuildRowsInput {
   specs: ParsedSpec[];
   tagHits: Omit<Tag, "id">[];
   structuralDiagnostics: Omit<ParseDiagnostic, "id">[];
-  skipped: SkippedRepo[];
+  /** Declared members without a pin: one NO_SPEC_CONFIG row each. */
+  unpinned: NamedDir[];
+  /** platform-map's diagnostics, already reduced to the ones `spec check` surfaces. */
+  platformDiagnostics: PlatformDiagnostic[];
 }
 
 /**
  * Build the sorted row layer. Every `sortBy` composite key is BYTE-IDENTICAL to
- * the pre-refactor pipeline (Pitfall 1: structural + NO_SPEC_CONFIG diagnostics
+ * the pre-refactor pipeline (structural + NO_SPEC_CONFIG diagnostics
  * are pushed BEFORE the sort). Also returns `flatRequirements` so `finalize` can
  * derive the known-id set without re-flattening.
  */
 function buildRows(input: BuildRowsInput): IndexRows {
-  const { canonical, platformVersion, members, specs, tagHits, structuralDiagnostics, skipped } =
-    input;
+  const {
+    canonical,
+    platformVersion,
+    members,
+    specs,
+    tagHits,
+    structuralDiagnostics,
+    unpinned,
+    platformDiagnostics,
+  } = input;
 
   // Repos: canonical (with platformVersion as pin) + every member.
   const sortedRepos: Repo[] = sortBy(
@@ -359,7 +370,7 @@ function buildRows(input: BuildRowsInput): IndexRows {
     (r) => `${r.from_id}\x00${r.to_id}\x00${r.source_file}\x00${pad(r.line)}`,
   );
 
-  // Term-store collections (TERM-03, Phase 6, Wave C): flatten per-spec
+  // Term-store collections: flatten per-spec
   // term_aliases + resolve the raw citations to term_ids, then pre-sort by the
   // SAME composite keys the LIST_TERM_*_SQL / computeBuildId sections use — so
   // stored insertion order is deterministic and the two build_id sections hash
@@ -372,7 +383,7 @@ function buildRows(input: BuildRowsInput): IndexRows {
   // section ORDER BY uses (req_id, role, issue_id, source_file, line) — see
   // the cross-ref comment at sqlite.ts computeBuildId provenance section.
   //
-  // WR-04 correction: build_id determinism does NOT depend on this JS
+  // build_id determinism does NOT depend on this JS
   // pre-sort matching the SQL ORDER BY. computeBuildId hashes the SQL
   // projection (the `ORDER BY` above) on BOTH warm and cold runs, and the
   // AUTOINCREMENT `id` is excluded from the hash — so the stored insertion
@@ -394,34 +405,30 @@ function buildRows(input: BuildRowsInput): IndexRows {
     (p) => `${p.req_id}\x00${p.role}\x00${p.issue_id}\x00${p.source_file}\x00${pad(p.line)}`,
   );
 
-  // Diagnostics: from validateStructure (structural: DUP_ID/BROKEN_SUPERSEDE/
-  // BAD_STATUS, all error-severity) + Phase 8 NO_SPEC_CONFIG emissions
-  // (warning-severity, one per skipped sibling — DISC-03 / DISC-04). The
-  // resulting array is sorted by (code, source_file, line, req_id, detail) so
-  // cold rebuilds produce a deterministic row order (Pitfall 1: push BEFORE
-  // sort). The sort key MUST stay aligned with the build_id ORDER BY at
-  // sqlite.ts:917 (`ORDER BY code, source_file, line, req_id, detail`) so the
-  // pre-sort and the post-write hash projection use identical key ordering.
-  // If you add a new diagnostic with a different uniqueness shape, update
-  // BOTH sites.
-  //
-  // Q4 (Phase 18): the index-time broken-file-ref `@`-ref check is RETIRED
-  // with the Markdown parse path. The authoring-time `@`-ref check in
-  // commands/req.ts (extractRefsFromText / resolveFileRef) still stands.
+  // Every diagnostics row is pushed before the one sort, whose key matches
+  // the build_id ORDER BY (code, source_file, line, req_id, detail).
   const diagnostics: Omit<ParseDiagnostic, "id">[] = validateStructure(specs);
-  // STOR-03 (17-02): merge the structural INVALID_DOMAIN_FILE rows collected
-  // during the SPEC.json read pass. Pushed BEFORE the sort so they participate
-  // in the (code, source_file, line, req_id, detail) ordering (Pitfall 1) and
-  // flow through the existing recordParseDiagnostic write path.
   for (const d of structuralDiagnostics) diagnostics.push(d);
-  for (const s of skipped) {
+  // @spec INIT-032
+  for (const s of unpinned) {
     diagnostics.push({
       code: DiagnosticCode.NO_SPEC_CONFIG,
-      source_file: s.name, // platform-relative (DISC-04); NEVER the absolute repoPath
-      line: 0, // no specific line — row describes a directory
-      req_id: null, // no requirement implicated (DISC-03)
+      source_file: s.name,
+      line: 0,
+      req_id: null,
       detail: `${s.name}/ has no spec-engine.member.json — run \`spec init ${s.name}\` to include it.`,
-      severity: "warning", // first-ever warning-severity emission (DIAG-02)
+      severity: "warning",
+    });
+  }
+  // @spec CHCK-031
+  for (const d of platformDiagnostics) {
+    diagnostics.push({
+      code: d.code,
+      source_file: d.subject,
+      line: 0,
+      req_id: null,
+      detail: d.detail,
+      severity: d.severity,
     });
   }
   const sortedDiagnostics: Omit<ParseDiagnostic, "id">[] = sortBy(
@@ -444,7 +451,7 @@ function buildRows(input: BuildRowsInput): IndexRows {
 }
 
 /**
- * TERM-03 (Phase 6, Wave C): flatten + RESOLVE the term-store collections.
+ * Flatten + RESOLVE the term-store collections.
  *
  * Aggregates every spec's `term_aliases` into a deterministic name→term_id map
  * (first term_id wins for a name collision — made stable by sorting the alias
@@ -515,7 +522,7 @@ function writeIndex(storage: Storage, rows: IndexRows): void {
     for (const r of rows.sortedRequirements) w.upsertRequirement(r);
     for (const t of rows.sortedTags) w.upsertTag(t);
     for (const r of rows.sortedRelations) w.upsertRelation(r);
-    // TERM-01 (Phase 6): the two term-store collections write inside the SAME
+    // The two term-store collections write inside the SAME
     // single tx (INDX-04) — extracted to keep writeIndex under the cognitive-
     // complexity fence. Empty this wave, populated in Wave C.
     writeTermRows(w, rows);
@@ -525,7 +532,7 @@ function writeIndex(storage: Storage, rows: IndexRows): void {
 }
 
 /**
- * TERM-01 (Phase 6): write the two term-store collections. Split out of
+ * Write the two term-store collections. Split out of
  * `writeIndex` so that function stays under the noExcessiveCognitiveComplexity
  * fence; called INSIDE the same withWriteTx (INDX-04 — one atomic write).
  * Empty this wave; the aliases/cites flatten lands in Wave C.
@@ -544,7 +551,7 @@ interface FinalizeInput {
 }
 
 /**
- * Best-effort doctor.md write (RED-15) + build_id hash (WR-03). Runs AFTER the
+ * Best-effort doctor.md write (RED-15) + build_id hash. Runs AFTER the
  * write tx commits; returns the computed build_id.
  */
 async function finalize(input: FinalizeInput): Promise<string> {
@@ -578,7 +585,7 @@ async function finalize(input: FinalizeInput): Promise<string> {
   }
 
   // --- Compute build_id over the committed projection -------------------
-  // WR-03: computeBuildId opens a SEPARATE read-only Database connection.
+  // computeBuildId opens a SEPARATE read-only Database connection.
   // If that secondary open throws (e.g. FS pressure, AV scanner holding the
   // file on darwin), the write transaction has already committed — the
   // index is valid on disk but the caller never sees a build_id. Catch and

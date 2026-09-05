@@ -17,39 +17,18 @@ export interface Repo {
   path: string;
   pinned_spec_version: number;
   /**
-   * Discovery-time hint (NEVER persisted): true when this Repo is the
-   * platform directory registered as its OWN lone member — "single-repo /
-   * rung-1 mode". Set by `discoverRepos` only when `spec-engine/` is present
-   * and there are zero sibling members AND zero skipped siblings. The
-   * pipeline reads it to exclude the in-repo `spec-engine/` subfolder from
-   * the self-member's code scan. It is intentionally absent from the
-   * schema.ts DDL and `upsertRepo` — the derived DB owns nothing
-   * (CLAUDE.md invariant); this flag exists only between discover and the
-   * pipeline's scan loop.
+   * Discovery-time hint, never persisted: true when this Repo is a lone
+   * single repository registered as its own coverage column. The pipeline
+   * excludes the in-repo `spec-engine/` subfolder from that column's scan.
+   * Absent from the DDL and `upsertRepo`: the derived DB owns nothing.
    */
   selfMember?: boolean;
   /**
-   * Discovery-time hint (NEVER persisted): repo-relative directory prefixes
-   * from this member's spec-engine.member.json `ignore` field (T7). The pipeline
-   * appends them (normalized to a trailing slash) to the scanner's hardcoded
-   * ignore list for THIS repo's code and doc scans. Like `selfMember`,
-   * intentionally absent from the DDL and `upsertRepo`.
+   * Discovery-time hint, never persisted: repo-relative directory prefixes
+   * from this member's `spec-engine.member.json` `ignore` field, appended to
+   * the scanner's ignore list for this repo's code and doc scans.
    */
   ignore?: readonly string[];
-}
-
-/**
- * A sibling directory under the platform root that exists but is NOT a
- * Spec Engine member because it lacks a `spec-engine.member.json`. Captured by
- * `discoverRepos` (DISC-02) for the `NO_SPEC_CONFIG` diagnostic
- * emission. Only the "directory exists, config missing" case is captured —
- * loose files at the platform root and malformed configs are excluded.
- */
-export interface SkippedRepo {
-  /** The platform-relative sibling name (NEVER absolute). */
-  name: string;
-  /** Absolute path to the sibling directory. */
-  path: string;
 }
 
 export interface Domain {

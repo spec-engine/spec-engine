@@ -494,6 +494,26 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "CHCK-031",
+      "status": "active",
+      "statement": "When platform-map reports a diagnostic for the platform that is an error or a warning, or an info that means a repository's tags go unscanned, spec check shall surface it as a diagnostic row with the platform-map code, so a broken platform declaration fails the same gate a broken requirement does.",
+      "why": "A platform whose declaration is broken silently scans the wrong set of repositories, and a separate tool's check that CI never runs is no gate.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/indexer/discover.ts"
+      ],
+      "issues": [
+        {
+          "role": "created",
+          "id": "RED-187"
+        }
+      ],
+      "aliases": [],
+      "cites": []
     }
   ]
 }

@@ -20,7 +20,6 @@
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type { Storage } from "@spec-engine/shared";
@@ -53,7 +52,7 @@ afterAll(() => {
 /** Build a fresh Hono app with `mountApi` + `mountWebapp` composed on it. */
 function buildApp(): Hono {
   const app = new Hono();
-  mountApi(app, storage);
+  mountApi(app, storage, clone);
   mountWebapp(app);
   return app;
 }
@@ -339,7 +338,7 @@ describe.skip("GET /relations — populated graph (relates-fixture)", () => {
 
   function buildRelApp(): Hono {
     const app = new Hono();
-    mountApi(app, relStorage);
+    mountApi(app, relStorage, relClone);
     mountWebapp(app);
     return app;
   }
@@ -417,14 +416,14 @@ describe("shared nav (W4)", () => {
 // storage (the shared beforeAll storage stays pinned to platform-fixture).
 // ---------------------------------------------------------------------------
 
-// @spec SERV-017 integration
+// @spec SERV-018 integration
 describe("Setup scan-mode detection (RED-93)", () => {
   /** Index `platformDir` into a throwaway storage and serve it. */
   async function appOver(platformDir: string): Promise<{ app: Hono; close: () => void }> {
     const s = openStorage(join(platformDir, ".spec-engine", "index.sqlite"));
     await runIndex({ platformDir, storage: s });
     const app = new Hono();
-    mountApi(app, s);
+    mountApi(app, s, platformDir);
     mountWebapp(app);
     return { app, close: () => s.close() };
   }
@@ -435,19 +434,15 @@ describe("Setup scan-mode detection (RED-93)", () => {
     await billing.req({ statement: "Charges compute tax at charge time." });
   }
 
-  test("workspace-expanded members (monorepo) light the Monorepo tile, not Platform", async () => {
+  test("a lone monorepo lights the Monorepo tile, not Platform", async () => {
     const root = mkdtempSync(join(tmpdir(), "spec-setup-monorepo-"));
     try {
       await writeSpecDomain(root);
-      // The dogfood shape: one repo, packages/* expanded into sub-members.
-      await mkdir(join(root, "packages", "engine", "src"), { recursive: true });
-      await mkdir(join(root, "packages", "shared", "src"), { recursive: true });
-      await writeFile(
-        join(root, "packages", "spec-engine.member.json"),
-        `${JSON.stringify({ specs: "spec-engine@1", members: "*" })}\n`,
-      );
-      await writeFile(join(root, "packages", "engine", "src", "a.ts"), "export const a = 1;\n");
-      await writeFile(join(root, "packages", "shared", "src", "b.ts"), "export const b = 2;\n");
+      // The dogfood shape: one repo whose workspace manifest lists its packages.
+      const fx = TestPlatform.at(root);
+      fx.workspace(["packages/engine", "packages/shared"]);
+      fx.file("packages/engine/src/a.ts", "export const a = 1;\n");
+      fx.file("packages/shared/src/b.ts", "export const b = 2;\n");
 
       const { app, close } = await appOver(root);
       try {
@@ -469,7 +464,7 @@ describe("Setup scan-mode detection (RED-93)", () => {
       const { app, close } = await appOver(single);
       try {
         const body = await (await app.request("/setup")).text();
-        expect(body).toContain("<dt>mode</dt><dd>single</dd>");
+        expect(body).toContain("<dt>mode</dt><dd>single-repo</dd>");
       } finally {
         close();
       }
@@ -481,7 +476,7 @@ describe("Setup scan-mode detection (RED-93)", () => {
   test("true multi-repo platform still reads platform (regression)", async () => {
     const app = buildApp(); // shared platform-fixture storage: api/mobile/admin siblings
     const body = await (await app.request("/setup")).text();
-    expect(body).toContain("<dt>mode</dt><dd>platform</dd>");
+    expect(body).toContain("<dt>mode</dt><dd>multi-repo</dd>");
   });
 });
 
@@ -547,7 +542,7 @@ describe("status filtering: live-contract default + ?all=1 toggle (RED-99)", () 
       try {
         await runIndex({ platformDir: root, storage: s });
         const app = new Hono();
-        mountApi(app, s);
+        mountApi(app, s, root);
         mountWebapp(app);
 
         for (const path of ["/", "/requirements"]) {
