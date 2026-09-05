@@ -2,7 +2,7 @@
   "key": "RSLV",
   "owner": null,
   "updated": "2026-07-30",
-  "scope": "The spec resolve files→requirements command and its --req reverse query. Belongs here: file→requirement mapping; the --req reverse tag-site query; path-containment normalization. Does not belong here: full-text search (→ QURY). Boundary case: an absolute path resolving outside platformDir is an RSLV exit-2 contract, never a silent [].",
+  "scope": "The spec resolve files-to-requirements command and its --req reverse query. Belongs here: file-to-requirement mapping; the --req reverse tag-site query; path-containment normalization. Does not belong here: full-text search (QURY). Boundary case: an absolute path resolving outside platformDir exits 2, never a silent empty result.",
   "grammar": "ears",
   "requirements": [
     {

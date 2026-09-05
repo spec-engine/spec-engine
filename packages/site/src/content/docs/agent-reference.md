@@ -7,11 +7,13 @@ Machine-oriented reference for coding agents. For narrative and rationale, see t
 
 ## Mental model
 
-1. Canonical truth: `spec-engine/<DOMAIN>/SPEC.json` files in git, validated by one shared schema on every surface. Requirement IDs (`KEY-NNN`) are permanent; changes supersede, never overwrite.
-2. Code binds to requirements with comment tags: `// @spec KEY-NNN` (+ optional level token).
-3. Tag kind is path-derived: implementation code = implements; test path = verifies.
-4. The index at `<platformDir>/.spec-engine/index.sqlite` is derived and disposable — read commands build it transparently when missing.
-5. Coverage/drift/propagation are SQL projections over tags — never authored. Drift compares a member's pin (`spec-engine@N`, one platform-wide scalar) against each referenced requirement's `changed_at_version`, derived within its domain's supersede DAG; the platform version is the max domain version, derived too.
+- Canonical truth: `spec-engine/<DOMAIN>/SPEC.json` in git, one shared schema on every surface. Ids (`KEY-NNN`) are permanent; changes supersede, never overwrite.
+- Code binds with `// @spec KEY-NNN`. A test tag may add `unit` | `integration` | `e2e`.
+- Tag kind is path-derived: implementation code implements, a test path verifies.
+- The index at `<platformDir>/.spec-engine/index.sqlite` is derived and disposable.
+- Coverage, drift, and propagation are SQL projections over tags. Drift compares a member's pin (`spec-engine@N`) against each referenced requirement's `changed_at_version`; the platform version is the max domain version.
+
+The repo's `AGENTS.md` is the canonical copy of this page, with every command's flags and `--json` shape.
 
 ## Invocation
 

@@ -79,19 +79,7 @@ BILLING  BILLING-009  Active      —         src+test  —       —
 
 ## Single repo (rung 1)
 
-The bottom rung: one repo, specs inline, zero ceremony. A repo with an in-repo `spec-engine/<DOMAIN>/SPEC.json` and a `@spec` tag in its own code self-consumes — no sibling members, no `spec init`:
-
-```
-my-repo/
-  spec-engine/
-    ORDERS/SPEC.json          ORDERS-001 / ORDERS-002 / ORDERS-003 (active)
-  src/
-    orders.ts                 // @spec ORDERS-001   // @spec ORDERS-002
-  test/
-    orders.test.ts            // @spec ORDERS-001 unit
-```
-
-**Promote to multi-repo** when you outgrow one repo: `git mv spec-engine/ ../spec-engine` lifts the inline specs into a dedicated repo.
+One repo with an in-repo `spec-engine/<DOMAIN>/SPEC.json` and `@spec` tags in its own code is a complete platform. No members, no `spec init`. See the [Single Repo guide](/guides/single-repo/).
 
 ## Grow to a platform
 

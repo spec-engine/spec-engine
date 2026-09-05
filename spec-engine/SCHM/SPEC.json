@@ -2,7 +2,7 @@
   "key": "SCHM",
   "owner": null,
   "updated": "2026-07-30",
-  "scope": "The shared data model: the SPEC.json envelope, the DDL, the coverage view, and the one-model-one-seam promise (CLI, webapp, and MCP can never disagree \u2014 one model, one storage seam). Belongs here: the @spec-engine/shared schema every read/write surface shares; the DDL; the coverage SQL view; the one-model-one-seam promise. Does not belong here: the drift definition (\u2192 PROP), cold-rebuild identity (\u2192 INDX), or loopback-only binding (\u2192 SERV). Boundary case: one-model-one-seam is restated here as a promise, but cold-rebuild identity stays an INDX promise and loopback-only stays a SERV promise.",
+  "scope": "The shared data model: the SPEC.json envelope, the DDL, the coverage view, and the promise that CLI, webapp, and MCP never disagree. Belongs here: the @spec-engine/shared schema every surface shares; the DDL; the coverage SQL view; one model, one storage seam. Does not belong here: the drift definition (PROP); cold-rebuild identity (INDX); loopback-only binding (SERV). Boundary case: one-model-one-seam is stated here; cold-rebuild identity stays INDX's and loopback-only stays SERV's.",
   "grammar": "ears",
   "requirements": [
     {

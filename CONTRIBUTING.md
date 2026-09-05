@@ -1,11 +1,11 @@
 # Contributing to Spec Engine
 
-Thanks for your interest. This is a Bun + TypeScript monorepo — one engine, shared
-schema types, a CLI and a webapp reading through the same storage interface.
-This file covers setup, conventions, and process for human contributors. The
-machine-facing engine reference (command loop, exit codes, `--json` schemas)
-lives in **[AGENTS.md](AGENTS.md)**; canonical terminology (domain vs spec vs
-requirement, and the rest) lives in **[GLOSSARY.md](GLOSSARY.md)**.
+A Bun + TypeScript monorepo. This file covers setup, conventions, and process for
+human contributors.
+
+- Machine-facing engine reference (commands, exit codes, `--json` shapes): [AGENTS.md](AGENTS.md)
+- Terminology: [GLOSSARY.md](GLOSSARY.md)
+- Components, seams, invariants: the [architecture page](packages/site/src/content/docs/architecture.md)
 
 ## Before you start
 
@@ -50,16 +50,12 @@ bun packages/engine/src/cli.ts check . --ci
 ## Conventions
 
 - Match the style of the code you're editing; `biome` is the formatter and linter.
-- **The derived index owns nothing.** Never encode truth in `.spec-engine/`; it is
-  rebuilt from `spec-engine/` + `@spec` tags and must produce an identical result when
-  deleted and rebuilt. It is never committed.
-- **Coverage is a SQL view**, never a materialized table — it cannot drift from the tags.
-- **Structural integrity** (`DUP_ID`, `BROKEN_SUPERSEDE`, `BAD_STATUS`) is validated
-  against the parsed spec at index time, not enforced as DB constraints.
-- **One engine, not two.** CLI and webapp share the schema types via the `shared`
-  package. No forked logic that can drift between surfaces.
-- Keep the planted defects in `fixtures/` — they exist so `spec check` has something to
-  catch. Don't "fix" them to make the gate pass.
+- The architecture rules (the derived index owns nothing, coverage is a SQL view, one
+  engine not two, one `bun:sqlite` import) are on the
+  [architecture page](packages/site/src/content/docs/architecture.md) and enforced by
+  `scripts/arch-fences.sh`.
+- Keep the planted defects in `fixtures/`. They exist so `spec check` has something to
+  catch.
 
 ## Workflow
 
@@ -79,14 +75,14 @@ Only `packages/engine` publishes — as **`@spec-engine/spec-engine`**, a single
 bundled package (the workspace packages inline into `dist/impl.js` at prepack;
 `shared`/`tracker`/`webapp`/`site` stay private forever).
 
-**CI publishes on tag — keyless.** Pushing a `v<version>` tag re-runs every CI
-gate on the tagged commit, then the `publish` job (`.github/workflows/ci.yml`)
-ships to npm via **OIDC trusted publishing**: no stored token, provenance
-attached automatically (`publishConfig.provenance`). One-time prerequisites:
-the free npm **org `spec-engine`** exists, and the GitHub trusted publisher is
-registered for `@spec-engine/spec-engine` on npmjs.com (org/user
-`spec-engine`, repository `spec-engine`, workflow filename `ci.yml`, no
-environment).
+CI publishes on tag, keyless:
+
+- Pushing a `v<version>` tag re-runs every CI gate on the tagged commit, then the
+  `publish` job in `.github/workflows/ci.yml` ships to npm via OIDC trusted publishing.
+- No stored token. Provenance is attached automatically (`publishConfig.provenance`).
+- One-time prerequisites: the npm org `spec-engine` exists, and the GitHub trusted
+  publisher is registered for `@spec-engine/spec-engine` (org `spec-engine`, repository
+  `spec-engine`, workflow `ci.yml`, no environment).
 
 Release loop:
 
@@ -99,13 +95,14 @@ Release loop:
    `package.json`/`README.md`/`LICENSE` only; no `workspace:*` survives in the
    manifest) before uploading.
 
-Inside the publish job, **bun packs and npm publishes**: `bun pm pack` runs
-`prepack` and rewrites the `workspace:` protocol (the two things the old
-manual rules protected), and `npm publish <tarball>` (npm ≥ 11.5.1) does the
-keyless OIDC upload — `bun publish` has no OIDC flow. Manual fallback, only
-if CI is unavailable: `bun publish --access public --auth-type web` from
-`packages/engine` (never `npm publish` from the directory — npm cannot
-rewrite `workspace:`).
+Inside the publish job:
+
+- `bun pm pack` runs `prepack` and rewrites the `workspace:` protocol.
+- `npm publish <tarball>` (npm 11.5.1 or newer) does the keyless OIDC upload. `bun publish`
+  has no OIDC flow.
+- Manual fallback, only if CI is unavailable: `bun publish --access public --auth-type web`
+  from `packages/engine`. Never `npm publish` from the directory; npm cannot rewrite
+  `workspace:`.
 
 ## Reporting bugs
 

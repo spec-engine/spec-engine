@@ -100,9 +100,9 @@ const TEST_LEGAL = `it("terms", () => {}); // ${tag("LEGAL-001", "unit")}\n`;
 
 let repo: string;
 
-/** Build + commit the baseline: BILLING-001/002 + LEGAL-001, all Active,
- *  each with an implementing and a verifying tag. */
-function buildBaseline(root: string): void {
+/** Write the baseline tree: BILLING-001/002 + LEGAL-001, all Active, each
+ *  with an implementing and a verifying tag. No git. */
+function writeBaseline(root: string): void {
   mkdirSync(join(root, "spec-engine", "BILLING"), { recursive: true });
   mkdirSync(join(root, "spec-engine", "LEGAL"), { recursive: true });
   mkdirSync(join(root, "src"), { recursive: true });
@@ -113,6 +113,11 @@ function buildBaseline(root: string): void {
   writeFileSync(join(root, "test", "billing.test.ts"), TEST_BILLING);
   writeFileSync(join(root, "src", "legal.ts"), SRC_LEGAL);
   writeFileSync(join(root, "test", "legal.test.ts"), TEST_LEGAL);
+}
+
+/** Write + commit the baseline as its own repository. */
+function buildBaseline(root: string): void {
+  writeBaseline(root);
   writeFileSync(join(root, ".gitignore"), ".spec-engine/\n");
   git(root, "init", "-q");
   git(root, "add", "-A");
@@ -340,12 +345,11 @@ describe("spec guard — platform nested below the git root (1.2)", () => {
     parent = mkdtempSync(join(tmpdir(), "spec-guard-nested-"));
     platform = join(parent, "app");
     mkdirSync(platform, { recursive: true });
-    buildBaseline(platform);
-    // buildBaseline runs `git init` in `platform`; re-home the repo at `parent`
-    // so the platform is genuinely one level below the git root.
-    rmSync(join(platform, ".git"), { recursive: true, force: true });
-    // The platform's own .gitignore only ignores .spec-engine/ relative to it;
-    // that's fine — write a repo-root .gitignore too for the parent-level repo.
+    // The platform is written without its own repository: an inner `git init`
+    // followed by deleting `app/.git` races the detached maintenance process a
+    // commit can leave behind, which recreates `app/.git` and turns `app` into
+    // an embedded repo with no commits at the parent's `git add -A`.
+    writeBaseline(platform);
     writeFileSync(join(parent, ".gitignore"), "app/.spec-engine/\n");
     git(parent, "init", "-q");
     git(parent, "add", "-A");

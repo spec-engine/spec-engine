@@ -2,7 +2,7 @@
   "key": "PROP",
   "owner": "drea",
   "updated": "2026-07-30",
-  "scope": "Propagation and migration state, including the drift definition. Belongs here: the per-repo migrated/drifted state; spec propagation; the drift definition itself. Does not belong here: the SPEC.json model shape (→ SCHM). Boundary case: the drift definition lands in PROP, not SCHM — it is the propagation contract, and the SQL view computing it is merely enforcement.",
+  "scope": "Propagation and migration state, including the drift definition. Belongs here: the per-repo migrated or drifted state; spec propagation; the drift definition. Does not belong here: the SPEC.json model shape (SCHM). Boundary case: the drift definition is PROP's contract; the SQL view that computes it is only enforcement.",
   "grammar": "ears",
   "requirements": [
     {

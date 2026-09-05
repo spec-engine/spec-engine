@@ -2,7 +2,7 @@
   "key": "DOMAIN",
   "owner": null,
   "updated": "2026-07-30",
-  "scope": "Domain lifecycle: spec domain new / spec domain list and charter editing. Belongs here: the born-valid scaffold (spec domain new); the domain list output; the scope charter field on the envelope. Does not belong here: requirement authoring (spec req/supersede/amend → REQ). Boundary case: minting a requirement id is REQ, scaffolding the domain that holds it is DOMAIN.",
+  "scope": "Domain lifecycle: spec domain new, spec domain list, and charter editing. Belongs here: the born-valid scaffold; the domain list output; the scope field on the envelope. Does not belong here: requirement authoring (REQ). Boundary case: minting a requirement id is REQ; scaffolding the domain that holds it is DOMAIN.",
   "grammar": "ears",
   "requirements": [
     {

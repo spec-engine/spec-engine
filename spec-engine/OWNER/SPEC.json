@@ -2,7 +2,7 @@
   "key": "OWNER",
   "owner": null,
   "updated": "2026-07-30",
-  "scope": "Approval policy: who may retire or supersede a requirement (the CODEOWNERS policy). Belongs here: the CODEOWNERS approval policy only. Does not belong here: the loss-detection mechanism itself (→ GUARD). Boundary case: OWNER keeps only the CODEOWNERS approval policy while GOV-01's disappearance-detection concept lives in GUARD.",
+  "scope": "Approval policy: who may retire or supersede a requirement, via CODEOWNERS. Belongs here: the CODEOWNERS approval policy. Does not belong here: the loss-detection mechanism (GUARD). Boundary case: detecting that a requirement disappeared is GUARD; deciding who may approve that is OWNER.",
   "grammar": "ears",
   "requirements": [
     {
