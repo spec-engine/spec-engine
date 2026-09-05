@@ -1,28 +1,117 @@
 ---
 title: Architecture
-description: Canonical git + derived index + local webapp
+description: What the engine is made of, which seams it has, and what must never change
 ---
 
-Canonical truth lives in **git, in a dedicated spec location** — a `spec-engine` repo (polyrepo) or a spec package (monorepo). Keeping truth in git means requirement changes are reviewed and merged as PRs, history is free and diffable, supersession is atomic at merge, and IDs allocate safely.
+Spec Engine is a derived-index pipeline. Truth lives in git as `spec-engine/<KEY>/SPEC.json` files plus `@spec` tags in code. Everything else is computed from those two inputs and can be thrown away.
 
-Over that canonical truth, the engine maintains a **derived database** — a `bun:sqlite` index, rebuildable at any time, that exists purely for speed and cross-repo queries. It owns nothing.
-
+```text
+ CLI (citty)          HTTP (Hono)            MCP (stdio)
+ engine/src/cli.ts    engine/src/server/     engine/src/server/mcp.ts
+        │                   │                      │
+        ▼                   ▼                      ▼
+ ┌──────────────────────────────────────────────────────────┐
+ │ Command layer: parse args, resolve platformDir, render   │
+ │ engine/src/commands/*.ts                                 │
+ └───────────────┬──────────────────────────┬───────────────┘
+                 │                          │
+       write path│                 read path│
+                 ▼                          ▼
+ ┌────────────────────────┐   ┌──────────────────────────────┐
+ │ authoring/  parser/    │   │ indexer/pipeline.ts runIndex │
+ │ one seam:              │   │ discover → parse → scan →    │
+ │ validateAndWrite       │   │ validate → one write tx      │
+ │ (no bun:sqlite)        │   │ then check/ guard/ map/ …    │
+ └───────────┬────────────┘   └──────────────┬───────────────┘
+             ▼                               ▼
+ ┌────────────────────────┐   ┌──────────────────────────────┐
+ │ CANONICAL TRUTH (git)  │──▶│ DERIVED INDEX (disposable)   │
+ │ spec-engine/*/SPEC.json│   │ .spec-engine/index.sqlite    │
+ │ + @spec tags in code   │   │ via storage/sqlite.ts only   │
+ └────────────────────────┘   └──────────────────────────────┘
 ```
-spec (CLI)            engine: indexer + checks + the bun:sqlite derived index
-spec serve            local webapp reading the derived index
-spec mcp              the same engine exposed as an MCP server over stdio
-spec-engine/          canonical requirements, in git (a repo or a package)
-@spec-engine/tracker  optional, online adapter resolving issue IDs → titles/URLs
-```
 
-## One engine, not two
+## Components
 
-The CLI, the local webapp, and the MCP server all read and write through the same storage interface and share one schema (the `shared` package). No forked logic that can drift between surfaces — a spec engine that drifts from itself is the one thing the project cannot ship.
+| Component | Responsibility | Path |
+| --- | --- | --- |
+| CLI root | Register subcommands with lazy imports so the compiled binary starts fast | `packages/engine/src/cli.ts` |
+| Command layer | One file per subcommand: flags, platform-dir resolution, exit codes, text or `--json` rendering | `packages/engine/src/commands/` |
+| Discovery | Find `spec-engine/`, read member pins, expand `members` globs, derive the platform version | `packages/engine/src/indexer/discover.ts` |
+| Parser | Read and validate `SPEC.json` envelopes into typed records | `packages/engine/src/parser/` |
+| Scanner | Walk member repos, extract `@spec` tags, decide implements vs verifies from the path | `packages/engine/src/scanner/` |
+| Index pipeline | `runIndex`: the one composition of discover, parse, scan, validate, write | `packages/engine/src/indexer/pipeline.ts` |
+| Storage | The only `bun:sqlite` importer. Open, cold reset, upserts, queries, `build_id` | `packages/engine/src/storage/sqlite.ts` |
+| Schema | Tables, the FTS5 table, and the `coverage`, `drift`, `term_drift`, `provenance_matrix` views | `packages/shared/src/schema.ts` |
+| Storage contract | The `Storage` interface and row types every surface reads through | `packages/shared/src/storage.ts` |
+| Checks | Diagnostic producers, SQL and non-SQL: grammar, file refs, removal, status flips, proofs, CODEOWNERS | `packages/engine/src/check/` |
+| Loss guard | Diff the requirement derivation at a git ref against the worktree | `packages/engine/src/guard/` |
+| Authoring | Domain scaffolds, next-id allocation, `@` file refs, statement grammar at write time | `packages/engine/src/authoring/` |
+| Projections | One directory per computed answer, each with a `format.ts` for text mode | `map/`, `query/`, `resolve/`, `relations/`, `propagation/`, `provenance/`, `gate/`, `results/` |
+| HTTP API | Hono routes over `Storage`, read routes always on, write routes flag-gated | `packages/engine/src/server/api.ts` |
+| MCP server | Seven tools and one prompt, same JSON as the CLI's `--json` | `packages/engine/src/server/mcp.ts` |
+| Webapp | Server-rendered pages. No filesystem, no sqlite, no engine import | `packages/webapp/src/` |
+| Tracker | Optional read-only Linear adapter with a cache sidecar | `packages/tracker/src/` |
+| Docs site | This site, served offline by `spec docs` | `packages/site/` |
 
-## Engine offline, adapter online
+## The single seams
 
-The engine treats issue IDs as opaque strings and never makes a network call — everything in the closed loop (requirements, code, tests, git, the derived index) works with zero external services. Issue-tracker [provenance](/format/#provenance-issues) is an **additive** join: the optional `@spec-engine/tracker` adapter resolves IDs to titles and URLs, isolated behind a CI import fence so the core stays portable. Removing the adapter leaves the engine fully functional.
+Each of these exists exactly once, and a grep fence in `scripts/arch-fences.sh` fails CI if a second copy appears.
 
-## Where it sits
+| Seam | What goes through it | Fence |
+| --- | --- | --- |
+| `runIndex` | Every index build. One transaction, one `build_id` | reviewed, not fenced |
+| `validateAndWrite` | Every write of a `SPEC.json` file | `VAL-01 validateAndWrite seam` |
+| `bun:sqlite` import | Only `storage/sqlite.ts` may import it | `D-08 engine-internal bun:sqlite`, `D-11 bun:sqlite outside engine` |
+| `Storage` interface | Every read the CLI, API, and MCP make | the webapp import fence in `packages/webapp/test/` |
+| No model calls | The engine never runs an LLM. The MCP authoring prompt is a text template | `AUTHOR-003 llm-free engine` |
+| Derived versions | No authored `specVersion` on requirement domains | `SCHM-008 no authored specVersion` |
+| Generated docs | `GLOSSARY.md` and the TAXONOMY charters are regenerated, never hand-edited | `TERM-06 glossary round-trip`, `CHRT charters generated` |
 
-Spec Engine is not another tool in your build pipeline. The model, the coding agent, any orchestration tooling, and the issue tracker all come and go per task; Spec Engine sits beside them as the store they all read from and write to — the durable record of what the software is supposed to do.
+## Read path
+
+`spec map`, `spec check`, `spec query`, and the other read commands:
+
+1. Resolve `platformDir` and assert it contains `spec-engine/`. A non-platform directory exits 2 and leaves no `.spec-engine/` behind.
+2. Open the index. `--fresh`, `check --ci`, and `gate` cold-reset it first.
+3. If the index is missing, run `runIndex`. Otherwise trust it and warn on stderr when a `SPEC.json` is newer than the index.
+4. Query the views.
+5. Render text to stdout, or the sorted `--json` array. Warnings and guidance go to stderr.
+
+## Write path
+
+`spec req`, `spec amend`, `spec supersede`, `spec move`, `spec deprecate`, `spec term`:
+
+1. Resolve the target domain and run every guard before writing a byte.
+2. Allocate the next id from the filesystem, never from the index.
+3. Judge new statement text against the EARS grammar when the domain declares one.
+4. Write the whole envelope through `validateAndWrite`.
+5. Lifecycle commands then reindex fresh and print the retag worklist.
+
+## HTTP path
+
+1. `spec serve` composes the engine's API routes and the webapp's pages onto one Hono app, bound to `127.0.0.1`.
+2. Pages call `/api/*` in-process. There is no loopback fetch.
+3. A feature whose flag is off answers 404 on its endpoints and renders a placeholder page.
+
+## Invariants
+
+The six headline invariants (cold-rebuild identity, `check --ci` builds fresh, one shared schema, spec defects become diagnostics, one model one seam, drift is a view) are catalogued in `spec-engine/TAXONOMY.md` with the requirement id that records each.
+
+## Anti-patterns
+
+| Don't | Why | Do instead |
+| --- | --- | --- |
+| Write a value into the index that cannot be re-derived | A cold rebuild must give an identical result | Put truth in `SPEC.json` or a tag; express the report as a view |
+| Import `bun:sqlite` in a second file | Forks the storage contract and reds the D-08 fence | Extend `Storage` and implement it in `storage/sqlite.ts` |
+| `Bun.write` a spec file directly | Skips schema validation | Mutate the envelope and call `validateAndWrite` |
+| Use a ticket number as a requirement id or in a tag | Tickets are temporary; requirements outlive them | Mint with `spec req`, record the ticket with `--issue` |
+| "Fix" a defect under `fixtures/` | Those defects are what `spec check` exists to catch | Leave them. Tags under `fixtures/` never index |
+| Trust a warm index after editing specs or tags | Read commands only build when the index is missing | Pass `--fresh`, or use `check --ci` / `gate` |
+
+## Error handling
+
+- Exit codes are the contract: 0 success (including empty results), 1 data failure, 2 usage or environment error.
+- Storage failures map to a named hint. A sandboxed process without file locks gets `SQLITE_IOERR_VNODE`; the CLI says so and `/api/*` returns a structured 503.
+- Every guard runs before the first write, so a rejected `move` or `supersede` never half-applies.
+- Outside git, `check` deletion detection and `spec guard` warn and exit 0.
