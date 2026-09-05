@@ -40,6 +40,7 @@ import {
   reqTags,
   resolveFiles,
 } from "./reads";
+import { getRecord, listRecords } from "./records";
 import { supersede } from "./supersede";
 import { confirmTerm, mintTerm, reviseTerm } from "./term";
 
@@ -212,6 +213,28 @@ describe("read operations answer identically on every surface", () => {
     expect((await apiJson("/api/relations")).body).toEqual(viaCli.relations);
     expect((await apiJson("/api/provenance")).body).toEqual(viaCli.provenance);
     expect((await apiJson("/api/provenance/by-issue?issue=ENG-1")).body).toEqual(viaCli.byIssue);
+  });
+
+  // @spec MAP-003 integration
+  // @spec MAP-004 integration
+  test("get and list: full records agree across the operation, the API, and MCP", async () => {
+    const viaCli = await withIndex({ platformDir: platform, build: "fresh" }, (h) => ({
+      one: getRecord(h.storage, "BILLING-002").row,
+      unknown: getRecord(h.storage, "BILLING-999").row,
+      all: listRecords(h.storage).rows,
+      superseded: listRecords(h.storage, { status: "Superseded" }).rows,
+    }));
+    expect(viaCli.one?.id).toBe("BILLING-002");
+    expect(viaCli.unknown).toBeNull();
+    expect(viaCli.superseded.map((r) => r.id)).toEqual(["BILLING-001"]);
+    expect((await apiJson("/api/requirements/BILLING-002")).body).toEqual(viaCli.one);
+    expect((await apiJson("/api/requirements/BILLING-999")).status).toBe(404);
+    expect((await apiJson("/api/requirements")).body).toEqual(viaCli.all);
+    expect((await apiJson("/api/requirements?status=Superseded")).body).toEqual(viaCli.superseded);
+    expect(await mcpJson("spec_get", { req_id: "BILLING-002" })).toEqual(viaCli.one);
+    expect(await mcpJson("spec_get", { req_id: "BILLING-999" })).toEqual([]);
+    expect(await mcpJson("spec_list", {})).toEqual(viaCli.all);
+    expect(await mcpJson("spec_list", { status: "superseded" })).toEqual(viaCli.superseded);
   });
 
   test("check", async () => {

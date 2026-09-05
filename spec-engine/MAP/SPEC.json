@@ -1,7 +1,7 @@
 {
   "key": "MAP",
   "owner": null,
-  "updated": "2026-07-30",
+  "updated": "2026-09-05",
   "scope": "The spec map requirement-by-repo coverage matrix. Belongs here: the matrix rows; the src, test, src+test, and dash rendering; the webapp matrix view. Does not belong here: full-text retrieval (QURY). Boundary case: MAP stays its own domain because the webapp matrix view will accrue here.",
   "grammar": "ears",
   "requirements": [
@@ -35,6 +35,36 @@
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "MAP-003",
+      "status": "active",
+      "statement": "When spec get is run with a requirement id, the spec CLI shall print that requirement's full record from the derived index, or print [] on stdout with guidance on stderr and exit 0 when the id is unknown.",
+      "why": "An agent that needs a requirement's statement, status, and version today has to start spec serve or grep SPEC.json; every other read has a CLI verb.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/records.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "MAP-004",
+      "status": "active",
+      "statement": "When spec list is run, the spec CLI shall print every requirement record in (key, seq) order, filtered to one domain by --domain and to one status by --status when given.",
+      "why": "spec query excludes superseded and deprecated rows and ranks by relevance, so nothing enumerates the catalog as records, in order, including history.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/records.ts"
+      ],
+      "issues": [],
       "aliases": [],
       "cites": []
     }

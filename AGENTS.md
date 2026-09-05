@@ -126,6 +126,8 @@ Branch on exit codes, not on output text.
 | `spec check [platformDir] [--ci]` | Integrity + coverage + drift diagnostics | yes (array) | 0 / 1 / 2 |
 | `spec guard [platformDir] [--against <ref>]` | Block a change about to lose a requirement, its last implementation, or its last test | yes (array) | 0 / 1 / 2 |
 | `spec map [platformDir]` | Requirement × repo coverage matrix | yes (array) | 0 / 2 |
+| `spec get <KEY-NNN> [platformDir]` | One requirement's full record; unknown id is `[]` | yes (object, or `[]`) | 0 / 2 |
+| `spec list [platformDir] [--domain KEY] [--status S]` | Every requirement record in (key, seq) order, history included | yes (array) | 0 / 2 |
 | `spec query <text> [platformDir]` | Full-text retrieval over requirements | yes (array) | 0 / 2 |
 | `spec relations [platformDir]` | Mermaid graph of `relates` links | yes (array) | 0 / 2 |
 | `spec provenance [issueId] [platformDir]` | Per-requirement provenance matrix | yes (array) | 0 / 2 |
@@ -146,8 +148,9 @@ Branch on exit codes, not on output text.
 | `spec docs [--port N]` | Serve the bundled docs site offline | n/a (HTTP) | 0 / 1 / 2 |
 | `spec mcp [platformDir]` | MCP server over stdio | n/a (JSON-RPC) | 0 / 2 |
 
-Common flags on the index-touching commands (`index`, `check`, `map`, `query`,
-`relations`, `resolve`, `propagation`, `provenance`, `gate`, `serve`):
+Common flags on the index-touching commands (`index`, `check`, `map`, `get`,
+`list`, `query`, `relations`, `resolve`, `propagation`, `provenance`, `gate`,
+`serve`):
 
 | Flag | Effect |
 | --- | --- |
@@ -158,8 +161,8 @@ Common flags on the index-touching commands (`index`, `check`, `map`, `query`,
 
 `init`, `domain list`, `req` register `--json` only. `domain new` registers none.
 
-**Index freshness.** Read commands (`map`, `query`, `relations`, `resolve`,
-`propagation`, `provenance`) build the index when it is missing and otherwise
+**Index freshness.** Read commands (`map`, `get`, `list`, `query`, `relations`,
+`resolve`, `propagation`, `provenance`) build the index when it is missing and otherwise
 trust it. A warm index older than a changed `SPEC.json` produces a stderr
 warning. Tag-only code edits are not detected. `gate` always rebuilds cold, and
 so does `check --ci`. After editing specs or tags, pass `--fresh`.
@@ -278,6 +281,34 @@ req_spec_version, req_changed_at_version, repo, repo_pin, implemented: 0|1,
 verified: 0|1, test_levels }`. Text mode renders `src`, `test`, `src+test`, `—`.
 
 Exit: 0 / 2.
+
+### spec get
+
+One requirement's full record from the derived index.
+
+`--json`: the `Requirement` row `{ id, key, seq, status, superseded_by, text,
+why, source_file, line, spec_version, changed_at_version,
+superseded_at_version }`, the same object `GET /api/requirements/:id` serves.
+Text mode is a one-row table: `ID STATUS KEY SEQ CHANGED_AT TEXT`.
+
+Exit: 0 / 2. An unknown id prints `[]` on stdout, guidance on stderr, and
+exits 0. A malformed id exits 2.
+
+### spec list
+
+Every requirement record in (key, seq) order. Unlike `query`, superseded and
+deprecated rows are included and nothing is ranked.
+
+| Flag | Effect |
+| --- | --- |
+| `--domain KEY` | Only that domain (case-insensitive key). |
+| `--status S` | Only that status: `active`, `draft`, `superseded`, `deprecated`. Any other word exits 2. |
+
+`--json`: an array of `Requirement` rows, the same rows `GET /api/requirements`
+serves. Text mode is the `ID STATUS KEY SEQ CHANGED_AT TEXT` table.
+
+Exit: 0 / 2. An empty result is `[]` under `--json`, guidance on stderr in
+text mode, exit 0.
 
 ### spec query
 
@@ -534,6 +565,8 @@ MCP server over stdio. Register it as
 | `spec_check` | diagnostic rows |
 | `spec_propagation` | per-repo migration state |
 | `spec_next_id` | `{ domain, next_id }`, nothing written |
+| `spec_get` | one `Requirement` row, or `[]` for an unknown id; the `spec get --json` shape |
+| `spec_list` | `Requirement` rows in (key, seq) order, `domain` and `status` filters; the `spec list --json` shape |
 | `spec_supersede` | `{ old_id, new_id, file, spec_version, retag }`, the `spec supersede --json` shape |
 | `spec_deprecate` | `{ id, file, reason, sites }`, the `spec deprecate --json` shape |
 

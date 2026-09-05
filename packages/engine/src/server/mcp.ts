@@ -17,6 +17,13 @@ import { check } from "../operations/check";
 import { deprecate } from "../operations/deprecate";
 import { nextId } from "../operations/nextId";
 import { coverageReport, propagation, query, reqTags, resolveFiles } from "../operations/reads";
+import {
+  getRecord,
+  type ListRecordsFilter,
+  listRecords,
+  requirementStatus,
+  STATUS_WORDS,
+} from "../operations/records";
 import { supersede } from "../operations/supersede";
 import { ID_RE } from "../parser/grammar";
 import { renderAuthorPrompt } from "./authorPrompt";
@@ -146,6 +153,55 @@ export function buildMcpServer(platformDir: string): McpServer {
     async ({ domain }) => {
       const r = await nextId(platformDir, domain);
       return r.ok ? jsonResult({ domain: r.key, next_id: r.nextId }) : errorResult(r.detail);
+    },
+  );
+
+  server.registerTool(
+    "spec_get",
+    {
+      title: "One requirement's full record",
+      description:
+        "The full record for one requirement id: status, key, seq, statement, why, versions, and source location. An unknown id returns [] (the `spec get --json` shape).",
+      inputSchema: { req_id: z.string().describe("Requirement id (KEY-NNN)") },
+    },
+    async ({ req_id }) => {
+      if (!ID_RE.test(req_id)) {
+        return errorResult(`req_id must be a requirement id (KEY-NNN); got ${req_id}`);
+      }
+      return fresh((s) => {
+        const { row } = getRecord(s, req_id);
+        return jsonResult(row ?? []);
+      });
+    },
+  );
+
+  server.registerTool(
+    "spec_list",
+    {
+      title: "Every requirement record",
+      description:
+        "Every requirement record in (key, seq) order, superseded and deprecated history included. Optional domain and status filters. The `spec list --json` shape.",
+      inputSchema: {
+        domain: z.string().optional().describe("Only this domain key (e.g. BILLING)"),
+        status: z
+          .string()
+          .optional()
+          .describe(`Only this status: ${STATUS_WORDS.join(" | ")}`),
+      },
+    },
+    async ({ domain, status }) => {
+      const filter: ListRecordsFilter = {};
+      if (domain !== undefined && domain.trim() !== "") filter.key = normalizeDomainKey(domain);
+      if (status !== undefined) {
+        const parsed = requirementStatus(status);
+        if (parsed === null) {
+          return errorResult(
+            `status must be one of active|draft|superseded|deprecated; got ${status}`,
+          );
+        }
+        filter.status = parsed;
+      }
+      return fresh((s) => jsonResult(listRecords(s, filter).rows));
     },
   );
 

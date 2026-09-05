@@ -56,7 +56,7 @@ Spec Engine is a derived-index pipeline. Truth lives in git as `spec-engine/<KEY
 | Authoring | Domain scaffolds, next-id allocation, `@` file refs, statement grammar at write time | `packages/engine/src/authoring/` |
 | Projections | One directory per computed answer, each with a `format.ts` for text mode | `map/`, `query/`, `resolve/`, `relations/`, `propagation/`, `provenance/`, `gate/`, `results/` |
 | HTTP API | Hono routes over `Storage`, read routes always on, write routes flag-gated | `packages/engine/src/server/api.ts` |
-| MCP server | Nine tools and one prompt, same JSON as the CLI's `--json` | `packages/engine/src/server/mcp.ts` |
+| MCP server | Eleven tools and one prompt, same JSON as the CLI's `--json` | `packages/engine/src/server/mcp.ts` |
 | Webapp | Server-rendered pages. No filesystem, no sqlite, no engine import | `packages/webapp/src/` |
 | Tracker | Optional read-only Linear adapter with a cache sidecar | `packages/tracker/src/` |
 | Docs site | This site, served offline by `spec docs` | `packages/site/` |
@@ -81,6 +81,8 @@ An operation takes typed input and returns typed data or a typed refusal. It nev
 | `deprecate` | platform dir, id, reason, a fresh-tags callback | the file and the tags still bound, or `not_found` / `conflict` / `invalid_domain_file` | `spec deprecate` | `POST /api/requirements/:id/deprecate` | `spec_deprecate` |
 | `mintTerm`, `listTerms`, `reviseTerm`, `confirmTerm` | platform dir, term fields or ids | the term id, the store rows, the bumped version, or the re-pinned citation; `not_found` / `conflict` / `invalid_domain_file` | `spec term` | | |
 | `coverageMatrix` | storage | requirement × repo rows | `spec map` | `GET /api/coverage` | |
+| `getRecord` | storage, requirement id | one full `Requirement` row, or null | `spec get` | `GET /api/requirements/:id` | `spec_get` |
+| `listRecords` | storage, optional key and status | every `Requirement` row in (key, seq) order | `spec list` | `GET /api/requirements` | `spec_list` |
 | `relations` | storage | `relates` links | `spec relations` | `GET /api/relations` | |
 | `provenance` | storage, optional issue id | provenance matrix rows | `spec provenance` | `GET /api/provenance` | |
 | `guard` | storage, platform dir, git ref | the losses a change is about to cause | `spec guard` | | |

@@ -40,6 +40,7 @@ import {
   relations,
   reqTags,
 } from "../operations/reads";
+import { getRecord, listRecords } from "../operations/records";
 import { supersede } from "../operations/supersede";
 import { renderProvenanceDecorated } from "../provenance/format";
 import { resolveAndCache } from "../provenance/resolve";
@@ -414,7 +415,7 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
       }
 
       const status = statusRaw as RequirementStatus | undefined;
-      return c.json(storage.listRequirements({ key, status }));
+      return c.json(listRecords(storage, { key, status }).rows);
     }),
   );
 
@@ -422,7 +423,7 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
     "/api/requirements/:id",
     guarded((c) => {
       const id = c.req.param("id") ?? "";
-      const row = storage.getRequirement(id);
+      const { row } = getRecord(storage, id);
       return row ? c.json(row) : c.json({ error: "not found" }, 404);
     }),
   );
