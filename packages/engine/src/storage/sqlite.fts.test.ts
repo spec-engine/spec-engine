@@ -163,7 +163,10 @@ describe("storage.searchFts against canonical platform-fixture", () => {
       if (hits.length >= 2) {
         for (let i = 1; i < hits.length; i++) {
           // Lower rank = better; assert monotonic non-decreasing order.
-          expect(hits[i]?.rank).toBeGreaterThanOrEqual(hits[i - 1]?.rank);
+          const prev = hits[i - 1];
+          const cur = hits[i];
+          if (prev === undefined || cur === undefined) throw new Error("hit out of range");
+          expect(cur.rank).toBeGreaterThanOrEqual(prev.rank);
         }
       }
     } finally {

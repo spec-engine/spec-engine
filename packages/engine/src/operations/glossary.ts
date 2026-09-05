@@ -54,7 +54,7 @@ export function parseGlossary(md: string): GlossaryTerm[] {
     if (m) {
       const remainder = buf.slice(m[0].length);
       const statement = remainder.replace(/^ — /, "").trim();
-      terms.push({ term: m[1], statement, section });
+      terms.push({ term: m[1] ?? "", statement, section });
     }
     buf = null;
   };

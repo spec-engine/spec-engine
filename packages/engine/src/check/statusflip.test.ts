@@ -46,11 +46,11 @@ describe("unapprovedStatusFlip() (GOV-02)", () => {
     const change = [mkReq({ id: "BILLING-001", status: "superseded" })];
     const out = unapprovedStatusFlip(base, change, codeowners, [], relPath, false);
     expect(out.length).toBe(1);
-    expect(out[0].code).toBe("UNAPPROVED_STATUS_FLIP");
-    expect(out[0].severity).toBe("warning");
-    expect(out[0].req_id).toBe("BILLING-001");
-    expect(out[0].line).toBe(0);
-    expect(out[0].source_file).toBe("spec-engine/BILLING/SPEC.json");
+    expect(out[0]?.code).toBe("UNAPPROVED_STATUS_FLIP");
+    expect(out[0]?.severity).toBe("warning");
+    expect(out[0]?.req_id).toBe("BILLING-001");
+    expect(out[0]?.line).toBe(0);
+    expect(out[0]?.source_file).toBe("spec-engine/BILLING/SPEC.json");
   });
 
   test("WR-02: approver handle matches the CODEOWNERS owner case-insensitively", () => {
@@ -67,7 +67,7 @@ describe("unapprovedStatusFlip() (GOV-02)", () => {
     const change = [mkReq({ id: "BILLING-001", status: "superseded" })];
     const out = unapprovedStatusFlip(base, change, codeowners, [], relPath, true);
     expect(out.length).toBe(1);
-    expect(out[0].severity).toBe("error");
+    expect(out[0]?.severity).toBe("error");
   });
 
   test("draft → retired flip also fires", () => {
@@ -75,7 +75,7 @@ describe("unapprovedStatusFlip() (GOV-02)", () => {
     const change = [mkReq({ id: "BILLING-002", status: "retired" })];
     const out = unapprovedStatusFlip(base, change, codeowners, [], relPath, false);
     expect(out.length).toBe(1);
-    expect(out[0].severity).toBe("warning");
+    expect(out[0]?.severity).toBe("warning");
   });
 
   test("empty approvedBy → fail-closed (flip fires)", () => {
@@ -116,9 +116,9 @@ describe("unapprovedStatusFlip() (GOV-02)", () => {
     const base = [mkReq({ id: "BILLING-001", status: "active" })];
     const change = [mkReq({ id: "BILLING-001", status: "superseded" })];
     const out = unapprovedStatusFlip(base, change, codeowners, [], relPath, false);
-    expect(out[0].detail).toContain("BILLING-001");
-    expect(out[0].detail).toContain("superseded");
-    expect(out[0].detail).toContain("@drea");
+    expect(out[0]?.detail).toContain("BILLING-001");
+    expect(out[0]?.detail).toContain("superseded");
+    expect(out[0]?.detail).toContain("@drea");
   });
 
   test("detector returns UNSORTED — order follows change iteration order", () => {

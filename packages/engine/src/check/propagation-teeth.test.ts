@@ -89,11 +89,11 @@ describe("partialPropagation() (PROP-01)", () => {
     ];
     const out = partialPropagation(changed, [passTag, failTag], results, relPath);
     expect(out.length).toBe(1);
-    expect(out[0].code).toBe("PARTIAL_PROPAGATION");
-    expect(out[0].severity).toBe("error");
-    expect(out[0].req_id).toBe("BILLING-007");
-    expect(out[0].line).toBe(0);
-    expect(out[0].source_file).toBe("spec-engine/BILLING/SPEC.json");
+    expect(out[0]?.code).toBe("PARTIAL_PROPAGATION");
+    expect(out[0]?.severity).toBe("error");
+    expect(out[0]?.req_id).toBe("BILLING-007");
+    expect(out[0]?.line).toBe(0);
+    expect(out[0]?.source_file).toBe("spec-engine/BILLING/SPEC.json");
   });
 
   test("all-pass → silent (fully propagated)", () => {

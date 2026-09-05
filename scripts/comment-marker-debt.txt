@@ -1,7 +1,6 @@
 2	packages/engine/src/authoring/edit.ts
 1	packages/engine/src/authoring/filerefs.ts
 1	packages/engine/src/base/gitBase.ts
-3	packages/engine/src/check/codeowners.ts
 3	packages/engine/src/check/format.ts
 3	packages/engine/src/check/propagation-teeth.ts
 10	packages/engine/src/check/proven.ts

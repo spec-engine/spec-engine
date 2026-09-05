@@ -78,7 +78,7 @@ export function parseEarsStatement(raw: string): EarsResult {
     if (!statement.startsWith(`${keyword} `)) continue;
     const m = statement.match(re);
     if (m) {
-      const [, condition, system, response] = m;
+      const [, condition = "", system = "", response = ""] = m;
       return {
         ok: true,
         clauses: {
@@ -101,7 +101,7 @@ export function parseEarsStatement(raw: string): EarsResult {
 
   const m = statement.match(ALWAYS_RE);
   if (m) {
-    const [, system, response] = m;
+    const [, system = "", response = ""] = m;
     if (/,/.test(system)) {
       return reject(
         'the clause before "shall" contains a comma but starts with no condition keyword (When/While/If/Where) — either drop the comma or lead with the condition',

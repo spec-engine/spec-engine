@@ -72,6 +72,8 @@ describe("TestPlatform authors every spec file through the operations", () => {
     const billing = await fx.domain("BILLING");
     const auth = await fx.domain("AUTH");
     const [a, b, c] = await billing.reqs(3);
+    if (a === undefined || b === undefined || c === undefined)
+      throw new Error("expected three ids");
     const { oldId, newId } = await billing.supersede(a, { statement: "The system shall renew." });
     await billing.deprecate(b, "no longer sold");
     await billing.amend(c, { why: "because" });
@@ -133,6 +135,7 @@ describe("plantEdit writes a planted state through the seam", () => {
   test("a schema-valid edit lands; a schema-invalid edit throws and writes nothing", async () => {
     const billing = await fx.domain("BILLING");
     const [a] = await billing.reqs(2);
+    if (a === undefined) throw new Error("expected an id");
     await plantEdit(fx.dir, "BILLING", (doc) => {
       entryOf(doc, a).status = "retired";
       doc.requirements = doc.requirements.filter((r) => r.id === a);

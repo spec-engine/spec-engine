@@ -10,6 +10,7 @@
     "lib": ["ESNext"],
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "noUncheckedIndexedAccess": true
   }
 }

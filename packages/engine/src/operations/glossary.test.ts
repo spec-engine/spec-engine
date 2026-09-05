@@ -96,9 +96,9 @@ describe("TERM-06 — GLOSSARY round-trip (migrate + generate + fence)", () => {
       "First section",
       "Second section",
     ]);
-    expect(terms[0].statement).toBe("a one-line definition.");
+    expect(terms[0]?.statement).toBe("a one-line definition.");
     // The hand-wrapped Beta bullet collapses to one logical line (single spaces).
-    expect(terms[1].statement).toBe(
+    expect(terms[1]?.statement).toBe(
       "a definition that wraps across two source lines and must collapse into a single logical statement.",
     );
   });
