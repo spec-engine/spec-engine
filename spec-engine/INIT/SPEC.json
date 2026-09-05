@@ -2,7 +2,7 @@
   "key": "INIT",
   "owner": "drea",
   "updated": "2026-07-30",
-  "scope": "Membership, discovery, and onboarding, plus the adoption rungs. Belongs here: spec init pin authoring; member discovery; the progressive-disclosure adoption rungs (rung 1: a lone repo local-only; rung 2: + the CI gate; rung 3: + a second repo forming a platform with shared requirements). Does not belong here: check-severity semantics (→ CHCK, INIT-007). Boundary case: the adoption rungs are three per-rung INIT requirements, each independently testable, and stay in INIT.",
+  "scope": "Membership, discovery, and onboarding, plus the adoption rungs. Belongs here: spec init pin authoring; member discovery; the three adoption rungs (a lone repo; plus the CI gate; plus a second repo sharing requirements). Does not belong here: check severities (CHCK). Boundary case: each rung is its own INIT requirement, independently testable.",
   "grammar": "ears",
   "requirements": [
     {

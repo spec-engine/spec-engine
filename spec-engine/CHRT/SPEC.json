@@ -2,7 +2,7 @@
   "key": "CHRT",
   "owner": "drea",
   "updated": "2026-07-30",
-  "scope": "Domain charters and the requirement-authoring standard: the TAXONOMY.md charter doc, the per-envelope scope field, and the CLI surfaces (spec domain list --json, spec req) that carry a domain's charter to the author at authoring time. Belongs here: what tells an author whether a requirement belongs in a domain. Does not belong here: the requirement lifecycle mechanics themselves (spec req/supersede/amend → REQ) or the domain scaffold (spec domain new → DOMAIN); this domain owns the charter, not the plumbing. Boundary case: a single domain's charter TEXT is that domain's own business, while the rule that every charter carries a scope sentence, both lists, and a named boundary case is CHRT's.",
+  "scope": "Domain charters and the requirement-authoring standard: TAXONOMY.md, the envelope scope field, and the CLI surfaces that show an author a charter (spec domain list --json, spec req). Belongs here: what tells an author whether a requirement belongs in a domain. Does not belong here: requirement lifecycle mechanics (REQ), the domain scaffold (DOMAIN). Boundary case: one domain's charter text is that domain's business; the rule that every charter has a scope sentence, both lists, and a boundary case is CHRT's.",
   "grammar": "ears",
   "requirements": [
     {

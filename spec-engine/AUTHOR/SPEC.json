@@ -2,7 +2,7 @@
   "key": "AUTHOR",
   "owner": null,
   "updated": "2026-07-30",
-  "scope": "The brief→mint authoring pipeline: the three surfaces that turn a vague brief/ticket into well-formed requirements — the AGENTS.md authoring playbook (AUTHOR-001), the .claude/skills/req-author skill (AUTHOR-002), and the spec mcp author_requirements MCP prompt template (AUTHOR-003) — plus the hard constraint that the engine stays LLM-free. Belongs here: the authoring-workflow surfaces (playbook doc, skill, MCP prompt template) and the LLM-free engine fence. Does not belong here: the requirement-lifecycle mechanics themselves (spec req/supersede/amend → REQ), the domain scaffold (spec domain new → DOMAIN), and the charter/authoring-standard doc (→ CHRT). Boundary case: the MCP prompt is engine CODE, but it owns the authoring template text only, never the mint — the actual requirement write is REQ's promise.",
+  "scope": "How a brief or ticket becomes well-formed requirements: the AGENTS.md authoring playbook, the req-author skill, the MCP author_requirements prompt, and the rule that the engine runs no model. Belongs here: the authoring-workflow surfaces and the LLM-free engine fence. Does not belong here: the mint itself (REQ), the domain scaffold (DOMAIN), the charter doc (CHRT). Boundary case: the MCP prompt is engine code, but it owns only the template text; the write is REQ's promise.",
   "grammar": "ears",
   "requirements": [
     {

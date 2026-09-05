@@ -2,7 +2,7 @@
   "key": "PROOF",
   "owner": null,
   "updated": "2026-07-30",
-  "scope": "Trusted-red: JUnit ingestion, the PROVEN/UNPROVEN determination, and rule-reproof under --ci. Belongs here: --results <junit.xml> ingestion; the PROVEN/UNPROVEN status; proof-of-passing enforcement under --ci. Does not belong here: the bare structural gate with no results file (→ CHCK's plain diagnostic path). Boundary case: an active requirement with a verifying tag but no results file is CHCK's structural check, not a PROOF proof.",
+  "scope": "Trusted-red: JUnit ingestion, the PROVEN/UNPROVEN determination, and proof enforcement under --ci. Belongs here: --results ingestion; the PROVEN/UNPROVEN status; proof-of-passing under --ci. Does not belong here: the structural gate with no results file (CHCK). Boundary case: an active requirement with a verifying tag but no results file is CHCK's structural check, not a PROOF proof.",
   "grammar": "ears",
   "requirements": [
     {

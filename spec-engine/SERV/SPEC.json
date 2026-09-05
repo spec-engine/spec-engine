@@ -2,7 +2,7 @@
   "key": "SERV",
   "owner": null,
   "updated": "2026-07-30",
-  "scope": "The spec serve local webapp + /api/* over the index. Belongs here: the SSR pages; the /api/* route contracts; loopback-only binding. Does not belong here: the one-model-one-seam promise (→ SCHM). Boundary case: loopback-only stays a SERV promise even though the data model it serves is defined in SCHM.",
+  "scope": "The spec serve local webapp and /api/* over the index. Belongs here: the server-rendered pages; the /api/* route contracts; loopback-only binding. Does not belong here: the one-model-one-seam promise (SCHM). Boundary case: loopback-only is SERV's promise even though the data model it serves is SCHM's.",
   "grammar": "ears",
   "requirements": [
     {

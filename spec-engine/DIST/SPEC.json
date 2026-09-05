@@ -2,7 +2,7 @@
   "key": "DIST",
   "owner": null,
   "updated": "2026-07-30",
-  "scope": "The npm distribution surface: what the published @spec-engine/spec-engine artifact contains (the Bun bundle, the guarded bin entry, the embedded docs payload) and the CLI surfaces that exist only because of it (spec docs, the non-Bun runtime guard). Belongs here: the tarball-content promises, the bin wrapper's runtime guard, and the offline docs command. Does not belong here: the webapp routes the artifact embeds (→ SERV), the compiled-binary channel (root build:cli, CI-owned), or the docs site's content itself (packages/site, not spec-governed). Boundary case: `spec docs` binds loopback-only like `spec serve`, but the promise lives here — it is a distribution surface over static files, not a view over the index.",
+  "scope": "The npm distribution surface: what the published @spec-engine/spec-engine artifact contains and the CLI surfaces that exist only because of it (spec docs, the non-Bun runtime guard). Belongs here: tarball-content promises; the bin wrapper's runtime guard; the offline docs command. Does not belong here: the webapp routes the artifact embeds (SERV); the compiled-binary channel (CI-owned); the docs site content (packages/site). Boundary case: spec docs binds loopback like spec serve, but it is a distribution surface over static files, so the promise lives here.",
   "grammar": "ears",
   "requirements": [
     {

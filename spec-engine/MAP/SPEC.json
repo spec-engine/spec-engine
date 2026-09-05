@@ -2,7 +2,7 @@
   "key": "MAP",
   "owner": null,
   "updated": "2026-07-30",
-  "scope": "The spec map requirement × repo coverage matrix. Belongs here: the matrix rows; the src / test / src+test / — rendering; the future webapp matrix-view requirements. Does not belong here: FTS retrieval (→ QURY). Boundary case: MAP stays a separate domain rather than folding into a generic read domain because it will accrue the webapp matrix-view requirements.",
+  "scope": "The spec map requirement-by-repo coverage matrix. Belongs here: the matrix rows; the src, test, src+test, and dash rendering; the webapp matrix view. Does not belong here: full-text retrieval (QURY). Boundary case: MAP stays its own domain because the webapp matrix view will accrue here.",
   "grammar": "ears",
   "requirements": [
     {

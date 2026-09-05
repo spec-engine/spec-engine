@@ -2,7 +2,7 @@
   "key": "PROV",
   "owner": null,
   "updated": "2026-07-30",
-  "scope": "The spec provenance matrix and the issue-link provenance model, with issue_id held as an opaque external payload. Belongs here: the provenance matrix rows and their sort/render; the **Issues:** role:ID parse into (req_id, issue_id, role); the doctrine that issue_id is opaque — projected only, never a PK/FK/UNIQUE/index/JOIN key. Does not belong here: the tracker fetch/cache that resolves an issue id to a title (→ TRK); requirement identity/routing (issue ids are provenance, never identity). Boundary case: a KEY-NNN-shaped issue id stays an opaque string in PROV and is never resolved against the requirements table.",
+  "scope": "The spec provenance matrix and the issue-link model, with issue_id an opaque external payload. Belongs here: the matrix rows and their sort and render; the role:ID parse into (req_id, issue_id, role); issue_id is projected only, never a key. Does not belong here: resolving an issue id to a title (TRK); requirement identity or routing. Boundary case: an issue id shaped like KEY-NNN stays an opaque string and is never resolved against the requirements table.",
   "grammar": "ears",
   "requirements": [
     {

@@ -2,7 +2,7 @@
   "key": "QURY",
   "owner": null,
   "updated": "2026-07-30",
-  "scope": "The spec query full-text retrieval command. Belongs here: FTS5 MATCH semantics; rank-ascending results; superseded exclusion; --limit bounds. Does not belong here: file→requirement resolution (→ RSLV). Boundary case: a bare AND OR FTS5 grammar error is a QURY usage-error (exit 2) contract.",
+  "scope": "The spec query full-text retrieval command. Belongs here: FTS5 MATCH semantics; rank-ascending results; superseded exclusion; --limit bounds. Does not belong here: file-to-requirement resolution (RSLV). Boundary case: a bare AND or OR is an FTS5 grammar error and a QURY exit-2 contract.",
   "grammar": "ears",
   "requirements": [
     {
