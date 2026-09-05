@@ -11,8 +11,14 @@ Spec Engine is a derived-index pipeline. Truth lives in git as `spec-engine/<KEY
         │                   │                      │
         ▼                   ▼                      ▼
  ┌──────────────────────────────────────────────────────────┐
- │ Command layer: parse args, resolve platformDir, render   │
- │ engine/src/commands/*.ts                                 │
+ │ Surfaces: parse input, call an operation, render         │
+ │ engine/src/commands/*.ts  server/api.ts  server/mcp.ts   │
+ └───────────────────────────┬──────────────────────────────┘
+                             ▼
+ ┌──────────────────────────────────────────────────────────┐
+ │ Operations: one function per verb, typed input, typed    │
+ │ result, no process exit, no console                      │
+ │ engine/src/operations/*.ts                               │
  └───────────────┬──────────────────────────┬───────────────┘
                  │                          │
        write path│                 read path│
@@ -37,6 +43,7 @@ Spec Engine is a derived-index pipeline. Truth lives in git as `spec-engine/<KEY
 | --- | --- | --- |
 | CLI root | Register subcommands with lazy imports so the compiled binary starts fast | `packages/engine/src/cli.ts` |
 | Command layer | One file per subcommand: flags, platform-dir resolution, exit codes, text or `--json` rendering | `packages/engine/src/commands/` |
+| Operations | One function per verb. The CLI, the API, and MCP all call these | `packages/engine/src/operations/` |
 | Discovery | Find `spec-engine/`, read member pins, expand `members` globs, derive the platform version | `packages/engine/src/indexer/discover.ts` |
 | Parser | Read and validate `SPEC.json` envelopes into typed records | `packages/engine/src/parser/` |
 | Scanner | Walk member repos, extract `@spec` tags, decide implements vs verifies from the path | `packages/engine/src/scanner/` |
@@ -54,6 +61,24 @@ Spec Engine is a derived-index pipeline. Truth lives in git as `spec-engine/<KEY
 | Tracker | Optional read-only Linear adapter with a cache sidecar | `packages/tracker/src/` |
 | Docs site | This site, served offline by `spec docs` | `packages/site/` |
 
+## Operations
+
+An operation takes typed input and returns typed data or a typed refusal. It never exits the process and never prints. Each surface maps a refusal to its own vocabulary: the CLI to exit 2, the API to a status, MCP to an error result.
+
+| Operation | Input | Result | CLI | HTTP | MCP |
+| --- | --- | --- | --- | --- | --- |
+| `query` | storage, text, limit | ranked hits, or `usage` on an FTS5 grammar error | `spec query` | `GET /api/query` | `spec_query` |
+| `resolveFiles` | storage, platform-relative files | the requirements tagged in them | `spec resolve` | `GET /api/resolve?files=` | `spec_resolve` |
+| `reqTags` | storage, requirement id | every tag site, and whether the id is known | `spec resolve --req` | `GET /api/resolve?req=` | `spec_req_tags` |
+| `propagation` | storage, requirement id | per-member migration state | `spec propagation` | `GET /api/propagation/:id` | `spec_propagation` |
+| `coverageReport` | storage | per-domain rollup | | `GET /api/report` | `spec_coverage_report` |
+| `check` | storage, platform dir, results file, base ref, flags | diagnostics, `build_id`, red or green | `spec check` | | `spec_check` |
+| `nextId` | platform dir, domain key or prefix | the resolved key and next unused id, or `usage` | `spec req` | | `spec_next_id` |
+| `mint` | platform dir, key, statement, why, lives-in, issue | the new id and file, or `not_found` / `usage` / `invalid_domain_file` | `spec req --text` | `POST /api/requirements` | |
+| `amend` | platform dir, id, fields, a fresh-tags callback | the changed fields, or `not_found` / `conflict` / `invalid_domain_file` | `spec amend` | `PUT /api/requirements/:id` | |
+
+Reads take an open `Storage` handle because the surface owns the handle's lifetime: the CLI and MCP open one per call through `withIndex`, the API keeps one for the life of the server. Writes take the platform directory because they edit `SPEC.json` files. The lifecycle verbs (`supersede`, `move`, `deprecate`, `term`) and the single-surface commands still run in their command files and move onto this layer next.
+
 ## The single seams
 
 Each of these exists exactly once, and a grep fence in `scripts/arch-fences.sh` fails CI if a second copy appears.
@@ -64,6 +89,7 @@ Each of these exists exactly once, and a grep fence in `scripts/arch-fences.sh` 
 | `validateAndWrite` | Every write of a `SPEC.json` file | `VAL-01 validateAndWrite seam` |
 | `bun:sqlite` import | Only `storage/sqlite.ts` may import it | `D-08 engine-internal bun:sqlite`, `D-11 bun:sqlite outside engine` |
 | `Storage` interface | Every read the CLI, API, and MCP make | the webapp import fence in `packages/webapp/test/` |
+| Operations | The write seam and the id allocator are reached only through `operations/` from the server | `OPS-01 write seam under operations` |
 | No model calls | The engine never runs an LLM. The MCP authoring prompt is a text template | `AUTHOR-003 llm-free engine` |
 | Derived versions | No authored `specVersion` on requirement domains | `SCHM-008 no authored specVersion` |
 | Generated docs | `GLOSSARY.md` and the TAXONOMY charters are regenerated, never hand-edited | `TERM-06 glossary round-trip`, `CHRT charters generated` |
