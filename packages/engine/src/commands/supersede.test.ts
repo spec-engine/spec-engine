@@ -1,29 +1,22 @@
 // packages/engine/src/commands/supersede.test.ts
 //
-// L2 (lifecycle pass) — `spec supersede <KEY-NNN>`: the core lifecycle
-// operation, mechanized. Flips the old entry to `superseded` (supersededBy
-// NEW), mints the successor Active (fields from flags; why/lives default-
-// copied from the old entry), bumps envelope specVersion + updated,
-// reindexes fresh, and emits the retag worklist (the old id's tag sites —
-// the same sites spec check will flag as SUPERSEDED_REFERENCED until
-// retagged).
-//
-// VAL-01 (17-05): supersede now mutates the domain OBJECT (flip predecessor
-// status/supersededBy, bump envelope specVersion, push the successor object)
-// and writes ONCE through validateAndWrite — no Markdown text edit, no
-// bespoke Bun.write — then reindexes (deleting DB+WAL+SHM first).
+// `spec supersede <KEY-NNN>`: the core lifecycle operation, mechanized. Flips
+// the old entry to `superseded` (supersededBy NEW), mints the successor Active
+// (fields from flags; why/lives default-copied from the old entry), bumps the
+// envelope `updated`, reindexes fresh, and emits the retag worklist (the old
+// id's tag sites — the same sites spec check will flag as SUPERSEDED_REFERENCED
+// until retagged). The envelope is written once through validateAndWrite.
 //
 // Tag lines composed via src/testing/specTag.ts (dogfood rule).
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { type DomainHandle, TestPlatform } from "../testing/platform";
 import { specTag } from "../testing/specTag";
 import { supersedeCommand } from "./supersede";
 
-let tmp: string;
+let fx: TestPlatform;
 let platform: string;
+let billing: DomainHandle;
 let logs: string[];
 let errs: string[];
 let originalLog: typeof console.log;
@@ -40,59 +33,28 @@ class ExitError extends Error {
 type RunFn = (ctx: { args: Record<string, unknown>; rawArgs: string[] }) => Promise<void>;
 const supersedeRun = (supersedeCommand as unknown as { run: RunFn }).run;
 
-beforeEach(() => {
-  tmp = mkdtempSync(join(tmpdir(), "spec-supersede-"));
-  platform = join(tmp, "platform");
-  mkdirSync(join(platform, "spec-engine", "BILLING"), { recursive: true });
-  writeFileSync(
-    join(platform, "spec-engine", "BILLING", "SPEC.json"),
-    `${JSON.stringify(
-      {
-        key: "BILLING",
-        owner: "drea",
-        updated: "2026-06-01",
-        requirements: [
-          {
-            id: "BILLING-001",
-            status: "active",
-            statement: "charge at signup price",
-            why: "revenue",
-            supersedes: null,
-            supersededBy: null,
-            relates: [],
-            livesIn: ["renew.ts"],
-            issues: [],
-            changedAtVersion: 1,
-          },
-          {
-            id: "BILLING-002",
-            status: "superseded",
-            statement: "ancient truth",
-            why: "history",
-            supersedes: null,
-            supersededBy: "BILLING-001",
-            relates: [],
-            livesIn: [],
-            issues: [],
-            changedAtVersion: 1,
-          },
-        ],
-      },
-      null,
-      2,
-    )}\n`,
-  );
-  mkdirSync(join(platform, "api", "src"), { recursive: true });
-  mkdirSync(join(platform, "api", "test"), { recursive: true });
-  writeFileSync(join(platform, "api", "spec-engine.member.json"), '{ "specs": "spec-engine@1" }\n');
-  writeFileSync(
-    join(platform, "api", "src", "renew.ts"),
-    `export const renew = 1; ${specTag("BILLING-001")}`,
-  );
-  writeFileSync(
-    join(platform, "api", "test", "renew.test.ts"),
-    `export const t = 1; ${specTag("BILLING-001", "unit")}`,
-  );
+/** The Active entry under test, the history it replaced, and the successor it will get. */
+const ACTIVE = "BILLING-002";
+const HISTORY = "BILLING-001";
+const SUCCESSOR = "BILLING-003";
+
+beforeEach(async () => {
+  fx = TestPlatform.temp("spec-supersede-");
+  platform = fx.dir;
+  billing = await fx.domain("BILLING", { owner: "drea" });
+  const ancient = await billing.req({ statement: "ancient truth", why: "history" });
+  const current = await billing.supersede(ancient.id, {
+    statement: "charge at signup price",
+    why: "revenue",
+    livesIn: ["renew.ts"],
+  });
+  expect(current.newId).toBe(ACTIVE);
+  await fx.member("api", {
+    files: {
+      "src/renew.ts": `export const renew = 1; ${specTag(ACTIVE)}`,
+      "test/renew.test.ts": `export const t = 1; ${specTag(ACTIVE, "unit")}`,
+    },
+  });
 
   logs = [];
   errs = [];
@@ -117,7 +79,7 @@ afterEach(() => {
   console.error = originalErr;
   process.exit = originalExit;
   Object.defineProperty(process.stdin, "isTTY", { value: originalIsTTY, configurable: true });
-  rmSync(tmp, { recursive: true, force: true });
+  fx.remove();
 });
 
 async function expectExit2(fn: () => Promise<void>): Promise<void> {
@@ -131,67 +93,42 @@ async function expectExit2(fn: () => Promise<void>): Promise<void> {
   expect(caught?.code).toBe(2);
 }
 
-interface DomainReq {
-  id: string;
-  status: string;
-  statement: string;
-  why: string | null;
-  supersededBy: string | null;
-  supersededAtVersion?: number;
-  livesIn: string[];
-}
-interface Domain {
-  key: string;
-  specVersion: number;
-  updated: string;
-  requirements: DomainReq[];
-}
-
-function readDomain(): Domain {
-  return JSON.parse(readFileSync(join(platform, "spec-engine", "BILLING", "SPEC.json"), "utf8"));
-}
-
-function readSpecRaw(): string {
-  return readFileSync(join(platform, "spec-engine", "BILLING", "SPEC.json"), "utf8");
-}
-
-describe("spec supersede — happy path (L2)", () => {
+describe("spec supersede — happy path", () => {
   // @spec REQ-036 — a requirement domain reports the DAG-derived version, never
-  // an authored counter. The fixture already holds one superseded edge
-  // (BILLING-002), so before this run the derived version is 2; superseding
-  // BILLING-001 adds the second edge and the reported/died-at version is 3 —
-  // whereas the retired authored counter (had it survived) would have said 2.
+  // an authored counter. The fixture already holds one superseded edge, so
+  // before this run the derived version is 2; superseding the Active entry adds
+  // the second edge and the reported/died-at version is 3.
   test("flips old entry, mints successor with copied fields, reports the derived version, emits worklist", async () => {
     await supersedeRun({
       args: {
-        id: "BILLING-001",
+        id: ACTIVE,
         platformDir: platform,
         text: "charge at the CURRENT plan price",
         json: true,
       },
       rawArgs: [],
     });
-    const domain = readDomain();
+    const domain = await billing.read();
     // Old entry flipped to superseded, pointing at the successor.
-    const old = domain.requirements.find((r) => r.id === "BILLING-001");
+    const old = domain.requirements.find((r) => r.id === ACTIVE);
     expect(old?.status).toBe("superseded");
-    expect(old?.supersededBy).toBe("BILLING-003");
+    expect(old?.supersededBy).toBe(SUCCESSOR);
     // Stamped with the DAG-derived version it died at (two edges → 3).
     expect(old?.supersededAtVersion).toBe(3);
     // Successor appended Active with the new statement.
-    const succ = domain.requirements.find((r) => r.id === "BILLING-003");
+    const succ = domain.requirements.find((r) => r.id === SUCCESSOR);
     expect(succ?.status).toBe("active");
     expect(succ?.statement).toBe("charge at the CURRENT plan price");
     // why/lives copied from the old entry by default.
     expect(succ?.why).toBe("revenue");
     expect(succ?.livesIn).toEqual(["renew.ts"]);
-    // A requirement domain carries NO authored specVersion (SCHM-008).
+    // A requirement domain carries NO authored specVersion.
     expect(domain.specVersion).toBeUndefined();
     // JSON output: ids, file, DERIVED spec_version, retag worklist (both sites).
     expect(logs).toHaveLength(1);
     const out = JSON.parse(logs[0] ?? "");
-    expect(out.old_id).toBe("BILLING-001");
-    expect(out.new_id).toBe("BILLING-003");
+    expect(out.old_id).toBe(ACTIVE);
+    expect(out.new_id).toBe(SUCCESSOR);
     expect(out.file).toBe("spec-engine/BILLING/SPEC.json");
     expect(out.spec_version).toBe(3);
     const retagFiles = (out.retag as Array<{ file: string }>).map((r) => r.file);
@@ -201,7 +138,7 @@ describe("spec supersede — happy path (L2)", () => {
   test("--why/--lives flags override the copied fields", async () => {
     await supersedeRun({
       args: {
-        id: "BILLING-001",
+        id: ACTIVE,
         platformDir: platform,
         text: "new truth",
         why: "fresh rationale",
@@ -209,27 +146,28 @@ describe("spec supersede — happy path (L2)", () => {
       },
       rawArgs: [],
     });
-    const succ = readDomain().requirements.find((r) => r.id === "BILLING-003");
+    const succ = (await billing.read()).requirements.find((r) => r.id === SUCCESSOR);
     expect(succ?.why).toBe("fresh rationale");
     expect(succ?.livesIn).toEqual(["checkout.ts"]);
   });
 
-  test("--binds is accepted but not persisted (STOR-01 has no binds); lives still copied", async () => {
+  test("--binds is accepted but not persisted (the envelope has no binds); lives still copied", async () => {
     await supersedeRun({
       args: {
-        id: "BILLING-001",
+        id: ACTIVE,
         platformDir: platform,
         text: "new truth",
         binds: "plans.current_price",
       },
       rawArgs: [],
     });
-    const succ = readDomain().requirements.find((r) => r.id === "BILLING-003") as unknown as Record<
-      string,
-      unknown
-    >;
-    expect("binds" in succ).toBe(false);
-    expect((succ as unknown as DomainReq).livesIn).toEqual(["renew.ts"]); // still copied
+    const raw = JSON.parse(await billing.raw()) as {
+      requirements: Array<Record<string, unknown>>;
+    };
+    const succ = raw.requirements.find((r) => r.id === SUCCESSOR);
+    expect(succ).toBeDefined();
+    expect("binds" in (succ ?? {})).toBe(false);
+    expect(succ?.livesIn).toEqual(["renew.ts"]); // still copied
   });
 
   // @spec REQ-036 — on a requirement domain --no-bump is a no-op: there is no
@@ -237,87 +175,48 @@ describe("spec supersede — happy path (L2)", () => {
   // version (two edges → 3) and no specVersion is written.
   test("--no-bump is a no-op on a requirement domain — the version stays DAG-derived", async () => {
     await supersedeRun({
-      args: { id: "BILLING-001", platformDir: platform, text: "new truth", noBump: true },
+      args: { id: ACTIVE, platformDir: platform, text: "new truth", noBump: true },
       rawArgs: [],
     });
-    const domain = readDomain();
+    const domain = await billing.read();
     expect(domain.specVersion).toBeUndefined();
-    expect(domain.requirements.find((r) => r.id === "BILLING-001")?.supersededAtVersion).toBe(3);
+    expect(domain.requirements.find((r) => r.id === ACTIVE)?.supersededAtVersion).toBe(3);
   });
 
   test("text mode prints the retag worklist table + a check reminder", async () => {
     await supersedeRun({
-      args: { id: "BILLING-001", platformDir: platform, text: "new truth" },
+      args: { id: ACTIVE, platformDir: platform, text: "new truth" },
       rawArgs: [],
     });
     const out = logs.join("\n");
-    expect(out).toContain("BILLING-001 → BILLING-003");
+    expect(out).toContain(`${ACTIVE} → ${SUCCESSOR}`);
     expect(out).toContain("api/src/renew.ts");
     expect(out).toContain("api/test/renew.test.ts");
     expect(errs.join("\n")).toContain("SUPERSEDED_REFERENCED");
   });
 });
 
-// ── Wave B (06-02): supersede is domain-generic and works on TERM ids, but
-// the successor object must carry the predecessor's term/aliases (not drop
-// them). ──────────────────────────────────────────────────────────────────
-describe("spec supersede — TERM successor carries term/aliases (Wave B)", () => {
-  function writeTermDomain(): void {
-    const dir = join(platform, "spec-engine", "TERM");
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(
-      join(dir, "SPEC.json"),
-      `${JSON.stringify(
-        {
-          key: "TERM",
-          owner: null,
-          specVersion: 1,
-          updated: "2026-07-08",
-          requirements: [
-            {
-              id: "TERM-001",
-              status: "active",
-              statement: "a named subject area of requirements",
-              term: "Domain",
-              aliases: ["subject area", "namespace"],
-              why: null,
-              supersedes: null,
-              supersededBy: null,
-              relates: [],
-              livesIn: [],
-              issues: [],
-              cites: [],
-              changedAtVersion: 1,
-            },
-          ],
-        },
-        null,
-        2,
-      )}\n`,
-    );
-  }
-
-  function readTerm(): {
-    requirements: Array<{
-      id: string;
-      status: string;
-      statement: string;
-      term?: string;
-      aliases?: string[];
-      supersededBy?: string | null;
-    }>;
-  } {
-    return JSON.parse(readFileSync(join(platform, "spec-engine", "TERM", "SPEC.json"), "utf8"));
+// ── supersede is domain-generic and works on TERM ids, but the successor
+// object must carry the predecessor's term/aliases (not drop them). ─────────
+describe("spec supersede — TERM successor carries term/aliases", () => {
+  async function writeTermDomain(): Promise<DomainHandle> {
+    const terms = await fx.terms();
+    await fx.term({
+      term: "Domain",
+      definition: "a named subject area of requirements",
+      aliases: ["subject area", "namespace"],
+    });
+    return terms;
   }
 
   // @spec REQ-034 unit
   test("successor carries the predecessor's term/aliases; predecessor flips to superseded", async () => {
-    writeTermDomain();
+    const terms = await writeTermDomain();
     await supersedeRun({
       args: { id: "TERM-001", platformDir: platform, text: "a revised definition of the term" },
       rawArgs: [],
     });
-    const domain = readTerm();
+    const domain = await terms.read();
     const old = domain.requirements.find((r) => r.id === "TERM-001");
     expect(old?.status).toBe("superseded");
     expect(old?.supersededBy).toBe("TERM-002");
@@ -330,7 +229,7 @@ describe("spec supersede — TERM successor carries term/aliases (Wave B)", () =
   });
 
   test("--term/--aliases override the copied term fields", async () => {
-    writeTermDomain();
+    const terms = await writeTermDomain();
     await supersedeRun({
       args: {
         id: "TERM-001",
@@ -341,13 +240,13 @@ describe("spec supersede — TERM successor carries term/aliases (Wave B)", () =
       },
       rawArgs: [],
     });
-    const succ = readTerm().requirements.find((r) => r.id === "TERM-002");
+    const succ = (await terms.read()).requirements.find((r) => r.id === "TERM-002");
     expect(succ?.term).toBe("Namespace");
     expect(succ?.aliases).toEqual(["ns", "area"]);
   });
 });
 
-describe("spec supersede — guards (L2)", () => {
+describe("spec supersede — guards", () => {
   test("malformed id → exit 2", async () => {
     await expectExit2(() =>
       supersedeRun({ args: { id: "not-an-id", platformDir: platform, text: "x" }, rawArgs: [] }),
@@ -355,29 +254,29 @@ describe("spec supersede — guards (L2)", () => {
   });
 
   test("unknown id → exit 2, nothing written", async () => {
-    const before = readSpecRaw();
+    const before = await billing.raw();
     await expectExit2(() =>
       supersedeRun({
         args: { id: "BILLING-999", platformDir: platform, text: "x" },
         rawArgs: [],
       }),
     );
-    expect(readSpecRaw()).toBe(before);
+    expect(await billing.raw()).toBe(before);
   });
 
   test("already-superseded entry → exit 2 naming the successor", async () => {
     await expectExit2(() =>
       supersedeRun({
-        args: { id: "BILLING-002", platformDir: platform, text: "x" },
+        args: { id: HISTORY, platformDir: platform, text: "x" },
         rawArgs: [],
       }),
     );
-    expect(errs.join("\n")).toContain("BILLING-001");
+    expect(errs.join("\n")).toContain(ACTIVE);
   });
 
   test("non-TTY without --text → exit 2 (the successor needs its truth)", async () => {
     await expectExit2(() =>
-      supersedeRun({ args: { id: "BILLING-001", platformDir: platform }, rawArgs: [] }),
+      supersedeRun({ args: { id: ACTIVE, platformDir: platform }, rawArgs: [] }),
     );
     expect(errs.join("\n")).toContain("--text");
   });

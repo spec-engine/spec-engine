@@ -28,10 +28,11 @@
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openStorage } from "../storage/sqlite";
+import { entryOf, plantEdit } from "../testing/plant";
+import { TestPlatform } from "../testing/platform";
 import { specTag } from "../testing/specTag";
 import { runIndex } from "./pipeline";
 
@@ -71,9 +72,6 @@ function removeDbAndWalSiblings(path: string): void {
  * member and the requirement is covered.
  */
 async function buildFixture(dir: string, issuesLine: string | null): Promise<string> {
-  await mkdir(join(dir, "spec-engine", "PROV"), { recursive: true });
-  await mkdir(join(dir, "api", "src"), { recursive: true });
-
   const issues =
     issuesLine === null
       ? []
@@ -81,36 +79,25 @@ async function buildFixture(dir: string, issuesLine: string | null): Promise<str
           const [role, id] = tok.trim().split(":");
           return { role: role as string, id: (id ?? "") as string };
         });
-  const envelope = {
-    key: "PROV",
-    owner: "drea",
-    specVersion: 2,
-    updated: "",
-    requirements: [
-      {
-        id: "PROV-001",
-        status: "active",
-        statement: "The renewal charge is computed at charge time per region.",
-        why: "Compliance.",
-        supersedes: null,
-        supersededBy: null,
-        relates: [],
-        livesIn: [],
-        issues,
-      },
-    ],
-  };
-  await writeFile(join(dir, "spec-engine", "PROV", "SPEC.json"), JSON.stringify(envelope, null, 2));
-
-  await writeFile(
-    join(dir, "api", "spec-engine.member.json"),
-    JSON.stringify({ specs: "spec-engine@2" }, null, 2),
-  );
-  await writeFile(
-    join(dir, "api", "src", "renew.ts"),
-    `${specTag("PROV-001")}export const renew = () => 0;\n`,
-  );
-
+  // The same dir is rebuilt with a reordered issues line, so the platform is
+  // authored once and only the planted issues change on a second call.
+  const fx = TestPlatform.at(dir);
+  if (!existsSync(fx.specFile("PROV"))) {
+    const prov = await fx.domain("PROV", { owner: "drea" });
+    const { id } = await prov.req({
+      statement: "The renewal charge is computed at charge time per region.",
+      why: "Compliance.",
+    });
+    await fx.member("api", {
+      pin: "spec-engine@2",
+      files: { "src/renew.ts": `${specTag(id)}export const renew = () => 0;\n` },
+    });
+  }
+  // An authoring command records one issue at a time; the ordered multi-role
+  // list this test reorders is planted onto the entry.
+  await plantEdit(dir, "PROV", (doc) => {
+    entryOf(doc, "PROV-001").issues = issues;
+  });
   return dir;
 }
 

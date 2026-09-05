@@ -18,14 +18,14 @@
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { validateAndWrite, validateDomainFile } from "@spec-engine/shared";
-import { nextRequirementId, scaffoldDomainObject } from "../authoring/domains";
+import { nextRequirementId } from "../authoring/domains";
 import { runIndex } from "../indexer/pipeline";
 import { openStorage } from "../storage/sqlite";
 import { specTag } from "../testing/cloneFixture";
+import { TestPlatform } from "../testing/platform";
 import { mint } from "./mint";
 
 let tmp: string;
@@ -39,29 +39,17 @@ afterEach(() => {
 });
 
 /**
- * Build a minimal JSON platform in `tmp`: a version-2 manifest, an empty
- * BILLING domain scaffolded through the seam, and an `api` member whose
- * BILLING-001 spec tag exercises coverage after the append.
+ * Build a minimal JSON platform in `tmp`: an empty BILLING domain scaffolded
+ * through the seam, and an `api` member pinned at 2 whose BILLING-001 spec tag
+ * exercises coverage after the append.
  */
 async function scaffoldPlatform(): Promise<void> {
-  await mkdir(join(tmp, "spec-engine", "BILLING"), { recursive: true });
-  await mkdir(join(tmp, "api", "src"), { recursive: true });
-  await writeFile(
-    join(tmp, "api", "spec-engine.member.json"),
-    `${JSON.stringify({ specs: "spec-engine@2" }, null, 2)}\n`,
-  );
-  await writeFile(
-    join(tmp, "api", "src", "renew.ts"),
-    `${specTag("BILLING-001")}\nexport const renew = () => 0;\n`,
-  );
-  // Scaffold the empty domain through the ONE write seam (VAL-01).
-  const dest = join(tmp, "spec-engine", "BILLING", "SPEC.json");
-  const res = await validateAndWrite(
-    dest,
-    scaffoldDomainObject("BILLING", "2026-06-02"),
-    "spec-engine/BILLING/SPEC.json",
-  );
-  expect(res.ok).toBe(true);
+  const fx = TestPlatform.at(tmp);
+  await fx.domain("BILLING");
+  await fx.member("api", {
+    pin: "spec-engine@2",
+    files: { "src/renew.ts": `${specTag("BILLING-001")}\nexport const renew = () => 0;\n` },
+  });
 }
 
 // @spec SCHM-015

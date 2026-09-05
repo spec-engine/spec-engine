@@ -1,23 +1,22 @@
 // packages/engine/src/base/gitBase.test.ts
 //
-// Unit test for the command-tier git base-ref I/O helper (20-03, Task 1).
-//
-// gitShow / gitLsTree are the ONLY git subprocess seam for the governance/
-// propagation gate. This test proves:
+// gitShow / gitLsTree are the only git subprocess seam for the governance and
+// propagation gates. This test proves:
 //   - gitShow returns the committed bytes at <ref>:<path>, null when absent;
 //   - gitLsTree enumerates the committed spec files at the ref (recursive,
-//     names only) — this is the whole-file-deletion-safe base enumeration
-//     (Pitfall 3), NOT a working-tree glob;
-//   - an UNSAFE ref (space / leading `-` / `;`) is rejected BEFORE any spawn:
-//     gitShow returns null and gitLsTree returns [] (T-20-01 ref-injection).
+//     names only), the whole-file-deletion-safe base enumeration, never a
+//     working-tree glob;
+//   - an unsafe ref (space / leading `-` / `;`) is rejected before any spawn:
+//     gitShow returns null and gitLsTree returns [].
 //
-// The tmp repo is a real `git init` (Pitfall 2 — cloneFixture is not a git
-// repo). A git identity is injected via env so the commit succeeds in CI.
+// The tmp platform is a real `git init`. A git identity is injected via env so
+// the commit succeeds in CI.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { TestPlatform } from "../testing/platform";
 import { gitLsTree, gitRefResolves, gitShow } from "./gitBase";
 
 // Deterministic git identity so commits succeed on a bare CI runner.
@@ -37,32 +36,23 @@ function git(cwd: string, ...args: string[]): void {
   }
 }
 
-const BILLING_JSON = `{
-  "key": "BILLING",
-  "owner": "drea",
-  "specVersion": 1,
-  "updated": "2026-07-02",
-  "requirements": [
-    { "id": "BILLING-001", "status": "active", "statement": "Charge on renew." }
-  ]
-}
-`;
-
 describe("gitBase — gitShow / gitLsTree (ref-validated argv-array git readers)", () => {
+  let fx: TestPlatform;
   let repo: string;
   const REL = "spec-engine/BILLING/SPEC.json";
 
-  beforeEach(() => {
-    repo = mkdtempSync(join(tmpdir(), "spec-gitbase-"));
+  beforeEach(async () => {
+    fx = TestPlatform.temp("spec-gitbase-");
+    repo = fx.dir;
     git(repo, "init", "-q");
-    mkdirSync(join(repo, "spec-engine", "BILLING"), { recursive: true });
-    writeFileSync(join(repo, REL), BILLING_JSON);
+    const billing = await fx.domain("BILLING", { owner: "drea" });
+    await billing.req({ statement: "Charge on renew." });
     git(repo, "add", "-A");
     git(repo, "commit", "-q", "-m", "base");
   });
 
   afterEach(() => {
-    rmSync(repo, { recursive: true, force: true });
+    fx.remove();
   });
 
   test("gitShow returns the committed bytes at <ref>:<path>", () => {
@@ -86,7 +76,7 @@ describe("gitBase — gitShow / gitLsTree (ref-validated argv-array git readers)
     expect(gitLsTree(repo, "HEAD", "does-not-exist")).toEqual([]);
   });
 
-  describe("T-20-01: unsafe ref rejected BEFORE any spawn", () => {
+  describe("unsafe ref rejected BEFORE any spawn", () => {
     for (const bad of ["HEAD; rm -rf /", "--upload-pack=x", "a b", "$(whoami)", "HEAD|cat"]) {
       test(`gitShow(${JSON.stringify(bad)}) → null`, () => {
         expect(gitShow(repo, bad, REL)).toBeNull();
@@ -97,7 +87,7 @@ describe("gitBase — gitShow / gitLsTree (ref-validated argv-array git readers)
     }
   });
 
-  describe("CR-01: gitRefResolves distinguishes a resolvable ref from an unreadable one", () => {
+  describe("gitRefResolves distinguishes a resolvable ref from an unreadable one", () => {
     test("a committed HEAD resolves", () => {
       expect(gitRefResolves(repo, "HEAD")).toBe(true);
     });

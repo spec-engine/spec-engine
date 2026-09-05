@@ -1,24 +1,25 @@
 // packages/engine/src/commands/amend.test.ts
 //
-// L3 (lifecycle pass) — `spec amend <KEY-NNN>`: the pre-production
-// counterpart to supersede. Same id, fields revised in place, envelope
-// `updated` bumped, specVersion NOT bumped (amend refines truth that has
-// not shipped; supersede replaces truth that has). Only Active and Draft
-// entries amend; superseded/retired entries are history.
+// `spec amend <KEY-NNN>`: the pre-production counterpart to supersede. Same
+// id, fields revised in place, envelope `updated` bumped, the derived domain
+// version untouched (amend refines truth that has not shipped; supersede
+// replaces truth that has). Only Active and Draft entries amend;
+// superseded/retired entries are history.
 //
-// VAL-01 (17-05): amend now mutates the requirement OBJECT in the domain's
-// SPEC.json and writes ONCE through validateAndWrite — no Markdown text
-// edit, no bespoke Bun.write. Field mapping: --text→statement, --why→why,
-// --lives→livesIn[].
+// Field mapping: --text→statement, --why→why, --lives→livesIn[].
 
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { afterEach, beforeEach, describe, expect, setSystemTime, test } from "bun:test";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { localToday } from "../authoring/edit";
+import { deriveDomainVersion } from "../parser/domainJson";
+import { type DomainHandle, TestPlatform } from "../testing/platform";
 import { specTag } from "../testing/specTag";
 import { amendCommand } from "./amend";
 
+let fx: TestPlatform;
 let tmp: string;
+let billing: DomainHandle;
 let logs: string[];
 let errs: string[];
 let originalLog: typeof console.log;
@@ -35,58 +36,27 @@ class ExitError extends Error {
 type RunFn = (ctx: { args: Record<string, unknown>; rawArgs: string[] }) => Promise<void>;
 const amendRun = (amendCommand as unknown as { run: RunFn }).run;
 
-/** Today's date in the LOCAL timezone (WR-05 — never toISOString). */
-function localToday(): string {
-  const d = new Date();
-  return (
-    `${d.getFullYear()}-` +
-    `${String(d.getMonth() + 1).padStart(2, "0")}-` +
-    `${String(d.getDate()).padStart(2, "0")}`
-  );
-}
+/** The Active entry under test and the superseded one it replaced. */
+const ACTIVE = "BILLING-002";
+const HISTORY = "BILLING-001";
 
-beforeEach(() => {
-  tmp = mkdtempSync(join(tmpdir(), "spec-amend-"));
-  mkdirSync(join(tmp, "spec-engine", "BILLING"), { recursive: true });
-  writeFileSync(
-    join(tmp, "spec-engine", "BILLING", "SPEC.json"),
-    `${JSON.stringify(
-      {
-        key: "BILLING",
-        owner: null,
-        specVersion: 1,
-        updated: "2026-06-01",
-        requirements: [
-          {
-            id: "BILLING-001",
-            status: "active",
-            statement: "rough draft of the rule",
-            why: "revenue",
-            supersedes: null,
-            supersededBy: null,
-            relates: [],
-            livesIn: ["renew.ts"],
-            issues: [],
-            changedAtVersion: 1,
-          },
-          {
-            id: "BILLING-002",
-            status: "superseded",
-            statement: "old",
-            why: "w",
-            supersedes: null,
-            supersededBy: "BILLING-001",
-            relates: [],
-            livesIn: [],
-            issues: [],
-            changedAtVersion: 1,
-          },
-        ],
-      },
-      null,
-      2,
-    )}\n`,
-  );
+beforeEach(async () => {
+  fx = TestPlatform.temp("spec-amend-");
+  tmp = fx.dir;
+  // Author the fixture on a past date so a bumped `updated` is observable.
+  setSystemTime(new Date("2026-06-01T12:00:00"));
+  try {
+    billing = await fx.domain("BILLING");
+    const old = await billing.req({ statement: "old", why: "w" });
+    const successor = await billing.supersede(old.id, {
+      statement: "rough draft of the rule",
+      why: "revenue",
+      livesIn: ["renew.ts"],
+    });
+    expect(successor.newId).toBe(ACTIVE);
+  } finally {
+    setSystemTime();
+  }
 
   logs = [];
   errs = [];
@@ -111,7 +81,7 @@ afterEach(() => {
   console.error = originalErr;
   process.exit = originalExit;
   Object.defineProperty(process.stdin, "isTTY", { value: originalIsTTY, configurable: true });
-  rmSync(tmp, { recursive: true, force: true });
+  fx.remove();
 });
 
 async function expectExit2(fn: () => Promise<void>): Promise<void> {
@@ -125,34 +95,15 @@ async function expectExit2(fn: () => Promise<void>): Promise<void> {
   expect(caught?.code).toBe(2);
 }
 
-interface DomainReq {
-  id: string;
-  status: string;
-  statement: string;
-  why: string | null;
-  supersededBy: string | null;
-  livesIn: string[];
-}
-interface Domain {
-  key: string;
-  specVersion: number;
-  updated: string;
-  requirements: DomainReq[];
-}
+describe("spec amend", () => {
+  test("amends the given fields in place; same id, derived version untouched, updated bumped", async () => {
+    const before = await billing.read();
+    expect(before.updated).toBe("2026-06-01");
+    const versionBefore = deriveDomainVersion(before.requirements);
 
-function readDomain(): Domain {
-  return JSON.parse(readFileSync(join(tmp, "spec-engine", "BILLING", "SPEC.json"), "utf8"));
-}
-
-function readSpecRaw(): string {
-  return readFileSync(join(tmp, "spec-engine", "BILLING", "SPEC.json"), "utf8");
-}
-
-describe("spec amend (L3)", () => {
-  test("amends the given fields in place; same id, specVersion untouched, updated bumped", async () => {
     await amendRun({
       args: {
-        id: "BILLING-001",
+        id: ACTIVE,
         platformDir: tmp,
         text: "the precise rule",
         why: "revenue correctness",
@@ -160,18 +111,19 @@ describe("spec amend (L3)", () => {
       },
       rawArgs: [],
     });
-    const domain = readDomain();
-    const req = domain.requirements.find((r) => r.id === "BILLING-001");
+    const domain = await billing.read();
+    const req = domain.requirements.find((r) => r.id === ACTIVE);
     expect(req).toBeDefined();
     expect(req?.status).toBe("active"); // status + id unchanged
     expect(req?.statement).toBe("the precise rule");
     expect(req?.why).toBe("revenue correctness");
     expect(req?.livesIn).toEqual(["renew.ts"]); // untouched field
-    expect(domain.specVersion).toBe(1); // amend never bumps
+    expect(deriveDomainVersion(domain.requirements)).toBe(versionBefore); // amend never bumps
+    expect(domain.specVersion).toBeUndefined(); // no authored counter on a requirement domain
     expect(domain.updated).toBe(localToday()); // updated bumped
     expect(logs).toHaveLength(1);
     expect(JSON.parse(logs[0] ?? "")).toEqual({
-      id: "BILLING-001",
+      id: ACTIVE,
       file: "spec-engine/BILLING/SPEC.json",
       fields_changed: ["requirement", "why"],
     });
@@ -179,25 +131,23 @@ describe("spec amend (L3)", () => {
 
   test("--lives maps to livesIn[]", async () => {
     await amendRun({
-      args: { id: "BILLING-001", platformDir: tmp, lives: "checkout.ts" },
+      args: { id: ACTIVE, platformDir: tmp, lives: "checkout.ts" },
       rawArgs: [],
     });
-    const req = readDomain().requirements.find((r) => r.id === "BILLING-001");
+    const req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
     expect(req?.livesIn).toEqual(["checkout.ts"]);
     expect(req?.statement).toBe("rough draft of the rule"); // untouched
   });
 
   test("no field flags non-TTY → exit 2 (nothing to amend)", async () => {
-    const before = readSpecRaw();
-    await expectExit2(() =>
-      amendRun({ args: { id: "BILLING-001", platformDir: tmp }, rawArgs: [] }),
-    );
-    expect(readSpecRaw()).toBe(before);
+    const before = await billing.raw();
+    await expectExit2(() => amendRun({ args: { id: ACTIVE, platformDir: tmp }, rawArgs: [] }));
+    expect(await billing.raw()).toBe(before);
   });
 
   test("superseded entry → exit 2 (amend is for unshipped truth)", async () => {
     await expectExit2(() =>
-      amendRun({ args: { id: "BILLING-002", platformDir: tmp, text: "x" }, rawArgs: [] }),
+      amendRun({ args: { id: HISTORY, platformDir: tmp, text: "x" }, rawArgs: [] }),
     );
     expect(errs.join("\n")).toContain("Superseded");
   });
@@ -215,145 +165,93 @@ describe("spec amend (L3)", () => {
   });
 
   test("empty --text → exit 2 (non-empty Requirement required)", async () => {
-    const before = readSpecRaw();
+    const before = await billing.raw();
     await expectExit2(() =>
-      amendRun({ args: { id: "BILLING-001", platformDir: tmp, text: "  " }, rawArgs: [] }),
+      amendRun({ args: { id: ACTIVE, platformDir: tmp, text: "  " }, rawArgs: [] }),
     );
-    expect(readSpecRaw()).toBe(before);
+    expect(await billing.raw()).toBe(before);
   });
 
   test("@-ref warning fires on amended lives; save proceeds", async () => {
     await amendRun({
-      args: { id: "BILLING-001", platformDir: tmp, lives: "@missing/file.ts" },
+      args: { id: ACTIVE, platformDir: tmp, lives: "@missing/file.ts" },
       rawArgs: [],
     });
     expect(errs.join("\n")).toContain("@missing/file.ts");
-    const req = readDomain().requirements.find((r) => r.id === "BILLING-001");
+    const req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
     expect(req?.livesIn).toEqual(["@missing/file.ts"]);
   });
 });
 
-// ── REQ-015: amend is gated to UNSHIPPED entries. An Active requirement that
-// code binds (an implementing or verifying @spec tag) is shipped truth — amend
-// refuses and directs the author to supersede. A Draft entry, or an Active
-// entry with zero bound tags, still amends. Bound = code-derived kind only. ──
-describe("spec amend — REQ-015 bound-tag gate", () => {
+// ── amend is gated to UNSHIPPED entries. An Active requirement that code binds
+// (an implementing or verifying @spec tag) is shipped truth — amend refuses and
+// directs the author to supersede. A Draft entry, or an Active entry with zero
+// bound tags, still amends. Bound = code-derived kind only. ──────────────────
+describe("spec amend — bound-tag gate", () => {
   // @spec REQ-035 unit
   test("Active + implementing @spec tag → exit 2 (shipped; supersede instead), no write", async () => {
-    writeFileSync(join(tmp, "renew.ts"), `export const renew = 1; ${specTag("BILLING-001")}`);
-    const before = readSpecRaw();
+    writeFileSync(join(tmp, "renew.ts"), `export const renew = 1; ${specTag(ACTIVE)}`);
+    const before = await billing.raw();
     await expectExit2(() =>
-      amendRun({ args: { id: "BILLING-001", platformDir: tmp, text: "x" }, rawArgs: [] }),
+      amendRun({ args: { id: ACTIVE, platformDir: tmp, text: "x" }, rawArgs: [] }),
     );
     expect(errs.join("\n")).toContain("shipped");
-    expect(readSpecRaw()).toBe(before); // gate runs before the write seam
+    expect(await billing.raw()).toBe(before); // gate runs before the write seam
   });
 
   test("Active + only a verifying test tag → exit 2 (a test binding is still shipping)", async () => {
     mkdirSync(join(tmp, "test"), { recursive: true });
     writeFileSync(
       join(tmp, "test", "renew.test.ts"),
-      `export const t = 1; ${specTag("BILLING-001", "unit")}`,
+      `export const t = 1; ${specTag(ACTIVE, "unit")}`,
     );
     await expectExit2(() =>
-      amendRun({ args: { id: "BILLING-001", platformDir: tmp, text: "x" }, rawArgs: [] }),
+      amendRun({ args: { id: ACTIVE, platformDir: tmp, text: "x" }, rawArgs: [] }),
     );
     expect(errs.join("\n")).toContain("shipped");
   });
 
   test("Active with zero bound tags still amends (the pre-ship path is unchanged)", async () => {
-    // No code file planted → BILLING-001 has no bindings → amend proceeds.
+    // No code file planted → the Active entry has no bindings → amend proceeds.
     await amendRun({
-      args: { id: "BILLING-001", platformDir: tmp, text: "refined pre-ship", json: true },
+      args: { id: ACTIVE, platformDir: tmp, text: "refined pre-ship", json: true },
       rawArgs: [],
     });
-    const req = readDomain().requirements.find((r) => r.id === "BILLING-001");
+    const req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
     expect(req?.statement).toBe("refined pre-ship");
   });
 
   test("Draft entry amends even when a code tag binds it (Draft is unshipped by definition)", async () => {
-    // Rewrite the domain with a Draft BILLING-003 and bind it in code.
-    const spec = JSON.parse(readSpecRaw()) as {
-      requirements: Array<Record<string, unknown>>;
-    };
-    spec.requirements.push({
-      id: "BILLING-003",
+    const draft = await billing.req({
       status: "draft",
       statement: "a draft still being shaped",
       why: "w",
-      supersedes: null,
-      supersededBy: null,
-      relates: [],
-      livesIn: [],
-      issues: [],
-      changedAtVersion: 1,
     });
-    writeFileSync(
-      join(tmp, "spec-engine", "BILLING", "SPEC.json"),
-      `${JSON.stringify(spec, null, 2)}\n`,
-    );
-    writeFileSync(join(tmp, "draft.ts"), `export const d = 1; ${specTag("BILLING-003")}`);
+    writeFileSync(join(tmp, "draft.ts"), `export const d = 1; ${specTag(draft.id)}`);
     await amendRun({
-      args: { id: "BILLING-003", platformDir: tmp, text: "reshaped draft", json: true },
+      args: { id: draft.id, platformDir: tmp, text: "reshaped draft", json: true },
       rawArgs: [],
     });
-    const req = readDomain().requirements.find((r) => r.id === "BILLING-003");
+    const req = (await billing.read()).requirements.find((r) => r.id === draft.id);
     expect(req?.statement).toBe("reshaped draft");
   });
 });
 
-// ── Wave B (06-02): amend is domain-generic — the --term/--aliases flags let
-// it revise a TERM entry's glossary fields in place (same id, no specVersion
-// bump), mirroring --text/--why/--lives on a requirement. ───────────────────
-describe("spec amend — TERM fields in place (Wave B)", () => {
-  function writeTermDomain(): void {
-    const dir = join(tmp, "spec-engine", "TERM");
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(
-      join(dir, "SPEC.json"),
-      `${JSON.stringify(
-        {
-          key: "TERM",
-          owner: null,
-          specVersion: 1,
-          updated: "2026-06-01",
-          requirements: [
-            {
-              id: "TERM-001",
-              status: "active",
-              statement: "an early definition",
-              term: "Domain",
-              aliases: ["old-alias"],
-              why: null,
-              supersedes: null,
-              supersededBy: null,
-              relates: [],
-              livesIn: [],
-              issues: [],
-              cites: [],
-              changedAtVersion: 1,
-            },
-          ],
-        },
-        null,
-        2,
-      )}\n`,
-    );
-  }
-
-  function readTerm(): {
-    specVersion: number;
-    requirements: Array<{ id: string; statement: string; term?: string; aliases?: string[] }>;
-  } {
-    return JSON.parse(readFileSync(join(tmp, "spec-engine", "TERM", "SPEC.json"), "utf8"));
-  }
-
+// ── amend is domain-generic — the --term/--aliases flags let it revise a TERM
+// entry's glossary fields in place (same id, no specVersion bump), mirroring
+// --text/--why/--lives on a requirement. ─────────────────────────────────────
+describe("spec amend — TERM fields in place", () => {
   // @spec REQ-034 unit
   test("--term/--aliases/--def revise the fields in place; same id, specVersion untouched", async () => {
-    writeTermDomain();
+    const terms = await fx.terms();
+    const term = await fx.term({
+      term: "Domain",
+      definition: "an early definition",
+      aliases: ["old-alias"],
+    });
     await amendRun({
       args: {
-        id: "TERM-001",
+        id: term.id,
         platformDir: tmp,
         term: "Domain2",
         aliases: "ns, area",
@@ -362,8 +260,8 @@ describe("spec amend — TERM fields in place (Wave B)", () => {
       },
       rawArgs: [],
     });
-    const domain = readTerm();
-    const req = domain.requirements.find((r) => r.id === "TERM-001");
+    const domain = await terms.read();
+    const req = domain.requirements.find((r) => r.id === term.id);
     expect(req?.term).toBe("Domain2");
     expect(req?.aliases).toEqual(["ns", "area"]);
     expect(req?.statement).toBe("revised definition");

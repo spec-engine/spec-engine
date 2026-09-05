@@ -26,6 +26,8 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { entryOf, plantEdit } from "../testing/plant";
+import { TestPlatform } from "../testing/platform";
 import { SPEC_TOKEN } from "../testing/specTag";
 import { guardCommand } from "./guard";
 
@@ -52,41 +54,12 @@ function git(cwd: string, ...args: string[]): void {
   }
 }
 
-function billingJson(requirements: Array<Record<string, unknown>>): string {
-  return `${JSON.stringify(
-    { key: "BILLING", owner: "drea", specVersion: 1, updated: "2026-07-02", requirements },
-    null,
-    2,
-  )}\n`;
+/** Drop one entry from the working-tree BILLING file (the engine refuses this; the guard must catch it). */
+function removeBilling(root: string, id: string): Promise<void> {
+  return plantEdit(root, "BILLING", (dom) => {
+    dom.requirements = dom.requirements.filter((r) => r.id !== id);
+  });
 }
-
-function activeReq(id: string, extra: Record<string, unknown> = {}): Record<string, unknown> {
-  return {
-    id,
-    status: "active",
-    statement: `${id} statement`,
-    why: null,
-    supersedes: null,
-    supersededBy: null,
-    relates: [],
-    livesIn: [],
-    issues: [],
-    ...extra,
-  };
-}
-
-const BILLING_BASE = billingJson([activeReq("BILLING-001"), activeReq("BILLING-002")]);
-const LEGAL_BASE = `${JSON.stringify(
-  {
-    key: "LEGAL",
-    owner: "drea",
-    specVersion: 1,
-    updated: "2026-07-02",
-    requirements: [activeReq("LEGAL-001")],
-  },
-  null,
-  2,
-)}\n`;
 
 const SRC_BILLING = `// billing implementation
 export function charge() {} // ${tag("BILLING-001")}
@@ -101,24 +74,23 @@ const TEST_LEGAL = `it("terms", () => {}); // ${tag("LEGAL-001", "unit")}\n`;
 
 let repo: string;
 
-/** Write the baseline tree: BILLING-001/002 + LEGAL-001, all Active, each
+/** Author the baseline tree: BILLING-001/002 + LEGAL-001, all Active, each
  *  with an implementing and a verifying tag. No git. */
-function writeBaseline(root: string): void {
-  mkdirSync(join(root, "spec-engine", "BILLING"), { recursive: true });
-  mkdirSync(join(root, "spec-engine", "LEGAL"), { recursive: true });
-  mkdirSync(join(root, "src"), { recursive: true });
-  mkdirSync(join(root, "test"), { recursive: true });
-  writeFileSync(join(root, "spec-engine", "BILLING", "SPEC.json"), BILLING_BASE);
-  writeFileSync(join(root, "spec-engine", "LEGAL", "SPEC.json"), LEGAL_BASE);
-  writeFileSync(join(root, "src", "billing.ts"), SRC_BILLING);
-  writeFileSync(join(root, "test", "billing.test.ts"), TEST_BILLING);
-  writeFileSync(join(root, "src", "legal.ts"), SRC_LEGAL);
-  writeFileSync(join(root, "test", "legal.test.ts"), TEST_LEGAL);
+async function writeBaseline(root: string): Promise<void> {
+  const fx = TestPlatform.at(root);
+  const billing = await fx.domain("BILLING", { owner: "drea" });
+  await billing.reqs(2);
+  const legal = await fx.domain("LEGAL", { owner: "drea" });
+  await legal.req();
+  fx.file("src/billing.ts", SRC_BILLING);
+  fx.file("test/billing.test.ts", TEST_BILLING);
+  fx.file("src/legal.ts", SRC_LEGAL);
+  fx.file("test/legal.test.ts", TEST_LEGAL);
 }
 
-/** Write + commit the baseline as its own repository. */
-function buildBaseline(root: string): void {
-  writeBaseline(root);
+/** Author + commit the baseline as its own repository. */
+async function buildBaseline(root: string): Promise<void> {
+  await writeBaseline(root);
   writeFileSync(join(root, ".gitignore"), ".spec-engine/\n");
   git(root, "init", "-q");
   git(root, "add", "-A");
@@ -157,9 +129,9 @@ async function runGuard(
   return { code, stdout: logs.join("\n"), stderr: errs.join("\n") };
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   repo = mkdtempSync(join(tmpdir(), "spec-guard-"));
-  buildBaseline(repo);
+  await buildBaseline(repo);
   originalLog = console.log;
   originalErr = console.error;
   originalExit = process.exit;
@@ -192,10 +164,7 @@ describe("spec guard — clean + exit contract (GUARD-001)", () => {
 describe("spec guard — loss classes (GUARD-002..005)", () => {
   test("REQUIREMENT_REMOVED: dropping BILLING-001 from the spec is a loss, exit 1 (GUARD-002)", async () => {
     // Remove BILLING-001 from the domain (BILLING-002 survives so the file stays).
-    writeFileSync(
-      join(repo, "spec-engine", "BILLING", "SPEC.json"),
-      billingJson([activeReq("BILLING-002")]),
-    );
+    await removeBilling(repo, "BILLING-001");
     const r = await runGuard({ platformDir: repo, json: true });
     expect(r.code).toBe(1);
     const rows = JSON.parse(r.stdout) as Array<{ kind: string; req_id: string }>;
@@ -263,14 +232,11 @@ describe("spec guard — loss classes (GUARD-002..005)", () => {
 describe("spec guard — suppressions (GUARD-006/007)", () => {
   test("a same-change supersede suppresses the loss (GUARD-006)", async () => {
     // BILLING-002 → superseded by a new BILLING-003; drop its tags (retag worklist).
-    writeFileSync(
-      join(repo, "spec-engine", "BILLING", "SPEC.json"),
-      billingJson([
-        activeReq("BILLING-001"),
-        activeReq("BILLING-002", { status: "superseded", supersededBy: "BILLING-003" }),
-        activeReq("BILLING-003", { supersedes: "BILLING-002" }),
-      ]),
-    );
+    const { newId } = await TestPlatform.at(repo).handle("BILLING").supersede("BILLING-002");
+    expect(newId).toBe("BILLING-003");
+    await plantEdit(repo, "BILLING", (dom) => {
+      entryOf(dom, newId).supersedes = "BILLING-002";
+    });
     writeFileSync(
       join(repo, "src", "billing.ts"),
       `// billing implementation\nexport function charge() {} // ${tag("BILLING-001")}\nexport function renew() {} // ${tag("BILLING-003")}\n`,
@@ -287,10 +253,7 @@ describe("spec guard — suppressions (GUARD-006/007)", () => {
   test("no override comment exists: an in-diff acknowledgement does NOT suppress the loss (GUARD-012)", async () => {
     // Delete BILLING-001 and leave an approve-style comment in the diff — the
     // escape hatch is gone; the deletion is still reported.
-    writeFileSync(
-      join(repo, "spec-engine", "BILLING", "SPEC.json"),
-      billingJson([activeReq("BILLING-002")]),
-    );
+    await removeBilling(repo, "BILLING-001");
     writeFileSync(
       join(repo, "src", "billing.ts"),
       `// billing implementation — ${approve("BILLING-001", "acknowledged")}\nexport function refund() {} // ${tag("BILLING-002")}\n`,
@@ -308,8 +271,8 @@ describe("spec guard — non-git graceful exit (GUARD-008)", () => {
   test("a non-git platform warns NOT_A_GIT_REPO on stderr and exits 0", async () => {
     const nongit = mkdtempSync(join(tmpdir(), "spec-guard-nongit-"));
     try {
-      mkdirSync(join(nongit, "spec-engine", "BILLING"), { recursive: true });
-      writeFileSync(join(nongit, "spec-engine", "BILLING", "SPEC.json"), BILLING_BASE);
+      const billing = await TestPlatform.at(nongit).domain("BILLING", { owner: "drea" });
+      await billing.reqs(2);
       const r = await runGuard({ platformDir: nongit, json: true });
       expect(r.code).toBe(0);
       expect(r.stderr).toContain("NOT_A_GIT_REPO");
@@ -322,10 +285,7 @@ describe("spec guard — non-git graceful exit (GUARD-008)", () => {
 
 describe("spec guard — deterministic --json (GUARD-009)", () => {
   test("identical mutation → byte-identical JSON across runs", async () => {
-    writeFileSync(
-      join(repo, "spec-engine", "BILLING", "SPEC.json"),
-      billingJson([activeReq("BILLING-002")]),
-    );
+    await removeBilling(repo, "BILLING-001");
     const a = await runGuard({ platformDir: repo, json: true });
     const b = await runGuard({ platformDir: repo, json: true });
     expect(a.stdout).toBe(b.stdout);
@@ -342,7 +302,7 @@ describe("spec guard — platform nested below the git root (1.2)", () => {
   let parent: string;
   let platform: string;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     parent = mkdtempSync(join(tmpdir(), "spec-guard-nested-"));
     platform = join(parent, "app");
     mkdirSync(platform, { recursive: true });
@@ -350,7 +310,7 @@ describe("spec guard — platform nested below the git root (1.2)", () => {
     // followed by deleting `app/.git` races the detached maintenance process a
     // commit can leave behind, which recreates `app/.git` and turns `app` into
     // an embedded repo with no commits at the parent's `git add -A`.
-    writeBaseline(platform);
+    await writeBaseline(platform);
     writeFileSync(join(parent, ".gitignore"), "app/.spec-engine/\n");
     git(parent, "init", "-q");
     git(parent, "add", "-A");
@@ -368,10 +328,7 @@ describe("spec guard — platform nested below the git root (1.2)", () => {
   });
 
   test("REQUIREMENT_REMOVED is detected when the platform is nested (no longer fails open)", async () => {
-    writeFileSync(
-      join(platform, "spec-engine", "BILLING", "SPEC.json"),
-      billingJson([activeReq("BILLING-002")]),
-    );
+    await removeBilling(platform, "BILLING-001");
     const r = await runGuard({ platformDir: platform, json: true });
     expect(r.code).toBe(1);
     const rows = JSON.parse(r.stdout) as Array<{ kind: string; req_id: string }>;

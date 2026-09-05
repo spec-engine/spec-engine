@@ -6,7 +6,12 @@
 // written through the single validateAndWrite seam.
 
 import { existsSync } from "node:fs";
-import { type EarsClauses, parseEarsStatement, validateAndWrite } from "@spec-engine/shared";
+import {
+  type EarsClauses,
+  parseEarsStatement,
+  type SpecCite,
+  validateAndWrite,
+} from "@spec-engine/shared";
 import { nextRequirementId } from "../authoring/domains";
 import { localToday } from "../authoring/edit";
 import { extractRefsFromText, resolveFileRef } from "../authoring/filerefs";
@@ -27,6 +32,12 @@ export interface MintInput {
   livesIn: string[];
   /** Originating ticket, recorded as `created` provenance. Opaque, never an id. */
   issue?: string;
+  /** Defaults to `active`. A `draft` is a promise not yet agreed; code may not bind it. */
+  status?: "active" | "draft";
+  /** Ids this requirement relates to; rendered by `spec relations`. */
+  relates?: string[];
+  /** Pinned glossary citations. */
+  cites?: SpecCite[];
 }
 
 export interface MintResult {
@@ -88,15 +99,16 @@ export async function mint(input: MintInput): Promise<MintResult | OpFailure> {
   const requirements = Array.isArray(domain.requirements) ? domain.requirements : [];
   requirements.push({
     id,
-    status: "active",
+    status: input.status ?? "active",
     statement: input.statement,
     why: input.why || null,
     supersedes: null,
     supersededBy: null,
-    relates: [],
+    relates: input.relates ?? [],
     livesIn: input.livesIn,
     // @spec PROV-003
     issues: input.issue ? [{ role: "created", id: input.issue }] : [],
+    cites: input.cites ?? [],
   });
   domain.requirements = requirements;
   domain.updated = localToday();

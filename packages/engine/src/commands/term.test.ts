@@ -30,10 +30,11 @@
 // @spec REQ-033 unit
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { nextRequirementId } from "../authoring/domains";
+import { TestPlatform } from "../testing/platform";
 import { termCommand, termListCommand, termReviseCommand } from "./term";
 
 let tmp: string;
@@ -83,14 +84,9 @@ afterEach(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 
-/** Write a reserved, empty TERM domain (mirror the real spec-engine/TERM). */
-function writeTermDomain(root: string, updated = "2026-07-08"): void {
-  const dir = join(root, "spec-engine", "TERM");
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(
-    join(dir, "SPEC.json"),
-    `${JSON.stringify({ key: "TERM", owner: null, specVersion: 1, updated, requirements: [] }, null, 2)}\n`,
-  );
+/** Scaffold the reserved, empty TERM domain (mirror the real spec-engine/TERM). */
+async function writeTermDomain(root: string): Promise<void> {
+  await TestPlatform.at(root).terms();
 }
 
 function readTermDomain(): {
@@ -116,7 +112,7 @@ function setIsTTY(value: boolean | undefined): void {
 // ── Test A — author ─────────────────────────────────────────────────────────
 describe("spec term — author (Wave B)", () => {
   test("`spec term <name> --def` appends TERM-001 with term/statement, status active", async () => {
-    writeTermDomain(tmp);
+    await writeTermDomain(tmp);
     await termRun({
       args: { name: "Domain", def: "a named subject area of requirements", platformDir: tmp },
       rawArgs: [],
@@ -134,7 +130,7 @@ describe("spec term — author (Wave B)", () => {
   });
 
   test("--aliases splits on comma into aliases[]; --json prints { id, file }", async () => {
-    writeTermDomain(tmp);
+    await writeTermDomain(tmp);
     await termRun({
       args: {
         name: "Spec",
@@ -159,7 +155,7 @@ describe("spec term — author (Wave B)", () => {
 // ── Test B — list ───────────────────────────────────────────────────────────
 describe("spec term list — enumerate (Wave B)", () => {
   test("lists both terms' ids + names after authoring, sorted by id", async () => {
-    writeTermDomain(tmp);
+    await writeTermDomain(tmp);
     await termRun({
       args: { name: "Domain", def: "a subject area", platformDir: tmp },
       rawArgs: [],
@@ -178,7 +174,7 @@ describe("spec term list — enumerate (Wave B)", () => {
   });
 
   test("--json emits a sorted array of { id, term, status }", async () => {
-    writeTermDomain(tmp);
+    await writeTermDomain(tmp);
     await termRun({
       args: { name: "Domain", def: "a subject area", platformDir: tmp },
       rawArgs: [],
@@ -194,7 +190,7 @@ describe("spec term list — enumerate (Wave B)", () => {
 // ── Test C — next-id (non-TTY id query, no --def) ────────────────────────────
 describe("spec term — non-TTY id query (D-02 mirror)", () => {
   test("no --def, non-TTY → prints the next unused TERM id, zero writes", async () => {
-    writeTermDomain(tmp);
+    await writeTermDomain(tmp);
     const specPath = join(tmp, "spec-engine", "TERM", "SPEC.json");
     const before = readFileSync(specPath, "utf8");
     setIsTTY(false);
@@ -204,7 +200,7 @@ describe("spec term — non-TTY id query (D-02 mirror)", () => {
   });
 
   test("--json id query prints { domain, next_id }, zero writes", async () => {
-    writeTermDomain(tmp);
+    await writeTermDomain(tmp);
     const specPath = join(tmp, "spec-engine", "TERM", "SPEC.json");
     const before = readFileSync(specPath, "utf8");
     await termRun({ args: { name: "X", platformDir: tmp, json: true }, rawArgs: [] });
@@ -218,7 +214,7 @@ describe("spec term — non-TTY id query (D-02 mirror)", () => {
 describe("spec term revise — in-place definition edit with version bump (A2)", () => {
   // @spec SCHM-021 unit
   test("revises the statement in place (same id) and bumps envelope specVersion", async () => {
-    writeTermDomain(tmp);
+    await writeTermDomain(tmp);
     await termRun({
       args: { name: "Domain", def: "first definition", platformDir: tmp },
       rawArgs: [],
@@ -240,7 +236,7 @@ describe("spec term revise — in-place definition edit with version bump (A2)",
   });
 
   test("revise on a non-TERM id is a usage error (exit 2)", async () => {
-    writeTermDomain(tmp);
+    await writeTermDomain(tmp);
     let caught: ExitError | null = null;
     try {
       await termReviseRun({ args: { id: "BILLING-001", def: "x", platformDir: tmp }, rawArgs: [] });

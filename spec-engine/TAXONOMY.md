@@ -19,9 +19,10 @@ charter here to decide whether a new requirement belongs in it.
 - Domains describe product promises. A requirement belongs to the domain whose
   promise it protects.
 - `livesIn` records where the promise is enforced, not which domain owns it.
-- A rule that protects no user-facing promise (an architecture convention, an
-  import fence) is a development convention in AGENTS.md or a CI script, not a
-  requirement. There is no ARCH domain.
+- A rule that protects no user-facing promise is a development convention in
+  AGENTS.md or a CI script, not a requirement. A CI fence that protects a
+  promise carries that promise's id: the fence function is tagged with it and
+  the fence label starts with it. There is no ARCH domain.
 
 ## Requirement id format
 

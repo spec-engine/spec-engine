@@ -387,6 +387,81 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "SCHM-025",
+      "status": "active",
+      "statement": "The spec engine shall import bun:sqlite from exactly one file, storage/sqlite.ts, so every read and write of the derived index passes through the single Storage seam.",
+      "why": "A second import forks the storage contract, and the CLI, webapp, and MCP can then disagree over the same index.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "scripts/arch-fences.sh"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-026",
+      "status": "active",
+      "statement": "The spec engine shall write every SPEC.json, including one a test creates, through the single validating write seam; a planted-defect fixture is the only file written by hand.",
+      "why": "A test that serializes an envelope by hand restates the shape from memory, so a schema change leaves the suite proving a file the engine would never write.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "scripts/arch-fences.sh"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-027",
+      "status": "active",
+      "statement": "The spec engine shall reach the validating write seam and the requirement id allocator only through the operations layer, so a command, an HTTP route, and an MCP tool cannot write a domain file on their own.",
+      "why": "A surface that writes directly forks the lifecycle rules, and the same verb then behaves differently on the CLI, the API, and MCP.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "scripts/arch-fences.sh"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-028",
+      "status": "active",
+      "statement": "The derived index schema shall declare no CHECK, FOREIGN KEY, or UNIQUE constraint on a domain field, so a spec defect lands as a diagnostic row instead of a failed insert.",
+      "why": "A database constraint turns a duplicate id or a bad status into an index crash, and the defect is never reported as a diagnostic.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "scripts/arch-fences.sh"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-029",
+      "status": "active",
+      "statement": "The spec engine shall carry the derived index DDL as inline TypeScript strings in the shared package, never as .sql files, so the published bundle ships its schema with no sidecar file.",
+      "why": "A .sql sidecar is missed by the bundler, and the installed CLI then fails to open or create an index.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "scripts/arch-fences.sh"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
   ]
 }

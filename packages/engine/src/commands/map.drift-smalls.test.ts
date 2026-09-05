@@ -16,12 +16,14 @@
 // @spec INDX-006 integration
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { Diagnostic, Storage } from "@spec-engine/shared";
 import { runIndex } from "../indexer/pipeline";
 import { openStorage } from "../storage/sqlite";
 import { cloneFixture } from "../testing/cloneFixture";
+import { entryOf, plantEdit } from "../testing/plant";
+import { TestPlatform } from "../testing/platform";
 import { mapCommand } from "./map";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "platform-fixture");
@@ -65,10 +67,9 @@ async function diagnose(): Promise<Diagnostic[]> {
 describe("DRAFT_REFERENCED — code bound to an unapproved promise", () => {
   test("a tag on a Draft requirement fires a warning; flipping to Active clears it", async () => {
     // BILLING-002 is Active and tagged in api/src. Flip it to draft.
-    const specPath = join(platformDir, "spec-engine", "BILLING", "SPEC.json");
-    const doc = JSON.parse(readFileSync(specPath, "utf8"));
-    doc.requirements.find((r: { id: string }) => r.id === "BILLING-002").status = "draft";
-    writeFileSync(specPath, `${JSON.stringify(doc, null, 2)}\n`);
+    await plantEdit(platformDir, "BILLING", (doc) => {
+      entryOf(doc, "BILLING-002").status = "draft";
+    });
 
     const rows = await diagnose();
     const hit = rows.find((d) => d.code === "DRAFT_REFERENCED" && d.req_id === "BILLING-002");
@@ -88,31 +89,9 @@ describe("GLOSSARY_DRIFT — spec check surfaces the round-trip break itself", (
   test("a committed GLOSSARY.md that mismatches the TERM store is a warning; regenerated content clears it", async () => {
     const { generateGlossary, glossaryDriftDiagnostic } = await import("../operations/glossary");
     // Give the cloned fixture a one-term TERM store + a drifted glossary.
-    const termDir = join(platformDir, "spec-engine", "TERM");
-    const { mkdirSync } = await import("node:fs");
-    mkdirSync(termDir, { recursive: true });
-    writeFileSync(
-      join(termDir, "SPEC.json"),
-      `${JSON.stringify(
-        {
-          key: "TERM",
-          owner: null,
-          specVersion: 1,
-          updated: "2026-07-30",
-          requirements: [
-            {
-              id: "TERM-001",
-              status: "active",
-              statement: "A bounded area of the spec taxonomy.",
-              term: "Domain",
-              section: null,
-            },
-          ],
-        },
-        null,
-        2,
-      )}\n`,
-    );
+    const fx = TestPlatform.at(platformDir);
+    await fx.terms();
+    await fx.term({ term: "Domain", definition: "A bounded area of the spec taxonomy." });
     writeFileSync(join(platformDir, "GLOSSARY.md"), "# Glossary\n\nstale human view\n");
 
     const drifted = glossaryDriftDiagnostic(platformDir);
@@ -145,9 +124,8 @@ describe("staleness warning — a warm index older than a spec edit says so", ()
     await mapRun({ args: { platformDir, noPrompt: true }, rawArgs: [] });
     expect(errs.join("\n")).not.toContain("may be stale");
 
-    // Edit a spec file with an mtime later than the DB.
+    // Touch a spec file so its mtime is later than the DB.
     const specPath = join(platformDir, "spec-engine", "AUTH", "SPEC.json");
-    writeFileSync(specPath, readFileSync(specPath, "utf8"));
     const future = new Date(Date.now() + 5_000);
     utimesSync(specPath, future, future);
 

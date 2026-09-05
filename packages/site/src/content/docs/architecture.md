@@ -95,18 +95,18 @@ Reads take an open `Storage` handle because the surface owns the handle's lifeti
 
 ## The single seams
 
-Each of these exists exactly once, and a grep fence in `scripts/arch-fences.sh` fails CI if a second copy appears.
+Each of these exists exactly once, and a grep fence in `scripts/arch-fences.sh` fails CI if a second copy appears. Every fence label starts with the id of the requirement the fence enforces, and the fence function carries that id as its `@spec` tag.
 
 | Seam | What goes through it | Fence |
 | --- | --- | --- |
 | `runIndex` | Every index build. One transaction, one `build_id` | reviewed, not fenced |
-| `validateAndWrite` | Every write of a `SPEC.json` file | `VAL-01 validateAndWrite seam` |
-| `bun:sqlite` import | Only `storage/sqlite.ts` may import it | `D-08 engine-internal bun:sqlite`, `D-11 bun:sqlite outside engine` |
+| `validateAndWrite` | Every write of a `SPEC.json` file, a test's fixture included; a planted defect under `src/testing/fixtures/` is the only file written by hand | `SCHM-026 every SPEC.json write goes through validateAndWrite` |
+| `bun:sqlite` import | Only `storage/sqlite.ts` may import it | `SCHM-025 bun:sqlite outside storage/sqlite.ts`, `SCHM-025 bun:sqlite outside the engine` |
 | `Storage` interface | Every read the CLI, API, and MCP make | the webapp import fence in `packages/webapp/test/import-fence.test.ts` |
-| Operations | The write seam and the id allocator are reached only through `operations/`; no command, route, or tool imports them | `OPS-01 write seam under operations` |
-| No model calls | The engine never runs an LLM. The MCP authoring prompt is a text template | `AUTHOR-003 llm-free engine` |
-| Derived versions | No authored `specVersion` on requirement domains | `SCHM-008 no authored specVersion` |
-| Generated docs | `GLOSSARY.md` and the TAXONOMY charters are regenerated, never hand-edited | `TERM-06 glossary round-trip`, `CHRT charters generated` |
+| Operations | The write seam and the id allocator are reached only through `operations/`; no command, route, or tool imports them. A test's fixture builder (`src/testing/platform.ts`) is one more caller of the same operations | `SCHM-027 write seam under operations` |
+| No model calls | The engine never runs an LLM. The MCP authoring prompt is a text template | `AUTHOR-008 llm-free engine` |
+| Derived versions | No authored `specVersion` on requirement domains | `SCHM-020 no authored specVersion` |
+| Generated docs | `GLOSSARY.md` and the TAXONOMY charters are regenerated, never hand-edited | `CHCK-020 glossary round-trip`, `CHRT-007 charters generated from the envelopes` |
 
 ## Read path
 
@@ -143,7 +143,7 @@ The six headline invariants (cold-rebuild identity, `check --ci` builds fresh, o
 | Don't | Why | Do instead |
 | --- | --- | --- |
 | Write a value into the index that cannot be re-derived | A cold rebuild must give an identical result | Put truth in `SPEC.json` or a tag; express the report as a view |
-| Import `bun:sqlite` in a second file | Forks the storage contract and reds the D-08 fence | Extend `Storage` and implement it in `storage/sqlite.ts` |
+| Import `bun:sqlite` in a second file | Forks the storage contract and reds the SCHM-025 fence | Extend `Storage` and implement it in `storage/sqlite.ts` |
 | `Bun.write` a spec file directly | Skips schema validation | Mutate the envelope and call `validateAndWrite` |
 | Use a ticket number as a requirement id or in a tag | Tickets are temporary; requirements outlive them | Mint with `spec req`, record the ticket with `--issue` |
 | "Fix" a defect under `fixtures/` | Those defects are what `spec check` exists to catch | Leave them. Tags under `fixtures/` never index |

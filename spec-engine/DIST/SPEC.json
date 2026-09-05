@@ -1,7 +1,7 @@
 {
   "key": "DIST",
   "owner": null,
-  "updated": "2026-07-30",
+  "updated": "2026-09-05",
   "scope": "The npm distribution surface: what the published @spec-engine/spec-engine artifact contains and the CLI surfaces that exist only because of it (spec docs, the non-Bun runtime guard). Belongs here: tarball-content promises; the bin wrapper's runtime guard; the offline docs command. Does not belong here: the webapp routes the artifact embeds (SERV); the compiled-binary channel (CI-owned); the docs site content (packages/site). Boundary case: spec docs binds loopback like spec serve, but it is a distribution surface over static files, so the promise lives here.",
   "grammar": "ears",
   "requirements": [
@@ -173,6 +173,51 @@
       "relates": [],
       "livesIn": [
         "packages/engine/scripts/build-npm.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DIST-012",
+      "status": "active",
+      "statement": "The README shall name spec init and the NO_SPEC_CONFIG diagnostic, so an adopter reading the warning can find the command that clears it.",
+      "why": "An adopter who sees NO_SPEC_CONFIG with no documented command leaves the sibling repo unwired.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "scripts/arch-fences.sh"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DIST-013",
+      "status": "active",
+      "statement": "The README and AGENTS.md shall each name SPEC.json, spec migrate, trusted-red, and --results, so the shipped documentation describes the JSON model, the cutover command, and the proof gate.",
+      "why": "Documentation that omits the model, the cutover, or the proof gate leaves an adopter on the retired Markdown format or without the trusted-red check.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "scripts/arch-fences.sh"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DIST-014",
+      "status": "active",
+      "statement": "The repository shall ship no spec-engine.config.example.json, so spec init stays the only path that authors a member config.",
+      "why": "A stale example config gets copied by hand and carries fields spec init no longer writes.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "scripts/arch-fences.sh"
       ],
       "issues": [],
       "aliases": [],

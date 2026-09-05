@@ -13,82 +13,40 @@
 // Tag lines composed via src/testing/specTag.ts (dogfood rule).
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { type DomainHandle, TestPlatform } from "../testing/platform";
 import { specTag } from "../testing/specTag";
 import { buildMcpServer } from "./mcp";
 
-let tmp: string;
+let fx: TestPlatform;
 let platform: string;
+let billing: DomainHandle;
 let client: Client;
 let cleanup: (() => Promise<void>) | null = null;
-
-// D2: JSON is the sole spec format. Two Active BILLING reqs → nextRequirementId
-// reads SPEC.json and allocates BILLING-003.
-const BILLING_001 = {
-  id: "BILLING-001",
-  status: "active",
-  statement: "renewal charges use the current plan price",
-  why: "revenue",
-  supersedes: null,
-  supersededBy: null as string | null,
-  relates: [] as string[],
-  livesIn: ["renew.ts"],
-  issues: [] as Array<{ role: string; id: string }>,
-};
-const BILLING_002 = {
-  id: "BILLING-002",
-  status: "active",
-  statement: "refunds reverse the original charge",
-  why: "trust",
-  supersedes: null,
-  supersededBy: null as string | null,
-  relates: [] as string[],
-  livesIn: [] as string[],
-  issues: [] as Array<{ role: string; id: string }>,
-};
 
 // A distinctive scope so the AUTHOR-003 charter-injection prompt test can
 // assert the exact substring the prompt template injects for domain=BILLING.
 const BILLING_SCOPE = "billing lifecycle: renewals, refunds, and invoice pricing";
 
-function writeBillingSpec(reqs: Array<Record<string, unknown>>): void {
-  writeFileSync(
-    join(platform, "spec-engine", "BILLING", "SPEC.json"),
-    JSON.stringify(
-      {
-        key: "BILLING",
-        owner: null,
-        specVersion: 1,
-        updated: "2026-06-01",
-        scope: BILLING_SCOPE,
-        requirements: reqs,
-      },
-      null,
-      2,
-    ),
-  );
-}
-
+// Two Active BILLING reqs → nextRequirementId reads SPEC.json and allocates
+// BILLING-003.
 beforeEach(async () => {
-  tmp = mkdtempSync(join(tmpdir(), "spec-mcp-"));
-  platform = join(tmp, "platform");
-  mkdirSync(join(platform, "spec-engine", "BILLING"), { recursive: true });
-  writeBillingSpec([BILLING_001, BILLING_002]);
-  mkdirSync(join(platform, "api", "src"), { recursive: true });
-  mkdirSync(join(platform, "api", "test"), { recursive: true });
-  writeFileSync(join(platform, "api", "spec-engine.member.json"), '{ "specs": "spec-engine@1" }\n');
-  writeFileSync(
-    join(platform, "api", "src", "renew.ts"),
-    `export const renew = 1; ${specTag("BILLING-001")}`,
-  );
-  writeFileSync(
-    join(platform, "api", "test", "renew.test.ts"),
-    `export const t = 1; ${specTag("BILLING-001", "unit")}`,
-  );
+  fx = TestPlatform.temp("spec-mcp-");
+  platform = fx.dir;
+  billing = await fx.domain("BILLING", { scope: BILLING_SCOPE });
+  await billing.req({
+    statement: "renewal charges use the current plan price",
+    why: "revenue",
+    livesIn: ["renew.ts"],
+  });
+  await billing.req({ statement: "refunds reverse the original charge", why: "trust" });
+  await fx.member("api", {
+    files: {
+      "src/renew.ts": `export const renew = 1; ${specTag("BILLING-001")}`,
+      "test/renew.test.ts": `export const t = 1; ${specTag("BILLING-001", "unit")}`,
+    },
+  });
 
   const server = buildMcpServer(platform);
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
@@ -103,7 +61,7 @@ beforeEach(async () => {
 afterEach(async () => {
   await cleanup?.();
   cleanup = null;
-  rmSync(tmp, { recursive: true, force: true });
+  fx.remove();
 });
 
 /** Call a tool and parse its single text content block as JSON. */
@@ -175,23 +133,14 @@ describe("spec mcp — tool surface (L4)", () => {
   });
 
   test("spec_propagation classifies member repos for a superseded req", async () => {
-    // Supersede BILLING-001 by hand (status flip + successor) — then the
-    // api repo (still tagged BILLING-001) classifies ON_PREDECESSOR.
-    writeBillingSpec([
-      { ...BILLING_001, status: "superseded", supersededBy: "BILLING-003" },
-      BILLING_002,
-      {
-        id: "BILLING-003",
-        status: "active",
-        statement: "successor",
-        why: "w",
-        supersedes: null,
-        supersededBy: null,
-        relates: [],
-        livesIn: [],
-        issues: [],
-      },
-    ]);
+    // Supersede BILLING-001 — then the api repo (still tagged BILLING-001)
+    // classifies ON_PREDECESSOR.
+    const { newId } = await billing.supersede("BILLING-001", {
+      statement: "successor",
+      why: "w",
+      livesIn: [],
+    });
+    expect(newId).toBe("BILLING-003");
     // propagation takes the SUCCESSOR id: "who migrated to BILLING-003?"
     // api still tags BILLING-001 (the predecessor) → ON_PREDECESSOR.
     const rows = (await call("spec_propagation", { req_id: "BILLING-003" })) as Array<{
@@ -205,21 +154,7 @@ describe("spec mcp — tool surface (L4)", () => {
 
   test("every call reindexes fresh: an edit made after the previous call is visible", async () => {
     await call("spec_query", { text: "renewal" }); // builds the index
-    writeBillingSpec([
-      BILLING_001,
-      BILLING_002,
-      {
-        id: "BILLING-003",
-        status: "active",
-        statement: "invoices itemize tax separately",
-        why: "w",
-        supersedes: null,
-        supersededBy: null,
-        relates: [],
-        livesIn: [],
-        issues: [],
-      },
-    ]);
+    await billing.req({ statement: "invoices itemize tax separately", why: "w" });
     const rows = (await call("spec_query", { text: "itemize" })) as Array<{ req_id: string }>;
     expect(rows.map((r) => r.req_id)).toContain("BILLING-003");
   });

@@ -36,8 +36,13 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { writeVersionedDomain } from "../testing/versionedDomain";
+import { TestPlatform } from "../testing/platform";
 import { initCommand } from "./init";
+
+/** A domain whose derived version is `version`: one Active head behind `version - 1` supersede edges. */
+async function writeVersionedDomain(root: string, key: string, version: number): Promise<void> {
+  await (await TestPlatform.at(root).domain(key)).chain(version);
+}
 
 let tmp: string;
 let logs: string[];

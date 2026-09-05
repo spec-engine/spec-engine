@@ -17,13 +17,21 @@
 // system-wide, in `storage/sqlite.ts:7`).
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { cpSync, mkdtempSync, rmSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { NotASpecPlatformError } from "@spec-engine/shared";
-import { writeVersionedDomain } from "../testing/versionedDomain";
+import { TestPlatform } from "../testing/platform";
 import { assertSpecPlatform, discoverRepos, readRepoConfig } from "./discover";
+
+/** A planted SPEC.json that is not JSON at all. */
+const NOT_JSON = join(import.meta.dir, "..", "testing", "fixtures", "diagnostics", "not-json");
+
+/** A domain whose derived version is `version`: one Active head behind `version - 1` supersede edges. */
+async function writeVersionedDomain(root: string, key: string, version: number): Promise<void> {
+  await (await TestPlatform.at(root).domain(key)).chain(version);
+}
 
 let tmp: string;
 
@@ -363,8 +371,7 @@ describe("derived platform version in discoverRepos (RED-85)", () => {
 
   test("a domain SPEC.json the reader rejects contributes nothing (lenient derivation)", async () => {
     await writeVersionedDomain(tmp, "ALPHA", 3);
-    await mkdir(join(tmp, "spec-engine", "BROKEN"), { recursive: true });
-    await writeFile(join(tmp, "spec-engine", "BROKEN", "SPEC.json"), "{nope");
+    cpSync(join(NOT_JSON, "spec-engine"), join(tmp, "spec-engine"), { recursive: true });
 
     const r = await discoverRepos(tmp);
 

@@ -35,10 +35,11 @@
 // is NEVER mutated.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import { rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { listRepoNamesFromDb, poisonRepoRow } from "../storage/sqlite";
 import { cloneFixture } from "../testing/cloneFixture";
+import { entryOf, plantEdit } from "../testing/plant";
 import { gateCommand } from "./gate";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "platform-fixture");
@@ -127,16 +128,12 @@ describe("spec gate cold-rebuild invariant (GATE-03)", () => {
     const reason1 = out1.reason;
     expect(reason1).toBe("PASS");
 
-    // Step 2: mutate the spec — flip BILLING-009 active → draft. Fixture
-    // migrated to JSON in 18-03: structured status flip, not a Markdown replace.
-    const specPath = join(clone, "spec-engine", "BILLING", "SPEC.json");
-    const spec = JSON.parse(readFileSync(specPath, "utf8"));
-    const b9 = spec.requirements.find(
-      (r: { id: string; status: string }) => r.id === "BILLING-009",
-    );
-    expect(b9?.status).toBe("active");
-    b9.status = "draft";
-    writeFileSync(specPath, JSON.stringify(spec, null, 2));
+    // Step 2: mutate the spec — flip BILLING-009 active → draft.
+    await plantEdit(clone, "BILLING", (spec) => {
+      const b9 = entryOf(spec, "BILLING-009");
+      expect(b9.status).toBe("active");
+      b9.status = "draft";
+    });
 
     // Clear logs/errs so the second run's stdout/stderr is read cleanly.
     logs.length = 0;

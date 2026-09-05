@@ -17,11 +17,12 @@
 // @spec QURY-004 integration
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import { rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { Diagnostic, Storage } from "@spec-engine/shared";
 import { openStorage } from "../storage/sqlite";
 import { cloneFixture } from "../testing/cloneFixture";
+import { entryOf, plantEdit } from "../testing/plant";
 import { runIndex } from "./pipeline";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "platform-fixture");
@@ -40,15 +41,14 @@ afterEach(() => {
 });
 
 /** Flip one requirement's authored status in the cloned fixture's SPEC.json. */
-function setStatus(key: string, id: string, status: string): void {
-  const specPath = join(platformDir, "spec-engine", key, "SPEC.json");
-  const doc = JSON.parse(readFileSync(specPath, "utf8"));
-  const req = doc.requirements.find((r: { id: string }) => r.id === id);
-  req.status = status;
-  // A deprecated entry has no successor — drop the supersede link when the
-  // flip replaces a fixture-planted Superseded status.
-  req.supersededBy = null;
-  writeFileSync(specPath, `${JSON.stringify(doc, null, 2)}\n`);
+function setStatus(key: string, id: string, status: string): Promise<void> {
+  return plantEdit(platformDir, key, (doc) => {
+    const req = entryOf(doc, id);
+    req.status = status;
+    // A deprecated entry has no successor — drop the supersede link when the
+    // flip replaces a fixture-planted Superseded status.
+    req.supersededBy = null;
+  });
 }
 
 async function diagnose(): Promise<Diagnostic[]> {
@@ -60,7 +60,7 @@ describe("Deprecated status — reference diagnostic, search exclusion, legacy a
   test("a code tag on a deprecated requirement fires DEPRECATED_REFERENCED as an error", async () => {
     // BILLING-001 is tagged in mobile/src/billing.ts. Deprecated instead of
     // Superseded, the tag must fire the analogous error — not vanish.
-    setStatus("BILLING", "BILLING-001", "deprecated");
+    await setStatus("BILLING", "BILLING-001", "deprecated");
     const rows = await diagnose();
     const hit = rows.find((d) => d.code === "DEPRECATED_REFERENCED");
     expect(hit).toBeDefined();
@@ -78,13 +78,13 @@ describe("Deprecated status — reference diagnostic, search exclusion, legacy a
     await runIndex({ platformDir, storage });
     expect(storage.searchFts("session expires").some((h) => h.req_id === "AUTH-001")).toBe(true);
 
-    setStatus("AUTH", "AUTH-001", "deprecated");
+    await setStatus("AUTH", "AUTH-001", "deprecated");
     await runIndex({ platformDir, storage });
     expect(storage.searchFts("session expires").some((h) => h.req_id === "AUTH-001")).toBe(false);
   });
 
   test("the legacy authored spelling 'retired' reads as Deprecated", async () => {
-    setStatus("AUTH", "AUTH-001", "retired");
+    await setStatus("AUTH", "AUTH-001", "retired");
     const rows = await diagnose();
     // No BAD_STATUS for the legacy spelling…
     expect(rows.some((d) => d.code === "BAD_STATUS" && d.req_id === "AUTH-001")).toBe(false);

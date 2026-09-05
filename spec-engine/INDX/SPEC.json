@@ -1,7 +1,7 @@
 {
   "key": "INDX",
   "owner": null,
-  "updated": "2026-07-30",
+  "updated": "2026-09-05",
   "scope": "The derivation pipeline and index lifecycle: cold-rebuild identity, build_id determinism, structural integrity at index time, and spec index. Belongs here: deleting .spec-engine/ and rebuilding yields an identical result; build_id is deterministic for identical inputs; index-time structural checks; spec index itself. Does not belong here: check severities (CHCK); the SPEC.json envelope shape (SCHM). Boundary case: cold-rebuild identity is INDX's promise even though the model it rebuilds is defined in SCHM.",
   "grammar": "ears",
   "requirements": [
@@ -195,6 +195,21 @@
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INDX-013",
+      "status": "active",
+      "statement": "The spec engine shall derive requirements from SPEC.json files only, so a SPEC.md file in a domain directory is never parsed as a spec.",
+      "why": "A revived Markdown parse path makes two files compete for the same domain, and the index silently reads whichever one the code found first.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "scripts/arch-fences.sh"
+      ],
+      "issues": [],
       "aliases": [],
       "cites": []
     }

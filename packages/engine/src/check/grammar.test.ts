@@ -16,11 +16,11 @@
 // @spec SCHM-010 integration
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import { readFileSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { validateAndWrite } from "@spec-engine/shared";
 import { reqCommand } from "../commands/req";
 import { cloneFixture } from "../testing/cloneFixture";
+import { plantEdit } from "../testing/plant";
 import { statementGrammarDiagnostics } from "./grammar";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "platform-fixture");
@@ -63,13 +63,20 @@ afterEach(() => {
   rmSync(platformDir, { recursive: true, force: true });
 });
 
-/** Set grammar config on a fixture domain's envelope. */
-function declareGrammar(key: string, severity?: "warning" | "error"): void {
-  const specPath = join(platformDir, "spec-engine", key, "SPEC.json");
-  const doc = JSON.parse(readFileSync(specPath, "utf8"));
-  doc.grammar = "ears";
-  if (severity) doc.grammarSeverity = severity;
-  writeFileSync(specPath, `${JSON.stringify(doc, null, 2)}\n`);
+/** Declare grammar on a fixture domain's envelope after the fact. */
+function declareGrammar(key: string, severity?: "warning" | "error"): Promise<void> {
+  return plantEdit(platformDir, key, (doc) => {
+    doc.grammar = "ears";
+    if (severity) doc.grammarSeverity = severity;
+  });
+}
+
+function readAuth(): {
+  grammar?: string;
+  grammarSeverity?: string;
+  requirements: { id: string }[];
+} {
+  return JSON.parse(readFileSync(join(platformDir, "spec-engine", "AUTH", "SPEC.json"), "utf8"));
 }
 
 type RunFn = (ctx: { args: Record<string, unknown>; rawArgs: string[] }) => Promise<void>;
@@ -80,7 +87,7 @@ describe("STATEMENT_GRAMMAR — the check pass", () => {
     expect(await statementGrammarDiagnostics(platformDir)).toEqual([]);
 
     // The fixture's AUTH-001 statement has no "shall" — nonconforming.
-    declareGrammar("AUTH");
+    await declareGrammar("AUTH");
     const rows = await statementGrammarDiagnostics(platformDir);
     expect(rows.length).toBe(1);
     expect(rows[0]?.code).toBe("STATEMENT_GRAMMAR");
@@ -92,14 +99,14 @@ describe("STATEMENT_GRAMMAR — the check pass", () => {
   });
 
   test("grammarSeverity error promotes the rows to error severity", async () => {
-    declareGrammar("AUTH", "error");
+    await declareGrammar("AUTH", "error");
     const rows = await statementGrammarDiagnostics(platformDir);
     expect(rows.length).toBe(1);
     expect(rows[0]?.severity).toBe("error");
   });
 
   test("superseded entries are history — never judged", async () => {
-    declareGrammar("BILLING");
+    await declareGrammar("BILLING");
     const rows = await statementGrammarDiagnostics(platformDir);
     // BILLING-001 is Superseded in the fixture; only Active nonconforming
     // statements may appear, and none of the flagged rows is BILLING-001.
@@ -107,23 +114,19 @@ describe("STATEMENT_GRAMMAR — the check pass", () => {
   });
 
   test("a conforming statement emits nothing", async () => {
-    declareGrammar("AUTH");
-    const specPath = join(platformDir, "spec-engine", "AUTH", "SPEC.json");
-    const doc = JSON.parse(readFileSync(specPath, "utf8"));
-    doc.requirements[0].statement =
-      "When a session is idle for 30 days, the system shall expire it.";
-    const res = await validateAndWrite(specPath, doc, "spec-engine/AUTH/SPEC.json");
-    expect(res.ok).toBe(true);
+    await declareGrammar("AUTH");
+    await plantEdit(platformDir, "AUTH", (doc) => {
+      doc.requirements[0].statement =
+        "When a session is idle for 30 days, the system shall expire it.";
+    });
     expect(await statementGrammarDiagnostics(platformDir)).toEqual([]);
   });
 
   test("the grammar declaration round-trips through validateAndWrite (strip-trap)", async () => {
-    declareGrammar("AUTH", "error");
-    const specPath = join(platformDir, "spec-engine", "AUTH", "SPEC.json");
-    const doc = JSON.parse(readFileSync(specPath, "utf8"));
-    const res = await validateAndWrite(specPath, doc, "spec-engine/AUTH/SPEC.json");
-    expect(res.ok).toBe(true);
-    const reread = JSON.parse(readFileSync(specPath, "utf8"));
+    await declareGrammar("AUTH", "error");
+    // A second pass through the seam with no edit must keep both fields.
+    await plantEdit(platformDir, "AUTH", () => {});
+    const reread = readAuth();
     expect(reread.grammar).toBe("ears");
     expect(reread.grammarSeverity).toBe("error");
   });
@@ -131,7 +134,7 @@ describe("STATEMENT_GRAMMAR — the check pass", () => {
 
 describe("statement grammar — the write-time gate (spec req --text)", () => {
   test("warning severity: a nonconforming statement warns to stderr and still writes", async () => {
-    declareGrammar("AUTH");
+    await declareGrammar("AUTH");
     await reqRun({
       args: {
         domainPrefix: "AUTH",
@@ -143,14 +146,11 @@ describe("statement grammar — the write-time gate (spec req --text)", () => {
     });
     expect(errs.join("\n")).toContain("does not match the domain's EARS shape");
     expect(errs.join("\n")).toContain("written anyway");
-    const doc = JSON.parse(
-      readFileSync(join(platformDir, "spec-engine", "AUTH", "SPEC.json"), "utf8"),
-    );
-    expect(doc.requirements.some((r: { id: string }) => r.id === "AUTH-002")).toBe(true);
+    expect(readAuth().requirements.some((r) => r.id === "AUTH-002")).toBe(true);
   });
 
   test("error severity: a nonconforming statement is refused (exit 2), nothing written", async () => {
-    declareGrammar("AUTH", "error");
+    await declareGrammar("AUTH", "error");
     const before = readFileSync(join(platformDir, "spec-engine", "AUTH", "SPEC.json"), "utf8");
     let exitCode: number | null = null;
     try {
@@ -173,7 +173,7 @@ describe("statement grammar — the write-time gate (spec req --text)", () => {
   });
 
   test("a conforming statement under error severity writes cleanly with clauses in --json", async () => {
-    declareGrammar("AUTH", "error");
+    await declareGrammar("AUTH", "error");
     await reqRun({
       args: {
         domainPrefix: "AUTH",

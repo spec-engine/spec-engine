@@ -17,39 +17,38 @@
 //
 // `spec req <domain-prefix> [platformDir]` resolves a case-insensitive
 // domain prefix against the filesystem domain listing. On a TTY it authors a new
-// requirement interactively (260605-tqz / D-01); piped it prints the next
-// unused requirement id (D-02 — the composable id query).
+// requirement interactively; piped it prints the next unused requirement id
+// (the composable id query).
 //
-// Behaviors asserted (AUTHC IDs):
-//   - AUTHC-010 — case-insensitive prefix resolution (`bil` → BILLING).
-//   - AUTHC-011 — exact match wins over a longer-prefix ambiguity.
-//   - AUTHC-012 — ambiguous prefix → exit 2 + candidate list on stderr.
-//   - AUTHC-013 — no match → exit 2 + available-domains list on stderr.
-//   - AUTHC-014 — next id is parseSpecFile max(seq)+1, padded to 3 digits.
-//   - AUTHC-018 — `spec new` / `spec id` are GONE from the CLI surface
-//     (subprocess assertions against src/cli.ts: not in --help, no scaffold
-//     side effect, no next-id output).
-//   - AUTHC-019 — TTY gate: interactive per-field prompts (readline stubbed
-//     via mock.module with a FIFO answer queue — Plan 10-01 Approach A
-//     extended from single-answer to four sequential prompts).
-//   - AUTHC-020 — non-TTY fallback prints the next id, zero mutation
-//     (in-process AND subprocess layers).
-//   - AUTHC-021 — empty Requirement aborts at exit 0, SPEC.md byte-unchanged.
-//   - AUTHC-022 — append round-trips through parseSpecFile, advances
-//     nextRequirementId, bumps frontmatter `updated:` to the LOCAL date.
-//   - AUTHC-024 — unresolvable @-ref warns to stderr, entry still saves.
+// Behaviors asserted:
+//   - case-insensitive prefix resolution (`bil` → BILLING); an exact match
+//     wins over a longer-prefix ambiguity; an ambiguous prefix or no match
+//     exits 2 with the candidates on stderr.
+//   - next id is max(seq)+1, padded to 3 digits, over the working tree AND
+//     the file at HEAD.
+//   - `spec new` / `spec id` are GONE from the CLI surface.
+//   - TTY gate: interactive per-field prompts (readline stubbed via
+//     mock.module with a FIFO answer queue).
+//   - non-TTY fallback prints the next id, zero mutation (in-process AND
+//     subprocess layers).
+//   - an empty Requirement aborts at exit 0, the file byte-unchanged.
+//   - an append round-trips, advances nextRequirementId, bumps the envelope
+//     `updated` to the LOCAL date.
+//   - an unresolvable @-ref warns to stderr, the entry still saves.
 //
 // In-process tests drive `reqCommand.run` directly with the ExitError
 // sentinel pattern; the subprocess tests spawn the real entrypoint with
-// the running bun binary (cli-noargs.test.ts subprocess pattern).
-// process.stdin.isTTY is saved/restored per test (cli-prompt.test.ts
-// Pitfall 3 pattern); mock.restore() in afterEach resets mock.module state.
+// the running bun binary. process.stdin.isTTY is saved/restored per test;
+// mock.restore() in afterEach resets mock.module state.
 
-import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, mock, setSystemTime, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { nextRequirementId } from "../authoring/domains";
+import { localToday } from "../authoring/edit";
+import { plantEdit } from "../testing/plant";
+import { type DomainHandle, type RequirementInput, TestPlatform } from "../testing/platform";
 import { reqCommand } from "./req";
 
 let tmp: string;
@@ -89,11 +88,11 @@ afterEach(() => {
   console.log = originalLog;
   console.error = originalErr;
   process.exit = originalExit;
-  // Pitfall 3: restore the global isTTY snapshot (value may be undefined —
+  // Restore the global isTTY snapshot (value may be undefined —
   // defineProperty with configurable: true is the correct restore).
   Object.defineProperty(process.stdin, "isTTY", { value: originalIsTTY, configurable: true });
-  // WR-02: reset mock.module("node:readline") state so the FIFO stub never
-  // leaks across tests or sibling files via the shared module cache.
+  // Reset mock.module("node:readline") state so the FIFO stub never leaks
+  // across tests or sibling files via the shared module cache.
   mock.restore();
   rmSync(tmp, { recursive: true, force: true });
 });
@@ -118,40 +117,43 @@ async function expectExit2(fn: () => Promise<void>): Promise<void> {
 }
 
 /**
- * Write a schema-valid SPEC.json for `key` carrying one `active` requirement
- * per seq. This is the JSON write format (17-04); `spec req` reads it back,
- * appends through validateAndWrite, and re-serializes it.
+ * Scaffold `key` under `root` carrying `count` Active placeholder requirements
+ * (KEY-001..KEY-<count>), optionally authored on a fixed past date so a bumped
+ * `updated` is observable.
  */
-function writeDomain(root: string, key: string, seqs: number[], updated = "2026-06-05"): void {
-  const dir = join(root, "spec-engine", key);
-  mkdirSync(dir, { recursive: true });
-  const requirements = seqs.map((n) => ({
-    id: `${key}-${String(n).padStart(3, "0")}`,
-    status: "active",
-    statement: "placeholder",
-    why: null,
-    supersedes: null,
-    supersededBy: null,
-    relates: [],
-    livesIn: [],
-    issues: [],
-    changedAtVersion: 1,
-  }));
-  writeFileSync(
-    join(dir, "SPEC.json"),
-    `${JSON.stringify({ key, owner: null, specVersion: 1, updated, requirements }, null, 2)}\n`,
-  );
+async function seed(
+  root: string,
+  key: string,
+  count: number,
+  options: { scope?: string; updated?: string; first?: RequirementInput } = {},
+): Promise<DomainHandle> {
+  if (options.updated !== undefined) setSystemTime(new Date(`${options.updated}T12:00:00`));
+  try {
+    const domain = await TestPlatform.at(root).domain(
+      key,
+      options.scope === undefined ? {} : { scope: options.scope },
+    );
+    for (let i = 0; i < count; i++) {
+      await domain.req(i === 0 && options.first ? options.first : { statement: "placeholder" });
+    }
+    return domain;
+  } finally {
+    if (options.updated !== undefined) setSystemTime();
+  }
 }
 
-/** Override process.stdin.isTTY via property descriptor (Pitfall 3 — the
- *  beforeEach snapshot + afterEach restore make this global mutation safe). */
+function readSpec(root: string, key: string): string {
+  return readFileSync(join(root, "spec-engine", key, "SPEC.json"), "utf8");
+}
+
+/** Override process.stdin.isTTY via property descriptor (the beforeEach
+ *  snapshot + afterEach restore make this global mutation safe). */
 function setIsTTY(value: boolean | undefined): void {
   Object.defineProperty(process.stdin, "isTTY", { value, configurable: true });
 }
 
-/** Stub node:readline with a FIFO ANSWER QUEUE (Plan 10-01 mock.module
- *  Approach A, extended from single-answer): each of the four sequential
- *  field prompts consumes one queued answer; an exhausted queue yields "". */
+/** Stub node:readline with a FIFO ANSWER QUEUE: each of the sequential field
+ *  prompts consumes one queued answer; an exhausted queue yields "". */
 function mockReadlineQueue(answers: string[]): void {
   const queue = [...answers];
   mock.module("node:readline", () => ({
@@ -162,23 +164,12 @@ function mockReadlineQueue(answers: string[]): void {
   }));
 }
 
-/** Today's date in the LOCAL timezone (domain.ts:93-97 construction —
- *  NEVER toISOString, which rolls forward at UTC midnight; WR-05). */
-function localToday(): string {
-  const d = new Date();
-  return (
-    `${d.getFullYear()}-` +
-    `${String(d.getMonth() + 1).padStart(2, "0")}-` +
-    `${String(d.getDate()).padStart(2, "0")}`
-  );
-}
-
-describe("spec req — prefix resolution (AUTHC-010/011/012/013)", () => {
-  beforeEach(() => {
+describe("spec req — prefix resolution", () => {
+  beforeEach(async () => {
     // BILLING max seq 9 → next 010; BOOKING + AUTH for ambiguity/exactness.
-    writeDomain(tmp, "BILLING", [1, 9]);
-    writeDomain(tmp, "BOOKING", [1]);
-    writeDomain(tmp, "AUTH", [1]);
+    await seed(tmp, "BILLING", 9);
+    await seed(tmp, "BOOKING", 1);
+    await seed(tmp, "AUTH", 1);
   });
 
   test("unique lowercase prefix `bil` resolves to BILLING → BILLING-010", async () => {
@@ -187,7 +178,7 @@ describe("spec req — prefix resolution (AUTHC-010/011/012/013)", () => {
   });
 
   test("exact match wins over longer-prefix ambiguity (`auth` with AUTH + AUTHX)", async () => {
-    writeDomain(tmp, "AUTHX", [1]);
+    await seed(tmp, "AUTHX", 1);
     await runReq("auth", tmp);
     expect(logs).toEqual(["AUTH-002"]);
   });
@@ -210,9 +201,9 @@ describe("spec req — prefix resolution (AUTHC-010/011/012/013)", () => {
   });
 });
 
-describe("spec req — next-id correctness (AUTHC-014)", () => {
+describe("spec req — next-id correctness", () => {
   test("fresh domain with only KEY-001 → KEY-002", async () => {
-    writeDomain(tmp, "FRESH", [1]);
+    await seed(tmp, "FRESH", 1);
     await runReq("FRESH", tmp);
     expect(logs).toEqual(["FRESH-002"]);
   });
@@ -221,7 +212,7 @@ describe("spec req — next-id correctness (AUTHC-014)", () => {
   test("a deleted entry's id is never re-minted — the file at HEAD holds the max", async () => {
     // Commit FRESH-001..003, then delete 003 from the working tree. The next
     // id must be 004, not a recycled 003 (ids are permanent).
-    writeDomain(tmp, "FRESH", [1, 2, 3]);
+    await seed(tmp, "FRESH", 3);
     const git = (...args: string[]) => {
       const r = Bun.spawnSync(["git", "-C", tmp, ...args], { stdout: "pipe", stderr: "pipe" });
       expect(r.exitCode).toBe(0);
@@ -229,17 +220,19 @@ describe("spec req — next-id correctness (AUTHC-014)", () => {
     git("init", "-q");
     git("-c", "user.email=t@t", "-c", "user.name=t", "add", "-A");
     git("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "seed");
-    writeDomain(tmp, "FRESH", [1, 2]);
+    await plantEdit(tmp, "FRESH", (doc) => {
+      doc.requirements = doc.requirements.filter((r) => r.id !== "FRESH-003");
+    });
     expect(await nextRequirementId(tmp, "FRESH")).toBe("FRESH-004");
   });
 
   test("outside git, the working-tree max alone decides (never-fail-non-git)", async () => {
-    writeDomain(tmp, "FRESH", [1, 2]);
+    await seed(tmp, "FRESH", 2);
     expect(await nextRequirementId(tmp, "FRESH")).toBe("FRESH-003");
   });
 });
 
-describe("spec req — platform guard (AUTHC-015)", () => {
+describe("spec req — platform guard", () => {
   test("non-platform dir → exit 2 with friendly message", async () => {
     await expectExit2(() => runReq("anything", tmp));
     expect(errs.some((m) => m.includes("is not a Spec Engine platform"))).toBe(true);
@@ -247,12 +240,13 @@ describe("spec req — platform guard (AUTHC-015)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Interactive authoring (260605-tqz — AUTHC-019/021/022/024, D-01/D-03)
+// Interactive authoring
 // ---------------------------------------------------------------------------
 
-describe("spec req — interactive authoring (AUTHC-019/021/022/024)", () => {
-  test("TTY append: three answers → parseable em-dash block, updated: bumped, id round-trips", async () => {
-    writeDomain(tmp, "BILLING", [1, 9], "2020-01-01");
+describe("spec req — interactive authoring", () => {
+  test("TTY append: three answers → the entry saves, updated: bumped, id round-trips", async () => {
+    await seed(tmp, "BILLING", 9, { updated: "2020-01-01" });
+    expect(JSON.parse(readSpec(tmp, "BILLING")).updated).toBe("2020-01-01");
     // A resolvable @-ref target for the happy path (no warning expected).
     mkdirSync(join(tmp, "api", "src"), { recursive: true });
     writeFileSync(join(tmp, "api", "src", "renew.ts"), "// seam\n");
@@ -265,9 +259,8 @@ describe("spec req — interactive authoring (AUTHC-019/021/022/024)", () => {
 
     await runReq("bil", tmp);
 
-    const specPath = join(tmp, "spec-engine", "BILLING", "SPEC.json");
-    const domain = JSON.parse(readFileSync(specPath, "utf-8"));
-    // The appended requirement is a JSON object with status "active" (AUTHC-022).
+    const domain = JSON.parse(readSpec(tmp, "BILLING"));
+    // The appended requirement is a JSON object with status "active".
     const added = domain.requirements.find((r: { id: string }) => r.id === "BILLING-010");
     expect(added).toBeDefined();
     expect(added.status).toBe("active");
@@ -275,7 +268,7 @@ describe("spec req — interactive authoring (AUTHC-019/021/022/024)", () => {
     expect(added.why).toBe("Revenue correctness");
     // `lives` flows to livesIn[].
     expect(added.livesIn).toEqual(["@api/src/renew.ts"]);
-    // …envelope updated: bumped to today's LOCAL date (WR-05)…
+    // …envelope updated: bumped to today's LOCAL date…
     expect(domain.updated).toBe(localToday());
     // …and nextRequirementId advances past the appended entry.
     expect(await nextRequirementId(tmp, "BILLING")).toBe("BILLING-011");
@@ -286,10 +279,9 @@ describe("spec req — interactive authoring (AUTHC-019/021/022/024)", () => {
     expect(errs.some((l) => l.includes("warning"))).toBe(false);
   });
 
-  test("empty Requirement aborts: exit 0, stderr notice, SPEC.json byte-unchanged (AUTHC-021)", async () => {
-    writeDomain(tmp, "BILLING", [1, 9], "2020-01-01");
-    const specPath = join(tmp, "spec-engine", "BILLING", "SPEC.json");
-    const before = readFileSync(specPath, "utf-8");
+  test("empty Requirement aborts: exit 0, stderr notice, SPEC.json byte-unchanged", async () => {
+    await seed(tmp, "BILLING", 9, { updated: "2020-01-01" });
+    const before = readSpec(tmp, "BILLING");
     setIsTTY(true);
     mockReadlineQueue([""]);
 
@@ -300,16 +292,16 @@ describe("spec req — interactive authoring (AUTHC-019/021/022/024)", () => {
       if (e instanceof ExitError) caught = e;
       else throw e;
     }
-    // LOCKED per D-01: abort is exit 0 (git editor-abort tradition).
+    // Abort is exit 0 (git editor-abort tradition).
     expect(caught).not.toBeNull();
     expect(caught?.code).toBe(0);
     expect(errs.some((l) => l.includes("aborted"))).toBe(true);
-    expect(readFileSync(specPath, "utf-8")).toBe(before);
+    expect(readSpec(tmp, "BILLING")).toBe(before);
     expect(logs).toEqual([]);
   });
 
-  test("unresolvable @-ref warns to stderr but the entry STILL saves (AUTHC-024, D-03)", async () => {
-    writeDomain(tmp, "BILLING", [1], "2020-01-01");
+  test("unresolvable @-ref warns to stderr but the entry STILL saves", async () => {
+    await seed(tmp, "BILLING", 1, { updated: "2020-01-01" });
     setIsTTY(true);
     mockReadlineQueue(["Track refunds end to end", "Money correctness", "@does/not/exist.ts", ""]);
 
@@ -317,32 +309,29 @@ describe("spec req — interactive authoring (AUTHC-019/021/022/024)", () => {
 
     expect(errs.some((l) => l.includes("warning") && l.includes("@does/not/exist.ts"))).toBe(true);
     // The unresolvable @-ref was in the Binds prompt (not persisted in JSON),
-    // but the entry STILL saved — the warning never blocks the write (D-03).
-    const domain = JSON.parse(
-      readFileSync(join(tmp, "spec-engine", "BILLING", "SPEC.json"), "utf-8"),
-    );
+    // but the entry STILL saved — the warning never blocks the write.
+    const domain = JSON.parse(readSpec(tmp, "BILLING"));
     const added = domain.requirements.find((r: { id: string }) => r.id === "BILLING-002");
     expect(added).toBeDefined();
     expect(added.statement).toBe("Track refunds end to end");
   });
 
-  test("non-TTY in-process: prints next id, no prompts, no mutation (AUTHC-020, D-02)", async () => {
-    writeDomain(tmp, "BILLING", [1, 9]);
-    const specPath = join(tmp, "spec-engine", "BILLING", "SPEC.json");
-    const before = readFileSync(specPath, "utf-8");
+  test("non-TTY in-process: prints next id, no prompts, no mutation", async () => {
+    await seed(tmp, "BILLING", 9);
+    const before = readSpec(tmp, "BILLING");
     setIsTTY(false);
 
     await runReq("bil", tmp);
 
     expect(logs).toEqual(["BILLING-010"]);
     expect(errs).toEqual([]);
-    expect(readFileSync(specPath, "utf-8")).toBe(before);
+    expect(readSpec(tmp, "BILLING")).toBe(before);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Old commands gone (AUTHC-018) — subprocess layer against the real cli.ts.
-// Pattern from cli-noargs.test.ts: spawn the running bun binary.
+// Old commands gone — subprocess layer against the real cli.ts: spawn the
+// running bun binary.
 // ---------------------------------------------------------------------------
 
 const CLI = join(import.meta.dir, "..", "cli.ts");
@@ -350,8 +339,8 @@ const CLI = join(import.meta.dir, "..", "cli.ts");
 function runCli(...args: string[]): { exitCode: number; stdout: string; stderr: string } {
   const result = Bun.spawnSync({
     cmd: [process.execPath, CLI, ...args],
-    // stdin "ignore" — NOT a TTY, so the D-02 composable-id-query branch
-    // must fire (no prompts, no writes).
+    // stdin "ignore" — NOT a TTY, so the composable-id-query branch must fire
+    // (no prompts, no writes).
     stdin: "ignore",
     stdout: "pipe",
     stderr: "pipe",
@@ -363,24 +352,23 @@ function runCli(...args: string[]): { exitCode: number; stdout: string; stderr: 
   };
 }
 
-describe("spec req — non-TTY subprocess keeps the composable id query (AUTHC-020, D-02)", () => {
-  test("piped `spec req bil <dir>` prints the next id, exits 0, SPEC.json unchanged", () => {
-    const sub = mkdtempSync(join(tmpdir(), "spec-req-pipe-"));
+describe("spec req — non-TTY subprocess keeps the composable id query", () => {
+  test("piped `spec req bil <dir>` prints the next id, exits 0, SPEC.json unchanged", async () => {
+    const sub = TestPlatform.temp("spec-req-pipe-");
     try {
-      writeDomain(sub, "BILLING", [1, 9]);
-      const specPath = join(sub, "spec-engine", "BILLING", "SPEC.json");
-      const before = readFileSync(specPath, "utf-8");
-      const { exitCode, stdout } = runCli("req", "bil", sub);
+      await seed(sub.dir, "BILLING", 9);
+      const before = readSpec(sub.dir, "BILLING");
+      const { exitCode, stdout } = runCli("req", "bil", sub.dir);
       expect(exitCode).toBe(0);
       expect(stdout.trim()).toBe("BILLING-010");
-      expect(readFileSync(specPath, "utf-8")).toBe(before);
+      expect(readSpec(sub.dir, "BILLING")).toBe(before);
     } finally {
-      rmSync(sub, { recursive: true, force: true });
+      sub.remove();
     }
   });
 });
 
-describe("spec new / spec id removed (AUTHC-018)", () => {
+describe("spec new / spec id removed", () => {
   test("--help lists domain + req and has no new/id subcommand row", () => {
     const { exitCode, stdout } = runCli("--help");
     expect(exitCode).toBe(0);
@@ -388,7 +376,7 @@ describe("spec new / spec id removed (AUTHC-018)", () => {
     // ANSI escapes so the line-anchored row regexes see plain text. Rows
     // render as `  <name>    <description>`.
     // biome-ignore lint/suspicious/noControlCharactersInRegex: ANSI stripping requires the ESC control char
-    const plain = stdout.replace(/\u001b\[[0-9;]*m/g, "");
+    const plain = stdout.replace(/\[[0-9;]*m/g, "");
     expect(plain).toMatch(/^\s+domain\s/m);
     expect(plain).toMatch(/^\s+req\s/m);
     expect(plain).not.toMatch(/^\s+(new|id)\s/m);
@@ -418,18 +406,11 @@ describe("spec new / spec id removed (AUTHC-018)", () => {
 });
 
 // ----------------------------------------------------------------------------
-// RED-14 dead-end audit: nextRequirementId's defensive missing-file branch
-// (SPEC.json vanishing between the caller's listing and the read) existed
-// without a covering test.
+// SPEC.json is the ONLY spec format. `spec req` against a domain that owns no
+// SPEC.json is a clean typed error + exit 2, never an ENOENT crash.
 // ----------------------------------------------------------------------------
 
-// ----------------------------------------------------------------------------
-// Post-cutover (Phase 18, D2): SPEC.json is the ONLY spec format — the
-// Markdown read/seed path is deleted. `spec req` against a domain that owns
-// no SPEC.json is a clean typed error + exit 2, never an ENOENT crash.
-// ----------------------------------------------------------------------------
-
-describe("spec req — domain with no SPEC.json (D2)", () => {
+describe("spec req — domain with no SPEC.json", () => {
   test("no SPEC.json → a typed not_found refusal, not an ENOENT crash", async () => {
     // A domain dir that lists but has no spec file: the mint operation refuses
     // with a typed failure the command turns into exit 2.
@@ -449,7 +430,7 @@ describe("spec req — domain with no SPEC.json (D2)", () => {
   });
 });
 
-describe("nextRequirementId — missing SPEC.json (RED-14)", () => {
+describe("nextRequirementId — missing SPEC.json", () => {
   test("domain dir without SPEC.json → defensive <KEY>-001", async () => {
     // No spec-engine/GHOST/SPEC.json is ever written in this tmp platform.
     const id = await nextRequirementId(tmp, "GHOST");
@@ -458,50 +439,52 @@ describe("nextRequirementId — missing SPEC.json (RED-14)", () => {
 });
 
 // ----------------------------------------------------------------------------
-// Audit hygiene pass T4 — `--json` machine mode for the agent write-path:
-// the next-id query emits a parseable object and NEVER prompts, even on a
-// TTY (an agent that asked for JSON never wants readline).
+// `--json` machine mode for the agent write-path: the next-id query emits a
+// parseable object and NEVER prompts, even on a TTY (an agent that asked for
+// JSON never wants readline).
 // ----------------------------------------------------------------------------
 
 describe("spec req --json — machine mode", () => {
-  beforeEach(() => {
-    writeDomain(tmp, "BILLING", [1, 9]);
+  beforeEach(async () => {
+    await seed(tmp, "BILLING", 9);
   });
 
   test("non-TTY + --json prints {domain, next_id}, zero writes", async () => {
     setIsTTY(undefined);
-    const specPath = join(tmp, "spec-engine", "BILLING", "SPEC.json");
-    const before = readFileSync(specPath, "utf8");
+    const before = readSpec(tmp, "BILLING");
     await reqRun({ args: { domainPrefix: "bil", platformDir: tmp, json: true }, rawArgs: [] });
     expect(logs).toHaveLength(1);
     expect(JSON.parse(logs[0] ?? "")).toEqual({ domain: "BILLING", next_id: "BILLING-010" });
-    expect(readFileSync(specPath, "utf8")).toBe(before);
+    expect(readSpec(tmp, "BILLING")).toBe(before);
   });
 
   test("TTY + --json stays machine mode: JSON out, zero prompts, zero writes", async () => {
     setIsTTY(true);
     mockReadlineQueue([]); // would feed the interactive flow if it (wrongly) ran
-    const specPath = join(tmp, "spec-engine", "BILLING", "SPEC.json");
-    const before = readFileSync(specPath, "utf8");
+    const before = readSpec(tmp, "BILLING");
     await reqRun({ args: { domainPrefix: "BILLING", platformDir: tmp, json: true }, rawArgs: [] });
     expect(logs).toHaveLength(1);
     expect(JSON.parse(logs[0] ?? "")).toEqual({ domain: "BILLING", next_id: "BILLING-010" });
     expect(errs).toEqual([]); // no "Authoring …" banner, no abort notice
-    expect(readFileSync(specPath, "utf8")).toBe(before);
+    expect(readSpec(tmp, "BILLING")).toBe(before);
   });
 });
 
 // ----------------------------------------------------------------------------
-// L1 (lifecycle pass) — non-interactive authoring via field flags. With
-// `--text`, the entry appends WITHOUT prompting (even non-TTY); --why /
-// --lives fill the remaining fields (default empty). This is the
-// agent write-path: one invocation, zero readline.
+// Non-interactive authoring via field flags. With `--text`, the entry appends
+// WITHOUT prompting (even non-TTY); --why / --lives fill the remaining fields
+// (default empty). This is the agent write-path: one invocation, zero readline.
 // ----------------------------------------------------------------------------
 
-describe("spec req — field-flag authoring (L1)", () => {
-  beforeEach(() => {
-    writeDomain(tmp, "BILLING", [1, 9]);
+describe("spec req — field-flag authoring", () => {
+  beforeEach(async () => {
+    await seed(tmp, "BILLING", 9);
   });
+
+  function added(): Record<string, unknown> {
+    const domain = JSON.parse(readSpec(tmp, "BILLING"));
+    return domain.requirements.find((r: { id: string }) => r.id === "BILLING-010");
+  }
 
   test("non-TTY + --text appends the full entry without prompting", async () => {
     setIsTTY(undefined);
@@ -515,16 +498,13 @@ describe("spec req — field-flag authoring (L1)", () => {
       },
       rawArgs: [],
     });
-    const domain = JSON.parse(
-      readFileSync(join(tmp, "spec-engine", "BILLING", "SPEC.json"), "utf8"),
-    );
-    const added = domain.requirements.find((r: { id: string }) => r.id === "BILLING-010");
-    expect(added).toBeDefined();
-    expect(added.status).toBe("active");
-    expect(added.statement).toBe("Charge renewals at the current plan price");
-    expect(added.why).toBe("revenue path");
+    const entry = added();
+    expect(entry).toBeDefined();
+    expect(entry.status).toBe("active");
+    expect(entry.statement).toBe("Charge renewals at the current plan price");
+    expect(entry.why).toBe("revenue path");
     // `lives` → livesIn[].
-    expect(added.livesIn).toEqual(["lib-billing/renew.ts"]);
+    expect(entry.livesIn).toEqual(["lib-billing/renew.ts"]);
     // The append round-trips and advances the allocator.
     expect(await nextRequirementId(tmp, "BILLING")).toBe("BILLING-011");
     expect(logs.join("\n")).toContain("BILLING-010");
@@ -541,11 +521,7 @@ describe("spec req — field-flag authoring (L1)", () => {
       id: "BILLING-010",
       file: "spec-engine/BILLING/SPEC.json",
     });
-    const domain = JSON.parse(
-      readFileSync(join(tmp, "spec-engine", "BILLING", "SPEC.json"), "utf8"),
-    );
-    const added = domain.requirements.find((r: { id: string }) => r.id === "BILLING-010");
-    expect(added.statement).toBe("flag-authored");
+    expect(added().statement).toBe("flag-authored");
   });
 
   test("TTY + --text skips the interactive flow entirely (flags win)", async () => {
@@ -556,16 +532,12 @@ describe("spec req — field-flag authoring (L1)", () => {
       rawArgs: [],
     });
     expect(errs.join("\n")).not.toContain("Authoring");
-    const domain = JSON.parse(
-      readFileSync(join(tmp, "spec-engine", "BILLING", "SPEC.json"), "utf8"),
-    );
-    const added = domain.requirements.find((r: { id: string }) => r.id === "BILLING-010");
-    expect(added.statement).toBe("tty flag-authored");
+    expect(added().statement).toBe("tty flag-authored");
   });
 
   test("--why/--lives without --text is a usage error (exit 2, nothing written)", async () => {
     setIsTTY(undefined);
-    const before = readFileSync(join(tmp, "spec-engine", "BILLING", "SPEC.json"), "utf8");
+    const before = readSpec(tmp, "BILLING");
     await expectExit2(() =>
       reqRun({
         args: { domainPrefix: "BILLING", platformDir: tmp, why: "orphan flag" },
@@ -573,7 +545,7 @@ describe("spec req — field-flag authoring (L1)", () => {
       }),
     );
     expect(errs.join("\n")).toContain("--text");
-    expect(readFileSync(join(tmp, "spec-engine", "BILLING", "SPEC.json"), "utf8")).toBe(before);
+    expect(readSpec(tmp, "BILLING")).toBe(before);
   });
 
   test("empty --text is a usage error (exit 2)", async () => {
@@ -590,54 +562,26 @@ describe("spec req — field-flag authoring (L1)", () => {
       rawArgs: [],
     });
     expect(errs.join("\n")).toContain("@no/such/file.ts");
-    const domain = JSON.parse(
-      readFileSync(join(tmp, "spec-engine", "BILLING", "SPEC.json"), "utf8"),
-    );
-    const added = domain.requirements.find((r: { id: string }) => r.id === "BILLING-010");
-    expect(added.statement).toBe("see @no/such/file.ts");
+    expect(added().statement).toBe("see @no/such/file.ts");
   });
 });
 
 // ----------------------------------------------------------------------------
-// CHRT-005 — `spec req` echoes the resolved domain's charter (scope) to STDERR
-// at authoring time. The piped bare-id (stdout) and --json payload (stdout) must
+// `spec req` echoes the resolved domain's charter (scope) to STDERR at
+// authoring time. The piped bare-id (stdout) and --json payload (stdout) must
 // stay BYTE-IDENTICAL — charter chrome never leaks onto the machine channel.
 // A null/absent charter degrades gracefully to a single "no charter set" notice.
 // @spec CHRT-012 unit
 // ----------------------------------------------------------------------------
 
-describe("spec req — charter at authoring (CHRT-005)", () => {
-  /** Write a schema-valid SPEC.json for `key` carrying a charter `scope` plus one
-   *  active KEY-001 (so next id is KEY-002). */
-  function writeScopedDomain(key: string, scope: string): void {
-    const dir = join(tmp, "spec-engine", key);
-    mkdirSync(dir, { recursive: true });
-    const env = {
-      key,
-      owner: null,
-      specVersion: 1,
-      updated: "2026-06-05",
-      scope,
-      requirements: [
-        {
-          id: `${key}-001`,
-          status: "active",
-          statement: "placeholder",
-          why: null,
-          supersedes: null,
-          supersededBy: null,
-          relates: [],
-          livesIn: [],
-          issues: [],
-          changedAtVersion: 1,
-        },
-      ],
-    };
-    writeFileSync(join(dir, "SPEC.json"), `${JSON.stringify(env, null, 2)}\n`);
+describe("spec req — charter at authoring", () => {
+  /** Scaffold `key` carrying a charter `scope` plus one active KEY-001 (so next id is KEY-002). */
+  function writeScopedDomain(key: string, scope: string): Promise<DomainHandle> {
+    return seed(tmp, key, 1, { scope });
   }
 
   test("(a) TTY authoring prints the charter to stderr, never stdout", async () => {
-    writeScopedDomain("GUARD", "guard the loss gate");
+    await writeScopedDomain("GUARD", "guard the loss gate");
     setIsTTY(true);
     mockReadlineQueue(["A durable requirement", "", "", ""]);
 
@@ -651,19 +595,19 @@ describe("spec req — charter at authoring (CHRT-005)", () => {
   });
 
   test("(b) piped id-query: stdout is byte-identical, charter absent from stdout", async () => {
-    writeScopedDomain("GUARD", "guard the loss gate");
+    await writeScopedDomain("GUARD", "guard the loss gate");
     setIsTTY(false);
 
     await runReq("guard", tmp);
 
-    // The bare next id — EXACTLY as before charter existed (D-02 machine contract).
+    // The bare next id — EXACTLY as before charter existed (the machine contract).
     expect(logs).toEqual(["GUARD-002"]);
     // No charter chrome at all on the id-query path (not even stderr).
     expect(errs.some((l) => l.includes("guard the loss gate"))).toBe(false);
   });
 
   test("(c) --json id-query: stdout is byte-identical, zero charter chrome", async () => {
-    writeScopedDomain("GUARD", "guard the loss gate");
+    await writeScopedDomain("GUARD", "guard the loss gate");
     setIsTTY(true);
     mockReadlineQueue([]); // would feed the interactive flow if it (wrongly) ran
 
@@ -676,7 +620,7 @@ describe("spec req — charter at authoring (CHRT-005)", () => {
   });
 
   test("(d) null-scope domain degrades: 'no charter set' on stderr, stdout id intact", async () => {
-    writeDomain(tmp, "PLAIN", [1]); // no scope key
+    await seed(tmp, "PLAIN", 1); // no scope
     setIsTTY(true);
     mockReadlineQueue(["Another requirement", "", "", ""]);
 
@@ -688,7 +632,7 @@ describe("spec req — charter at authoring (CHRT-005)", () => {
   });
 
   test("(e) --text authoring echoes the charter to stderr, stdout confirmation intact", async () => {
-    writeScopedDomain("GUARD", "guard the loss gate");
+    await writeScopedDomain("GUARD", "guard the loss gate");
     setIsTTY(false);
 
     await reqRun({

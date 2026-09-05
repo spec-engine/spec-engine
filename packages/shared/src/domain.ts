@@ -1,6 +1,6 @@
 // packages/shared/src/domain.ts
 //
-// Phase 17 keystone: the ONE zod schema for authored JSON domain files plus the
+// The ONE zod schema for authored JSON domain files plus the
 // single validation seam both the index reader (17-02) and every write surface
 // (17-04/17-05) consume.
 //
@@ -40,7 +40,7 @@ export const SpecIssueSchema = z
   })
   .strict();
 
-// `cites[]` item (Phase 6 / TERM-01) — a PINNED reference from a requirement to
+// `cites[]` item — a PINNED reference from a requirement to
 // a glossary TERM. `term` is the cited TERM's id (a plain string here — ID_RE is
 // enforced at check time, never as a structural reject, mirroring the two-tier
 // note above), `pinned` the term's spec_version the citation was authored
@@ -86,7 +86,7 @@ export const SpecRequirementSchema = z
     // non-deprecated entry. Carried in the orderDomain whitelist below or it
     // is silently stripped on write (the strip-trap).
     deprecatedReason: z.string().optional(),
-    // TERM-01 (Phase 6): the four OPTIONAL glossary-term fields. A term IS a
+    // The four OPTIONAL glossary-term fields. A term IS a
     // requirement row (FORK 1 = reuse, not a parallel schema): `term` is the
     // glossary headword, `aliases` its synonyms, `cites` its pinned references
     // to other TERMs, `section` its GLOSSARY.md layout bucket (Wave F). All
@@ -144,6 +144,7 @@ export const SpecDomainSchema = z
   .strict();
 
 export type SpecIssue = z.infer<typeof SpecIssueSchema>;
+export type SpecCite = z.infer<typeof SpecCiteSchema>;
 export type SpecRequirement = z.infer<typeof SpecRequirementSchema>;
 export type SpecDomain = z.infer<typeof SpecDomainSchema>;
 
@@ -184,13 +185,13 @@ export function validateDomainFile(
   const diagnostics: Diagnostic[] = result.error.issues.map((issue) => ({
     code: DiagnosticCode.INVALID_DOMAIN_FILE,
     source_file: sourceFile,
-    // WR-02: storage-normalized `line`. A structural reject has no meaningful
+    // Storage-normalized `line`. A structural reject has no meaningful
     // source line (JSON.parse discarded positions), and the storage row shape
     // (`ParseDiagnostic.line`) is a non-nullable `number`. Emit 0 — NOT null —
     // so the write-path Diagnostic (validateAndWrite) and the index-path
     // ParseDiagnostic are TRULY byte-identical on `line`, not merely on
     // code/detail/severity. (Previously null here, coerced to 0 only on the
-    // index path — the exact VAL-02 `line` drift WR-02 flags.)
+    // index path — the exact VAL-02 `line` drift this guards against.)
     line: 0,
     repo: null,
     req_id: reqIdForIssuePath(input, issue.path),
@@ -204,7 +205,7 @@ export function validateDomainFile(
  * Assemble a NEW envelope object with keys in the canonical serialization order,
  * from the validated (defaults-applied) domain. Building a fresh object — rather
  * than spreading the untrusted input — is both the deterministic-order mechanism
- * (Pitfall 3) and the T-17-01 mitigation (no untrusted key ever reaches a
+ * and the T-17-01 mitigation (no untrusted key ever reaches a
  * prototype-affecting sink).
  */
 function orderDomain(d: SpecDomain) {
@@ -251,7 +252,7 @@ function orderDomain(d: SpecDomain) {
       // The deprecation reason (D1) — undefined omits, so every
       // non-deprecated entry stays byte-identical.
       deprecatedReason: r.deprecatedReason,
-      // TERM-01 (Phase 6): carry the four glossary-term fields in their
+      // Carry the four glossary-term fields in their
       // canonical (schema) positions. WITHOUT these lines the whitelist rebuild
       // silently strips an authored term/aliases/cites/section on every write —
       // the scope/IN-01 strip-trap, now bitten a THIRD time if omitted. `term`

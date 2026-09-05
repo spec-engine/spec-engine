@@ -5,7 +5,7 @@
 
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { validateAndWrite } from "@spec-engine/shared";
+import { type SpecDomain, validateAndWrite } from "@spec-engine/shared";
 import { domainsWithScope, scaffoldDomainObject } from "../authoring/domains";
 import { localToday } from "../authoring/edit";
 import { specPaths } from "../constants";
@@ -15,6 +15,24 @@ export interface NewDomainResult {
   ok: true;
   /** Platform-relative, e.g. `spec-engine/BILLING/SPEC.json`. */
   file: string;
+}
+
+/** Envelope fields a caller may author at scaffold time. Absent fields take the scaffold's defaults. */
+export interface NewDomainOptions {
+  scope?: string;
+  owner?: string;
+  grammar?: SpecDomain["grammar"];
+  grammarSeverity?: SpecDomain["grammarSeverity"];
+}
+
+/** The options a caller set, so an absent option never writes an explicit `undefined`. */
+function definedFields(options: NewDomainOptions): Partial<NewDomainOptions> {
+  const out: Partial<NewDomainOptions> = {};
+  if (options.scope !== undefined) out.scope = options.scope;
+  if (options.owner !== undefined) out.owner = options.owner;
+  if (options.grammar !== undefined) out.grammar = options.grammar;
+  if (options.grammarSeverity !== undefined) out.grammarSeverity = options.grammarSeverity;
+  return out;
 }
 
 /**
@@ -29,6 +47,7 @@ export interface NewDomainResult {
 export async function newDomain(
   platformDir: string,
   key: string,
+  options: NewDomainOptions = {},
 ): Promise<NewDomainResult | OpFailure> {
   const { abs: dest, rel: relFile } = specPaths(platformDir, key);
   const resolvedDest = resolve(dest);
@@ -45,7 +64,8 @@ export async function newDomain(
     );
   }
   mkdirSync(dirname(dest), { recursive: true });
-  const res = await validateAndWrite(dest, scaffoldDomainObject(key, localToday()), relFile);
+  const envelope = { ...scaffoldDomainObject(key, localToday()), ...definedFields(options) };
+  const res = await validateAndWrite(dest, envelope, relFile);
   if (!res.ok) {
     return fail("invalid_domain_file", res.diagnostics.map((d) => d.detail).join("\n"), {
       diagnostics: res.diagnostics,

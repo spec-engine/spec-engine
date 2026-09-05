@@ -31,10 +31,14 @@
 // (pattern carried from the retired cli-new.test.ts).
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { TestPlatform } from "../testing/platform";
 import { domainListCommand, domainNewCommand } from "./domain";
+
+/** A planted SPEC.json that is not JSON at all. */
+const NOT_JSON = join(import.meta.dir, "..", "testing", "fixtures", "diagnostics", "not-json");
 
 /** Today's date in the LOCAL timezone (WR-05 — NEVER toISOString, which rolls
  *  forward at UTC midnight). Mirrors authoring/edit.ts localToday(). */
@@ -283,24 +287,15 @@ describe("D-08 — zero bun:sqlite imports in the authoring path", () => {
 // ----------------------------------------------------------------------------
 
 describe("spec domain list --json — machine mode (CHRT-004)", () => {
-  /** Write a schema-valid SPEC.json for `key`, optionally carrying a charter. */
-  function writeDomainJson(key: string, scope: string | null): void {
-    mkdirSync(join(tmp, "spec-engine", key), { recursive: true });
-    const env: Record<string, unknown> = {
-      key,
-      owner: null,
-      specVersion: 1,
-      updated: "2026-07-01",
-      requirements: [],
-    };
-    if (scope !== null) env.scope = scope;
-    writeFileSync(join(tmp, "spec-engine", key, "SPEC.json"), `${JSON.stringify(env, null, 2)}\n`);
+  /** Scaffold `key`, optionally carrying a charter. */
+  async function scaffold(key: string, scope: string | null): Promise<void> {
+    await TestPlatform.at(tmp).domain(key, scope === null ? {} : { scope });
   }
 
   test("emits a sorted array of {key, scope} objects — charter when present, null when absent", async () => {
-    // Written out of lexical order; GUARD carries a charter, POC does not.
-    writeDomainJson("POC", null);
-    writeDomainJson("GUARD", "guard the loss gate");
+    // Scaffolded out of lexical order; GUARD carries a charter, POC does not.
+    await scaffold("POC", null);
+    await scaffold("GUARD", "guard the loss gate");
     await listRun({ args: { platformDir: tmp, json: true }, rawArgs: [] });
     expect(logs).toHaveLength(1);
     expect(JSON.parse(logs[0] ?? "")).toEqual([
@@ -310,15 +305,14 @@ describe("spec domain list --json — machine mode (CHRT-004)", () => {
   });
 
   test("a domain dir with an absent/malformed SPEC.json degrades to scope: null (no throw)", async () => {
-    writeDomainJson("GOOD", "has a charter");
+    await scaffold("GOOD", "has a charter");
     // A domain dir whose SPEC.json is present-but-malformed must not crash the
     // listing — it degrades to scope: null (structural reject is `spec check`).
-    mkdirSync(join(tmp, "spec-engine", "BROKE"), { recursive: true });
-    writeFileSync(join(tmp, "spec-engine", "BROKE", "SPEC.json"), "{ not valid json");
+    cpSync(join(NOT_JSON, "spec-engine"), join(tmp, "spec-engine"), { recursive: true });
     await listRun({ args: { platformDir: tmp, json: true }, rawArgs: [] });
     expect(logs).toHaveLength(1);
     expect(JSON.parse(logs[0] ?? "")).toEqual([
-      { key: "BROKE", scope: null },
+      { key: "BROKEN", scope: null },
       { key: "GOOD", scope: "has a charter" },
     ]);
   });
