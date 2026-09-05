@@ -1,51 +1,27 @@
 // packages/engine/src/commands/domain.ts
 //
-// Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec DOMAIN-012
-// @spec DOMAIN-013
-// @spec DOMAIN-019
-// @spec DOMAIN-014
-// @spec DOMAIN-015
-// @spec DOMAIN-017
-// @spec DOMAIN-018
-//
-// `spec domain` — noun-verb surface for managing spec domains
-// (spec-engine/<KEY>/).
-//
-//   spec domain new <name> [platformDir]   — scaffold a fresh SPEC.json
-//   spec domain list [platformDir]         — list domain keys
-//
-// Behaviors (AUTHC IDs):
-//   - AUTHC-001/002 — input normalized BEFORE validation (uppercase + strip
-//     whitespace, NEVER dashes — parser HEAD_RE reserves `-` as the key/seq
-//     separator); normalization message printed only when the input changed.
-//   - AUTHC-003 — post-normalization KEY_RE enforcement (V12), exit 2.
-//   - AUTHC-004 — scaffold a JSON domain envelope, written through the ONE
-//     validateAndWrite seam (VAL-01) — never a bespoke Bun.write of Markdown.
-//   - AUTHC-005 — refuse-to-overwrite, exit 2.
-//   - AUTHC-006 — resolve() path-containment defense in depth, exit 2.
-//   - AUTHC-007/008/009 — list reads the FILESYSTEM (canonical truth), sorted;
-//     non-platform dir → formatNotASpecPlatform + exit 2.
-//
-// Exit codes are 0/2 only (AUTHC-016 — exit 1 reserved for `spec check --ci`).
-// D-08: NO bun:sqlite import — no derived-index access, and no
-// `.spec-engine/` artifact is ever left behind.
+// `spec domain new <KEY>` scaffolds a domain; `spec domain list` prints the
+// keys, or `{ key, scope }` rows under `--json`. The key is normalized and
+// grammar-checked here; the scaffold and the listing live in
+// operations/domain.ts. Exit codes are 0 and 2 only.
 
-import { existsSync, mkdirSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { validateAndWrite } from "@spec-engine/shared";
 import { defineCommand } from "citty";
-import {
-  domainsWithScope,
-  KEY_RE,
-  listDomainKeys,
-  normalizeDomainKey,
-  scaffoldDomainObject,
-} from "../authoring/domains";
-import { EXIT, specPaths } from "../constants";
+import { KEY_RE, normalizeDomainKey } from "../authoring/domains";
+import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
+import type { OpFailure } from "../operations/_result";
+import { listDomains, newDomain } from "../operations/domain";
 import { platformDirArg, resolvePlatformDir } from "./_args";
-import { handleNotAPlatform } from "./_shared";
+import { exitOnFailure, handleNotAPlatform } from "./_shared";
+
+/** A refusal to write is printed bare; every other failure carries the command prefix. */
+function exitOnNewFailure(failure: OpFailure): never {
+  if (failure.reason === "conflict") {
+    console.error(failure.detail);
+    process.exit(EXIT.USAGE);
+  }
+  exitOnFailure("spec domain new", failure);
+}
 
 export const domainNewCommand = defineCommand({
   meta: {
@@ -65,81 +41,21 @@ export const domainNewCommand = defineCommand({
     const raw = args.name as string;
     const platformDir = resolvePlatformDir(args);
 
-    // AUTHC-001/002: normalize BEFORE validation; announce only on change.
+    // @spec DOMAIN-012
     const key = normalizeDomainKey(raw);
     if (key !== raw) {
       console.log(`spec domain: normalized "${raw}" → ${key}`);
     }
-
-    // AUTHC-003 (V12 control): post-normalization KEY must match the grammar.
+    // @spec DOMAIN-013
     if (!KEY_RE.test(key)) {
       console.error("spec domain new: KEY must match /^[A-Z][A-Z0-9]*$/ after normalization");
       process.exit(EXIT.USAGE);
       return;
     }
 
-    const dest = specPaths(platformDir, key).abs;
-
-    // AUTHC-006: defense in depth — even though KEY_RE blocks `..` / slashes
-    // / dots, confirm the resolved destination stays inside platformDir.
-    const resolvedDest = resolve(dest);
-    const resolvedRoot = resolve(platformDir);
-    if (!(resolvedDest === resolvedRoot || resolvedDest.startsWith(`${resolvedRoot}/`))) {
-      console.error(`spec domain new: refusing to write outside platformDir (${resolvedDest})`);
-      process.exit(EXIT.USAGE);
-      return;
-    }
-
-    // AUTHC-005: never clobber an authored spec.
-    if (existsSync(dest)) {
-      console.error(`refusing to overwrite ${dest}`);
-      process.exit(EXIT.USAGE);
-      return;
-    }
-
-    // WR-03: the prefer-JSON indexer reads SPEC.json ONLY for a domain that
-    // owns one, skipping its sibling SPEC.md. Writing a fresh empty
-    // (`requirements: []`) SPEC.json beside an existing SPEC.md would make the
-    // next `spec index` silently drop every Markdown requirement the domain
-    // still holds — canonical-truth data loss with no warning. Make the
-    // coexistence rule symmetric: refuse when a sibling SPEC.md exists.
-    // (`spec req` migrates a Markdown-only domain forward on write — CR-01.)
-    const mdSibling = join(dirname(dest), "SPEC.md");
-    if (existsSync(mdSibling)) {
-      console.error(
-        `refusing to create ${dest}: domain ${key} already exists as spec-engine/${key}/SPEC.md ` +
-          "— migrate the SPEC.md first (a fresh empty SPEC.json would shadow it on the next index)",
-      );
-      process.exit(EXIT.USAGE);
-      return;
-    }
-
-    // WR-05: compute the local-timezone date, not UTC. toISOString() rolls
-    // the date forward at UTC midnight, so a user in America/Los_Angeles
-    // running this at 23:30 local on 2026-06-03 would otherwise get
-    // 'updated: 2026-06-04' — wrong from the author's perspective and a
-    // determinism wart for any future test that snapshots scaffold output.
-    const d = new Date();
-    const today =
-      `${d.getFullYear()}-` +
-      `${String(d.getMonth() + 1).padStart(2, "0")}-` +
-      `${String(d.getDate()).padStart(2, "0")}`;
-    mkdirSync(dirname(dest), { recursive: true });
-
-    // VAL-01: the ONE write seam. validateAndWrite validates the scaffold
-    // through the same validateDomainFile the index uses (a dashed/invalid key
-    // rejects as INVALID_DOMAIN_FILE, writing NOTHING) and serializes with a
-    // fixed key order + single trailing newline — no bespoke Bun.write here.
-    const relFile = specPaths(platformDir, key).rel;
-    const res = await validateAndWrite(dest, scaffoldDomainObject(key, today), relFile);
-    if (!res.ok) {
-      for (const diag of res.diagnostics) {
-        console.error(`spec domain new: ${diag.detail}`);
-      }
-      process.exit(EXIT.USAGE);
-      return;
-    }
-    console.log(`created ${relFile}`);
+    const result = await newDomain(platformDir, key);
+    if (!result.ok) exitOnNewFailure(result);
+    console.log(`created ${result.file}`);
   },
 });
 
@@ -157,26 +73,20 @@ export const domainListCommand = defineCommand({
   },
   async run({ args }) {
     const platformDir = resolvePlatformDir(args);
-
-    // AUTHC-009: platform guard FIRST — same command-boundary pattern as
-    // map/index/check (friendly message + exit 2, rethrow anything else).
+    // @spec DOMAIN-018
     try {
       assertSpecPlatform(platformDir);
     } catch (e) {
       handleNotAPlatform(e);
     }
 
-    // AUTHC-007/008: filesystem-derived, sorted, one per line; empty → no
-    // output, exit 0. NO index open, NO .spec-engine/ artifact, NO cache file.
-    // @spec CHRT-011: --json emits a sorted array of `{ key, scope }` objects —
-    // scope read per-key from the filesystem (domainsWithScope), null when a
-    // domain has no charter, `[]` when there are none (still exit 0). The
-    // non-json per-line path is unchanged (keys only).
+    const { domains } = await listDomains(platformDir);
+    // @spec CHRT-011
     if (args.json) {
-      console.log(JSON.stringify(await domainsWithScope(platformDir)));
+      console.log(JSON.stringify(domains));
       return;
     }
-    for (const key of listDomainKeys(platformDir)) {
+    for (const { key } of domains) {
       console.log(key);
     }
   },

@@ -11,13 +11,7 @@
 5	packages/engine/src/check/statusflip.ts
 3	packages/engine/src/check/unsourced.ts
 3	packages/engine/src/cli.ts
-2	packages/engine/src/commands/domain.ts
-17	packages/engine/src/commands/gate.ts
 3	packages/engine/src/commands/index.ts
-22	packages/engine/src/commands/init.ts
-3	packages/engine/src/commands/map.ts
-8	packages/engine/src/commands/provenance.ts
-1	packages/engine/src/commands/relations.ts
 14	packages/engine/src/commands/serve.ts
 3	packages/engine/src/constants.ts
 8	packages/engine/src/gate/classify.ts

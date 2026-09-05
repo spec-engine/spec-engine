@@ -93,3 +93,25 @@ export function propagation(storage: Storage, reqId: string) {
 export function coverageReport(storage: Storage) {
   return { ok: true as const, rows: buildCoverageReport(storage.coverageMatrix()) };
 }
+
+/** The requirement-by-repo coverage matrix, unsorted; the renderer owns the order. */
+// @spec SCHM-012
+export function coverageMatrix(storage: Storage) {
+  return { ok: true as const, rows: storage.coverageMatrix() };
+}
+
+/** Every `relates` link, unsorted; the renderer owns the order. */
+// @spec SCHM-012
+export function relations(storage: Storage) {
+  return { ok: true as const, rows: storage.listRelations() };
+}
+
+/**
+ * The provenance matrix, or the rows linked to one opaque issue id when given.
+ * The issue id is a bound filter value, never a key.
+ */
+// @spec SCHM-012
+export function provenance(storage: Storage, issueId?: string) {
+  const rows = issueId ? storage.provenanceByIssue(issueId) : storage.provenanceMatrix();
+  return { ok: true as const, rows };
+}

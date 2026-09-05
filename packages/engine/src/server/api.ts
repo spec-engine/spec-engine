@@ -31,7 +31,15 @@ import { type OpFailure, STATUS_FOR_REASON } from "../operations/_result";
 import { type AmendFields, amend } from "../operations/amend";
 import { deprecate } from "../operations/deprecate";
 import { mint } from "../operations/mint";
-import { coverageReport, propagation, query, reqTags } from "../operations/reads";
+import {
+  coverageMatrix,
+  coverageReport,
+  propagation,
+  provenance,
+  query,
+  relations,
+  reqTags,
+} from "../operations/reads";
 import { supersede } from "../operations/supersede";
 import { renderProvenanceDecorated } from "../provenance/format";
 import { resolveAndCache } from "../provenance/resolve";
@@ -357,7 +365,7 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
 
   app.get(
     "/api/coverage",
-    guarded((c) => c.json(storage.coverageMatrix())),
+    guarded((c) => c.json(coverageMatrix(storage).rows)),
   );
 
   // --- /api/repos ---------------------------------------------------------
@@ -421,13 +429,9 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
 
   // --- POST /api/requirements (VAL-03 create) ----------------------------
   //
-  // Create a requirement in the target domain's SPEC.json through the SINGLE
-  // `validateAndWrite` seam, then re-derive the index. The requirement object
-  // is built EXACTLY as commands/req.ts appendEntry does (status "active",
-  // why||null, empty relates/issues, changedAtVersion 1) so the CLI and webapp
-  // author byte-identical envelopes (one engine). On a structural reject the
-  // route returns the SAME diagnostics validateDomainFile emits (VAL-02 — no
-  // re-validation, no reshaping).
+  // Create a requirement in the target domain's SPEC.json through the mint
+  // operation, then re-derive the index. On a structural reject the route
+  // returns the diagnostics the shared validator emits, unreshaped.
   app.post(
     "/api/requirements",
     guarded(async function createRequirement(c) {
@@ -649,7 +653,7 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
       if (format !== undefined && format !== "mermaid") {
         return c.json({ error: 'format must be "mermaid" when provided' }, 400);
       }
-      const rows = storage.listRelations();
+      const rows = relations(storage).rows;
       if (format === "mermaid") {
         return c.text(renderRelations(rows, "mermaid"));
       }
@@ -678,7 +682,7 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
       if (resolveParam !== undefined && resolveParam !== "1") {
         return c.json({ error: 'resolve must be "1" when provided' }, 400);
       }
-      const rows = storage.provenanceMatrix();
+      const rows = provenance(storage).rows;
       if (resolveParam === "1") {
         // Resolution is engine-side. With no SPEC_TRACKER_TOKEN this degrades to
         // the bare ids + the token hint with NO network call (resolveAndCache is
@@ -707,7 +711,7 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
       }
       const issue = (c.req.query("issue") ?? "").trim();
       if (issue === "") return c.json({ error: "issue is required (non-empty)" }, 400);
-      return c.json(storage.provenanceByIssue(issue));
+      return c.json(provenance(storage, issue).rows);
     }),
   );
 

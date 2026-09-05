@@ -86,7 +86,9 @@ describe("DRAFT_REFERENCED — code bound to an unapproved promise", () => {
 
 describe("GLOSSARY_DRIFT — spec check surfaces the round-trip break itself", () => {
   test("a committed GLOSSARY.md that mismatches the TERM store is a warning; regenerated content clears it", async () => {
-    const { generateGlossary, glossaryDriftDiagnostic } = await import("../src/commands/glossary");
+    const { generateGlossary, glossaryDriftDiagnostic } = await import(
+      "../src/operations/glossary"
+    );
     // Give the cloned fixture a one-term TERM store + a drifted glossary.
     const termDir = join(platformDir, "spec-engine", "TERM");
     const { mkdirSync } = await import("node:fs");
@@ -131,7 +133,7 @@ describe("GLOSSARY_DRIFT — spec check surfaces the round-trip break itself", (
   });
 
   test("no TERM store or no committed glossary means nothing to check", async () => {
-    const { glossaryDriftDiagnostic } = await import("../src/commands/glossary");
+    const { glossaryDriftDiagnostic } = await import("../src/operations/glossary");
     expect(glossaryDriftDiagnostic(platformDir)).toBeNull();
   });
 });

@@ -25,9 +25,19 @@ import { check } from "../src/operations/check";
 import { deprecate } from "../src/operations/deprecate";
 import { mint } from "../src/operations/mint";
 import { move } from "../src/operations/move";
-import { coverageReport, propagation, query, reqTags, resolveFiles } from "../src/operations/reads";
+import {
+  coverageMatrix,
+  coverageReport,
+  propagation,
+  provenance,
+  query,
+  relations,
+  reqTags,
+  resolveFiles,
+} from "../src/operations/reads";
 import { supersede } from "../src/operations/supersede";
 import { confirmTerm, mintTerm, reviseTerm } from "../src/operations/term";
+import { sortRelations } from "../src/relations/format";
 import { mountApi } from "../src/server/api";
 import { buildMcpServer } from "../src/server/mcp";
 import { openStorage } from "../src/storage/sqlite";
@@ -94,7 +104,7 @@ async function apiJson(
 
 beforeEach(async () => {
   priorFlags = process.env.SPEC_FLAGS;
-  process.env.SPEC_FLAGS = "query,editor";
+  process.env.SPEC_FLAGS = "query,editor,relations,provenance";
   tmp = mkdtempSync(join(tmpdir(), "spec-parity-"));
   platform = join(tmp, "platform");
   mkdirSync(join(platform, "spec-engine", "BILLING"), { recursive: true });
@@ -107,6 +117,8 @@ beforeEach(async () => {
       }),
       req("BILLING-002", "renewal charges use the plan price at renewal time", {
         supersedes: "BILLING-001",
+        relates: ["BILLING-003"],
+        issues: [{ role: "created", id: "ENG-1" }],
       }),
       req("BILLING-003", "refunds reverse the original charge", {
         cites: [{ term: "TERM-001", pinned: 1 }],
@@ -185,6 +197,21 @@ describe("read operations answer identically on every surface", () => {
     expect(await mcpJson("spec_req_tags", { req_id: "BILLING-002" })).toEqual(viaCli.tags);
     expect(await mcpJson("spec_propagation", { req_id: "BILLING-002" })).toEqual(viaCli.prop);
     expect(await mcpJson("spec_coverage_report", {})).toEqual(viaCli.report);
+  });
+
+  test("coverage matrix, relations, provenance", async () => {
+    const viaCli = await withIndex({ platformDir: platform, build: "fresh" }, (h) => ({
+      coverage: coverageMatrix(h.storage).rows,
+      relations: sortRelations(relations(h.storage).rows),
+      provenance: provenance(h.storage).rows,
+      byIssue: provenance(h.storage, "ENG-1").rows,
+    }));
+    expect(viaCli.relations).toHaveLength(1);
+    expect(viaCli.byIssue).toHaveLength(1);
+    expect((await apiJson("/api/coverage")).body).toEqual(viaCli.coverage);
+    expect((await apiJson("/api/relations")).body).toEqual(viaCli.relations);
+    expect((await apiJson("/api/provenance")).body).toEqual(viaCli.provenance);
+    expect((await apiJson("/api/provenance/by-issue?issue=ENG-1")).body).toEqual(viaCli.byIssue);
   });
 
   test("check", async () => {
