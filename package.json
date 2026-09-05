@@ -1,5 +1,5 @@
 {
-  "name": "spec-check",
+  "name": "@spec-engine/spec-engine",
   "private": true,
   "license": "MIT",
   "type": "module",

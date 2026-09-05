@@ -1,7 +1,7 @@
 {
   "key": "INIT",
   "owner": "drea",
-  "updated": "2026-07-30",
+  "updated": "2026-09-05",
   "scope": "Membership, discovery, and onboarding, plus the adoption rungs. Belongs here: spec init pin authoring; member discovery; the three adoption rungs (a lone repo; plus the CI gate; plus a second repo sharing requirements). Does not belong here: check severities (CHCK). Boundary case: each rung is its own INIT requirement, independently testable.",
   "grammar": "ears",
   "requirements": [
@@ -466,6 +466,21 @@
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-030",
+      "status": "active",
+      "statement": "Where the platform root's package.json is named @spec-engine/spec-engine, spec init shall judge the spec-engine path-segment refusal against the member's path below the platform root, so the engine can scaffold its own members.",
+      "why": "The refusal reads every segment of the resolved path, so a checkout named spec-engine cannot spec init any of its own members and their configs had to be written by hand.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/init.ts"
+      ],
+      "issues": [],
       "aliases": [],
       "cites": []
     }

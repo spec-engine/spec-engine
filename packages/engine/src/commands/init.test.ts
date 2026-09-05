@@ -9,28 +9,7 @@
 // @spec INIT-021
 // @spec INIT-020
 // @spec INIT-027
-//
-// INIT-01..06, INIT-08..11, INIT-14: command-level tests for `spec init`.
-//
-// In-process invocation of the citty command with `process.exit` stubbed
-// to throw `ExitError` so the test runner can assert on the numeric exit
-// code without terminating mid-suite (Pitfall 9 — mirrors verbatim from
-// cli-new.test.ts:30-34 and cli-check-unit.test.ts:27-31).
-//
-// Coverage map (9 describe blocks, ~18 tests):
-//   INIT-01: default cwd + positional REPO + existence guard       (4 tests)
-//   INIT-02: refuse inside spec-engine/ — 4 path-safety cases       (4 tests)
-//   INIT-03: already configured no-force no-op (exit 0)            (1 test)
-//   INIT-04: --force shape-safety (raw Object.keys — Pitfall 3)    (3 tests)
-//   INIT-05: --specs Zod validation                                 (3 tests)
-//   INIT-06/07: pin resolution (derived platform version) + note    (2 tests)
-//   RED-85: stray retired manifest ignored + warned                 (1 test)
-//   INIT-09/10: write seam + stdout summary                         (2 tests)
-//   INIT-14: refuse on platform dir (contains spec-engine/)         (1 test)
-//
-// Storage-free: this file imports zero from `bun:sqlite` — D-08 grep-fence
-// remains at exactly 1 src-side `bun:sqlite` import system-wide, in
-// `packages/engine/src/storage/sqlite.ts:7`.
+// @spec INIT-030
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
@@ -72,22 +51,15 @@ beforeEach(() => {
   console.error = (...args: unknown[]) => {
     errs.push(args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" "));
   };
-  // process.exit is typed as `(code?: number) => never`; the stub throws so
-  // callers can `try { ... } catch (ExitError) { ... }` instead of terminating
-  // the test runner. Cast through unknown to a writable property.
   (process as unknown as { exit: (code?: number) => never }).exit = (code?: number) => {
     throw new ExitError(code ?? 0);
   };
 });
 
 afterEach(() => {
-  // Restore cwd BEFORE rmSync so the rmSync target path is still valid even
-  // if a test chdir'd into the tmp dir (INIT-01 default-cwd + INIT-02 (d)).
   try {
     process.chdir(originalCwd);
-  } catch {
-    // ignore — best-effort restore
-  }
+  } catch {}
   console.log = originalLog;
   console.error = originalErr;
   process.exit = originalExit;
@@ -97,9 +69,7 @@ afterEach(() => {
 type RunFn = (ctx: { args: Record<string, unknown>; rawArgs: string[] }) => Promise<void>;
 const initRun = (initCommand as unknown as { run: RunFn }).run;
 
-// Numeric-return shape for INIT-11 exit-code matrix assertions
-// (per PATTERNS.md lines 430-444). Returns 0 when run() returns cleanly
-// (INIT-03 / INIT-11 success path), or the captured exit code otherwise.
+/** 0 when run() returns cleanly, else the captured exit code. */
 async function runInit(args: Record<string, unknown>): Promise<number> {
   try {
     await initRun({ args, rawArgs: [] });
@@ -136,9 +106,6 @@ describe("spec init — INIT-01 default cwd + positional repo + existence guard"
     writeFileSync(join(tmp, "file.txt"), "");
     const code = await runInit({ repo: join(tmp, "file.txt") });
     expect(code).toBe(2);
-    // WR-06: assert the specific INIT-01 message, not just the "spec init:"
-    // prefix (every exit-2 path prints that prefix — a generic assertion
-    // passed on any failure mode and would mask a regression).
     expect(
       errs.some(
         (m) => m.includes("spec init:") && m.includes("does not exist or is not a directory"),
@@ -192,7 +159,7 @@ describe("spec init — INIT-03 already configured (no-force no-op, exit 0)", ()
   });
 });
 
-describe("spec init — INIT-04 --force shape-safety (raw Object.keys, NOT Zod — Pitfall 3)", () => {
+describe("spec init — INIT-04 --force shape-safety (raw Object.keys, not the schema)", () => {
   test("--force overwrites cleanly when existing has only specs key", async () => {
     writeFileSync(
       join(tmp, "spec-engine.member.json"),
@@ -259,19 +226,18 @@ describe("spec init — INIT-05 --specs Zod validation", () => {
 });
 
 describe("spec init — INIT-06 + INIT-07 pin resolution + fallback note", () => {
-  test("without --specs and no sibling platform, falls back to spec-engine@1 with stdout note (WR-02)", async () => {
+  test("without --specs and no sibling platform, falls back to spec-engine@1 with stdout note", async () => {
     const code = await runInit({ repo: tmp });
     expect(code).toBe(0);
     const written = await Bun.file(join(tmp, "spec-engine.member.json")).text();
     const parsed = JSON.parse(written) as { specs: string };
     expect(parsed.specs).toBe("spec-engine@1");
-    // WR-02: fallback is a SUCCESS path — note goes to stdout, not stderr.
     expect(
       logs.some((m) => m.includes("spec init:") && m.includes("falling back to spec-engine@1")),
     ).toBe(true);
   });
 
-  test("without --specs, derives the pin from the platform's max domain version (RED-85)", async () => {
+  test("without --specs, derives the pin from the platform's max domain version", async () => {
     await writeVersionedDomain(tmp, "ALPHA", 5);
     mkdirSync(join(tmp, "member"), { recursive: true });
     const code = await runInit({ repo: join(tmp, "member") });
@@ -283,13 +249,8 @@ describe("spec init — INIT-06 + INIT-07 pin resolution + fallback note", () =>
   });
 });
 
-describe("spec init — stray retired spec-engine.platform.json (RED-85)", () => {
+describe("spec init — stray retired spec-engine.platform.json", () => {
   test("stray manifest is ignored with a stderr warning; the pin stays derived (exit 0)", async () => {
-    // The old INIT-08 loud-on-malformed contract died with the manifest:
-    // the file is never parsed, so even a malformed one cannot exit 2 —
-    // but silence would leave the operator believing an authored counter
-    // still steers the pin, so a retirement warning names the derived
-    // version and tells them to delete the file.
     await writeVersionedDomain(tmp, "ALPHA", 2);
     writeFileSync(join(tmp, "spec-engine", "spec-engine.platform.json"), "{not valid");
     mkdirSync(join(tmp, "member"), { recursive: true });
@@ -303,7 +264,7 @@ describe("spec init — stray retired spec-engine.platform.json (RED-85)", () =>
 });
 
 describe("spec init — INIT-09 + INIT-10 write seam + stdout summary", () => {
-  test("writes pretty-printed JSON with trailing newline (INIT-09 / Pitfall 6)", async () => {
+  test("writes pretty-printed JSON with trailing newline (INIT-09)", async () => {
     const code = await runInit({ repo: tmp });
     expect(code).toBe(0);
     const body = await Bun.file(join(tmp, "spec-engine.member.json")).text();
@@ -335,19 +296,8 @@ describe("spec init — INIT-14 refuse on platform dir (contains spec-engine/)",
   });
 });
 
-// ----------------------------------------------------------------------------
-// RED-14 dead-end audit. Two groups:
-//   1. A REACHABLE BUG: a symlink loop at REPO made the step-2 statSync
-//      throw ELOOP *uncaught* — a raw stack trace instead of the INIT-11
-//      exit-2 contract that the realpathSync wrap two lines below already
-//      honors. The first test below reproduces it; the fix wraps the stat.
-//   2. The existing-config inspection branches (unreadable / non-object /
-//      invalid pin / extra-fields warning) existed without covering tests.
-// ----------------------------------------------------------------------------
-
-describe("spec init — path-resolution failures honor INIT-11 exit 2 (RED-14)", () => {
+describe("spec init — path-resolution failures honor INIT-11 exit 2", () => {
   test("symlink loop at REPO → exit 2 with friendly message, no stack-trace crash", async () => {
-    // `loop -> loop`: statSync follows symlinks and throws ELOOP.
     symlinkSync(join(tmp, "loop"), join(tmp, "loop"));
     const code = await runInit({ repo: join(tmp, "loop") });
     expect(code).toBe(2);
@@ -355,7 +305,7 @@ describe("spec init — path-resolution failures honor INIT-11 exit 2 (RED-14)",
   });
 });
 
-describe("spec init — existing-config inspection branches (RED-14)", () => {
+describe("spec init — existing-config inspection branches", () => {
   test("unreadable existing config (a directory at the config path) → exit 2 'could not be read'", async () => {
     mkdirSync(join(tmp, "spec-engine.member.json"), { recursive: true });
     const code = await runInit({ repo: tmp });
@@ -379,7 +329,7 @@ describe("spec init — existing-config inspection branches (RED-14)", () => {
     );
   });
 
-  test("no-force with valid pin + extra fields → exit 0 with the WR-05 stdout warning", async () => {
+  test("no-force with valid pin + extra fields → exit 0 with the stdout warning", async () => {
     writeFileSync(
       join(tmp, "spec-engine.member.json"),
       JSON.stringify({ specs: "spec-engine@3", customField: "keep-me" }),
@@ -390,11 +340,6 @@ describe("spec init — existing-config inspection branches (RED-14)", () => {
     expect(logs.some((m) => m.includes("extra fields") && m.includes("customField"))).toBe(true);
   });
 });
-
-// ----------------------------------------------------------------------------
-// Audit hygiene pass T4 — `--json` machine mode: scaffold outcome as one
-// parseable object. Errors keep the text-on-stderr + exit-2 contract.
-// ----------------------------------------------------------------------------
 
 describe("spec init --json — machine mode", () => {
   test("fresh scaffold emits {action:'wrote', path, pin, source} and writes the config", async () => {
@@ -426,13 +371,7 @@ describe("spec init --json — machine mode", () => {
   });
 });
 
-// ----------------------------------------------------------------------------
-// Audit hygiene pass T7 — `ignore` is a first-class config field: init must
-// not treat it as an unknown extra (no warning, no --force refusal), and a
-// --force rewrite carries it forward instead of clobbering it.
-// ----------------------------------------------------------------------------
-
-describe("spec init × ignore field (T7)", () => {
+describe("spec init × ignore field", () => {
   test("no-force: a config with specs+ignore is 'already configured' with NO extra-fields warning", async () => {
     writeFileSync(
       join(tmp, "spec-engine.member.json"),
@@ -463,5 +402,37 @@ describe("spec init × ignore field (T7)", () => {
     const code = await runInit({ repo: tmp, force: true });
     expect(code).toBe(2);
     expect(errs.some((m) => m.includes("extra fields") && m.includes("customField"))).toBe(true);
+  });
+});
+
+describe("spec init — INIT-030 the engine scaffolds its own members", () => {
+  const enginePackage = JSON.stringify({ name: "@spec-engine/spec-engine" });
+
+  test("a checkout named spec-engine whose package is @spec-engine/spec-engine scaffolds a member", async () => {
+    const platform = TestPlatform.at(join(tmp, "spec-engine"));
+    platform.file("package.json", enginePackage);
+    mkdirSync(join(platform.dir, "scripts"));
+    const code = await runInit({ repo: join(platform.dir, "scripts") });
+    expect(code).toBe(0);
+    const written = await Bun.file(join(platform.dir, "scripts", "spec-engine.member.json")).text();
+    expect(written).toBe(`{\n  "specs": "spec-engine@1"\n}\n`);
+  });
+
+  test("the engine's own spec-engine/ tree is still refused", async () => {
+    const platform = TestPlatform.at(join(tmp, "spec-engine"));
+    platform.file("package.json", enginePackage);
+    const billing = await platform.domain("BILLING");
+    const code = await runInit({ repo: join(billing.file, "..") });
+    expect(code).toBe(2);
+    expect(errs.some((m) => m.includes("spec init:") && m.includes("spec-engine"))).toBe(true);
+  });
+
+  test("a platform under any other package name keeps the refusal", async () => {
+    const platform = TestPlatform.at(join(tmp, "spec-engine"));
+    platform.file("package.json", JSON.stringify({ name: "@acme/platform" }));
+    mkdirSync(join(platform.dir, "scripts"));
+    const code = await runInit({ repo: join(platform.dir, "scripts") });
+    expect(code).toBe(2);
+    expect(errs.some((m) => m.includes("spec init:") && m.includes("spec-engine"))).toBe(true);
   });
 });

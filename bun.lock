@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "spec-check",
+      "name": "@spec-engine/spec-engine",
       "devDependencies": {
         "@biomejs/biome": "2.4.16",
         "@types/bun": "1.3.14",
