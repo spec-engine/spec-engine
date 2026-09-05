@@ -39,15 +39,22 @@ fence_d11_bun_sqlite() {
   # Match both double-quote and single-quote import shapes so Biome's
   # default formatter (or a hand-typed single-quote import in a new
   # file) cannot silently bypass the D-11 fence.
-  if grep -REn '(from[[:space:]]+["'"'"']bun:sqlite["'"'"']|require\([[:space:]]*["'"'"']bun:sqlite["'"'"'][[:space:]]*\))' packages/shared/src packages/webapp/src; then
+  if grep -REn --exclude='*.test.ts' '(from[[:space:]]+["'"'"']bun:sqlite["'"'"']|require\([[:space:]]*["'"'"']bun:sqlite["'"'"'][[:space:]]*\))' packages/shared/src packages/webapp/src; then
     echo "FORBIDDEN: bun:sqlite imported outside packages/engine"
     exit 1
   fi
 }
 
+# Production engine source: everything under packages/engine/src except the
+# co-located tests (`*.test.ts`) and the test helpers and planted trees under
+# src/testing/. Every engine fence enumerates through this one function.
+engine_sources() {
+  find packages/engine/src -name '*.ts' -type f -not -name '*.test.ts' -not -path '*/src/testing/*' "$@"
+}
+
 # --- D-08: only storage/sqlite.ts may import bun:sqlite -----------------------
 fence_d08_engine_internal() {
-  OFFENDERS=$(find packages/engine/src -name '*.ts' -type f \
+  OFFENDERS=$(engine_sources \
     | grep -v 'storage/sqlite.ts' \
     | xargs grep -lE '(from[[:space:]]+["'"'"']bun:sqlite["'"'"']|require\([[:space:]]*["'"'"']bun:sqlite["'"'"'][[:space:]]*\))' 2>/dev/null || true)
   if [ -n "$OFFENDERS" ]; then
@@ -61,7 +68,7 @@ fence_d08_engine_internal() {
 # render. None of them may write a domain file or allocate an id itself: the
 # write seam and the id allocator are imported only under operations/.
 fence_ops01_write_seam() {
-  OFFENDERS=$(grep -RlE 'validateAndWrite|nextRequirementId' packages/engine/src/server packages/engine/src/commands 2>/dev/null || true)
+  OFFENDERS=$(grep -RlE --exclude='*.test.ts' 'validateAndWrite|nextRequirementId' packages/engine/src/server packages/engine/src/commands 2>/dev/null || true)
   if [ -n "$OFFENDERS" ]; then
     echo "FORBIDDEN: a surface reaches the write seam directly instead of an operation (OPS-01): $OFFENDERS"
     exit 1
@@ -150,7 +157,7 @@ fence_clean01_no_stale_example() {
 
 # --- TRK-02: engine internals never import @spec-engine/tracker / no ext net --
 fence_trk02_tracker_import() {
-  INTERNAL_FILES=$(find packages/engine/src -name '*.ts' -type f \
+  INTERNAL_FILES=$(engine_sources \
     -not -path 'packages/engine/src/commands/*' \
     -not -path 'packages/engine/src/server/*' \
     -not -path 'packages/engine/src/provenance/resolve.ts')
@@ -159,7 +166,7 @@ fence_trk02_tracker_import() {
     echo "FORBIDDEN: packages/engine/src INTERNALS import @spec-engine/tracker (TRK-02 import edge — surface commands/+server/ excluded by design, Phase 16)"
     exit 1
   fi
-  HOSTS=$(find packages/engine/src -name '*.ts' -type f -print0 \
+  HOSTS=$(engine_sources -print0 \
     | xargs -0 cat 2>/dev/null \
     | grep -vE '^[[:space:]]*(//|\*|--)' \
     | grep -E 'https?://' \
@@ -201,7 +208,7 @@ fence_llmfree_engine() {
   # logic lives here. (Verified 2026-07-08: none of these tokens false-positive
   # on the current engine source.)
   LLM_PAT='openai|anthropic|@ai-sdk|langchain|llamaindex|ollama|gemini|generativeai|@google/genai|vertexai|bedrock|cohere|mistral|groq|huggingface|replicate|\.chat\.completions|generateText|generateObject|streamText'
-  OFFENDERS=$(find packages/engine/src -name '*.ts' -type f -print0 \
+  OFFENDERS=$(engine_sources -print0 \
     | xargs -0 cat 2>/dev/null \
     | grep -vE '^[[:space:]]*(//|\*|--)' \
     | grep -nE "$LLM_PAT" || true)
@@ -227,7 +234,7 @@ fence_llmfree_engine() {
 
 # --- TRK-04: query only, never a GraphQL mutation ----------------------------
 fence_trk04_no_mutation() {
-  MUT=$(find packages/tracker/src -name '*.ts' -type f -print0 \
+  MUT=$(find packages/tracker/src -name '*.ts' -type f -not -name '*.test.ts' -print0 \
     | xargs -0 cat 2>/dev/null \
     | grep -vE '^[[:space:]]*(//|\*|--)' \
     | grep -nwE 'mutation' || true)
@@ -243,7 +250,7 @@ fence_trk04_no_mutation() {
 
 # --- TRK-06: SPEC_TRACKER_TOKEN never logged ---------------------------------
 fence_trk06_no_token_log() {
-  OFFENDERS=$(grep -REn 'console\.[a-z]+\([^)]*(SPEC_TRACKER_TOKEN|token)' packages/tracker/src 2>/dev/null || true)
+  OFFENDERS=$(grep -REn --exclude='*.test.ts' 'console\.[a-z]+\([^)]*(SPEC_TRACKER_TOKEN|token)' packages/tracker/src 2>/dev/null || true)
   if [ -n "$OFFENDERS" ]; then
     echo "FORBIDDEN: token referenced in a console.* call in @spec-engine/tracker (TRK-06)"
     echo "$OFFENDERS"
@@ -258,7 +265,7 @@ fence_trk06_no_token_log() {
 # --- VAL-01: no direct domain-file write outside validateAndWrite ------------
 fence_val01_validate_and_write() {
   PAT='(Bun\.write|writeFile)\([[:space:]]*([A-Za-z0-9_]*([Ss]pecPath|SpecPath)[A-Za-z0-9_]*|(["'"'"'][^"'"'"']*)?SPEC\.json)'
-  OFFENDERS=$(find packages/engine/src -name '*.ts' -type f -print0 \
+  OFFENDERS=$(engine_sources -print0 \
     | xargs -0 cat 2>/dev/null \
     | grep -vE '^[[:space:]]*(//|\*|--)' \
     | grep -nE "$PAT" || true)
@@ -287,7 +294,7 @@ fence_val01_validate_and_write() {
 # --- STOR-04 / D2: the Markdown SPEC.md parse path stays removed --------------
 fence_stor04_no_spec_md_parse() {
   PAT='(parseSpecFile|findSpecFiles)\(|\*\*/SPEC\.md|gray-matter|(Bun\.file|readFileSync|readFile|Bun\.Glob)\([^)]*SPEC\.md'
-  OFFENDERS=$(find packages/engine/src -name '*.ts' -type f -print0 \
+  OFFENDERS=$(engine_sources -print0 \
     | xargs -0 cat 2>/dev/null \
     | grep -vE '^[[:space:]]*(//|\*|--)' \
     | grep -nE "$PAT" || true)

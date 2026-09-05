@@ -147,7 +147,7 @@ jobs:
           # planted defects, so `spec check --ci` correctly exits 1
           # (it's not a "warning-only" platform once the planted defects
           # are in the mix). The DIAG-02 source-layer contract is
-          # already locked by 2 tests in Plan 08-02's cli-check-unit.test.ts.
+          # already locked by 2 tests in Plan 08-02's commands/check.test.ts.
           echo "cold-rebuild build_id stable WITH stray sibling: $H1"
 
       - name: smoke 7 — inverted CI assertion (CHCK-04 / CI-03)
@@ -174,7 +174,7 @@ jobs:
           ')
 
           # Expected planted set per CHCK-04. Source of truth lives in
-          # packages/engine/test/check-ci.test.ts::EXPECTED_DIAGNOSTICS;
+          # packages/engine/src/commands/check.ci.test.ts::EXPECTED_DIAGNOSTICS;
           # this is intentional defense-in-depth duplication (any drift
           # between the two surfaces as a CI failure).
           #
@@ -187,7 +187,7 @@ jobs:
           # which the provenance parser surfaces as a warning-severity
           # UNKNOWN_ROLE diagnostic (PROV-05: surfaced at parse time AND dropped).
           # It joins the planted-mess baseline, so the inverted CI set is 10 rows.
-          # Source of truth duplicated from check-ci.test.ts::EXPECTED_DIAGNOSTICS.
+          # Source of truth duplicated from commands/check.ci.test.ts::EXPECTED_DIAGNOSTICS.
           EXPECTED=$(printf "%b\n%b\n%b\n%b\n%b\n%b\n%b\n%b\n%b\n%b" \
             "BROKEN_FILE_REF\t\tAUTH-001" \
             "BROKEN_FILE_REF\t\tBILLING-002" \
@@ -217,9 +217,9 @@ jobs:
         run: |
           set -euo pipefail
           # PROP-03 / Phase 4: the BILLING-009 5-state classification is locked
-          # at the storage seam (propagation.test.ts), the CLI surface
-          # (cli-propagation-unit.test.ts), and a JSON snapshot
-          # (propagation-json-snapshot.test.ts.snap). This smoke is the final
+          # at the storage seam (storage/sql/propagation.test.ts), the CLI surface
+          # (commands/propagation.test.ts), and a JSON snapshot
+          # (commands/__snapshots__/propagation.json-snapshot.test.ts.snap). This smoke is the final
           # defense-in-depth layer: the COMPILED binary against the canonical
           # fixture must emit the same 3-row JSON shape. Any regression in
           # `bun build --compile` (lazy-import wiring, asset embedding, citty
@@ -266,9 +266,9 @@ jobs:
         run: |
           set -euo pipefail
           # QURY-02 / Phase 4: the porter-stemming FTS5 retrieval is locked at
-          # the storage seam (fts.test.ts) and the CLI surface
-          # (cli-query-unit.test.ts), plus the cold-rebuild Pitfall-2 invariant
-          # (query-cold-rebuild.test.ts). This smoke ratifies the headline
+          # the storage seam (storage/sqlite.fts.test.ts) and the CLI surface
+          # (commands/query.test.ts), plus the cold-rebuild Pitfall-2 invariant
+          # (indexer/pipeline.query-cold-rebuild.test.ts). This smoke ratifies the headline
           # retrieval moment ("renewal charge" → BILLING-009) against the
           # COMPILED binary — proving porter unicode61 tokenizer + bm25
           # column-weight tuning survive `bun build --compile`.
@@ -288,8 +288,8 @@ jobs:
         run: |
           set -euo pipefail
           # RSLV-01 / RSLV-02 / Phase 5: the storage seam (storage-resolve.test.ts),
-          # the CLI surface (cli-resolve-unit.test.ts), and a JSON snapshot
-          # (__snapshots__/cli-resolve-unit.test.ts.snap) all lock this against
+          # the CLI surface (commands/resolve.test.ts), and a JSON snapshot
+          # (commands/__snapshots__/resolve.test.ts.snap) all lock this against
           # source builds. This smoke is the final compiled-binary defense:
           # `bun build --compile` must produce a binary whose `spec resolve`
           # join returns BILLING-009 + BILLING-002 for the two canonical
@@ -546,7 +546,7 @@ jobs:
           # This is the compiled-binary end-to-end ratification of the v1.1
           # member-onboarding silent-failure fix.
           # Source-mode coverage: pipeline.test.ts (Plan 08-01) locks emission shape;
-          # cli-check-unit.test.ts (Plan 08-02) locks the warning-only exit-0 path;
+          # commands/check.test.ts (Plan 08-02) locks the warning-only exit-0 path;
           # cli-prompt.test.ts (Plan 10-02) locks the prompt fanout. Smoke 15 is the
           # binary-layer headline.
           TMP=$(mktemp -d)
@@ -618,7 +618,7 @@ jobs:
           # PMAT-01/02/03 / Phase 13: the per-requirement provenance matrix is
           # locked at the formatter (provenance-format.test.ts), the CLI surface
           # (cli-provenance-unit.test.ts), and the two-cold-runs byte-identity
-          # snapshot (provenance-json-snapshot.test.ts). This smoke is the final
+          # snapshot (commands/provenance.json-snapshot.test.ts). This smoke is the final
           # defense-in-depth layer: the COMPILED binary must emit the same
           # deterministic --json shape AND honour the ENG-1432 reverse lookup.
           # Any regression in `bun build --compile` (lazy-import wiring of
@@ -653,7 +653,7 @@ jobs:
           set -euo pipefail
           # USRC-02 / USRC-04 / Phase 14: the --unsourced-change off-by-default
           # guarantee is locked in-process at the detector (unsourced.test.ts) and
-          # the CLI surface (cli-check-unit.test.ts). This smoke is the final
+          # the CLI surface (commands/check.test.ts). This smoke is the final
           # defense-in-depth layer mirroring smoke 7: the COMPILED binary must
           # (A) emit ZERO UNSOURCED_CHANGE rows WITHOUT the flag — byte-identical
           #     to smoke 7's 10-row inverted-CI baseline (off-by-default survives
@@ -678,7 +678,7 @@ jobs:
           '
 
           # The same 10-row planted baseline smoke 7 asserts (source of truth:
-          # packages/engine/test/check-ci.test.ts::EXPECTED_DIAGNOSTICS).
+          # packages/engine/src/commands/check.ci.test.ts::EXPECTED_DIAGNOSTICS).
           # `printf "%b"` (NOT `%s`) so the `\t` escapes become real TABs that
           # match the tabs $GOT carries; `%s` would leave literal backslash-t.
           EXPECTED_NOFLAG=$(printf "%b\n%b\n%b\n%b\n%b\n%b\n%b\n%b\n%b\n%b" \
@@ -893,7 +893,7 @@ jobs:
           # --results V12 containment guard passes; pass it platformDir-relative
           # (check.ts resolves --results against platformDir, NOT cwd).
           SAMPLE_REL=".spec-engine-results-smoke.xml"
-          cp packages/engine/test/fixtures/junit/bun-green.xml "$FIXTURE/$SAMPLE_REL"
+          cp packages/engine/src/testing/fixtures/junit/bun-green.xml "$FIXTURE/$SAMPLE_REL"
           trap 'rm -f "$FIXTURE/$SAMPLE_REL"' EXIT
           # Both runs are cold (rm the DB + WAL + SHM siblings) and differ ONLY by
           # --results. `spec check --ci` exits 1 on the planted-defect fixture, so
@@ -934,7 +934,7 @@ jobs:
           FIXTURE=fixtures/platform-fixture
           DB="$FIXTURE/.spec-engine/index.sqlite"
           SAMPLE_REL=".spec-engine-results-smoke.xml"
-          cp packages/engine/test/fixtures/junit/bun-green.xml "$FIXTURE/$SAMPLE_REL"
+          cp packages/engine/src/testing/fixtures/junit/bun-green.xml "$FIXTURE/$SAMPLE_REL"
           trap 'rm -f "$FIXTURE/$SAMPLE_REL"' EXIT
           set +e
           rm -f "$DB" "$DB-wal" "$DB-shm"
@@ -974,7 +974,7 @@ jobs:
             process.stdout.write(keys);
           '
           # The same 10-row planted baseline smoke 7 / smoke 18 assert (source of
-          # truth: packages/engine/test/check-ci.test.ts::EXPECTED_DIAGNOSTICS).
+          # truth: packages/engine/src/commands/check.ci.test.ts::EXPECTED_DIAGNOSTICS).
           # `printf "%b"` (NOT `%s`) so the `\t` escapes become real TABs.
           EXPECTED_NOFLAG=$(printf "%b\n%b\n%b\n%b\n%b\n%b\n%b\n%b\n%b\n%b" \
             "BROKEN_FILE_REF\t\tAUTH-001" \
