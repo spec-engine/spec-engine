@@ -10,8 +10,6 @@
 5	packages/engine/src/check/statusflip.ts
 3	packages/engine/src/check/unsourced.ts
 3	packages/engine/src/cli.ts
-3	packages/engine/src/commands/index.ts
-14	packages/engine/src/commands/serve.ts
 3	packages/engine/src/constants.ts
 8	packages/engine/src/gate/classify.ts
 5	packages/engine/src/indexer/diagnostics.ts

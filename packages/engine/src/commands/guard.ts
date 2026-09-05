@@ -37,7 +37,7 @@ export const guardCommand = defineCommand({
   },
   async run({ args }) {
     const platformDir = resolvePlatformDir(args);
-    const ref = (args.against as string | undefined) ?? "HEAD";
+    const ref = args.against ?? "HEAD";
     const jsonMode = Boolean(args.json);
 
     if (!gitRefResolves(platformDir, ref)) {

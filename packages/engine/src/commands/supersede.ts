@@ -5,7 +5,7 @@
 // successor text (a flag, or a prompt on a TTY) and renders; every guard and
 // the write live in operations/supersede.ts.
 
-import { defineCommand } from "citty";
+import { defineCommand, type ParsedArgs } from "citty";
 import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
 import { coldFreshTags } from "../operations/_index";
@@ -23,11 +23,11 @@ import { askLine } from "./req";
  * aborts with exit 0 and nothing written.
  */
 async function resolveSuccessorText(
-  args: Record<string, unknown>,
+  args: SupersedeArgs,
   platformDir: string,
   id: string,
 ): Promise<string> {
-  const flag = ((args.text as string | undefined) ?? "").trim();
+  const flag = (args.text ?? "").trim();
   if (flag !== "") return flag;
   const target = await supersedeTarget(platformDir, id);
   if (!target.ok) exitOnFailure("spec supersede", target);
@@ -59,7 +59,7 @@ function splitAliases(raw: string): string[] {
 
 /** Flags to the operation's input. An absent flag leaves the field to be copied from the predecessor. */
 function inputFromArgs(
-  args: Record<string, unknown>,
+  args: SupersedeArgs,
   platformDir: string,
   id: string,
   statement: string,
@@ -72,10 +72,57 @@ function inputFromArgs(
   }
   if (typeof args.term === "string") input.term = args.term;
   if (typeof args.aliases === "string") input.aliases = splitAliases(args.aliases);
-  const issue = ((args.issue as string | undefined) ?? "").trim();
+  const issue = (args.issue ?? "").trim();
   if (issue !== "") input.issue = issue;
   return input;
 }
+
+const supersedeArgs = {
+  id: {
+    type: "positional",
+    required: true,
+    description: "The requirement id to supersede (KEY-NNN; must be Active)",
+  },
+  platformDir: platformDirArg,
+  text: {
+    type: "string",
+    description:
+      "The successor's Requirement field. Required when stdin is not a TTY; prompted otherwise.",
+  },
+  why: {
+    type: "string",
+    description: "Successor's Why it matters (default: copied from the old entry)",
+  },
+  lives: {
+    type: "string",
+    description: "Successor's Lives in (default: copied from the old entry)",
+  },
+  term: {
+    type: "string",
+    description: "TERM successor's headword (default: copied from the old entry; TERM ids only)",
+  },
+  aliases: {
+    type: "string",
+    description:
+      "TERM successor's comma-separated aliases (default: copied from the old entry; TERM ids only)",
+  },
+  noBump: {
+    type: "boolean",
+    description: "Do not bump the envelope specVersion",
+  },
+  issue: {
+    type: "string",
+    description:
+      "Ticket that caused this supersession — recorded as supersedes-via on the predecessor and created on the successor (opaque provenance)",
+  },
+  json: {
+    type: "boolean",
+    description:
+      "Emit { old_id, new_id, file, spec_version, retag } as JSON instead of the text summary",
+  },
+} as const;
+
+type SupersedeArgs = ParsedArgs<typeof supersedeArgs>;
 
 export const supersedeCommand = defineCommand({
   meta: {
@@ -83,52 +130,9 @@ export const supersedeCommand = defineCommand({
     description:
       "Supersede a shipped requirement: flip it to superseded, mint the successor, bump specVersion, and emit the retag worklist.",
   },
-  args: {
-    id: {
-      type: "positional",
-      required: true,
-      description: "The requirement id to supersede (KEY-NNN; must be Active)",
-    },
-    platformDir: platformDirArg,
-    text: {
-      type: "string",
-      description:
-        "The successor's Requirement field. Required when stdin is not a TTY; prompted otherwise.",
-    },
-    why: {
-      type: "string",
-      description: "Successor's Why it matters (default: copied from the old entry)",
-    },
-    lives: {
-      type: "string",
-      description: "Successor's Lives in (default: copied from the old entry)",
-    },
-    term: {
-      type: "string",
-      description: "TERM successor's headword (default: copied from the old entry; TERM ids only)",
-    },
-    aliases: {
-      type: "string",
-      description:
-        "TERM successor's comma-separated aliases (default: copied from the old entry; TERM ids only)",
-    },
-    noBump: {
-      type: "boolean",
-      description: "Do not bump the envelope specVersion",
-    },
-    issue: {
-      type: "string",
-      description:
-        "Ticket that caused this supersession — recorded as supersedes-via on the predecessor and created on the successor (opaque provenance)",
-    },
-    json: {
-      type: "boolean",
-      description:
-        "Emit { old_id, new_id, file, spec_version, retag } as JSON instead of the text summary",
-    },
-  },
+  args: supersedeArgs,
   async run({ args }) {
-    const id = args.id as string;
+    const id = args.id;
     if (!ID_RE.test(id)) {
       console.error(`spec supersede: id must be a requirement id (KEY-NNN); got ${id}`);
       process.exit(EXIT.USAGE);

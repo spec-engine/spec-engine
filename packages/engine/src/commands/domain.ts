@@ -38,7 +38,7 @@ export const domainNewCommand = defineCommand({
     platformDir: platformDirArg,
   },
   async run({ args }) {
-    const raw = args.name as string;
+    const raw = args.name;
     const platformDir = resolvePlatformDir(args);
 
     // @spec DOMAIN-012

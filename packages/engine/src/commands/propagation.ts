@@ -37,7 +37,7 @@ export const propagationCommand = defineCommand({
     noPrompt: noPromptArg,
   },
   async run({ args }) {
-    const reqId = ((args.reqId as string | undefined) ?? "").trim();
+    const reqId = (args.reqId ?? "").trim();
     if (!reqId) {
       console.error("spec propagation: <reqId> is required (e.g., spec propagation BILLING-009)");
       process.exit(EXIT.USAGE);
@@ -45,13 +45,13 @@ export const propagationCommand = defineCommand({
     }
 
     const platformDir = resolvePlatformDir(args);
-    const outArgValue = args.out as string | undefined;
+    const outArgValue = args.out;
     const dbPath = resolveDbPath(platformDir, outArgValue);
     if (outArgValue) assertContainedPath(dbPath, platformDir, "spec propagation: --out");
 
     await maybePromptForOnboarding({
       platformDir,
-      args: { noPrompt: args.noPrompt as boolean | undefined },
+      args: { noPrompt: args.noPrompt },
     });
 
     await withReadStorage({ platformDir, dbPath, fresh: !!args.fresh }, (storage) => {

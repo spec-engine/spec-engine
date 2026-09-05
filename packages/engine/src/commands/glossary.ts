@@ -77,7 +77,7 @@ export const glossaryCommand = defineCommand({
     json: { type: "boolean", description: "Emit a JSON result instead of the text summary" },
   },
   async run({ args }) {
-    const platformDir = resolvePlatform(args.platformDir as string | undefined);
+    const platformDir = resolvePlatform(args.platformDir);
     const json = Boolean(args.json);
     if (args.migrate) await migrate(platformDir, json);
     else if (args.check) check(platformDir, json);

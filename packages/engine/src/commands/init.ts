@@ -17,7 +17,7 @@ function errMessage(err: unknown): string {
 }
 
 /** The repo directory: the positional when it is a non-empty string, else the cwd. */
-function resolveRepoArg(repoRaw: unknown): string {
+function resolveRepoArg(repoRaw: string | undefined): string {
   const repoArg = typeof repoRaw === "string" && repoRaw.length > 0 ? repoRaw : process.cwd();
   return resolve(repoArg);
 }

@@ -197,7 +197,7 @@ export const termListCommand = defineCommand({
     },
   },
   async run({ args }) {
-    await listTermsCommand(args.platformDir as string | undefined, Boolean(args.json));
+    await listTermsCommand(args.platformDir, Boolean(args.json));
   },
 });
 
@@ -224,9 +224,9 @@ export const termReviseCommand = defineCommand({
   },
   async run({ args }) {
     await reviseTermCommand({
-      id: args.id as string,
-      platformDirRaw: args.platformDir as string | undefined,
-      def: (args.def as string | undefined) ?? (args.text as string | undefined),
+      id: args.id,
+      platformDirRaw: args.platformDir,
+      def: args.def ?? args.text,
       noBump: Boolean(args.noBump),
       json: Boolean(args.json),
     });
@@ -258,9 +258,9 @@ export const termConfirmCommand = defineCommand({
   },
   async run({ args }) {
     await confirmTermCommand({
-      reqId: args.reqId as string,
-      termId: args.termId as string,
-      platformDirRaw: args.platformDir as string | undefined,
+      reqId: args.reqId,
+      termId: args.termId,
+      platformDirRaw: args.platformDir,
       json: Boolean(args.json),
     });
   },
@@ -303,18 +303,18 @@ export const termCommand = defineCommand({
     },
   },
   async run({ args }) {
-    const verb = args.name as string;
-    const def = (args.def as string | undefined) ?? (args.text as string | undefined);
+    const verb = args.name;
+    const def = args.def ?? args.text;
     const json = Boolean(args.json);
 
     if (verb === "list") {
-      await listTermsCommand(args.platformDir as string | undefined, json);
+      await listTermsCommand(args.platformDir, json);
       return;
     }
     if (verb === "revise") {
       await reviseTermCommand({
-        id: (args.platformDir as string | undefined) ?? "",
-        platformDirRaw: args.extra as string | undefined,
+        id: args.platformDir ?? "",
+        platformDirRaw: args.extra,
         def,
         noBump: Boolean(args.noBump),
         json,
@@ -323,9 +323,9 @@ export const termCommand = defineCommand({
     }
     if (verb === "confirm") {
       await confirmTermCommand({
-        reqId: (args.platformDir as string | undefined) ?? "",
-        termId: (args.extra as string | undefined) ?? "",
-        platformDirRaw: args.extra2 as string | undefined,
+        reqId: args.platformDir ?? "",
+        termId: args.extra ?? "",
+        platformDirRaw: args.extra2,
         json,
       });
       return;
@@ -333,10 +333,10 @@ export const termCommand = defineCommand({
 
     await authorOrQuery({
       name: verb,
-      platformDirRaw: args.platformDir as string | undefined,
+      platformDirRaw: args.platformDir,
       def,
-      aliasesRaw: args.aliases as string | undefined,
-      section: args.section as string | undefined,
+      aliasesRaw: args.aliases,
+      section: args.section,
       json,
     });
   },

@@ -175,7 +175,7 @@ export const docsCommand = defineCommand({
     }
 
     // Port validation mirrors serve.ts T-5-05-03: strict integer, 0..65535.
-    const rawPort = (args.port as string | undefined) ?? "0";
+    const rawPort = args.port ?? "0";
     if (!/^[0-9]+$/.test(rawPort)) {
       console.error("spec docs: --port must be an integer 0..65535");
       process.exit(EXIT.USAGE);

@@ -40,7 +40,7 @@ export const getCommand = defineCommand({
     noPrompt: noPromptArg,
   },
   async run({ args }) {
-    const reqId = ((args.reqId as string | undefined) ?? "").trim();
+    const reqId = (args.reqId ?? "").trim();
     if (!ID_RE.test(reqId)) {
       console.error(`spec get: id must be a requirement id (KEY-NNN); got ${reqId}`);
       process.exit(EXIT.USAGE);
@@ -48,13 +48,13 @@ export const getCommand = defineCommand({
     }
 
     const platformDir = resolvePlatformDir(args);
-    const outArgValue = args.out as string | undefined;
+    const outArgValue = args.out;
     const dbPath = resolveDbPath(platformDir, outArgValue);
     if (outArgValue) assertContainedPath(dbPath, platformDir, "spec get: --out");
 
     await maybePromptForOnboarding({
       platformDir,
-      args: { noPrompt: args.noPrompt as boolean | undefined },
+      args: { noPrompt: args.noPrompt },
     });
 
     await withReadStorage({ platformDir, dbPath, fresh: !!args.fresh }, (storage) => {

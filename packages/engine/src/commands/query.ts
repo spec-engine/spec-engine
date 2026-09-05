@@ -51,15 +51,13 @@ export const queryCommand = defineCommand({
     noPrompt: noPromptArg,
   },
   async run({ args }) {
-    const text = ((args.text as string | undefined) ?? "").trim();
+    const text = (args.text ?? "").trim();
     if (!text) {
       console.error('spec query: <text> is required (e.g., spec query "renewal charge")');
       process.exit(EXIT.USAGE);
       return;
     }
-    const limit = parseQueryLimit(
-      (args.limit as string | undefined) ?? String(DEFAULT_QUERY_LIMIT),
-    );
+    const limit = parseQueryLimit(args.limit ?? String(DEFAULT_QUERY_LIMIT));
     if (limit === null) {
       console.error(`spec query: --limit must be a positive integer ≤ ${LIMIT_MAX}`);
       process.exit(EXIT.USAGE);
@@ -67,13 +65,13 @@ export const queryCommand = defineCommand({
     }
 
     const platformDir = resolvePlatformDir(args);
-    const outArgValue = args.out as string | undefined;
+    const outArgValue = args.out;
     const dbPath = resolveDbPath(platformDir, outArgValue);
     if (outArgValue) assertContainedPath(dbPath, platformDir, "spec query: --out");
 
     await maybePromptForOnboarding({
       platformDir,
-      args: { noPrompt: args.noPrompt as boolean | undefined },
+      args: { noPrompt: args.noPrompt },
     });
 
     await withReadStorage({ platformDir, dbPath, fresh: !!args.fresh }, (storage) => {

@@ -37,9 +37,9 @@ export const deprecateCommand = defineCommand({
     },
   },
   async run({ args }) {
-    const id = args.id as string;
+    const id = args.id;
     const platformDir = resolvePlatformDir(args);
-    const reason = ((args.reason as string | undefined) ?? "").trim();
+    const reason = (args.reason ?? "").trim();
 
     if (!ID_RE.test(id)) {
       console.error(`spec deprecate: id must be a requirement id (KEY-NNN); got ${id}`);

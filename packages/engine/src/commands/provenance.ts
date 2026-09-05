@@ -69,8 +69,8 @@ export const provenanceCommand = defineCommand({
     },
   },
   async run({ args }) {
-    let issueId = ((args.issueId as string | undefined) ?? "").trim();
-    let platformArg = args.platformDir as string | undefined;
+    let issueId = (args.issueId ?? "").trim();
+    let platformArg = args.platformDir;
 
     // A lone positional that is an existing directory is the platform dir, not an issue id.
     if (issueId && platformArg === undefined) {
@@ -87,14 +87,14 @@ export const provenanceCommand = defineCommand({
     }
 
     const platformDir = resolve(platformArg ?? process.cwd());
-    const outArg = args.out as string | undefined;
+    const outArg = args.out;
     const dbPath = resolveDbPath(platformDir, outArg);
     if (outArg) assertContainedPath(dbPath, platformDir, "spec provenance: --out");
 
     await maybePromptForOnboarding({
       platformDir,
       args: {
-        noPrompt: args.noPrompt as boolean | undefined,
+        noPrompt: args.noPrompt,
       },
     });
 
