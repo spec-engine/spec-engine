@@ -1,6 +1,6 @@
 {
   "name": "@spec-engine/spec-engine",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Cross-repo spec engine — durable requirements with permanent IDs, bound to code via @spec tags, checked in CI. Ships the spec CLI, the local coverage webapp (spec serve), and offline docs (spec docs).",
   "license": "MIT",
   "type": "module",
@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",
+    "@spec-engine/platform-map": "0.5.0",
     "citty": "0.2.2",
     "hono": "4.12.27",
     "zod": "3.25.76"

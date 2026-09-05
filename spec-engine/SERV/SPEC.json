@@ -1,7 +1,7 @@
 {
   "key": "SERV",
   "owner": null,
-  "updated": "2026-07-30",
+  "updated": "2026-09-05",
   "scope": "The spec serve local webapp and /api/* over the index. Belongs here: the server-rendered pages; the /api/* route contracts; loopback-only binding. Does not belong here: the one-model-one-seam promise (SCHM). Boundary case: loopback-only is SERV's promise even though the data model it serves is SCHM's.",
   "grammar": "ears",
   "requirements": [
@@ -261,8 +261,30 @@
     },
     {
       "id": "SERV-017",
-      "status": "active",
+      "status": "superseded",
       "statement": "The Setup page shall render the scan-mode tile from the member layout: members expanded from one workspace root render Monorepo, two or more sibling member repos render Platform, and a lone member renders Single repo.",
+      "why": "A misclassified tile makes the first mapping view an adopter checks misstate their platform layout.",
+      "supersedes": null,
+      "supersededBy": "SERV-018",
+      "relates": [],
+      "livesIn": [
+        "packages/webapp/src/pages/setup.ts"
+      ],
+      "issues": [
+        {
+          "role": "supersedes-via",
+          "id": "RED-187"
+        }
+      ],
+      "changedAtVersion": 1,
+      "supersededAtVersion": 8,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SERV-018",
+      "status": "active",
+      "statement": "The Setup page shall render the scan-mode tile from platform-map's mode: multi-repo renders Platform, monorepo renders Monorepo, and single-repo renders Single repo.",
       "why": "A misclassified tile makes the first mapping view an adopter checks misstate their platform layout.",
       "supersedes": null,
       "supersededBy": null,
@@ -270,8 +292,12 @@
       "livesIn": [
         "packages/webapp/src/pages/setup.ts"
       ],
-      "issues": [],
-      "changedAtVersion": 1,
+      "issues": [
+        {
+          "role": "created",
+          "id": "RED-187"
+        }
+      ],
       "aliases": [],
       "cites": []
     }

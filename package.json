@@ -4,7 +4,8 @@
   "license": "MIT",
   "type": "module",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "scripts"
   ],
   "engines": {
     "bun": ">=1.3.0"

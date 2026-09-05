@@ -105,7 +105,7 @@ Approval primitive. Passes iff `<reqId>` is Active AND `<repo>`'s pin covers the
 
 ### `spec init [repo]`
 
-Scaffold `spec-engine.member.json` into a member repo. Pin resolution: `--specs <pin>` wins; else the **derived platform version** (the max of the enclosing platform's domain versions); else `spec-engine@1` with a printed note. An existing config is left untouched ("already configured", exit 0); `--force` rewrites the pin while preserving an `ignore` list and a `members` glob. The config may also carry `"members": "<glob>"` for monorepo workspace expansion — each matching subdirectory becomes its own coverage column.
+Declare a member and write its `spec-engine.member.json`. A repository directly under the platform folder that the platform file does not list is declared through platform-map first (a platform file entry and a marker), then pinned; a workspace package of a monorepo gets a nested pin and no declaration; a plain folder platform-map cannot declare is refused. Pin resolution: `--specs <pin>` wins; else the **derived platform version** (the max of the enclosing platform's domain versions); else `spec-engine@1` with a printed note. An existing config is left untouched ("already configured", exit 0); `--force` rewrites the pin while preserving an `ignore` list. `--platform <dir>` records a declared member's checkout that lives outside the platform folder in platform-map's per-user file. See [Platform Mapping](/platform-mapping/).
 
 **Exit codes:** 0 / 2 (never exit 1)
 

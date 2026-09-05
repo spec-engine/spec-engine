@@ -3,15 +3,12 @@
 3	packages/engine/src/check/format.ts
 3	packages/engine/src/check/propagation-teeth.ts
 1	packages/engine/src/check/removed.ts
-2	packages/engine/src/check/sqlDiagnostics.ts
 5	packages/engine/src/check/statusflip.ts
 3	packages/engine/src/check/unsourced.ts
 3	packages/engine/src/cli.ts
 3	packages/engine/src/constants.ts
 8	packages/engine/src/gate/classify.ts
 5	packages/engine/src/indexer/diagnostics.ts
-18	packages/engine/src/indexer/pipeline.ts
-5	packages/engine/src/onboarding/context.ts
 4	packages/engine/src/parser/types.ts
 6	packages/engine/src/provenance/format.ts
 3	packages/engine/src/provenance/resolve.ts
@@ -31,4 +28,3 @@
 7	packages/webapp/src/pages/provenance.ts
 5	packages/webapp/src/pages/query.ts
 4	packages/webapp/src/pages/relations.ts
-1	packages/webapp/src/pages/setup.ts

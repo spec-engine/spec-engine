@@ -20,7 +20,15 @@ description: Diagnostic codes and what they mean
 | `UNVERIFIED_REQ` | error | An active requirement is implemented but has no verifying test tag |
 | `DRIFT` | error | A member is pinned behind the version at which a requirement it references changed |
 | `BROKEN_FILE_REF` | error | An active or draft requirement's `livesIn` entry does not resolve to a file under the platform root (a terminal-status entry is exempt) |
-| `NO_SPEC_CONFIG` | warning | A sibling repo-root under the platform has no `spec-engine.member.json` |
+| `NO_SPEC_CONFIG` | warning | A declared member is present on disk with no `spec-engine.member.json` |
+| `MALFORMED_FILE` | error (warning for a manifest) | A `platform-map.json`, a package or workspace manifest, or platform-map's per-user file failed to parse or validate |
+| `MARKER_MISMATCH` | error | A member's `platform-map.json` marker names a different platform |
+| `MEMBER_MISSING` | warning | A declared member is not on this machine; it is not scanned |
+| `MARKER_MISSING` | warning | A declared member has no `platform-map.json` marker |
+| `PLATFORM_NOT_LOCATED` | warning | A marker names a platform this machine cannot find |
+| `SCAN_TRUNCATED` | warning | A workspace walk hit its depth or entry cap |
+| `UNLISTED_REPO` | warning | A repository in the platform folder is not a member; its tags are not scanned until `spec init <name>` declares it |
+| `UNDECLARED_PLATFORM` | warning | A folder of repositories with no platform file; nothing in it is a member until `spec init <name>` declares the first one |
 | `BROKEN_RELATES` | warning | A `relates` entry points at a nonexistent requirement ID |
 | `RELATES_SUPERSEDED` | warning | A `relates` entry points at a superseded requirement |
 | `SELF_RELATES` | warning | A `relates` entry names its own requirement (dropped, but surfaced) |

@@ -15,6 +15,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openStorage } from "../storage/sqlite";
+import { TestPlatform } from "../testing/platform";
 import { SPEC_TOKEN, specTag } from "../testing/specTag";
 import { runIndex } from "./pipeline";
 
@@ -33,8 +34,9 @@ afterEach(() => {
 /** Minimal platform: canonical ORD-001 + one member `api` with a tagged
  *  src file, a tagged file under `generated/`, and a doc binding under
  *  `generated/`. `ignore` lands in api/spec-engine.member.json when given. */
-function buildPlatform(ignore?: string[]): string {
+async function buildPlatform(ignore?: string[]): Promise<string> {
   const platform = join(tmp, "platform");
+  await TestPlatform.at(platform).member("api", { ignore });
   mkdirSync(join(platform, "spec-engine", "ORD"), { recursive: true });
   writeFileSync(
     join(platform, "spec-engine", "ORD", "SPEC.md"),
@@ -43,9 +45,6 @@ function buildPlatform(ignore?: string[]): string {
   );
   mkdirSync(join(platform, "api", "src"), { recursive: true });
   mkdirSync(join(platform, "api", "generated"), { recursive: true });
-  const config: Record<string, unknown> = { specs: "spec-engine@1" };
-  if (ignore) config.ignore = ignore;
-  writeFileSync(join(platform, "api", "spec-engine.member.json"), `${JSON.stringify(config)}\n`);
   writeFileSync(join(platform, "api", "src", "a.ts"), `export const a = 1; ${specTag("ORD-001")}`);
   writeFileSync(
     join(platform, "api", "generated", "b.ts"),
@@ -60,7 +59,7 @@ function buildPlatform(ignore?: string[]): string {
 
 describe("per-repo ignore config (T7)", () => {
   test("baseline: without ignore, generated/ code and docs index normally", async () => {
-    const platform = buildPlatform();
+    const platform = await buildPlatform();
     const s = openStorage(dbPath);
     try {
       await runIndex({ platformDir: platform, storage: s });
@@ -74,7 +73,7 @@ describe("per-repo ignore config (T7)", () => {
   });
 
   test('ignore: ["generated"] excludes the subtree from code AND doc scans', async () => {
-    const platform = buildPlatform(["generated"]);
+    const platform = await buildPlatform(["generated"]);
     const s = openStorage(dbPath);
     try {
       await runIndex({ platformDir: platform, storage: s });
@@ -88,7 +87,7 @@ describe("per-repo ignore config (T7)", () => {
   });
 
   test("trailing-slash entries behave identically to bare names", async () => {
-    const platform = buildPlatform(["generated/"]);
+    const platform = await buildPlatform(["generated/"]);
     const s = openStorage(dbPath);
     try {
       await runIndex({ platformDir: platform, storage: s });
@@ -100,13 +99,10 @@ describe("per-repo ignore config (T7)", () => {
   });
 
   test("ignore in one repo does not leak into sibling members", async () => {
-    const platform = buildPlatform(["generated"]);
+    const platform = await buildPlatform(["generated"]);
     // Second member with the SAME layout but no ignore field.
+    await TestPlatform.at(platform).member("web");
     mkdirSync(join(platform, "web", "generated"), { recursive: true });
-    writeFileSync(
-      join(platform, "web", "spec-engine.member.json"),
-      '{ "specs": "spec-engine@1" }\n',
-    );
     writeFileSync(
       join(platform, "web", "generated", "c.ts"),
       `export const c = 1; ${specTag("ORD-001")}`,

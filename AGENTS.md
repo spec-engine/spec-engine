@@ -59,15 +59,32 @@ Rules:
   still writes through `validateAndWrite`. A schema-invalid file lives under
   `src/testing/fixtures/`. Nothing else writes a `SPEC.json` by hand: the
   SCHM-026 fence scans every source file and every test.
-- **A member config is authored with `spec init`, never by hand.** This
-  checkout is the engine's own platform (the root `package.json` is
-  `@spec-engine/spec-engine`), so `spec init` judges the spec-engine/
-  path-segment refusal below the platform root and `spec init scripts` or
-  `spec init packages` work here (INIT-030). Rewrite a pin with
-  `spec init <dir> --force`.
+- **Membership is platform-map's; the pin is ours.** Which directories are
+  members, and whether a repo is a monorepo, comes from
+  `@spec-engine/platform-map` (`map()` and `locate()`, imported only in
+  `packages/engine/src/indexer/discover.ts`). This checkout is a lone
+  monorepo with no platform file: its coverage columns are the root
+  `workspaces` packages (`packages/*` and `scripts`), each pinned to the
+  derived platform version unless it carries a nested
+  `spec-engine.member.json` (`scripts/` does). A fixture platform
+  (`fixtures/platform-fixture`, the trees under `src/testing/fixtures/`)
+  carries a `platform-map.json` platform file, a marker and a private
+  `package.json` per member. See the
+  [platform-mapping page](packages/site/src/content/docs/platform-mapping.md).
+- **A member config, a platform file, and a marker are authored with
+  `spec init`, never by hand.** This checkout is the engine's own platform
+  (the root `package.json` is `@spec-engine/spec-engine`), so `spec init`
+  judges the spec-engine/ path-segment refusal below the platform root and
+  `spec init scripts` works here (INIT-030). Rewrite a pin with
+  `spec init <dir> --force`. A fixture platform under `fixtures/` is
+  declared by running `spec init` on a temporary copy of the tree and
+  copying the two `platform-map.json` files back: the checkout's own path
+  carries a `spec-engine` segment, and only the engine platform is judged
+  below its root.
 - **Every fence is a requirement.** Each `fence_*` function in
   `scripts/arch-fences.sh` carries the `@spec` tag of the requirement it
-  enforces, and its `run` label starts with that id. `scripts/` is a member
+  enforces, and its `run` label starts with that id. `scripts/` is a
+  workspace package (`scripts/package.json`) with its own pin
   (`scripts/spec-engine.member.json`) so those tags index; the scanner reads
   `.sh` files as code.
 - **The planted-fixture diagnostic baseline is one file**,
@@ -140,6 +157,16 @@ How this implementation realizes them:
 6. **Requirements are not issues.** One ticket splits into several
    requirements. Never use a ticket number as a requirement id or in a tag.
    Ticket links (`--issue`, the `issues` field) are provenance only.
+7. Membership and shape are `@spec-engine/platform-map`'s: a platform is
+   the directory holding `spec-engine/` and, when declared, the platform
+   file `platform-map.json` `{ name, members, ignore }`; a member is a name
+   in that file with a `{ platform, member }` marker; a monorepo's coverage
+   columns are its workspace packages, named by path (`packages/engine`);
+   a lone repo with no platform file is one column or its packages. The
+   pin is the one fact `spec-engine.member.json` adds. `spec init <name>`
+   declares and pins in one step; no `spec` workflow runs a platform-map
+   command. Full model: the [Platform Mapping
+   page](packages/site/src/content/docs/platform-mapping.md).
 
 ## Exit code contract
 
@@ -167,7 +194,7 @@ Branch on exit codes, not on output text.
 | `spec resolve <files…> [platformDir]` | Requirements tagged in the given files | yes (array) | 0 / 2 |
 | `spec propagation <KEY-NNN> [platformDir]` | Per-repo migrated/drifted state for a superseded requirement | yes (array) | 0 / 2 |
 | `spec gate <repo> <KEY-NNN> [platformDir]` | Approval gate: pass iff Active and the pin covers it | yes (object) | 0 / 1 / 2 |
-| `spec init [repo]` | Write a member's `spec-engine.member.json` pin | yes (object) | 0 / 2 |
+| `spec init [repo]` | Declare a member through platform-map and write its `spec-engine.member.json` pin | yes (object) | 0 / 2 |
 | `spec domain new <KEY>` / `spec domain list` | Scaffold / list `spec-engine/<KEY>/SPEC.json` | `list`: yes (array) | 0 / 2 |
 | `spec migrate [platformDir]` | One-time cutover of every `SPEC.md` to `SPEC.json` (idempotent) | no | 0 / 2 |
 | `spec req <domain-prefix> [platformDir]` | Piped: next unused id. `--text`: author non-interactively | yes (object) | 0 / 2 |
@@ -262,12 +289,28 @@ Codes, in `DiagnosticCode` order:
 | `REQUIREMENT_REMOVED` | error |
 | `UNAPPROVED_STATUS_FLIP` | warning; error with `--require-owner-approval` |
 | `PARTIAL_PROPAGATION` | error, needs `--base` and `--results` |
+| `MALFORMED_FILE` | platform-map's severity: error, or warning for a manifest |
+| `MEMBER_MISSING` | warning |
+| `MARKER_MISSING` | warning |
+| `MARKER_MISMATCH` | error |
+| `UNLISTED_REPO` | warning (platform-map info, promoted) |
+| `PLATFORM_NOT_LOCATED` | warning |
+| `UNDECLARED_PLATFORM` | warning (platform-map info, promoted) |
+| `SCAN_TRUNCATED` | warning |
 | `UNDEFINED_TERM` | error |
 | `ORPHAN_TERM` | warning |
 | `TERM_DRIFT` | warning |
 | `SUPERSEDED_TERM_REFERENCED` | error |
 
 The four TERM codes are the last four rows. Only `error` rows drive exit 1.
+The eight codes before them are platform-map's, surfaced with the
+platform-map code (CHCK-031): every platform-map error and warning keeps
+its severity; `UNLISTED_REPO` and `UNDECLARED_PLATFORM` are promoted from
+info to warning because they mean a repository's tags are not scanned;
+`UNMATCHED_PATTERN` and `AMBIGUOUS_ECOSYSTEM` are not surfaced. `repo` is
+the diagnostic's subject when it names a member; `source_file` is the
+subject. `NO_SPEC_CONFIG` stays Spec Engine's own code: a declared member
+present on disk with no `spec-engine.member.json`.
 
 - Deletion detection runs by default: with no `--base`, the working tree is
   diffed against `HEAD` whenever git resolves. An Active requirement absent
@@ -410,28 +453,47 @@ Exit: 0 pass / 1 fail / 2 unknown repo name or bad args.
 
 ### spec init
 
-Writes `spec-engine.member.json`.
+Declares a member through platform-map and writes `spec-engine.member.json`.
 
 | Flag | Effect |
 | --- | --- |
 | `--specs spec-engine@N` | Override the pin. |
-| `--force` | Rewrite an existing config, preserving `ignore` and `members`. Any other key refuses, as does a malformed `ignore` or `members`. |
+| `--force` | Rewrite an existing config, preserving `ignore`. Any other key refuses, as does a malformed `ignore`. |
+| `--platform <dir>` | The platform root, for a declared member checked out outside the platform folder. Its location is recorded in platform-map's per-user file first. |
 
-`--json`: `{ action: "wrote", path, pin, source }` or
-`{ action: "already-configured", path, pin, extra_fields }`.
+`--json`: `{ action: "wrote", path, pin, source, declared, linked }` or
+`{ action: "already-configured", path, pin, extra_fields, declared, linked }`.
+`declared` lists the platform-map files written (the platform file, the
+marker), empty when the member was already declared; `linked` is the
+per-user file written under `--platform`, else null.
 
 Exit: 0 wrote or already configured / 2. Branch on `action`, not the exit code.
 
+- Where the target sits decides what is written (INIT-038):
+  - a repository directly under a platform folder (a directory holding
+    `spec-engine/`) that the platform file does not list is declared: a
+    `platform-map.json` platform file entry at the root (the file is created
+    when absent) and a `{ platform, member }` marker in the repository, then
+    the pin. platform-map declares only a directory with a `.git` entry or a
+    `package.json`; a plain folder is refused with exit 2;
+  - a declared member only gets the pin (a missing marker is written back);
+  - a workspace package of a monorepo gets a nested pin and no declaration;
+    a repository inside a lone monorepo that is not a workspace package is
+    refused;
+  - a directory under no platform gets the `spec-engine@1` fallback pin.
+- The platform root is platform-map's `locate()` (INIT-034): the nearest
+  `platform-map.json` or `.git` boundary, a marker resolved through the parent
+  directory or the per-user file; the parent directory when it holds
+  `spec-engine/`. A `.git` boundary between the target and an outer
+  `spec-engine/` hides that platform, as before.
 - Default pin: `--specs`, else the derived platform version, else
   `spec-engine@1` with a printed note.
 - A resolved path with a `spec-engine` segment is refused, except on the
-  engine's own checkout (root `package.json` named `@spec-engine/spec-engine`),
+  engine's own checkout (root package named `@spec-engine/spec-engine`),
   where only the path below the platform root is judged.
 - `ignore: ["dir", …]` excludes repo-relative directory prefixes from that
-  repo's scans.
-- `members: "<glob>"` expands each matching subdirectory into its own member
-  with its own coverage column. This repo sets `"members": "*"` in
-  `packages/spec-engine.member.json`.
+  repo's scans. The `members` glob is gone: a monorepo's columns are its
+  workspace manifest's packages.
 
 ### spec domain
 

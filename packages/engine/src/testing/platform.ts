@@ -11,6 +11,7 @@
 import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
+import { applyInit } from "@spec-engine/platform-map";
 import { type SpecCite, type SpecDomain, validateDomainFile } from "@spec-engine/shared";
 import { CANONICAL_SPECS_DIR, SPEC_FILENAME, specPaths } from "../constants";
 import type { FreshTags } from "../operations/_index";
@@ -18,7 +19,7 @@ import type { OpFailure } from "../operations/_result";
 import { type AmendFields, type AmendResult, amend } from "../operations/amend";
 import { type DeprecateResult, deprecate } from "../operations/deprecate";
 import { type NewDomainOptions, newDomain } from "../operations/domain";
-import { writeMemberConfig } from "../operations/init";
+import { initMember, planDeclare } from "../operations/init";
 import { type MintResult, mint } from "../operations/mint";
 import { type MoveResult, move } from "../operations/move";
 import { nextId } from "../operations/nextId";
@@ -73,20 +74,39 @@ export interface TermInput {
 
 export interface MemberInput {
   /** Defaults to `spec-engine@1`. */
-  pin?: string;
-  ignore?: string[];
-  members?: string;
+  pin?: string | undefined;
+  ignore?: string[] | undefined;
   /** Repo-relative files to write, e.g. a source file carrying a tag line. */
-  files?: Record<string, string>;
+  files?: Record<string, string> | undefined;
 }
 
 export interface MintedRequirement {
   id: string;
 }
 
+/** A private package manifest naming the directory, so platform-map reads it as a repository or package. */
+function manifest(dir: string, extra: Record<string, unknown> = {}): string {
+  return `${JSON.stringify({ name: basename(dir), private: true, ...extra }, null, 2)}\n`;
+}
+
 /** A directory the builder writes plain files into. Never a spec file. */
 abstract class FileTree {
   abstract readonly dir: string;
+
+  /** Write this directory's `package.json`: a private manifest named after the directory, plus `extra`. */
+  manifest(extra: Record<string, unknown> = {}): string {
+    return this.file("package.json", manifest(this.dir, extra));
+  }
+
+  /**
+   * Make this directory a monorepo of the given workspace packages: a root
+   * manifest listing them under `workspaces` and a manifest in each package.
+   * A package directory not yet present is created.
+   */
+  workspace(packages: string[], extra: Record<string, unknown> = {}): void {
+    this.manifest({ workspaces: packages, ...extra });
+    for (const pkg of packages) this.file(join(pkg, "package.json"), manifest(join(this.dir, pkg)));
+  }
 
   /** Write a non-spec file under this tree and return its absolute path. */
   file(rel: string, content: string): string {
@@ -331,21 +351,42 @@ export class TestPlatform extends FileTree {
     return unwrap(await confirmTerm({ platformDir: this.dir, reqId, termId }), `confirm ${reqId}`);
   }
 
-  /** A member repo directory with its pin, and any files it carries. */
+  /**
+   * A repository directory in the platform folder: a private `package.json`
+   * makes it a repository platform-map can declare. Not a member until
+   * `member()` declares it; until then it is what `spec check` reports as
+   * `UNLISTED_REPO`.
+   */
+  repository(name: string, files: Record<string, string> = {}): MemberHandle {
+    const handle = new MemberHandle(name, join(this.dir, name));
+    mkdirSync(handle.dir, { recursive: true });
+    handle.manifest();
+    for (const [rel, content] of Object.entries(files)) handle.file(rel, content);
+    return handle;
+  }
+
+  /**
+   * A declared member with its pin, written by the same operation `spec init`
+   * runs: the platform file entry, the marker, and `spec-engine.member.json`.
+   */
   async member(name: string, input: MemberInput = {}): Promise<MemberHandle> {
-    const dir = join(this.dir, name);
-    mkdirSync(dir, { recursive: true });
+    const handle = this.repository(name, input.files);
     unwrap(
-      await writeMemberConfig({
-        canonical: dir,
-        pin: input.pin ?? "spec-engine@1",
+      await initMember({
+        repoDir: handle.dir,
+        override: input.pin ?? "spec-engine@1",
         ignore: input.ignore,
-        members: input.members,
       }),
       `member ${name}`,
     );
-    const handle = new MemberHandle(name, dir);
-    for (const [rel, content] of Object.entries(input.files ?? {})) handle.file(rel, content);
+    return handle;
+  }
+
+  /** A declared member without a pin: the state `spec check` reports as `NO_SPEC_CONFIG`. */
+  unpinned(name: string, files: Record<string, string> = {}): MemberHandle {
+    const handle = this.repository(name, files);
+    const planned = unwrap(planDeclare(this.dir, name), `declare ${name}`);
+    applyInit(planned.plan, [name]);
     return handle;
   }
 }

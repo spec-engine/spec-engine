@@ -79,7 +79,7 @@ jobs:
       - name: smoke 6 — cold-rebuild build_id equivalence (CI-02 / INDX-03)
         run: bash scripts/smoke/06-cold-rebuild.sh
 
-      - name: smoke 6b — cold-rebuild build_id byte-stable WITH skipped sibling (BUILD-01)
+      - name: smoke 6b — cold-rebuild build_id byte-stable WITH an undeclared stranger (BUILD-01)
         run: bash scripts/smoke/06b-cold-rebuild-stray-sibling.sh
 
       - name: smoke 7 — inverted CI assertion (CHCK-04 / CI-03)
@@ -112,7 +112,7 @@ jobs:
       - name: smoke 14b — fixture unchanged after spec init smokes (CI-04 / WR-06 belt-and-suspenders)
         run: bash scripts/smoke/14b-fixture-unchanged.sh
 
-      - name: smoke 15 — NO_SPEC_CONFIG end-to-end on ad-hoc tmp platform (CI-04 / DISC-03 / DIAG-02)
+      - name: smoke 15 — NO_SPEC_CONFIG end-to-end on a declared member without a pin (CI-04 / DISC-03 / DIAG-02)
         run: bash scripts/smoke/15-no-spec-config.sh
 
       - name: smoke 16 — dogfood self-gate, trusted-red (spec on spec, rung 2)
@@ -177,6 +177,9 @@ jobs:
 
       - name: shellcheck (scripts/)
         run: shellcheck scripts/*.sh scripts/smoke/*.sh
+
+      - name: platform-map check (the checkout's own platform declaration)
+        run: bunx @spec-engine/platform-map check .
 
       - name: type-check
         run: bun run typecheck

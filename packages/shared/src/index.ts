@@ -8,6 +8,7 @@ export * from "./flags";
 export type { ClassifyInput, GateOutcome, GateReason } from "./gate";
 export * from "./indexResult";
 export * from "./net";
+export * from "./platform";
 export * from "./propagation";
 export * from "./report";
 export * from "./schema";

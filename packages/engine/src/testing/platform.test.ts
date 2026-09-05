@@ -10,7 +10,7 @@
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { validateDomainFile } from "@spec-engine/shared";
 import { entryOf, plantEdit } from "./plant";
 import { TestPlatform } from "./platform";
@@ -103,23 +103,55 @@ describe("TestPlatform authors every spec file through the operations", () => {
     expect(entryOf(await terms.read(), term.id).aliases).toEqual(["lag"]);
   });
 
-  test("a member carries its pin, ignore list, members glob, and files", async () => {
+  test("a member is declared through spec init and carries its pin, ignore list, and files", async () => {
     const api = await fx.member("api", {
       pin: "spec-engine@3",
       ignore: ["generated"],
-      members: "packages/*",
       files: { "src/renew.ts": "export const renew = 1;\n" },
     });
     const config = JSON.parse(readFileSync(join(api.dir, "spec-engine.member.json"), "utf8"));
-    expect(config).toEqual({
-      specs: "spec-engine@3",
-      ignore: ["generated"],
-      members: "packages/*",
-    });
+    expect(config).toEqual({ specs: "spec-engine@3", ignore: ["generated"] });
     expect(existsSync(join(api.dir, "src", "renew.ts"))).toBe(true);
+    expect(JSON.parse(readFileSync(join(api.dir, "platform-map.json"), "utf8"))).toEqual({
+      platform: basename(fx.dir),
+      member: "api",
+    });
     const plain = await fx.member("web");
     expect(JSON.parse(readFileSync(join(plain.dir, "spec-engine.member.json"), "utf8"))).toEqual({
       specs: "spec-engine@1",
+    });
+    expect(JSON.parse(readFileSync(join(fx.dir, "platform-map.json"), "utf8"))).toEqual({
+      name: basename(fx.dir),
+      members: ["api", "web"],
+    });
+  });
+
+  test("a repository is a candidate platform-map can declare; unpinned() declares it without a pin", async () => {
+    const stranger = fx.repository("strangers", { "src/a.ts": "export const a = 1;\n" });
+    expect(JSON.parse(readFileSync(join(stranger.dir, "package.json"), "utf8"))).toEqual({
+      name: "strangers",
+      private: true,
+    });
+    expect(existsSync(join(stranger.dir, "platform-map.json"))).toBe(false);
+    const bare = fx.unpinned("bare");
+    expect(existsSync(join(bare.dir, "platform-map.json"))).toBe(true);
+    expect(existsSync(join(bare.dir, "spec-engine.member.json"))).toBe(false);
+  });
+
+  test("workspace() makes a directory a monorepo of the given packages", async () => {
+    const mono = await fx.member("mono");
+    mono.workspace(["packages/ui"], { license: "MIT" });
+    expect(JSON.parse(readFileSync(join(mono.dir, "package.json"), "utf8"))).toEqual({
+      name: "mono",
+      private: true,
+      workspaces: ["packages/ui"],
+      license: "MIT",
+    });
+    expect(
+      JSON.parse(readFileSync(join(mono.dir, "packages", "ui", "package.json"), "utf8")),
+    ).toEqual({
+      name: "ui",
+      private: true,
     });
   });
 

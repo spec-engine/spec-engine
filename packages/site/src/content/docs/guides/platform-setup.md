@@ -42,7 +42,7 @@ Note there is no version counter in the file — the domain's version is derived
 
 ## Step 2: Add a member
 
-Beside `spec-engine/`, make a `checkout/` repo with tagged files:
+Beside `spec-engine/`, make a `checkout/` repo (a `.git` entry or a `package.json` is what makes it a repository platform-map can declare) with tagged files:
 
 ```ts
 // checkout/src/total.ts
@@ -59,6 +59,8 @@ $ spec init checkout
 spec init: wrote checkout/spec-engine.member.json
   pin:    spec-engine@1
   source: derived platform version (max domain version 1 at …)
+  declared: …/platform-map.json
+  declared: …/checkout/platform-map.json
 
 $ spec index
 $ spec map
@@ -68,7 +70,7 @@ ORDERS  ORDERS-001   Active  src+test  —
 $ spec check
 ```
 
-The default pin is the **derived platform version** — the max of the domains' derived versions — so a fresh member is born current. As requirements supersede, the domain version advances; a member still pinned behind lights up as `DRIFT` for the requirements it actually references.
+`spec init` declared `checkout` as a member of the platform through [platform-map](/platform-mapping/) (the platform file at the root and the marker in the member) and then wrote the pin. The default pin is the **derived platform version** — the max of the domains' derived versions — so a fresh member is born current. As requirements supersede, the domain version advances; a member still pinned behind lights up as `DRIFT` for the requirements it actually references.
 
 ## Next steps
 

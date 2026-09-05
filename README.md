@@ -116,14 +116,16 @@ Three parts. The important one owns nothing.
 | Requirement | `spec-engine/<DOMAIN>/SPEC.json` | You, through `spec req`, `spec supersede`, `spec amend` |
 | Tag | `// @spec KEY-NNN` in code | You |
 | Index | `.spec-engine/index.sqlite` | The engine. Never commit it, never edit it |
+| Membership | `platform-map.json`: the platform file `{ name, members }` at the root, a `{ platform, member }` marker in each member | `spec init`, through `@spec-engine/platform-map` |
 | Member pin | `spec-engine.member.json`, `{ "specs": "spec-engine@N" }` | `spec init` |
 | Domain version | Derived from the domain's supersede history | Nobody. It advances by one per supersession |
 | Platform version | The highest domain version | Nobody. It is what `spec init` pins a new member to |
 
 Drift is a member pinned below the version at which a requirement it references last
 changed. Supersede `BILLING-001` and every member still pinned at `@1` that references
-it lights up. A sibling directory with no `spec-engine.member.json` is reported as
-`NO_SPEC_CONFIG` rather than silently ignored.
+it lights up. A declared member with no `spec-engine.member.json` is reported as
+`NO_SPEC_CONFIG`, and a repository in the platform folder that nobody declared as
+`UNLISTED_REPO`, rather than silently ignored.
 
 `SPEC.json` is the only spec format. `spec migrate` was the one-time cutover from the
 legacy Markdown specs.
@@ -142,7 +144,7 @@ components, the single seams, and the invariants.
 | `spec query <text> <dir>` | Full-text search across requirements |
 | `spec resolve <files…>` | Map changed files to the requirements they touch |
 | `spec req` / `spec supersede` / `spec amend` / `spec deprecate` | Author and evolve requirements |
-| `spec init <repo>` | Write `spec-engine.member.json` into a member |
+| `spec init <repo>` | Declare a member and write its `spec-engine.member.json` |
 | `spec gate` / `spec relations` / `spec provenance` | Approval gate, cross-refs, provenance |
 | `spec serve <dir>` | Local webapp over the index |
 | `spec mcp` | The same engine over the Model Context Protocol |

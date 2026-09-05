@@ -43,11 +43,18 @@ describe("published manifest hygiene", () => {
     // deps may appear in `dependencies`. (bun publish would rewrite a
     // workspace: version, but npm publish ships it verbatim and broken —
     // keeping the manifest clean makes the artifact publisher-agnostic.)
+    // @spec-engine/platform-map is a registry package, pinned by version.
     const deps = pkg.dependencies ?? {};
     expect(Object.keys(deps).length).toBeGreaterThan(0);
+    const workspacePackages = [
+      "@spec-engine/shared",
+      "@spec-engine/tracker",
+      "@spec-engine/webapp",
+    ];
     for (const [name, version] of Object.entries(deps)) {
-      expect(name.startsWith("@spec-engine/")).toBe(false);
+      expect(workspacePackages).not.toContain(name);
       expect(version.startsWith("workspace:")).toBe(false);
+      expect(version).toMatch(/^\d+\.\d+\.\d+$/);
     }
   });
 
