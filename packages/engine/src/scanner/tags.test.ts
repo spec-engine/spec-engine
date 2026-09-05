@@ -177,11 +177,25 @@ describe("isTestFile", () => {
     ["api/src/foo.spec.ts", true],
     // "src/test.ts" — single token doesn't match `.test.` (needs both dots)
     ["api/src/test.ts", false],
+    // @spec INDX-015 unit
+    ["api/renew_test.go", true],
+    ["api/renew.go", false],
+    ["api/tests/renew.rs", true],
+    ["api/src/renew_test.rs", true],
+    ["api/src/renew.rs", false],
+    ["api/spec/renew_spec.lua", true],
+    ["api/src/renew_spec.lua", true],
+    ["api/src/renew_test.lua", true],
+    ["api/src/renew.spec.lua", true],
+    ["api/src/renew.spec.luau", true],
+    ["api/src/renew.test.luau", true],
+    ["api/src/renew.lua", false],
+    ["api/src/renew.luau", false],
   ])("isTestFile(%p) === %p", (path, expected) => {
     expect(isTestFile(path)).toBe(expected);
   });
 
-  test("TEST_MATCH includes the six canonical substrings", () => {
+  test("TEST_MATCH lists the six canonical substrings and the Go, Rust, and Lua conventions", () => {
     expect([...TEST_MATCH]).toEqual([
       ".test.",
       ".spec.",
@@ -189,6 +203,11 @@ describe("isTestFile", () => {
       "/tests/",
       "/e2e/",
       ".e2e.",
+      "_test.go",
+      "_test.rs",
+      "_spec.lua",
+      "_test.lua",
+      "/spec/",
     ]);
   });
 });

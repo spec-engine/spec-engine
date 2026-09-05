@@ -212,6 +212,36 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "INDX-014",
+      "status": "active",
+      "statement": "When walking a member for tags, the scanner shall read .lua, .luau, .go, and .rs files alongside the TypeScript, JavaScript, and shell files, so a requirement implemented in those languages is covered.",
+      "why": "A @spec tag in a file the walker never opens is invisible: the requirement it binds reports ORPHAN_REQ or UNVERIFIED_REQ while the code and the test exist.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/scanner/fs.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INDX-015",
+      "status": "active",
+      "statement": "When a tag's file ends in _test.go, _test.rs, _spec.lua, or _test.lua, or lives under a spec/ directory, the scanner shall classify the tag as verifies, alongside the .test., .spec., tests/, __tests__/, and e2e paths it already recognizes.",
+      "why": "Go, Rust, busted, and the Roblox test runners name test files by their own conventions; a test tag classified as implements leaves the requirement UNVERIFIED_REQ and the coverage matrix wrong for every platform in those languages.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/scanner/tags.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
   ]
 }

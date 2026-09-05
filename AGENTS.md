@@ -144,9 +144,16 @@ How this implementation realizes them:
    one `@spec-engine/shared` schema on every read and write. Ids (`KEY-NNN`)
    are permanent. Changes supersede or `spec deprecate`, never overwrite.
 2. Code binds with a tag: `// @spec KEY-NNN`. A test tag may add a level token
-   `unit` | `integration` | `e2e`.
+   `unit` | `integration` | `e2e`. The scanner reads `.ts`, `.tsx`, `.js`,
+   `.jsx`, `.mjs`, `.sh`, `.lua`, `.luau`, `.go`, and `.rs` files; the tag
+   regex ignores the comment leader, so `--`, `//`, and `#` all work.
 3. Tag kind is path-derived. A tag in implementation code **implements**; a tag
-   in a test path **verifies**. Never write those words in the tag.
+   in a test path **verifies**. Never write those words in the tag. A test
+   path contains `.test.`, `.spec.`, `__tests__/`, `/tests/`, `/e2e/`, or
+   `.e2e.`, or ends in `_test.go`, `_test.rs`, `_spec.lua`, or `_test.lua`,
+   or lives under `spec/` (busted). Rust tests inline under `#[cfg(test)]`
+   sit in the implementation file and count as implements; put a verifying
+   tag in `tests/` or a `*_test.rs` file.
 4. The index at `<platformDir>/.spec-engine/index.sqlite` is derived and
    disposable. Read commands build it when missing. Deleting it is always safe.
 5. Coverage, drift, and propagation are SQL projections over tags. Drift
