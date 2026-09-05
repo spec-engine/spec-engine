@@ -43,41 +43,16 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import type { Diagnostic, DiagnosticCode } from "@spec-engine/shared";
+import type { Diagnostic } from "@spec-engine/shared";
+import baseline from "../../../../fixtures/platform-fixture.diagnostics.json" with { type: "json" };
 import { cloneFixture } from "../testing/cloneFixture";
 import { specTag } from "../testing/specTag";
 import { checkCommand } from "./check";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "platform-fixture");
 
-// SOURCE OF TRUTH for the planted defect set against the canonical fixture
-// (per 03-RESEARCH § Open Question 3). If Phase 4 grows the fixture, this
-// constant updates in exactly one place. The CI yml smoke 7 (plan 03-06)
-// duplicates this enumeration as defense-in-depth — that's intentional.
-const EXPECTED_DIAGNOSTICS: Array<{
-  code: DiagnosticCode;
-  repo: string | null;
-  req_id: string | null;
-}> = [
-  // The fixture's Active entries carry bare-filename `livesIn` values
-  // (`session.ts`, `charge.ts`, `tax.ts`, `renew.ts`) that do not resolve
-  // against the platform root, so each is a planted BROKEN_FILE_REF.
-  { code: "BROKEN_FILE_REF", repo: null, req_id: "AUTH-001" },
-  { code: "BROKEN_FILE_REF", repo: null, req_id: "BILLING-002" },
-  { code: "BROKEN_FILE_REF", repo: null, req_id: "BILLING-007" },
-  { code: "BROKEN_FILE_REF", repo: null, req_id: "BILLING-009" },
-  { code: "DANGLING_TAG", repo: "admin", req_id: "BILLING-999" },
-  { code: "DRIFT", repo: "mobile", req_id: "BILLING-001" },
-  { code: "ORPHAN_REQ", repo: null, req_id: "AUTH-001" },
-  { code: "SUPERSEDED_REFERENCED", repo: "mobile", req_id: "BILLING-001" },
-  // PFIX-01 (Phase 12, Plan 12-04): the canonical fixture seeds a malformed
-  // `**Issues:** ... bogus-no-colon ...` token on BILLING-002, which the
-  // provenance parser surfaces as a warning-severity UNKNOWN_ROLE diagnostic
-  // (PROV-05: surfaced at parse time AND dropped — never stored). It is part
-  // of the planted-mess baseline, so it joins the inverted-CI expected set.
-  { code: "UNKNOWN_ROLE", repo: null, req_id: "BILLING-002" },
-  { code: "UNVERIFIED_REQ", repo: null, req_id: "BILLING-002" },
-];
+/** The planted defect set, the one file the smokes under scripts/smoke/ read too. */
+const EXPECTED_DIAGNOSTICS: ExpectedDiagnostic[] = baseline;
 
 class ExitError extends Error {
   constructor(public code: number) {
@@ -189,7 +164,9 @@ async function runCheck(opts: {
 
 /** Projection from Diagnostic[] to the comparable (code, repo, req_id) shape
  *  used by the exact-match assertion. Sorted for byte-stable equality. */
-function normalize(rows: Array<Pick<Diagnostic, "code" | "repo" | "req_id">>): string[] {
+type ExpectedDiagnostic = { code: string; repo: string | null; req_id: string | null };
+
+function normalize(rows: ReadonlyArray<ExpectedDiagnostic | Diagnostic>): string[] {
   return rows.map((d) => `${d.code}\t${d.repo ?? ""}\t${d.req_id ?? ""}`).sort();
 }
 

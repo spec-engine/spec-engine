@@ -15,8 +15,8 @@
 # so a fence's own `exit 1` aborts only that fence, not the whole script; the
 # runner tallies failures and exits non-zero if any tripped.
 #
-# The compiled-binary SMOKES stay in ci.yml — they need the real `dist/spec`
-# artifact and the macOS runner, and are not pure source greps.
+# The compiled-binary SMOKES live in scripts/smoke/ — they need the real
+# `dist/spec` artifact and are not pure source greps.
 
 set -uo pipefail
 cd "$(dirname "$0")/.."   # repo root — every fence path is repo-root-relative
@@ -427,6 +427,7 @@ fence_agents_check_codes() {
     | sed -E 's/^  ([A-Z_]+): "$/\1/' | sort -u)"
   # The code list lives in the `spec check` bullet, between "Codes," and the
   # sentence that follows it. Every code is fenced in backticks.
+  # shellcheck disable=SC2016
   agents_codes="$(sed -n '/Codes, in `DiagnosticCode` order:/,/The four/p' AGENTS.md \
     | grep -oE '`[A-Z_]+`' | tr -d '`' | sort -u)"
   # Negative self-test: the extractor must find something on both sides.

@@ -14,7 +14,7 @@
 //      with no `--results`, the JSON diagnostic array emitted to STDOUT equals
 //      the exact same canonical planted-defect set as check-ci.test.ts — the
 //      PROOFS_UNCONFIRMED advisory is NOT an element of that array. It goes to
-//      STDERR instead, so ci.yml smoke 7 / smoke 18 (which `JSON.parse` stdout)
+//      STDERR instead, so smokes 7 / 18 under scripts/smoke/ (which parse stdout)
 //      stay green. This test asserts BOTH: the array matches, AND the advisory
 //      lands in captured stderr.
 //
@@ -33,32 +33,15 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import type { Diagnostic, DiagnosticCode } from "@spec-engine/shared";
+import type { Diagnostic } from "@spec-engine/shared";
+import baseline from "../../../../fixtures/platform-fixture.diagnostics.json" with { type: "json" };
 import { cloneFixture } from "../testing/cloneFixture";
 import { checkCommand } from "./check";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "platform-fixture");
 
-// SOURCE OF TRUTH for the planted defect set against the canonical fixture.
-// Re-declared here (mirroring check-ci.test.ts) so the GATE-05 no-results path
-// is proven to leave the exact same 10-row --json stdout baseline — i.e. the
-// PROOFS_UNCONFIRMED advisory must NOT appear as an element of this array.
-const EXPECTED_DIAGNOSTICS: Array<{
-  code: DiagnosticCode;
-  repo: string | null;
-  req_id: string | null;
-}> = [
-  { code: "BROKEN_FILE_REF", repo: null, req_id: "AUTH-001" },
-  { code: "BROKEN_FILE_REF", repo: null, req_id: "BILLING-002" },
-  { code: "BROKEN_FILE_REF", repo: null, req_id: "BILLING-007" },
-  { code: "BROKEN_FILE_REF", repo: null, req_id: "BILLING-009" },
-  { code: "DANGLING_TAG", repo: "admin", req_id: "BILLING-999" },
-  { code: "DRIFT", repo: "mobile", req_id: "BILLING-001" },
-  { code: "ORPHAN_REQ", repo: null, req_id: "AUTH-001" },
-  { code: "SUPERSEDED_REFERENCED", repo: "mobile", req_id: "BILLING-001" },
-  { code: "UNKNOWN_ROLE", repo: null, req_id: "BILLING-002" },
-  { code: "UNVERIFIED_REQ", repo: null, req_id: "BILLING-002" },
-];
+/** The planted defect set from the shared baseline file; PROOFS_UNCONFIRMED is never an element of it. */
+const EXPECTED_DIAGNOSTICS: ExpectedDiagnostic[] = baseline;
 
 class ExitError extends Error {
   constructor(public code: number) {
@@ -147,7 +130,9 @@ async function runCheck(opts: {
 
 /** Projection to the comparable (code, repo, req_id) shape, sorted for
  *  byte-stable equality — identical to check-ci.test.ts. */
-function normalize(rows: Array<Pick<Diagnostic, "code" | "repo" | "req_id">>): string[] {
+type ExpectedDiagnostic = { code: string; repo: string | null; req_id: string | null };
+
+function normalize(rows: ReadonlyArray<ExpectedDiagnostic | Diagnostic>): string[] {
   return rows.map((d) => `${d.code}\t${d.repo ?? ""}\t${d.req_id ?? ""}`).sort();
 }
 
