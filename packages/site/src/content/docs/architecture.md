@@ -44,7 +44,7 @@ Spec Engine is a derived-index pipeline. Truth lives in git as `spec-engine/<KEY
 | CLI root | Register subcommands with lazy imports so the compiled binary starts fast | `packages/engine/src/cli.ts` |
 | Command layer | One file per subcommand: flags, platform-dir resolution, exit codes, text or `--json` rendering | `packages/engine/src/commands/` |
 | Operations | One function per verb. The CLI, the API, and MCP all call these | `packages/engine/src/operations/` |
-| Discovery | Find `spec-engine/`, read member pins, expand `members` globs, derive the platform version | `packages/engine/src/indexer/discover.ts` |
+| Discovery | Take membership and shape from platform-map, read each member's pin, derive the platform version. See [Platform Mapping](/platform-mapping/) | `packages/engine/src/indexer/discover.ts` |
 | Parser | Read and validate `SPEC.json` envelopes into typed records | `packages/engine/src/parser/` |
 | Scanner | Walk member repos, extract `@spec` tags, decide implements vs verifies from the path | `packages/engine/src/scanner/` |
 | Index pipeline | `runIndex`: the one composition of discover, parse, scan, validate, write | `packages/engine/src/indexer/pipeline.ts` |
