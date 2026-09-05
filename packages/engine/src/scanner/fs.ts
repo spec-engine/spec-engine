@@ -126,11 +126,23 @@ async function walkFiles(
   return out;
 }
 
-/** Default code-file extensions. A shell script is code too: the repo's
- *  architecture fences carry their tags in `scripts/*.sh`. Exported so the
- *  pipeline can pass it explicitly when it also needs to supply `extraIgnore`
- *  (the self-member scan excludes `spec-engine/`). */
-export const DEFAULT_EXTS = ["ts", "tsx", "js", "jsx", "mjs", "sh"] as const;
+/** Default code-file extensions: TypeScript and JavaScript, shell (the repo's
+ *  architecture fences carry their tags in `scripts/*.sh`), Lua and Luau, Go,
+ *  and Rust. The tag regex is comment-leader agnostic, so a language joins by
+ *  its extension alone; its test-file convention joins `TEST_MATCH` in tags.ts.
+ *  @spec INDX-014 */
+export const DEFAULT_EXTS = [
+  "ts",
+  "tsx",
+  "js",
+  "jsx",
+  "mjs",
+  "sh",
+  "lua",
+  "luau",
+  "go",
+  "rs",
+] as const;
 
 /**
  * STOR-02 (17-02): walk `canonicalDir` for files named exactly `SPEC.json`.

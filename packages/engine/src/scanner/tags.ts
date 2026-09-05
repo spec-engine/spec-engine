@@ -54,6 +54,12 @@ export const TEST_MATCH = Object.freeze([
   "/tests/",
   "/e2e/",
   ".e2e.",
+  // @spec INDX-015
+  "_test.go",
+  "_test.rs",
+  "_spec.lua",
+  "_test.lua",
+  "/spec/",
 ]) as readonly string[];
 
 /** The level tokens we recognize. Anything else → `level: null`. */
