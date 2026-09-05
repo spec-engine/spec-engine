@@ -8,20 +8,12 @@ bun run build:site                      # from the repo root (CI runs this)
 bun --filter @spec-engine/site dev      # local dev server
 ```
 
-## Deploy pipeline (RED-90)
+## Deploy pipeline
 
-**Host: GitHub Pages**, deployed by `.github/workflows/deploy-docs.yml` on
-every merge to `main` that touches `packages/site/`. Chosen over Cloudflare
-Pages / Netlify because it needs zero external accounts or API-token
-secrets: the whole pipeline is checkout → `bun run build:site` →
-`actions/deploy-pages`, and the custom domain rides the committed
-`public/CNAME` (Astro copies `public/` into `dist/` verbatim, so every
-deploy re-asserts `docs.spec-engine.dev`).
-
-**The pipeline is gated** behind the repository variable `DEPLOY_DOCS`
-because GitHub Pages serves free only from public repos and this repo is
-private until launch (M3). Until the variable is set, pushes to `main`
-skip the workflow entirely — nothing goes red.
+- Host: GitHub Pages, via `.github/workflows/deploy-docs.yml`, on every merge to `main` that touches `packages/site/`.
+- Pipeline: checkout, `bun run build:site`, `actions/deploy-pages`. No external accounts or API tokens.
+- Custom domain rides the committed `public/CNAME`; Astro copies `public/` into `dist/` verbatim.
+- Gated behind the repository variable `DEPLOY_DOCS`. GitHub Pages serves free only from public repos, so until the variable is set, pushes skip the workflow and nothing goes red.
 
 ### One-time human setup (at M3, after the repo goes public)
 
@@ -39,7 +31,4 @@ skip the workflow entirely — nothing goes red.
 
 ### PR previews
 
-Deliberately skipped (RED-90 AC3 was a nice-to-have): GitHub Pages has no
-native per-PR previews, and simulating them costs more than they're worth.
-`bun --filter @spec-engine/site dev` is the review loop; revisit only if
-the site ever moves to a host with built-in previews.
+None. GitHub Pages has no per-PR previews. `bun --filter @spec-engine/site dev` is the review loop.

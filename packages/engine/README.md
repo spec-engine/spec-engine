@@ -45,13 +45,17 @@ Run `spec <command> --help` for flags. Many commands support `--json` for machin
 
 ## Source layout
 
-- `cli.ts`: the citty entrypoint. Lazy-imports every subcommand so the compiled binary stays fast to start.
-- `commands/`: one file per subcommand, plus `_shared.ts` (the read-command scaffold that asserts a platform before any DB write).
-- `parser/`, `indexer/`, `storage/`: authored input to derived sqlite index.
-- `check/`, `gate/`, `guard/`, `propagation/`, `relations/`, `resolve/`, `query/`, `map/`: the read and gate projections.
-- `provenance/`: tracker resolution (wires in `@spec-engine/tracker`).
-- `server/`: the Hono API behind `spec serve`.
-- `onboarding/`, `authoring/`: first-run guidance and requirement authoring.
+| Path | Role |
+|------|------|
+| `cli.ts` | citty entrypoint. Lazy-imports every subcommand so the compiled binary starts fast. |
+| `commands/` | One file per subcommand, plus `_shared.ts` (the read-command scaffold). |
+| `indexer/`, `parser/`, `scanner/` | Authored input to derived index: discovery, `SPEC.json` parsing, `@spec` tag scanning. |
+| `storage/` | The one `bun:sqlite` importer. |
+| `check/`, `guard/`, `gate/`, `map/`, `query/`, `resolve/`, `relations/`, `propagation/`, `provenance/`, `results/` | The read and gate projections, each with a `format.ts` for text mode. |
+| `authoring/`, `onboarding/`, `base/` | Requirement authoring, first-run guidance, git base-ref helpers. |
+| `server/` | The Hono API behind `spec serve` and the MCP server behind `spec mcp`. |
+
+Components, seams, and invariants: the [architecture page](https://docs.spec-engine.dev/architecture/).
 
 ## Build
 
