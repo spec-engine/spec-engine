@@ -70,10 +70,15 @@ Rules:
   enforces, and its `run` label starts with that id. `scripts/` is a member
   (`scripts/spec-engine.member.json`) so those tags index; the scanner reads
   `.sh` files as code.
-- **The planted-fixture diagnostic baseline is copied in five places**: four
-  smokes in `.github/workflows/ci.yml` and
-  `packages/engine/src/commands/check.ci.test.ts`.
-  A change to the set moves all five.
+- **The planted-fixture diagnostic baseline is one file**,
+  `fixtures/platform-fixture.diagnostics.json`, read by
+  `packages/engine/src/commands/check.ci.test.ts` and by smokes 7, 18, and
+  23. A change to the planted set moves that file only.
+- **The CI smokes are scripts.** `bash scripts/smoke.sh` runs every
+  `scripts/smoke/NN-*.sh` in order against `./dist/spec` (`bun run build:cli`
+  first); `bash scripts/smoke.sh 7` runs one. `.github/workflows/ci.yml`
+  calls the same scripts, and `shellcheck` over `scripts/` is a lint step, so
+  a red smoke reproduces locally before it costs a CI cycle.
 - **A test lives beside the file it tests.** `foo.ts` is tested by `foo.test.ts`
   in the same directory; a second test file for the same source is
   `foo.<aspect>.test.ts` (`check.ci.test.ts`, `sqlite.fts.test.ts`). Shared

@@ -17,7 +17,7 @@
 # the ledger in the same commit and the number can only fall.
 
 set -uo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 
 DEBT="scripts/comment-marker-debt.txt"
 MARKER='(WR-[0-9]+|Pitfall [0-9]+|Phase [0-9]+|[Ww]ave [0-9]+|[Pp]lan [0-9]{2}-[0-9]{2}|review-fix)'

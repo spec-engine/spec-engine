@@ -12,7 +12,7 @@
 //   - --json      → false (human-readable summary)
 //
 // JSON mode emits exactly the IndexResult shape so CI can parse it via jq /
-// bun -e and assert build_id equivalence (CI-02 — smoke 6 in ci.yml).
+// bun -e and assert build_id equivalence (CI-02 — scripts/smoke/06-cold-rebuild.sh).
 //
 // HARD CONSTRAINT (D-08): this file does NOT import bun:sqlite directly.
 // Storage construction goes through `openStorage` (the only file in the
