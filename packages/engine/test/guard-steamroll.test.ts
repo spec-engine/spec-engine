@@ -388,3 +388,48 @@ describe("spec guard — platform nested below the git root (1.2)", () => {
     ]);
   });
 });
+
+// Probe: repeat the nested-repo loss scenarios and, on a miss, dump git's own
+// view of the tree so the CI-only miss becomes visible.
+describe("PROBE nested guard miss", () => {
+  const gitOut = (cwd: string, ...args: string[]): string => {
+    const p = Bun.spawnSync(["git", ...args], { cwd, env: GIT_ENV });
+    return `$ git ${args.join(" ")} (exit ${p.exitCode})\n${p.stdout.toString()}${p.stderr.toString()}`;
+  };
+  for (let i = 0; i < 12; i++) {
+    test(`iteration ${i}: REQUIREMENT_REMOVED + IMPL_LOST detected when nested`, async () => {
+      const parent = mkdtempSync(join(tmpdir(), "spec-guard-probe-"));
+      const platform = join(parent, "app");
+      mkdirSync(platform, { recursive: true });
+      buildBaseline(platform);
+      rmSync(join(platform, ".git"), { recursive: true, force: true });
+      writeFileSync(join(parent, ".gitignore"), "app/.spec-engine/\n");
+      git(parent, "init", "-q");
+      git(parent, "add", "-A");
+      git(parent, "commit", "-q", "-m", "baseline");
+      const mode = i % 2 === 0 ? "spec" : "impl";
+      if (mode === "spec") {
+        writeFileSync(join(platform, "spec-engine", "BILLING", "SPEC.json"), billingJson([activeReq("BILLING-002")]));
+      } else {
+        writeFileSync(join(platform, "src", "billing.ts"), `// billing implementation\nexport function charge() {}\nexport function refund() {} // ${tag("BILLING-002")}\n`);
+      }
+      const r = await runGuard({ platformDir: platform, json: true });
+      if (r.code !== 1) {
+        const dump = [
+          `mode=${mode} code=${r.code} stdout=${r.stdout} stderr=${r.stderr}`,
+          gitOut(platform, "--version"),
+          gitOut(platform, "config", "--show-origin", "--get-regexp", "core\\.(fsmonitor|untrackedcache|checkstat|trustctime)"),
+          gitOut(platform, "rev-parse", "--show-prefix"),
+          gitOut(platform, "rev-parse", "--verify", "--quiet", "HEAD^{commit}"),
+          gitOut(platform, "diff", "--name-status", "--no-renames", "--relative", "HEAD"),
+          gitOut(platform, "diff", "--name-status", "--no-renames", "HEAD"),
+          gitOut(platform, "status", "--porcelain"),
+          gitOut(parent, "ls-files", "--debug"),
+        ].join("\n");
+        originalErr(dump);
+        throw new Error(`PROBE MISS\n${dump}`);
+      }
+      rmSync(parent, { recursive: true, force: true });
+    });
+  }
+});
