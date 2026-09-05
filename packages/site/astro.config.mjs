@@ -91,6 +91,10 @@ export default defineConfig({
           slug: "architecture",
         },
         {
+          label: "Platform Mapping",
+          slug: "platform-mapping",
+        },
+        {
           label: "Commands",
           slug: "commands",
         },
