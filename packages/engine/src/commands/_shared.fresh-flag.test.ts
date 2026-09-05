@@ -1,18 +1,16 @@
 // packages/engine/src/commands/_shared.fresh-flag.test.ts
 //
-// Audit hygiene pass T9 — `--fresh` on the read commands. The read
-// commands trust a schema-matching index by design (speed); `gate` and
-// `check --ci` rebuild cold by design (correctness). `--fresh` gives the
-// read commands an explicit opt-in to the cold path: rm db + WAL/SHM
-// siblings before openStorage (the same trio pattern as check --ci), so
-// the command's output reflects the platform AS IT IS NOW.
+// `--fresh` on the read commands. The read commands trust a schema-matching
+// index by design (speed); `gate` and `check --ci` rebuild cold by design
+// (correctness). `--fresh` gives the read commands an explicit opt-in to the
+// cold path: rm db + WAL/SHM siblings before openStorage (the same trio
+// pattern as check --ci), so the command's output reflects the platform AS IT
+// IS NOW.
 //
 // Tag lines are composed via src/testing/specTag.ts (dogfood rule).
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { type DomainHandle, TestPlatform } from "../testing/platform";
 import { specTag } from "../testing/specTag";
 import { mapCommand } from "./map";
 import { propagationCommand } from "./propagation";
@@ -20,8 +18,9 @@ import { queryCommand } from "./query";
 import { relationsCommand } from "./relations";
 import { resolveCommand } from "./resolve";
 
-let tmp: string;
+let fx: TestPlatform;
 let platform: string;
+let ord: DomainHandle;
 let logs: string[];
 let errs: string[];
 let originalLog: typeof console.log;
@@ -37,50 +36,16 @@ class ExitError extends Error {
 type RunFn = (ctx: { args: Record<string, unknown>; rawArgs: string[] }) => Promise<void>;
 const run = (cmd: unknown): RunFn => (cmd as { run: RunFn }).run;
 
-// D2: JSON is the sole spec format. ORD-001 is the baseline requirement;
-// ORD-002 is appended AFTER the first index to probe staleness.
-const ORD_001 = {
-  id: "ORD-001",
-  status: "active",
-  statement: "orders reserve inventory",
-  why: "w",
-  supersedes: null,
-  supersededBy: null,
-  relates: [],
-  livesIn: [],
-  issues: [],
-};
-const ORD_002 = {
-  id: "ORD-002",
-  status: "active",
-  statement: "refunds reverse inventory",
-  why: "w",
-  supersedes: null,
-  supersededBy: null,
-  relates: [],
-  livesIn: [],
-  issues: [],
-};
-
-function writeOrdSpec(reqs: Array<Record<string, unknown>>): void {
-  writeFileSync(
-    join(platform, "spec-engine", "ORD", "SPEC.json"),
-    JSON.stringify(
-      { key: "ORD", owner: null, specVersion: 1, updated: "2026-06-05", requirements: reqs },
-      null,
-      2,
-    ),
-  );
-}
-
-beforeEach(() => {
-  tmp = mkdtempSync(join(tmpdir(), "spec-fresh-"));
-  platform = join(tmp, "platform");
-  mkdirSync(join(platform, "spec-engine", "ORD"), { recursive: true });
-  writeOrdSpec([ORD_001]);
-  mkdirSync(join(platform, "api", "src"), { recursive: true });
-  writeFileSync(join(platform, "api", "spec-engine.member.json"), '{ "specs": "spec-engine@1" }\n');
-  writeFileSync(join(platform, "api", "src", "a.ts"), `export const a = 1; ${specTag("ORD-001")}`);
+// ORD-001 is the baseline requirement; ORD-002 is appended AFTER the first
+// index to probe staleness.
+beforeEach(async () => {
+  fx = TestPlatform.temp("spec-fresh-");
+  platform = fx.dir;
+  ord = await fx.domain("ORD");
+  await ord.req({ statement: "orders reserve inventory", why: "w" });
+  await fx.member("api", {
+    files: { "src/a.ts": `export const a = 1; ${specTag("ORD-001")}` },
+  });
 
   logs = [];
   errs = [];
@@ -102,20 +67,21 @@ afterEach(() => {
   console.log = originalLog;
   console.error = originalErr;
   process.exit = originalExit;
-  rmSync(tmp, { recursive: true, force: true });
+  fx.remove();
 });
 
 /** Add ORD-002 to the spec AFTER the index exists — the staleness probe. */
-function appendOrd002(): void {
-  writeOrdSpec([ORD_001, ORD_002]);
+async function appendOrd002(): Promise<void> {
+  const minted = await ord.req({ statement: "refunds reverse inventory", why: "w" });
+  expect(minted.id).toBe("ORD-002");
 }
 
-describe("--fresh forces a cold rebuild on the read commands (T9)", () => {
+describe("--fresh forces a cold rebuild on the read commands", () => {
   test("map without --fresh trusts the stale index; --fresh sees the new requirement", async () => {
     // Build the index (transparent first-run reindex).
     await run(mapCommand)({ args: { platformDir: platform, json: true }, rawArgs: [] });
     logs = [];
-    appendOrd002();
+    await appendOrd002();
 
     // Stale read: ORD-002 invisible.
     await run(mapCommand)({ args: { platformDir: platform, json: true }, rawArgs: [] });
@@ -136,7 +102,7 @@ describe("--fresh forces a cold rebuild on the read commands (T9)", () => {
       rawArgs: [],
     });
     logs = [];
-    appendOrd002();
+    await appendOrd002();
 
     await run(queryCommand)({
       args: { text: "refunds", platformDir: platform, json: true },

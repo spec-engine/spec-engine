@@ -21,11 +21,12 @@
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { openStorage } from "../storage/sqlite";
 import { specTag } from "../testing/cloneFixture";
+import { entryOf, plantEdit } from "../testing/plant";
+import { TestPlatform } from "../testing/platform";
 import { runIndex } from "./pipeline";
 
 const JSON_FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "json-fixture");
@@ -109,47 +110,23 @@ describe("cold-rebuild equivalence over the JSON domain fixture (SC5 / STOR-02)"
     const a = await runIndex({ platformDir: JSON_FIXTURE, storage: sA });
     sA.close();
 
-    // Build a tiny tmp platform: a BILLING/SPEC.json copied from the fixture
-    // but with BILLING-007's `statement` altered by one character, and a
-    // minimal `api/` member tagging BILLING-007 so discoverRepos
-    // returns a member and the requirement is covered. Mirrors
-    // cold-rebuild.test.ts's mutated-fixture case (a genuinely different
-    // provenance/statement byte set MUST flip the hash).
+    // Build a tiny tmp platform: one Active BILLING requirement whose
+    // statement is the fixture's BILLING-007 text altered by one trailing
+    // byte, and a minimal `api/` member tagging it so discoverRepos returns
+    // a member and the requirement is covered (a genuinely different
+    // statement byte set MUST flip the hash).
     const modFixture = join(tmp, "modified-fixture");
-    await mkdir(join(modFixture, "spec-engine", "BILLING"), { recursive: true });
-    await mkdir(join(modFixture, "api", "src"), { recursive: true });
-    // A SPEC.json with one Active BILLING-007 whose statement differs by the
-    // trailing `X` byte from the canonical fixture.
-    await writeFile(
-      join(modFixture, "spec-engine", "BILLING", "SPEC.json"),
-      JSON.stringify(
-        {
-          key: "BILLING",
-          owner: "drea",
-          specVersion: 2,
-          updated: "2026-06-02",
-          requirements: [
-            {
-              id: "BILLING-007",
-              status: "active",
-              statement: "When a charge is made, compute tax per region at charge time.X",
-              why: "Compliance.",
-              livesIn: ["tax.ts"],
-            },
-          ],
-        },
-        null,
-        2,
-      ),
-    );
-    await writeFile(
-      join(modFixture, "api", "spec-engine.member.json"),
-      JSON.stringify({ specs: "spec-engine@2" }, null, 2),
-    );
-    await writeFile(
-      join(modFixture, "api", "src", "tax.ts"),
-      `${specTag("BILLING-007")}\nexport const computeTax = () => 0;\n`,
-    );
+    const fx = TestPlatform.at(modFixture);
+    const billing = await fx.domain("BILLING", { owner: "drea" });
+    const { id } = await billing.req({
+      statement: "When a charge is made, compute tax per region at charge time.X",
+      why: "Compliance.",
+      livesIn: ["tax.ts"],
+    });
+    await fx.member("api", {
+      pin: "spec-engine@2",
+      files: { "src/tax.ts": `${specTag(id)}\nexport const computeTax = () => 0;\n` },
+    });
 
     // Index the modified fixture into a fresh DB.
     const modDbPath = join(tmp, "modified.sqlite");
@@ -186,39 +163,21 @@ describe("cold-rebuild equivalence over the JSON domain fixture (SC5 / STOR-02)"
 // @spec SCHM-017 unit
 describe("TERM derived-table build_id coverage (TERM-01, dogfooded as SCHM)", () => {
   async function writeTermFixture(root: string): Promise<void> {
-    await mkdir(join(root, "spec-engine", "TERM"), { recursive: true });
-    await mkdir(join(root, "api", "src"), { recursive: true });
-    // A TERM domain whose lone term carries the new fields (term/aliases/cites/
-    // section). Terms carry NO @spec tag and are excluded from code coverage.
-    await writeFile(
-      join(root, "spec-engine", "TERM", "SPEC.json"),
-      JSON.stringify(
-        {
-          key: "TERM",
-          owner: null,
-          specVersion: 1,
-          updated: "2026-07-08",
-          requirements: [
-            {
-              id: "TERM-001",
-              status: "Active",
-              statement: "Domain — a bounded area of the spec taxonomy.",
-              term: "Domain",
-              aliases: ["namespace"],
-              cites: [{ term: "TERM-003", pinned: 2 }],
-              section: "Core nouns",
-            },
-          ],
-        },
-        null,
-        2,
-      ),
-    );
-    await writeFile(
-      join(root, "api", "spec-engine.member.json"),
-      JSON.stringify({ specs: "spec-engine@1" }, null, 2),
-    );
-    await writeFile(join(root, "api", "src", "noop.ts"), "export const noop = () => 0;\n");
+    // A TERM domain whose lone term carries every term field (term/aliases/
+    // cites/section). Terms carry NO @spec tag and are excluded from code
+    // coverage. No operation authors a term's own citation, so it is planted.
+    const fx = TestPlatform.at(root);
+    await fx.terms();
+    const { id } = await fx.term({
+      term: "Domain",
+      definition: "Domain — a bounded area of the spec taxonomy.",
+      aliases: ["namespace"],
+      section: "Core nouns",
+    });
+    await plantEdit(root, "TERM", (doc) => {
+      entryOf(doc, id).cites = [{ term: "TERM-003", pinned: 2 }];
+    });
+    await fx.member("api", { files: { "src/noop.ts": "export const noop = () => 0;\n" } });
   }
 
   test("cold-rebuild build_id is byte-identical over a TERM-carrying platform", async () => {

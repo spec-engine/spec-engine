@@ -16,15 +16,26 @@
 // Scaffolding mirrors cold-rebuild.test.ts (mkdtempSync / openStorage / runIndex).
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
+import { cpSync, existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { openStorage } from "../storage/sqlite";
 import { specTag } from "../testing/cloneFixture";
+import { TestPlatform } from "../testing/platform";
 import { runIndex } from "./pipeline";
 
 const JSON_FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "json-fixture");
+const PLANTED = join(import.meta.dir, "..", "testing", "fixtures", "diagnostics");
+
+/** A platform whose `api` member tags BILLING-009, with a planted (invalid) BILLING spec copied over it. */
+async function platformWithPlantedBilling(root: string, planted: string): Promise<void> {
+  const fx = TestPlatform.at(root);
+  await fx.member("api", {
+    pin: "spec-engine@2",
+    files: { "src/renew.ts": `${specTag("BILLING-009")}\nexport const renew = () => 0;\n` },
+  });
+  cpSync(join(PLANTED, planted, "spec-engine"), join(root, "spec-engine"), { recursive: true });
+}
 
 let tmp: string;
 let dbPath: string;
@@ -126,34 +137,11 @@ describe("JSON domain file → internal rows (STOR-01/STOR-02)", () => {
 
 describe("structurally-invalid SPEC.json is rejected LOUDLY (STOR-03)", () => {
   test("a requirement missing id → error-severity INVALID_DOMAIN_FILE + ZERO requirements for that domain", async () => {
-    // Build a tmp platform with ONE invalid SPEC.json (a requirement missing
-    // its `id`) plus a manifest and a minimal member so discoverRepos succeeds.
+    // A tmp platform with ONE planted invalid SPEC.json (a requirement missing
+    // its `id` — a structural reject) plus a minimal member so discoverRepos
+    // succeeds.
     const modFixture = join(tmp, "invalid-json-fixture");
-    await mkdir(join(modFixture, "spec-engine", "BILLING"), { recursive: true });
-    await mkdir(join(modFixture, "api", "src"), { recursive: true });
-    // `requirements[0]` is missing the required `id` — a structural reject.
-    await writeFile(
-      join(modFixture, "spec-engine", "BILLING", "SPEC.json"),
-      JSON.stringify(
-        {
-          key: "BILLING",
-          owner: "drea",
-          specVersion: 2,
-          updated: "2026-06-02",
-          requirements: [{ status: "active", statement: "no id on this requirement" }],
-        },
-        null,
-        2,
-      ),
-    );
-    await writeFile(
-      join(modFixture, "api", "spec-engine.member.json"),
-      JSON.stringify({ specs: "spec-engine@2" }, null, 2),
-    );
-    await writeFile(
-      join(modFixture, "api", "src", "renew.ts"),
-      `${specTag("BILLING-009")}\nexport const renew = () => 0;\n`,
-    );
+    await platformWithPlantedBilling(modFixture, "missing-id");
 
     const modDbPath = join(tmp, "invalid.sqlite");
     const s = openStorage(modDbPath);
@@ -174,20 +162,7 @@ describe("structurally-invalid SPEC.json is rejected LOUDLY (STOR-03)", () => {
 
   test("a non-JSON SPEC.json body → error-severity INVALID_DOMAIN_FILE, not a crash", async () => {
     const modFixture = join(tmp, "nonjson-fixture");
-    await mkdir(join(modFixture, "spec-engine", "BILLING"), { recursive: true });
-    await mkdir(join(modFixture, "api", "src"), { recursive: true });
-    await writeFile(
-      join(modFixture, "spec-engine", "BILLING", "SPEC.json"),
-      "{ this is not valid json",
-    );
-    await writeFile(
-      join(modFixture, "api", "spec-engine.member.json"),
-      JSON.stringify({ specs: "spec-engine@2" }, null, 2),
-    );
-    await writeFile(
-      join(modFixture, "api", "src", "renew.ts"),
-      `${specTag("BILLING-009")}\nexport const renew = () => 0;\n`,
-    );
+    await platformWithPlantedBilling(modFixture, "not-json");
 
     const modDbPath = join(tmp, "nonjson.sqlite");
     const s = openStorage(modDbPath);
@@ -218,63 +193,23 @@ describe("citations populated: build_id byte-identity + deterministic order (TER
   }
 
   async function writeCitesFixture(root: string): Promise<void> {
-    await mkdir(join(root, "spec-engine", "TERM"), { recursive: true });
-    await mkdir(join(root, "spec-engine", "BILLING"), { recursive: true });
-    await mkdir(join(root, "api", "src"), { recursive: true });
-    await writeFile(
-      join(root, "spec-engine", "TERM", "SPEC.json"),
-      JSON.stringify(
-        {
-          key: "TERM",
-          owner: null,
-          specVersion: 1,
-          updated: "2026-07-08",
-          requirements: [
-            {
-              id: "TERM-001",
-              status: "Active",
-              statement: "Domain — a bounded area of the spec taxonomy.",
-              term: "Domain",
-              aliases: ["namespace"],
-            },
-          ],
-        },
-        null,
-        2,
-      ),
-    );
-    await writeFile(
-      join(root, "spec-engine", "BILLING", "SPEC.json"),
-      JSON.stringify(
-        {
-          key: "BILLING",
-          owner: "drea",
-          specVersion: 1,
-          updated: "2026-07-08",
-          requirements: [
-            {
-              id: "BILLING-001",
-              status: "Active",
-              statement: "A charge belongs to exactly one billing Domain.",
-              cites: [{ term: "TERM-001", pinned: 1 }],
-            },
-            {
-              id: "BILLING-002",
-              status: "Active",
-              statement: "Every invoice names its Domain.",
-              cites: [{ term: "namespace", pinned: 1 }],
-            },
-          ],
-        },
-        null,
-        2,
-      ),
-    );
-    await writeFile(
-      join(root, "api", "spec-engine.member.json"),
-      JSON.stringify({ specs: "spec-engine@1" }, null, 2),
-    );
-    await writeFile(join(root, "api", "src", "noop.ts"), "export const noop = () => 0;\n");
+    const fx = TestPlatform.at(root);
+    await fx.terms();
+    await fx.term({
+      term: "Domain",
+      definition: "Domain — a bounded area of the spec taxonomy.",
+      aliases: ["namespace"],
+    });
+    const billing = await fx.domain("BILLING", { owner: "drea" });
+    await billing.req({
+      statement: "A charge belongs to exactly one billing Domain.",
+      cites: [{ term: "TERM-001", pinned: 1 }],
+    });
+    await billing.req({
+      statement: "Every invoice names its Domain.",
+      cites: [{ term: "namespace", pinned: 1 }],
+    });
+    await fx.member("api", { files: { "src/noop.ts": "export const noop = () => 0;\n" } });
   }
 
   test("cold rebuild twice → build_id byte-identical with populated citations", async () => {

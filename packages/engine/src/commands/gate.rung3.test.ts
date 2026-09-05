@@ -33,9 +33,10 @@
 // is NEVER mutated.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { appendFileSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, readFileSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { cloneFixture } from "../testing/cloneFixture";
+import { TestPlatform } from "../testing/platform";
 import { specTag } from "../testing/specTag";
 import { gateCommand } from "./gate";
 
@@ -139,24 +140,17 @@ describe("spec gate rung-3 flow (GATE-04 / ROADMAP Success Criterion #3)", () =>
     const out1 = lastLogAsJson<{ reason: string }>();
     const reason1 = out1.reason;
 
-    // Step 3: append BILLING-010 to the cloned canonical spec. Fixture migrated
-    // to JSON in 18-03: push a NEW active requirement into the structured
-    // envelope (not superseded / not superseding → changed_at_version defaults
-    // to 1 via domainJson's second pass).
-    const specPath = join(clone, "spec-engine", "BILLING", "SPEC.json");
-    const spec = JSON.parse(readFileSync(specPath, "utf8"));
-    spec.requirements.push({
-      id: "BILLING-010",
-      status: "active",
-      statement: "Rung-3 demonstration requirement added mid-test.",
-      why: "GATE-04 locks the rung-3 narrative for ROADMAP Success Criterion #3.",
-      supersedes: null,
-      supersededBy: null,
-      relates: [],
-      livesIn: ["renew.ts"],
-      issues: [],
-    });
-    writeFileSync(specPath, JSON.stringify(spec, null, 2));
+    // Step 3: mint BILLING-010 into the cloned canonical spec: a NEW active
+    // requirement (not superseded / not superseding → changed_at_version
+    // defaults to 1 via domainJson's second pass).
+    const minted = await TestPlatform.at(clone)
+      .handle("BILLING")
+      .req({
+        statement: "Rung-3 demonstration requirement added mid-test.",
+        why: "Locks the rung-3 narrative.",
+        livesIn: ["renew.ts"],
+      });
+    expect(minted.id).toBe("BILLING-010");
 
     // Clear stdout buffer so the second run reads cleanly.
     logs.length = 0;

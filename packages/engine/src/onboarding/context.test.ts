@@ -21,12 +21,20 @@
 //   - discover.test.ts:21-29 (mkdtempSync + per-test fixture lifecycle)
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { cpSync, mkdtempSync, rmSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { writeVersionedDomain } from "../testing/versionedDomain";
+import { TestPlatform } from "../testing/platform";
 import { detectContext, findPlatformDirUpward } from "./context";
+
+/** A planted SPEC.json that is not JSON at all. */
+const NOT_JSON = join(import.meta.dir, "..", "testing", "fixtures", "diagnostics", "not-json");
+
+/** A domain whose derived version is `version`: one Active head behind `version - 1` supersede edges. */
+async function writeVersionedDomain(root: string, key: string, version: number): Promise<void> {
+  await (await TestPlatform.at(root).domain(key)).chain(version);
+}
 
 let tmp: string;
 
@@ -164,8 +172,7 @@ describe("detectContext + findPlatformDirUpward (INIT-07 / INIT-15)", () => {
     // (spec index / spec check), not to context detection: derivation is
     // lenient so `spec init` still resolves a pin from the healthy domains.
     await writeVersionedDomain(tmp, "ALPHA", 3);
-    await mkdir(join(tmp, "spec-engine", "BROKEN"), { recursive: true });
-    await writeFile(join(tmp, "spec-engine", "BROKEN", "SPEC.json"), "{not valid json");
+    cpSync(join(NOT_JSON, "spec-engine"), join(tmp, "spec-engine"), { recursive: true });
 
     const result = await detectContext(tmp);
 

@@ -16,15 +16,15 @@
 // is never touched (rmSync in afterEach + git-status assertion).
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import { rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { Diagnostic } from "@spec-engine/shared";
 import { cloneFixture } from "../testing/cloneFixture";
+import { entryOf, plantEdit } from "../testing/plant";
 import { checkCommand } from "./check";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "platform-fixture");
 const FIXTURE_REPO = resolve(import.meta.dir, "..", "..", "..", "..");
-const BILLING_REL = "spec-engine/BILLING/SPEC.json";
 
 const GIT_ENV = {
   ...process.env,
@@ -127,17 +127,12 @@ function parseDiags(captured: string[]): Diagnostic[] {
   return JSON.parse(captured[0] ?? "[]") as Diagnostic[];
 }
 
-type RawReq = { id: string; statement: string; [k: string]: unknown };
-type RawDomain = { requirements: RawReq[]; [k: string]: unknown };
-
 /** Change BILLING-007's statement in the working tree so `changedRules` fires. */
-function changeBilling007Statement(): void {
-  const dom = JSON.parse(readFileSync(join(clone, BILLING_REL), "utf8")) as RawDomain;
-  for (const r of dom.requirements) {
-    if (r.id === "BILLING-007")
-      r.statement = `${r.statement} Also apply rounding rules per region.`;
-  }
-  writeFileSync(join(clone, BILLING_REL), `${JSON.stringify(dom, null, 2)}\n`);
+function changeBilling007Statement(): Promise<void> {
+  return plantEdit(clone, "BILLING", (dom) => {
+    const r = entryOf(dom, "BILLING-007");
+    r.statement = `${r.statement} Also apply rounding rules per region.`;
+  });
 }
 
 /** JUnit with the two BILLING-007 verifying sites at the given pass/fail states. */
@@ -158,7 +153,7 @@ function fixtureClean(): boolean {
 
 describe("propagation integration (PROP-01) — changed BILLING-007, partial re-prove", () => {
   test("Scenario 1: one site passes, one fails → PARTIAL_PROPAGATION + exit 1, no UNPROVEN_REQ", async () => {
-    changeBilling007Statement();
+    await changeBilling007Statement();
     const results = writeResults(junit(/* tax */ true, /* reports */ false));
     const { logs: out, exitCode } = await runCheck({ ci: true, json: true, base: "HEAD", results });
     const got = parseDiags(out);
@@ -172,7 +167,7 @@ describe("propagation integration (PROP-01) — changed BILLING-007, partial re-
   });
 
   test("Scenario 2: both sites pass → no PARTIAL_PROPAGATION (fully propagated)", async () => {
-    changeBilling007Statement();
+    await changeBilling007Statement();
     const results = writeResults(junit(true, true));
     const { logs: out } = await runCheck({ ci: true, json: true, base: "HEAD", results });
     const got = parseDiags(out);
@@ -182,7 +177,7 @@ describe("propagation integration (PROP-01) — changed BILLING-007, partial re-
   });
 
   test("Scenario 3: same partial results WITHOUT --base → inert (PROP-01 needs the base diff)", async () => {
-    changeBilling007Statement();
+    await changeBilling007Statement();
     const results = writeResults(junit(true, false));
     const { logs: out } = await runCheck({ ci: true, json: true, results });
     const got = parseDiags(out);

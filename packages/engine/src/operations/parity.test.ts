@@ -7,7 +7,7 @@
 // leave the same envelope on disk.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -23,6 +23,8 @@ import { sortRelations } from "../relations/format";
 import { mountApi } from "../server/api";
 import { buildMcpServer } from "../server/mcp";
 import { openStorage } from "../storage/sqlite";
+import { entryOf, plantEdit } from "../testing/plant";
+import { TestPlatform } from "../testing/platform";
 import { specTag } from "../testing/specTag";
 import { coldFreshTags, withIndex } from "./_index";
 import { amend } from "./amend";
@@ -44,29 +46,9 @@ import { getRecord, listRecords } from "./records";
 import { supersede } from "./supersede";
 import { confirmTerm, mintTerm, reviseTerm } from "./term";
 
-const BILLING = (reqs: unknown[]) =>
-  JSON.stringify(
-    { key: "BILLING", owner: null, updated: "2026-06-01", scope: "billing", requirements: reqs },
-    null,
-    2,
-  );
-const envelope = (key: string, extra: Record<string, unknown>, reqs: unknown[]) =>
-  `${JSON.stringify({ key, owner: null, updated: "2026-06-01", ...extra, requirements: reqs }, null, 2)}\n`;
-const req = (id: string, statement: string, extra: Record<string, unknown> = {}) => ({
-  id,
-  status: "active",
-  statement,
-  why: "revenue",
-  supersedes: null,
-  supersededBy: null,
-  relates: [],
-  livesIn: [],
-  issues: [],
-  ...extra,
-});
-
 let tmp: string;
 let platform: string;
+let fx: TestPlatform;
 let storage: Storage;
 let app: Hono;
 let client: Client;
@@ -108,50 +90,39 @@ beforeEach(async () => {
   process.env.SPEC_FLAGS = "query,editor,relations,provenance";
   tmp = mkdtempSync(join(tmpdir(), "spec-parity-"));
   platform = join(tmp, "platform");
-  mkdirSync(join(platform, "spec-engine", "BILLING"), { recursive: true });
-  writeFileSync(
-    join(platform, "spec-engine", "BILLING", "SPEC.json"),
-    BILLING([
-      req("BILLING-001", "renewal charges use the current plan price", {
-        status: "superseded",
-        supersededBy: "BILLING-002",
-      }),
-      req("BILLING-002", "renewal charges use the plan price at renewal time", {
-        supersedes: "BILLING-001",
-        relates: ["BILLING-003"],
-        issues: [{ role: "created", id: "ENG-1" }],
-      }),
-      req("BILLING-003", "refunds reverse the original charge", {
-        cites: [{ term: "TERM-001", pinned: 1 }],
-      }),
-    ]),
-  );
-  mkdirSync(join(platform, "spec-engine", "AUTH"), { recursive: true });
-  writeFileSync(join(platform, "spec-engine", "AUTH", "SPEC.json"), envelope("AUTH", {}, []));
-  mkdirSync(join(platform, "spec-engine", "TERM"), { recursive: true });
-  writeFileSync(
-    join(platform, "spec-engine", "TERM", "SPEC.json"),
-    envelope("TERM", { specVersion: 1 }, [
-      {
-        ...req("TERM-001", "the price a plan charges at renewal", { why: null }),
-        term: "renewal price",
-        aliases: [],
-        cites: [],
-        changedAtVersion: 1,
-      },
-    ]),
-  );
-  mkdirSync(join(platform, "api", "src"), { recursive: true });
-  mkdirSync(join(platform, "api", "test"), { recursive: true });
-  writeFileSync(join(platform, "api", "spec-engine.member.json"), '{ "specs": "spec-engine@2" }\n');
-  writeFileSync(
-    join(platform, "api", "src", "renew.ts"),
-    `export const renew = 1; ${specTag("BILLING-002")}`,
-  );
-  writeFileSync(
-    join(platform, "api", "test", "renew.test.ts"),
-    `export const t = 1; ${specTag("BILLING-002", "unit")}`,
-  );
+  fx = TestPlatform.at(platform);
+  const billing = await fx.domain("BILLING", { scope: "billing" });
+  const first = await billing.req({
+    statement: "renewal charges use the current plan price",
+    why: "revenue",
+  });
+  const second = await billing.supersede(first.id, {
+    statement: "renewal charges use the plan price at renewal time",
+    why: "revenue",
+    livesIn: [],
+  });
+  await billing.req({
+    statement: "refunds reverse the original charge",
+    why: "revenue",
+    cites: [{ term: "TERM-001", pinned: 1 }],
+  });
+  // A relation and the successor's own creating ticket have no authoring
+  // verb, so both are planted onto the successor.
+  await plantEdit(platform, "BILLING", (doc) => {
+    const successor = entryOf(doc, second.newId);
+    successor.relates = ["BILLING-003"];
+    successor.issues = [{ role: "created", id: "ENG-1" }];
+  });
+  await fx.domain("AUTH");
+  await fx.terms();
+  await fx.term({ term: "renewal price", definition: "the price a plan charges at renewal" });
+  await fx.member("api", {
+    pin: "spec-engine@2",
+    files: {
+      "src/renew.ts": `export const renew = 1; ${specTag("BILLING-002")}`,
+      "test/renew.test.ts": `export const t = 1; ${specTag("BILLING-002", "unit")}`,
+    },
+  });
   storage = openStorage(join(platform, ".spec-engine", "index.sqlite"));
   await runIndex({ platformDir: platform, storage });
   app = new Hono();
@@ -294,10 +265,10 @@ async function writeThrough(
   keys: string[],
   surfaces: Record<string, () => Promise<void>>,
 ): Promise<Record<string, string[]>> {
-  const before = await Promise.all(keys.map(read));
+  const restore = fx.snapshotSpecs();
   const out: Record<string, string[]> = {};
   for (const [name, run] of Object.entries(surfaces)) {
-    for (const [i, k] of keys.entries()) writeFileSync(specFile(k), before[i] as string);
+    restore();
     await run();
     out[name] = await Promise.all(keys.map(read));
   }
@@ -320,7 +291,7 @@ describe("write operations leave the same envelope from every surface", () => {
 
   test("mint: the operation and the HTTP POST write byte-identical entries", async () => {
     const specPath = join(platform, "spec-engine", "BILLING", "SPEC.json");
-    const before = await Bun.file(specPath).text();
+    const restore = fx.snapshotSpecs();
 
     const direct = await mint({
       platformDir: platform,
@@ -332,7 +303,7 @@ describe("write operations leave the same envelope from every surface", () => {
     expect(direct.ok).toBe(true);
     const afterDirect = await Bun.file(specPath).text();
 
-    writeFileSync(specPath, before);
+    restore();
     const posted = await apiJson("/api/requirements", {
       method: "POST",
       headers: apiHeaders,
@@ -347,7 +318,7 @@ describe("write operations leave the same envelope from every surface", () => {
 
   test("amend: the operation and the HTTP PUT apply the same field semantics and gates", async () => {
     const specPath = join(platform, "spec-engine", "BILLING", "SPEC.json");
-    const before = await Bun.file(specPath).text();
+    const restore = fx.snapshotSpecs();
 
     const direct = await amend(
       { platformDir: platform, id: "BILLING-003", fields: { why: null } },
@@ -356,7 +327,7 @@ describe("write operations leave the same envelope from every surface", () => {
     expect(direct.ok).toBe(true);
     const afterDirect = await Bun.file(specPath).text();
 
-    writeFileSync(specPath, before);
+    restore();
     const put = await apiJson("/api/requirements/BILLING-003", {
       method: "PUT",
       headers: apiHeaders,

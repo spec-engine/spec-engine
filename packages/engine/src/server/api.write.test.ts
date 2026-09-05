@@ -23,7 +23,7 @@
 // (openStorage on a cloned fixture, exercise the seam) + composeServeApp.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import type { Storage } from "@spec-engine/shared";
 import { validateDomainFile } from "@spec-engine/shared";
@@ -41,6 +41,18 @@ const CANONICAL_FIXTURE = join(
   "..",
   "fixtures",
   "platform-fixture",
+);
+/** A planted SPEC.json that is not JSON at all. */
+const NOT_JSON_SPEC = join(
+  import.meta.dir,
+  "..",
+  "testing",
+  "fixtures",
+  "diagnostics",
+  "not-json",
+  "spec-engine",
+  "BROKEN",
+  "SPEC.json",
 );
 
 let platformDir: string;
@@ -288,7 +300,7 @@ describe("2.6 write-path races + malformed-file handling", () => {
   });
 
   test("a malformed SPEC.json makes PUT return a structured INVALID_DOMAIN_FILE 400, not a 500", async () => {
-    writeFileSync(billingSpecPath(), "{ this is not valid json");
+    copyFileSync(NOT_JSON_SPEC, billingSpecPath());
     const res = await app.request("/api/requirements/BILLING-002", {
       method: "PUT",
       headers: { "content-type": "application/json" },

@@ -27,6 +27,8 @@ import type { Storage } from "@spec-engine/shared";
 import { runIndex } from "@spec-engine/spec-engine/src/indexer/pipeline";
 import { mountApi } from "@spec-engine/spec-engine/src/server/api";
 import { openStorage } from "@spec-engine/spec-engine/src/storage/sqlite";
+import { entryOf, plantEdit } from "@spec-engine/spec-engine/src/testing/plant";
+import { TestPlatform } from "@spec-engine/spec-engine/src/testing/platform";
 import { Hono } from "hono";
 import { mountWebapp } from "../server";
 import { cloneFixture } from "../testing/cloneFixture";
@@ -429,18 +431,8 @@ describe("Setup scan-mode detection (RED-93)", () => {
 
   /** Minimal BILLING domain so the platform mounts with one requirement. */
   async function writeSpecDomain(root: string): Promise<void> {
-    await mkdir(join(root, "spec-engine", "BILLING"), { recursive: true });
-    await writeFile(
-      join(root, "spec-engine", "BILLING", "SPEC.json"),
-      `${JSON.stringify({
-        key: "BILLING",
-        owner: null,
-        updated: "2026-01-01",
-        requirements: [
-          { id: "BILLING-001", status: "active", statement: "Charges compute tax at charge time." },
-        ],
-      })}\n`,
-    );
+    const billing = await TestPlatform.at(root).domain("BILLING");
+    await billing.req({ statement: "Charges compute tax at charge time." });
   }
 
   test("workspace-expanded members (monorepo) light the Monorepo tile, not Platform", async () => {
@@ -536,28 +528,20 @@ describe("status filtering: live-contract default + ?all=1 toggle (RED-99)", () 
     // fine — structural, not required to resolve); LIVE holds an active one.
     const root = mkdtempSync(join(tmpdir(), "spec-status-filter-"));
     try {
-      const writeDomain = async (key: string, reqs: unknown[]) => {
-        await mkdir(join(root, "spec-engine", key), { recursive: true });
-        await writeFile(
-          join(root, "spec-engine", key, "SPEC.json"),
-          `${JSON.stringify({ key, owner: null, updated: "2026-01-01", requirements: reqs })}\n`,
-        );
-      };
-      await writeDomain("GONE", [
-        {
-          id: "GONE-001",
-          status: "superseded",
-          statement: "The old promise this domain used to make.",
-          // Dangling successor on purpose: pointing at LIVE-001 would put
-          // GONE-001 into LIVE-001's version-history panel (the lineage
-          // KEEPS predecessors by design), defeating the hidden-domain
-          // assertion below.
-          supersededBy: "GONE-002",
-        },
-      ]);
-      await writeDomain("LIVE", [
-        { id: "LIVE-001", status: "active", statement: "The promise the platform makes now." },
-      ]);
+      const fx = TestPlatform.at(root);
+      const gone = await fx.domain("GONE");
+      const old = await gone.req({ statement: "The old promise this domain used to make." });
+      // Dangling successor on purpose: pointing at LIVE-001 would put GONE-001
+      // into LIVE-001's version-history panel (the lineage KEEPS predecessors
+      // by design), defeating the hidden-domain assertion below. No operation
+      // supersedes into a successor that does not exist, so it is planted.
+      await plantEdit(root, "GONE", (doc) => {
+        const entry = entryOf(doc, old.id);
+        entry.status = "superseded";
+        entry.supersededBy = "GONE-002";
+      });
+      const live = await fx.domain("LIVE");
+      await live.req({ statement: "The promise the platform makes now." });
 
       const s = openStorage(join(root, ".spec-engine", "index.sqlite"));
       try {

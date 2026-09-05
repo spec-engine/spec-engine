@@ -29,10 +29,12 @@
 // `git status fixtures/platform-fixture/`.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { cloneFixture } from "../testing/cloneFixture";
+import { entryOf, plantEdit } from "../testing/plant";
+import { TestPlatform } from "../testing/platform";
 import { specTag } from "../testing/specTag";
 import { gateCommand } from "./gate";
 
@@ -189,18 +191,14 @@ describe("spec gate (in-process)", () => {
   // "Draft". Canonical fixture is NOT touched.
   // ---------------------------------------------------------------------
   test("DRAFT: cloneFixture mutation flips BILLING-009 Active → Draft (GATE-02)", async () => {
-    // cloneFixture mutation — structured status flip in the cloned
-    // BILLING/SPEC.json ONLY (fixture migrated to JSON in 18-03). The canonical
-    // fixture file under fixtures/platform-fixture/spec-engine/BILLING/SPEC.json
-    // is never touched (WR-06 / T-06-04-01).
-    const specPath = join(clone, "spec-engine", "BILLING", "SPEC.json");
-    const spec = JSON.parse(readFileSync(specPath, "utf8"));
-    const b9 = spec.requirements.find(
-      (r: { id: string; status: string }) => r.id === "BILLING-009",
-    );
-    expect(b9?.status).toBe("active");
-    b9.status = "draft";
-    writeFileSync(specPath, JSON.stringify(spec, null, 2));
+    // Status flip in the cloned BILLING/SPEC.json ONLY. The canonical fixture
+    // file under fixtures/platform-fixture/spec-engine/BILLING/SPEC.json is
+    // never touched.
+    await plantEdit(clone, "BILLING", (spec) => {
+      const b9 = entryOf(spec, "BILLING-009");
+      expect(b9.status).toBe("active");
+      b9.status = "draft";
+    });
 
     const code = await runGate({
       repo: "api",
@@ -227,48 +225,29 @@ describe("spec gate (in-process)", () => {
   //
   // All mutations are scoped to `clone` — canonical untouched.
   // ---------------------------------------------------------------------
-  test("VERSION_PIN: cloneFixture mutation adds BILLING-011@2 + mobile@1 tag (GATE-02)", async () => {
-    // Fixture migrated to JSON in 18-03: mutate the structured envelope instead
-    // of Markdown headings.
-    const specPath = join(clone, "spec-engine", "BILLING", "SPEC.json");
-    const spec = JSON.parse(readFileSync(specPath, "utf8"));
-    const b2 = spec.requirements.find(
-      (r: { id: string; status: string }) => r.id === "BILLING-002",
-    );
-    expect(b2?.status).toBe("active");
+  test("VERSION_PIN: cloneFixture mutation supersedes BILLING-002 + mobile@1 tag (GATE-02)", async () => {
+    // Supersede BILLING-002 with a new Active successor. Under the DERIVED
+    // domain version (1 + edge count), the fixture already carries one edge
+    // (BILLING-001→009); this supersession adds the second, so the derived
+    // version is 3 — the successor changes at @3.
+    const { newId } = await TestPlatform.at(clone)
+      .handle("BILLING")
+      .supersede("BILLING-002", {
+        statement: "Test-fixture for VERSION_PIN gate reason.",
+        why: "Locks the VERSION_PIN reason without disturbing the canonical fixture.",
+        livesIn: ["test-version-pin.ts"],
+      });
 
-    // Mutation A: flip BILLING-002 active → superseded by BILLING-011 (this seeds
-    // the supersededIds set so BILLING-011 lands at changed_at_version=
-    // spec_version). Under the DERIVED domain version (SCHM-006, 1 + edge count),
-    // the fixture already carries one edge (BILLING-001→009); this mutation adds
-    // the second, so the derived version is 3 — BILLING-011 changes at @3.
-    b2.status = "superseded";
-    b2.supersededBy = "BILLING-011";
-
-    // Mutation B: append a new active BILLING-011 to the same domain.
-    spec.requirements.push({
-      id: "BILLING-011",
-      status: "active",
-      statement: "Test-fixture for VERSION_PIN gate reason.",
-      why: "Locks GATE-02 VERSION_PIN reason without disturbing the canonical fixture.",
-      supersedes: null,
-      supersededBy: null,
-      relates: [],
-      livesIn: ["test-version-pin.ts"],
-      issues: [],
-    });
-    writeFileSync(specPath, JSON.stringify(spec, null, 2));
-
-    // Mutation C: plant the member tag in mobile (pinned @1).
+    // Plant the member tag in mobile (pinned @1).
     const memberPath = join(clone, "mobile", "src", "test-version-pin.ts");
     writeFileSync(
       memberPath,
-      `${specTag("BILLING-011")}export function testVersionPin() {\n  /* PoC */\n}\n`,
+      `${specTag(newId)}export function testVersionPin() {\n  /* PoC */\n}\n`,
     );
 
     const code = await runGate({
       repo: "mobile",
-      reqId: "BILLING-011",
+      reqId: newId,
       platformDir: clone,
       json: true,
     });

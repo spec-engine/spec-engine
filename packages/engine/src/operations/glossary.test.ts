@@ -16,13 +16,14 @@
 //      `spec check --ci` (severity==='error' predicate) stays exit 0 post-migration.
 
 import { describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type { Diagnostic } from "@spec-engine/shared";
 import { glossaryCommand } from "../commands/glossary";
 import { runIndex } from "../indexer/pipeline";
 import { openStorage } from "../storage/sqlite";
+import { TestPlatform } from "../testing/platform";
 import { generateGlossary, parseGlossary } from "./glossary";
 
 // The real repo root (contains spec-engine/ + the committed GLOSSARY.md).
@@ -133,7 +134,8 @@ describe("TERM-06 — GLOSSARY round-trip (migrate + generate + fence)", () => {
 
   // @spec CHCK-022 integration
   test("--check: exit 1 on byte drift, no exit when committed equals generated", async () => {
-    const plat = mkdtempSync(join(tmpdir(), "spec-glossary-check-"));
+    const fx = TestPlatform.temp("spec-glossary-check-");
+    const plat = fx.dir;
     const originalExit = process.exit;
     const originalErr = console.error;
     const originalLog = console.log;
@@ -143,22 +145,9 @@ describe("TERM-06 — GLOSSARY round-trip (migrate + generate + fence)", () => {
       }
     }
     try {
-      mkdirSync(join(plat, "spec-engine", "TERM"), { recursive: true });
       const term = { term: "Alpha", statement: "a one-line definition.", section: "First section" };
-      writeFileSync(
-        join(plat, "spec-engine", "TERM", "SPEC.json"),
-        `${JSON.stringify(
-          {
-            key: "TERM",
-            owner: null,
-            specVersion: 1,
-            updated: "2026-07-30",
-            requirements: [{ id: "TERM-001", status: "active", ...term }],
-          },
-          null,
-          2,
-        )}\n`,
-      );
+      await fx.terms();
+      await fx.term({ term: term.term, definition: term.statement, section: term.section });
       (process as unknown as { exit: (code?: number) => never }).exit = (code?: number) => {
         throw new ExitError(code ?? 0);
       };
@@ -186,7 +175,7 @@ describe("TERM-06 — GLOSSARY round-trip (migrate + generate + fence)", () => {
       process.exit = originalExit;
       console.error = originalErr;
       console.log = originalLog;
-      rmSync(plat, { recursive: true, force: true });
+      fx.remove();
     }
   });
 });

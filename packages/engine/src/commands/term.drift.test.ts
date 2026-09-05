@@ -34,12 +34,14 @@
 // @spec CHCK-019 integration
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type { Diagnostic } from "@spec-engine/shared";
 import { runIndex } from "../indexer/pipeline";
 import { openStorage } from "../storage/sqlite";
+import { entryOf, plantEdit } from "../testing/plant";
+import { TestPlatform } from "../testing/platform";
 import { supersedeCommand } from "./supersede";
 import { termConfirmCommand, termReviseCommand } from "./term";
 
@@ -96,47 +98,19 @@ afterEach(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 
-/** Write a domain file under the fixture platform. */
-function writeDomain(root: string, key: string, body: unknown): void {
-  const dir = join(root, "spec-engine", key);
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, "SPEC.json"), `${JSON.stringify(body, null, 2)}\n`);
-}
-
 /** Build the fixture: a TERM domain (TERM-001 "Domain") + a citing BILLING
- *  domain (BILLING-001 cites TERM-001 pinned @1). Both draft so no coverage
- *  diagnostic (ORPHAN_REQ / UNVERIFIED_REQ) adds noise — only the term
- *  diagnostics fire. */
-function buildFixture(root: string): void {
-  writeDomain(root, "TERM", {
-    key: "TERM",
-    owner: null,
-    specVersion: 1,
-    updated: "2026-07-08",
-    requirements: [
-      {
-        id: "TERM-001",
-        status: "active",
-        statement: "Domain — a bounded area of the spec taxonomy.",
-        term: "Domain",
-        aliases: [],
-        changedAtVersion: 1,
-      },
-    ],
-  });
-  writeDomain(root, "BILLING", {
-    key: "BILLING",
-    owner: "drea",
-    specVersion: 1,
-    updated: "2026-07-08",
-    requirements: [
-      {
-        id: "BILLING-001",
-        status: "draft",
-        statement: "A charge belongs to exactly one billing Domain.",
-        cites: [{ term: "TERM-001", pinned: 1 }],
-      },
-    ],
+ *  domain (BILLING-001 cites TERM-001 pinned @1). The citing entry is a draft
+ *  so no coverage diagnostic (ORPHAN_REQ / UNVERIFIED_REQ) adds noise — only
+ *  the term diagnostics fire. */
+async function buildFixture(root: string): Promise<void> {
+  const fx = TestPlatform.at(root);
+  await fx.terms();
+  await fx.term({ term: "Domain", definition: "Domain — a bounded area of the spec taxonomy." });
+  const billing = await fx.domain("BILLING", { owner: "drea" });
+  await billing.req({
+    status: "draft",
+    statement: "A charge belongs to exactly one billing Domain.",
+    cites: [{ term: "TERM-001", pinned: 1 }],
   });
 }
 
@@ -161,7 +135,7 @@ function readCitation(root: string): { term: string; pinned: number } {
 
 describe("TERM-05 — the citation-drift cycle (member-pin drift, one level up)", () => {
   test("cite → revise → TERM_DRIFT → confirm → clear; supersede → superseded-ref → re-point → clear", async () => {
-    buildFixture(tmp);
+    await buildFixture(tmp);
 
     // Baseline: fresh citation pinned at the term's current version — no drift.
     const base = await diagnose(tmp);
@@ -240,13 +214,14 @@ describe("TERM-05 — the citation-drift cycle (member-pin drift, one level up)"
   });
 
   test("confirm refuses a Superseded citing entry (exit 2, file untouched) — history is immutable", async () => {
-    buildFixture(tmp);
+    await buildFixture(tmp);
     // Flip the citing entry to superseded history.
     const specPath = join(tmp, "spec-engine", "BILLING", "SPEC.json");
-    const doc = JSON.parse(readFileSync(specPath, "utf8"));
-    doc.requirements[0].status = "superseded";
-    doc.requirements[0].supersededBy = "BILLING-002";
-    writeFileSync(specPath, `${JSON.stringify(doc, null, 2)}\n`);
+    await plantEdit(tmp, "BILLING", (doc) => {
+      const citing = entryOf(doc, "BILLING-001");
+      citing.status = "superseded";
+      citing.supersededBy = "BILLING-002";
+    });
     const onDiskBefore = readFileSync(specPath, "utf8");
 
     let exitCode: number | null = null;

@@ -21,10 +21,11 @@
 //   - Scenario 5: build_id byte-identical WITH vs WITHOUT --base (GATE-04)
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { rmSync, unlinkSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { Diagnostic } from "@spec-engine/shared";
 import { cloneFixture } from "../testing/cloneFixture";
+import { entryOf, plantEdit } from "../testing/plant";
 import { checkCommand } from "./check";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "platform-fixture");
@@ -139,24 +140,15 @@ function parseDiags(captured: string[]): Diagnostic[] {
 
 // ---- working-tree mutators (clone only; never the canonical fixture) --------
 
-type RawReq = { id: string; status: string; [k: string]: unknown };
-type RawDomain = { requirements: RawReq[]; [k: string]: unknown };
-
-function readBilling(): RawDomain {
-  return JSON.parse(readFileSync(join(clone, BILLING_REL), "utf8")) as RawDomain;
+function removeReq(id: string): Promise<void> {
+  return plantEdit(clone, "BILLING", (dom) => {
+    dom.requirements = dom.requirements.filter((r) => r.id !== id);
+  });
 }
-function writeBilling(dom: RawDomain): void {
-  writeFileSync(join(clone, BILLING_REL), `${JSON.stringify(dom, null, 2)}\n`);
-}
-function removeReq(id: string): void {
-  const dom = readBilling();
-  dom.requirements = dom.requirements.filter((r) => r.id !== id);
-  writeBilling(dom);
-}
-function flipStatus(id: string, status: string): void {
-  const dom = readBilling();
-  for (const r of dom.requirements) if (r.id === id) r.status = status;
-  writeBilling(dom);
+function flipStatus(id: string, status: string): Promise<void> {
+  return plantEdit(clone, "BILLING", (dom) => {
+    entryOf(dom, id).status = status;
+  });
 }
 
 /** Belt-and-suspenders: the canonical fixture is never git-dirty after a run. */
@@ -170,7 +162,7 @@ const FIXTURE_REPO = resolve(import.meta.dir, "..", "..", "..", "..");
 
 describe("governance integration (GOV-01/02/03) — cold spec check --ci --base", () => {
   test("Scenario 1: removing BILLING-002 (no successor) fires REQUIREMENT_REMOVED + exit 1", async () => {
-    removeReq("BILLING-002");
+    await removeReq("BILLING-002");
     const { logs: out, exitCode } = await runCheck({ ci: true, json: true, base: "HEAD" });
     const got = parseDiags(out);
     expect(got.some((d) => d.code === "REQUIREMENT_REMOVED" && d.req_id === "BILLING-002")).toBe(
@@ -181,7 +173,7 @@ describe("governance integration (GOV-01/02/03) — cold spec check --ci --base"
   });
 
   test("Scenario 2: removing Superseded BILLING-001 is REPORTED — history is never deleted, its successor edge is no excuse", async () => {
-    removeReq("BILLING-001");
+    await removeReq("BILLING-001");
     const { logs: out, exitCode } = await runCheck({ ci: true, json: true, base: "HEAD" });
     const got = parseDiags(out);
     const hit = got.find((d) => d.code === "REQUIREMENT_REMOVED" && d.req_id === "BILLING-001");
@@ -205,7 +197,7 @@ describe("governance integration (GOV-01/02/03) — cold spec check --ci --base"
   });
 
   test("Scenario 4: status flip is warning by default, error under strict, silent when approved", async () => {
-    flipStatus("BILLING-002", "retired");
+    await flipStatus("BILLING-002", "retired");
 
     // (a) Default: warning, and NOT an error-severity governance row from the flip.
     const def = await runCheck({
@@ -247,7 +239,7 @@ describe("governance integration (GOV-01/02/03) — cold spec check --ci --base"
   test("CR-01: an unresolvable --base ref refuses fail-open with exit 2 (not a silent green)", async () => {
     // Remove a requirement so governance WOULD fire if the base resolved — the
     // point is that an unresolvable ref must NOT silently no-op to green.
-    removeReq("BILLING-002");
+    await removeReq("BILLING-002");
     const { exitCode } = await runCheck({
       ci: true,
       json: true,

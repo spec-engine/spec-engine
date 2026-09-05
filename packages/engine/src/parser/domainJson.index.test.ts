@@ -18,11 +18,11 @@
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runIndex } from "../indexer/pipeline";
 import { openStorage } from "../storage/sqlite";
+import { TestPlatform } from "../testing/platform";
 
 let tmp: string;
 let dbPath: string;
@@ -43,73 +43,28 @@ afterEach(() => {
  *     ghost (unresolvable) surface form.
  */
 async function writeCitesFixture(root: string): Promise<void> {
-  await mkdir(join(root, "spec-engine", "TERM"), { recursive: true });
-  await mkdir(join(root, "spec-engine", "BILLING"), { recursive: true });
-  await mkdir(join(root, "api", "src"), { recursive: true });
-
-  await writeFile(
-    join(root, "spec-engine", "TERM", "SPEC.json"),
-    JSON.stringify(
-      {
-        key: "TERM",
-        owner: null,
-        specVersion: 1,
-        updated: "2026-07-08",
-        requirements: [
-          {
-            id: "TERM-001",
-            status: "Active",
-            statement: "Domain — a bounded area of the spec taxonomy.",
-            term: "Domain",
-            aliases: ["namespace"],
-            section: "Core nouns",
-          },
-        ],
-      },
-      null,
-      2,
-    ),
-  );
-
-  await writeFile(
-    join(root, "spec-engine", "BILLING", "SPEC.json"),
-    JSON.stringify(
-      {
-        key: "BILLING",
-        owner: "drea",
-        specVersion: 1,
-        updated: "2026-07-08",
-        requirements: [
-          {
-            id: "BILLING-001",
-            status: "Active",
-            statement: "A charge belongs to exactly one billing Domain.",
-            cites: [{ term: "TERM-001", pinned: 1 }],
-          },
-          {
-            id: "BILLING-002",
-            status: "Active",
-            statement: "Every invoice names its Domain.",
-            cites: [{ term: "Domain", pinned: 1 }],
-          },
-          {
-            id: "BILLING-003",
-            status: "Active",
-            statement: "A refund cites a ghost term nobody defined.",
-            cites: [{ term: "Ghost", pinned: 1 }],
-          },
-        ],
-      },
-      null,
-      2,
-    ),
-  );
-
-  await writeFile(
-    join(root, "api", "spec-engine.member.json"),
-    JSON.stringify({ specs: "spec-engine@1" }, null, 2),
-  );
-  await writeFile(join(root, "api", "src", "noop.ts"), "export const noop = () => 0;\n");
+  const fx = TestPlatform.at(root);
+  await fx.terms();
+  await fx.term({
+    term: "Domain",
+    definition: "Domain — a bounded area of the spec taxonomy.",
+    aliases: ["namespace"],
+    section: "Core nouns",
+  });
+  const billing = await fx.domain("BILLING", { owner: "drea" });
+  await billing.req({
+    statement: "A charge belongs to exactly one billing Domain.",
+    cites: [{ term: "TERM-001", pinned: 1 }],
+  });
+  await billing.req({
+    statement: "Every invoice names its Domain.",
+    cites: [{ term: "Domain", pinned: 1 }],
+  });
+  await billing.req({
+    statement: "A refund cites a ghost term nobody defined.",
+    cites: [{ term: "Ghost", pinned: 1 }],
+  });
+  await fx.member("api", { files: { "src/noop.ts": "export const noop = () => 0;\n" } });
 }
 
 // @spec INDX-012 unit
@@ -163,59 +118,18 @@ describe("cites → term_citations resolution (TERM-03)", () => {
   // under first-wins, firing a spurious gating UNDEFINED_TERM).
   test("a non-TERM requirement's aliases never pollute term resolution (CR-01)", async () => {
     const fixture = join(tmp, "alias-pollution-fixture");
-    await mkdir(join(fixture, "spec-engine", "TERM"), { recursive: true });
-    await mkdir(join(fixture, "spec-engine", "BILLING"), { recursive: true });
-    await writeFile(
-      join(fixture, "spec-engine", "TERM", "SPEC.json"),
-      JSON.stringify(
-        {
-          key: "TERM",
-          owner: null,
-          specVersion: 1,
-          updated: "2026-07-08",
-          requirements: [
-            {
-              id: "TERM-001",
-              status: "Active",
-              statement: "The canonical Domain term.",
-              term: "Domain",
-            },
-          ],
-        },
-        null,
-        2,
-      ),
-    );
-    await writeFile(
-      join(fixture, "spec-engine", "BILLING", "SPEC.json"),
-      JSON.stringify(
-        {
-          key: "BILLING",
-          owner: "drea",
-          specVersion: 1,
-          updated: "2026-07-08",
-          requirements: [
-            // Malicious/stray: a NON-TERM req claiming the term name "Domain".
-            {
-              id: "BILLING-001",
-              status: "Active",
-              statement: "A charge.",
-              term: "Domain",
-              aliases: ["Domain"],
-            },
-            // A legit name-cite that must still resolve to the real TERM-001.
-            {
-              id: "BILLING-002",
-              status: "Active",
-              statement: "Cites Domain by name.",
-              cites: [{ term: "Domain", pinned: 1 }],
-            },
-          ],
-        },
-        null,
-        2,
-      ),
-    );
+    const fx = TestPlatform.at(fixture);
+    await fx.terms();
+    await fx.term({ term: "Domain", definition: "The canonical Domain term." });
+    const billing = await fx.domain("BILLING", { owner: "drea" });
+    // Malicious/stray: a NON-TERM req claiming the term name "Domain".
+    const stray = await billing.req({ statement: "A charge." });
+    await billing.amend(stray.id, { term: "Domain", aliases: ["Domain"] });
+    // A legit name-cite that must still resolve to the real TERM-001.
+    await billing.req({
+      statement: "Cites Domain by name.",
+      cites: [{ term: "Domain", pinned: 1 }],
+    });
     const s = openStorage(dbPath);
     try {
       await runIndex({ platformDir: fixture, storage: s });

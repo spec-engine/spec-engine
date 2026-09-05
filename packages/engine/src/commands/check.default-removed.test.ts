@@ -11,10 +11,12 @@
 // @spec CHCK-023 integration
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { rmSync } from "node:fs";
+import { resolve } from "node:path";
 import type { Diagnostic } from "@spec-engine/shared";
 import { cloneFixture } from "../testing/cloneFixture";
+import { entryOf, plantEdit } from "../testing/plant";
+import { TestPlatform } from "../testing/platform";
 import { checkCommand } from "./check";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "platform-fixture");
@@ -68,11 +70,10 @@ function initRepo(): void {
 }
 
 /** Delete one requirement entry from a fixture domain in the working tree. */
-function deleteEntry(key: string, id: string): void {
-  const specPath = join(platformDir, "spec-engine", key, "SPEC.json");
-  const doc = JSON.parse(readFileSync(specPath, "utf8"));
-  doc.requirements = doc.requirements.filter((r: { id: string }) => r.id !== id);
-  writeFileSync(specPath, `${JSON.stringify(doc, null, 2)}\n`);
+function deleteEntry(key: string, id: string): Promise<void> {
+  return plantEdit(platformDir, key, (doc) => {
+    doc.requirements = doc.requirements.filter((r) => r.id !== id);
+  });
 }
 
 async function runCheckJson(): Promise<{ code: number; rows: Diagnostic[] }> {
@@ -92,7 +93,7 @@ describe("default deletion detection (D3 / CHCK-011)", () => {
     initRepo();
     // AUTH-001 is Active with zero tags: its removal is ONLY visible to the
     // HEAD diff (no DANGLING_TAG noise).
-    deleteEntry("AUTH", "AUTH-001");
+    await deleteEntry("AUTH", "AUTH-001");
     const { code, rows } = await runCheckJson();
     expect(code).toBe(1);
     const hit = rows.find((d) => d.code === "REQUIREMENT_REMOVED" && d.req_id === "AUTH-001");
@@ -102,23 +103,15 @@ describe("default deletion detection (D3 / CHCK-011)", () => {
 
   test("superseding in the same change exempts the removal", async () => {
     initRepo();
-    const specPath = join(platformDir, "spec-engine", "AUTH", "SPEC.json");
-    const doc = JSON.parse(readFileSync(specPath, "utf8"));
-    // Replace AUTH-001 with a successor that declares supersedes.
-    doc.requirements = [
-      {
-        id: "AUTH-002",
-        status: "active",
-        statement: "When a session is idle for 30 days, the system shall expire it.",
-        why: null,
-        supersedes: "AUTH-001",
-        supersededBy: null,
-        relates: [],
-        livesIn: [],
-        issues: [],
-      },
-    ];
-    writeFileSync(specPath, `${JSON.stringify(doc, null, 2)}\n`);
+    // Mint the successor, then replace AUTH-001 with it: the delete-and-replace
+    // path leaves only the successor's forward pointer as the exemption.
+    const successor = await TestPlatform.at(platformDir)
+      .handle("AUTH")
+      .req({ statement: "When a session is idle for 30 days, the system shall expire it." });
+    await plantEdit(platformDir, "AUTH", (doc) => {
+      entryOf(doc, successor.id).supersedes = "AUTH-001";
+      doc.requirements = doc.requirements.filter((r) => r.id !== "AUTH-001");
+    });
     const { rows } = await runCheckJson();
     expect(rows.some((d) => d.code === "REQUIREMENT_REMOVED" && d.req_id === "AUTH-001")).toBe(
       false,
@@ -129,7 +122,7 @@ describe("default deletion detection (D3 / CHCK-011)", () => {
     initRepo();
     // BILLING-001 is Superseded by the surviving BILLING-009 — before the
     // history rule, that successor edge silently excused pruning the record.
-    deleteEntry("BILLING", "BILLING-001");
+    await deleteEntry("BILLING", "BILLING-001");
     const { code, rows } = await runCheckJson();
     expect(code).toBe(1);
     const hit = rows.find((d) => d.code === "REQUIREMENT_REMOVED" && d.req_id === "BILLING-001");
@@ -139,7 +132,7 @@ describe("default deletion detection (D3 / CHCK-011)", () => {
 
   test("outside git the default check stays quiet about deletions", async () => {
     // No git init: same deletion, no REQUIREMENT_REMOVED, exit unaffected.
-    deleteEntry("AUTH", "AUTH-001");
+    await deleteEntry("AUTH", "AUTH-001");
     const { rows } = await runCheckJson();
     expect(rows.some((d) => d.code === "REQUIREMENT_REMOVED")).toBe(false);
   });

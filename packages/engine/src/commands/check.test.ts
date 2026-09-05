@@ -15,10 +15,11 @@
 // block, RunFn cast).
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { cloneFixture } from "../testing/cloneFixture";
+import { TestPlatform } from "../testing/platform";
 import { specTag } from "../testing/specTag";
 import { checkCommand } from "./check";
 
@@ -82,105 +83,52 @@ async function runCheck(args: Record<string, unknown>): Promise<number> {
   }
 }
 
-/** Write a domain's SPEC.json envelope (D2: JSON is the sole spec format). */
-function writeDomainJson(
-  root: string,
-  key: string,
-  requirements: Array<Record<string, unknown>>,
-): void {
-  mkdirSync(join(root, "spec-engine", key), { recursive: true });
-  writeFileSync(
-    join(root, "spec-engine", key, "SPEC.json"),
-    JSON.stringify(
-      { key, owner: "drea", specVersion: 1, updated: "2026-06-03", requirements },
-      null,
-      2,
-    ),
-  );
-}
-
 /** Minimal canonical-only fixture: one repo (spec-engine) with one Active
  *  requirement. No members, no tags. Should produce ORPHAN_REQ (and nothing
  *  else) — so exit code is 1, JSON output parseable. */
-function makeOrphanFixture(root: string): void {
-  mkdirSync(join(root, "spec-engine"), { recursive: true });
-  writeDomainJson(root, "TEST", [
-    {
-      id: "TEST-001",
-      status: "active",
-      statement: "Orphan req for the unit test.",
-      why: "Drives an ORPHAN_REQ diagnostic.",
-      supersedes: null,
-      supersededBy: null,
-      relates: [],
-      livesIn: [],
-      issues: [],
-    },
-  ]);
+async function makeOrphanFixture(root: string): Promise<void> {
+  const domain = await TestPlatform.at(root).domain("TEST", { owner: "drea" });
+  await domain.req({
+    statement: "Orphan req for the unit test.",
+    why: "Drives an ORPHAN_REQ diagnostic.",
+  });
 }
 
-/** Clean fixture: one Active requirement with a tag in a member. Should
- *  produce 0 diagnostics (no orphan, no unverified because no implements
- *  exists either — wait, untagged requirement = ORPHAN_REQ. To get 0
- *  diagnostics we need both implements + verifies tags). */
-function makeCleanFixture(root: string): void {
-  mkdirSync(join(root, "spec-engine"), { recursive: true });
-  writeDomainJson(root, "TEST", [
-    {
-      id: "TEST-001",
-      status: "active",
-      statement: "Clean req — tagged by src AND test.",
-      why: "Drives 0 diagnostics.",
-      supersedes: null,
-      supersededBy: null,
-      relates: [],
-      livesIn: [],
-      issues: [],
+/** Clean fixture: one Active requirement tagged by a member's src AND test, so
+ *  neither ORPHAN_REQ nor UNVERIFIED_REQ fires: 0 diagnostics. */
+async function makeCleanFixture(root: string): Promise<void> {
+  const fx = TestPlatform.at(root);
+  const domain = await fx.domain("TEST", { owner: "drea" });
+  await domain.req({
+    statement: "Clean req — tagged by src AND test.",
+    why: "Drives 0 diagnostics.",
+  });
+  await fx.member("member", {
+    files: {
+      "src/feature.ts": `${specTag("TEST-001")}export const x = 1;\n`,
+      "test/feature.test.ts": `${specTag("TEST-001")}export const y = 2;\n`,
     },
-  ]);
-  mkdirSync(join(root, "member", "src"), { recursive: true });
-  mkdirSync(join(root, "member", "test"), { recursive: true });
-  writeFileSync(
-    join(root, "member", "spec-engine.member.json"),
-    JSON.stringify({ specs: "spec-engine@1" }),
-  );
-  writeFileSync(
-    join(root, "member", "src", "feature.ts"),
-    `${specTag("TEST-001")}export const x = 1;\n`,
-  );
-  writeFileSync(
-    join(root, "member", "test", "feature.test.ts"),
-    `${specTag("TEST-001")}export const y = 2;\n`,
-  );
+  });
 }
 
 /** Warning-only fixture: canonical spec-engine/ + one sibling directory
- *  WITHOUT spec-engine.member.json. Phase 8 emits one NO_SPEC_CONFIG warning;
+ *  WITHOUT spec-engine.member.json, which emits one NO_SPEC_CONFIG warning;
  *  no error-severity rows fire (no requirements means no ORPHAN_REQ either).
- *  Used to exercise the `check.ts:127` `severity === "error"` branch for
- *  the first time ever with a warning-only diagnostic set. */
+ *  Exercises the `severity === "error"` branch with a warning-only set. */
 function makeWarningOnlyFixture(root: string): void {
-  mkdirSync(join(root, "spec-engine"), { recursive: true });
-  mkdirSync(join(root, "strangers"), { recursive: true });
-  // No spec-engine.member.json in strangers — Phase 8 emits NO_SPEC_CONFIG warning.
-  // RUNG1-02: `strangers/` must carry a repo-root marker (.git/package.json)
-  // to be classified as a SKIPPED sibling (a real unwired member repo).
-  // Without a marker it is a bucket-3 plain folder and is ignored — which
-  // would also make this a lone self-member instead of a warning fixture.
-  writeFileSync(join(root, "strangers", "package.json"), JSON.stringify({ name: "strangers" }));
+  // `strangers/` must carry a repo-root marker (.git/package.json) to be
+  // classified as a SKIPPED sibling (a real unwired member repo). Without a
+  // marker it is a plain folder and is ignored — which would also make this
+  // a lone self-member instead of a warning fixture.
+  TestPlatform.at(root).file("strangers/package.json", JSON.stringify({ name: "strangers" }));
 }
 
 /** Mixed fixture: orphan-requirement error (ORPHAN_REQ from makeOrphanFixture)
- *  + a sibling-without-config (NO_SPEC_CONFIG warning). Used to prove the
- *  `severity === "error"` exit-code branch dominates when both rows are
- *  present (DIAG-02 sub-criterion 2). */
-function makeMixedFixture(root: string): void {
-  makeOrphanFixture(root);
-  mkdirSync(join(root, "strangers"), { recursive: true });
-  // RUNG1-02: marker required so `strangers/` is a skipped sibling →
-  // NO_SPEC_CONFIG warning (paired with the ORPHAN_REQ error from
-  // makeOrphanFixture to prove the error branch dominates the exit code).
-  writeFileSync(join(root, "strangers", "package.json"), JSON.stringify({ name: "strangers" }));
+ *  + a sibling-without-config (NO_SPEC_CONFIG warning). Proves the
+ *  `severity === "error"` exit-code branch dominates when both rows are present. */
+async function makeMixedFixture(root: string): Promise<void> {
+  await makeOrphanFixture(root);
+  makeWarningOnlyFixture(root);
 }
 
 describe("spec check — path-containment guard (V12)", () => {
@@ -197,7 +145,7 @@ describe("spec check — path-containment guard (V12)", () => {
   });
 
   test("--out resolving inside platformDir is accepted", async () => {
-    makeOrphanFixture(tmp);
+    await makeOrphanFixture(tmp);
     const code = await runCheck({
       platformDir: tmp,
       out: join(tmp, "custom.sqlite"),
@@ -211,7 +159,7 @@ describe("spec check — path-containment guard (V12)", () => {
 
 describe("spec check — --ci force-rebuild semantics", () => {
   test("--ci on a directory with no prior DB does not throw", async () => {
-    makeOrphanFixture(tmp);
+    await makeOrphanFixture(tmp);
     // First run: no DB exists yet. --ci's existsSync guards each rmSync,
     // so this should succeed and produce an ORPHAN_REQ → exit 1.
     const code = await runCheck({ platformDir: tmp, ci: true, json: true });
@@ -223,7 +171,7 @@ describe("spec check — --ci force-rebuild semantics", () => {
 
 describe("spec check — JSON output is parseable", () => {
   test("--json emits a JSON array; orphan fixture has exactly one row (ORPHAN_REQ)", async () => {
-    makeOrphanFixture(tmp);
+    await makeOrphanFixture(tmp);
     const code = await runCheck({ platformDir: tmp, ci: true, json: true });
     expect(code).toBe(1);
     // The JSON output is the only stdout line in --json mode (build_id
@@ -250,13 +198,13 @@ describe("spec check — JSON output is parseable", () => {
 
 describe("spec check — exit code wiring", () => {
   test("exit 1 when any error-severity diagnostic exists (orphan fixture)", async () => {
-    makeOrphanFixture(tmp);
+    await makeOrphanFixture(tmp);
     const code = await runCheck({ platformDir: tmp, ci: true, json: true });
     expect(code).toBe(1);
   });
 
   test("exit 0 when 0 diagnostics (clean fixture: implements + verifies tags)", async () => {
-    makeCleanFixture(tmp);
+    await makeCleanFixture(tmp);
     const code = await runCheck({ platformDir: tmp, ci: true, json: true });
     // 0 diagnostics → exit 0. JSON output is `[]`. Scan for the JSON
     // line explicitly so a stray debug log ahead of it produces a clear
@@ -328,7 +276,7 @@ describe("spec check — warning-severity exit-code branch (DIAG-02)", () => {
   });
 
   test("mixed error+warning diagnostics exit 1 (error branch dominates)", async () => {
-    makeMixedFixture(tmp);
+    await makeMixedFixture(tmp);
     const code = await runCheck({ platformDir: tmp, ci: true, json: true });
     expect(code).toBe(1);
     // Scan for the JSON line (WR-02 review-fix) rather than trusting logs[0].
@@ -348,7 +296,7 @@ describe("spec check — warning-severity exit-code branch (DIAG-02)", () => {
 
 describe("spec check — generic crash branch (RED-14)", () => {
   test("openStorage failure (--out points at an existing directory) → exit 2 'crashed'", async () => {
-    makeOrphanFixture(tmp);
+    await makeOrphanFixture(tmp);
     // A DIRECTORY at the db path: passes the containment guard (inside
     // platformDir) but openStorage cannot open a directory as SQLite —
     // the throw must land in the catch-all, NOT citty's default handling.
