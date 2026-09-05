@@ -15,9 +15,9 @@
 // Pure aside from reads: no writes, no process.exit, deterministic ordering
 // by (source_file, line, req_id).
 
-import { join } from "node:path";
 import { type Diagnostic, DiagnosticCode, parseEarsStatement } from "@spec-engine/shared";
 import { listDomainKeys } from "../authoring/domains";
+import { CANONICAL_SPECS_DIR, SPEC_FILENAME, specPaths } from "../constants";
 import { findRequirementIdLine } from "../parser/requirementLine";
 
 const CHECKED_STATUSES = new Set(["active", "draft"]);
@@ -35,7 +35,7 @@ async function readDeclaredDomain(
   key: string,
 ): Promise<DeclaredDomain | null> {
   try {
-    const raw = await Bun.file(join(platformDir, "spec-engine", key, "SPEC.json")).text();
+    const raw = await Bun.file(specPaths(platformDir, key).abs).text();
     const doc = JSON.parse(raw) as {
       grammar?: unknown;
       grammarSeverity?: unknown;
@@ -72,7 +72,7 @@ function rowsForDomain(key: string, domain: DeclaredDomain): Diagnostic[] {
       code: DiagnosticCode.STATEMENT_GRAMMAR,
       severity: domain.severity,
       repo: null,
-      source_file: `spec-engine/${key}/SPEC.json`,
+      source_file: `${CANONICAL_SPECS_DIR}/${key}/${SPEC_FILENAME}`,
       line: found >= 0 ? found + 1 : 0,
       req_id: req.id,
       detail: `${result.problem}. Expected one of:\n  ${result.expected}`,

@@ -18,10 +18,10 @@
 // grammar pass — `livesIn` has no index column, so there is nothing to read
 // back and no SCHEMA_VERSION bump involved.
 
-import { join } from "node:path";
 import { type Diagnostic, DiagnosticCode } from "@spec-engine/shared";
 import { listDomainKeys } from "../authoring/domains";
 import { resolveFileRef } from "../authoring/filerefs";
+import { specPaths } from "../constants";
 import { findRequirementIdLine } from "../parser/requirementLine";
 
 const CHECKED_STATUSES = new Set(["active", "draft"]);
@@ -35,7 +35,7 @@ interface RawDomain {
  *  validation owns those. */
 async function readDomain(platformDir: string, key: string): Promise<RawDomain | null> {
   try {
-    const raw = await Bun.file(join(platformDir, "spec-engine", key, "SPEC.json")).text();
+    const raw = await Bun.file(specPaths(platformDir, key).abs).text();
     const doc = JSON.parse(raw) as { requirements?: unknown };
     return {
       raw,
@@ -64,7 +64,7 @@ function rowsForRequirement(
       code: DiagnosticCode.BROKEN_FILE_REF,
       severity: "error",
       repo: null,
-      source_file: `spec-engine/${key}/SPEC.json`,
+      source_file: specPaths(platformDir, key).rel,
       line,
       req_id: reqId,
       detail: `livesIn entry ${entry} does not resolve to a file under the platform root`,

@@ -23,6 +23,7 @@
 
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { specPaths } from "../constants";
 
 // Canonical domain-key grammar (`KEY`): CANONICALLY defined in
 // @spec-engine/shared (P3 consolidation) and re-exported here so the existing
@@ -69,7 +70,7 @@ export function listDomainKeys(platformDir: string): string[] {
  * `spec check`'s job, not the listing's.)
  */
 export async function domainScope(platformDir: string, key: string): Promise<string | null> {
-  const jsonPath = join(platformDir, "spec-engine", key, "SPEC.json");
+  const jsonPath = specPaths(platformDir, key).abs;
   if (!existsSync(jsonPath)) return null;
   try {
     const env = JSON.parse(await Bun.file(jsonPath).text()) as { scope?: unknown };
@@ -172,7 +173,7 @@ async function headMaxSeq(platformDir: string, key: string): Promise<number> {
  * (e.g. the dir vanished between the caller's listing and this read).
  */
 export async function nextRequirementId(platformDir: string, key: string): Promise<string> {
-  const jsonPath = join(platformDir, "spec-engine", key, "SPEC.json");
+  const jsonPath = specPaths(platformDir, key).abs;
   if (!existsSync(jsonPath)) return `${key}-001`;
   const domain = JSON.parse(await Bun.file(jsonPath).text()) as {
     requirements?: Array<{ id?: unknown }>;

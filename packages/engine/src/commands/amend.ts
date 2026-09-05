@@ -1,93 +1,16 @@
 // packages/engine/src/commands/amend.ts
 //
-// L3 (lifecycle pass) — `spec amend <KEY-NNN>`: revise an entry's fields
-// IN PLACE. The doctrinal counterpart to supersede (README "Amend vs
-// supersede"): amend while a requirement has never been true in production
-// (same id, no version bump — the truth was refined, not replaced);
-// supersede once it has shipped.
-//
-// REQ-015 (amend is gated to UNSHIPPED entries): "shipped" is measured by
-// whether code binds the requirement, not by status alone. The gate is two
-// tiers: Superseded/Retired entries are history and refuse (status); an Active
-// entry with ≥1 bound @spec tag is shipped truth and refuses (bound-tag) —
-// once code implements/verifies a requirement, supersede is the SOLE mutation
-// path, so an in-place edit can never rewrite a promise out from under the
-// tags that verify it. A Draft entry, or an Active entry with ZERO bound tags,
-// is still unshipped and amends freely (pre-ship typo fixes stay off the
-// supersede trail). "Bound" = a code-derived tag (implements/verifies); a
-// documents-kind mention is not code binding (RED-15 / orphan semantics).
-//
-//   - Field flags (--text / --why / --lives) name what changes; untouched
-//     fields stay byte-identical. At least one is required.
-//   - Envelope `updated` bumps to the local date; `specVersion` is NEVER
-//     bumped here (that is supersede's move).
-//   - `--json` → { id, file, fields_changed } (sorted field keys).
-//   - Exit codes 0 / 2 only. The bound-tag gate (REQ-015) cold-reindexes the
-//     platform to count code bindings for the target id — index access via the
-//     shared reindexAndListTags seam (openStorage, never bun:sqlite: D-08),
-//     the same cold-reindex path `spec supersede` uses. It runs ONLY for an
-//     Active entry (Draft short-circuits before any scan).
-//
-// VAL-01: the amend mutates the requirement OBJECT in the domain's
-// SPEC.json and writes ONCE through `validateAndWrite` — no Markdown text
-// edit, no bespoke `Bun.write` of the domain file. The seam re-validates the
-// WHOLE object (T-17-01) and rejects an invalid edit at author time with the
-// SAME INVALID_DOMAIN_FILE diagnostic the index emits (VAL-02).
-//
-// D-08: no bun:sqlite import.
-//
-// The `run` handler stays a thin orchestrator: it owns the id-regex guard
-// and the platform guard (whose ORDER relative to the field gates is
-// load-bearing — id first, platform second, field gates third), then wires
-// the extracted validation / lookup / status-gate / mutation helpers below.
+// `spec amend <KEY-NNN>`: revise an unshipped entry in place. The command
+// parses flags into the operation's field set and reports; every gate lives
+// in operations/amend.ts.
 
-import { existsSync } from "node:fs";
-import { join, resolve } from "node:path";
-import { validateAndWrite } from "@spec-engine/shared";
 import { defineCommand } from "citty";
-import { localToday } from "../authoring/edit";
-import { enforceStatementGrammar } from "../authoring/grammar";
 import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
+import { type AmendFields, amend } from "../operations/amend";
 import { ID_RE } from "../parser/grammar";
-import { handleNotAPlatform, reindexAndListTags } from "./_shared";
-import { warnUnresolvableRefs } from "./req";
-
-/** A requirement object inside the JSON envelope (loose — the seam re-validates). */
-interface DomainRequirement {
-  id: string;
-  status?: string;
-  statement?: string;
-  why?: string | null;
-  livesIn?: string[];
-  [k: string]: unknown;
-}
-interface DomainEnvelope {
-  requirements?: DomainRequirement[];
-  updated?: string;
-  [k: string]: unknown;
-}
-
-/** Which persistable fields the invocation touched. */
-interface AmendFields {
-  hasText: boolean;
-  hasIssue: boolean;
-  hasWhy: boolean;
-  hasLives: boolean;
-  // Wave B (06-02): the glossary-term fields. amend is domain-generic, so
-  // `--term`/`--aliases` revise a TERM entry's headword/synonyms in place
-  // (same id, no specVersion bump) exactly as `--text`/`--why`/`--lives` do
-  // for a requirement.
-  hasTerm: boolean;
-  hasAliases: boolean;
-}
-/** The located entry plus the envelope + paths the single write seam needs. */
-interface LocatedEntry {
-  req: DomainRequirement;
-  domain: DomainEnvelope;
-  relFile: string;
-  specPath: string;
-}
+import { jsonArg, platformDirArg, resolvePlatformDir } from "./_args";
+import { exitOnFailure, handleNotAPlatform, printWarnings, reindexAndListTags } from "./_shared";
 
 export const amendCommand = defineCommand({
   meta: {
@@ -101,11 +24,7 @@ export const amendCommand = defineCommand({
       required: true,
       description: "The requirement id to amend (KEY-NNN; must be Active or Draft)",
     },
-    platformDir: {
-      type: "positional",
-      required: false,
-      description: "Platform directory containing spec-engine/ (default: cwd)",
-    },
+    platformDir: platformDirArg,
     text: { type: "string", description: "New Requirement (statement) field value" },
     why: { type: "string", description: "New Why it matters field value" },
     lives: { type: "string", description: "New Lives in (livesIn) field value" },
@@ -119,10 +38,7 @@ export const amendCommand = defineCommand({
       type: "string",
       description: "New TERM comma-separated aliases (aliases[]; TERM ids)",
     },
-    json: {
-      type: "boolean",
-      description: "Emit { id, file, fields_changed } as JSON instead of the text summary",
-    },
+    json: jsonArg,
   },
   async run({ args }) {
     const id = args.id as string;
@@ -131,212 +47,92 @@ export const amendCommand = defineCommand({
       process.exit(EXIT.USAGE);
       return;
     }
-    const platformDir = resolve((args.platformDir as string | undefined) ?? process.cwd());
-
-    // Platform guard runs BEFORE the field gates (byte-identical ordering):
-    // a non-platform dir refuses with the platform message even when no field
-    // was passed.
+    const platformDir = resolvePlatformDir(args);
     try {
       assertSpecPlatform(platformDir);
     } catch (e) {
       handleNotAPlatform(e);
     }
 
-    const fields = validateAmendFields(args);
-    const located = locateAmendEntry(platformDir, id);
-    const { req, domain, relFile, specPath } = await located;
-    // Two-tier gate (REQ-015): status first (cheap, no scan), then — for an
-    // Active entry only — the bound-tag gate (a cold reindex). A Draft never
-    // triggers the scan.
-    const statusLc = assertAmendableStatus(id, req);
-    if (statusLc === "active") {
-      await assertUnshipped(platformDir, id);
-    }
-    // Statement-grammar gate (sentence 8): only a NEW statement is judged.
-    if (fields.hasText) {
-      const key = id.slice(0, id.indexOf("-"));
-      await enforceStatementGrammar(platformDir, key, (args.text as string).trim(), "spec amend");
-    }
-    const { fieldsChanged, refValues } = applyAmendMutations(req, args, fields);
+    const fields = fieldsFromArgs(args);
 
-    warnUnresolvableRefs(platformDir, refValues);
-
-    domain.updated = localToday();
-
-    const res = await validateAndWrite(specPath, domain, relFile);
-    if (!res.ok) {
-      for (const diag of res.diagnostics) {
-        console.error(`spec amend: ${diag.detail}`);
-      }
-      process.exit(EXIT.USAGE);
-      return;
-    }
-
-    const sortedFields = [...fieldsChanged].sort();
+    const result = await amend({ platformDir, id, fields }, (reqId) =>
+      reindexAndListTags(platformDir, reqId),
+    );
+    if (!result.ok) exitOnFailure("spec amend", result);
+    printWarnings("spec amend", result.warnings);
     if (args.json) {
-      console.log(JSON.stringify({ id, file: relFile, fields_changed: sortedFields }));
+      console.log(JSON.stringify({ id, file: result.file, fields_changed: result.fieldsChanged }));
     } else {
-      console.log(`amended ${id} in ${relFile} (${sortedFields.join(", ")})`);
+      console.log(`amended ${id} in ${result.file} (${result.fieldsChanged.join(", ")})`);
     }
   },
 });
 
-/**
- * Resolve which persistable fields the invocation touched and enforce the two
- * argument gates (exit 2 on failure). At least one field is required;
- * `--text`, when present, must be non-empty.
- */
-function validateAmendFields(args: Record<string, unknown>): AmendFields {
-  const hasText = typeof args.text === "string";
-  const hasIssue = typeof args.issue === "string" && (args.issue as string).trim() !== "";
-  const hasWhy = typeof args.why === "string";
-  const hasLives = typeof args.lives === "string";
-  const hasTerm = typeof args.term === "string";
-  const hasAliases = typeof args.aliases === "string";
+/** Presence of each amendable flag. */
+interface AmendFlags {
+  hasText: boolean;
+  hasIssue: boolean;
+  hasWhy: boolean;
+  hasLives: boolean;
+  hasTerm: boolean;
+  hasAliases: boolean;
+}
 
-  if (!hasText && !hasWhy && !hasLives && !hasTerm && !hasAliases && !hasIssue) {
+function amendFlags(args: Record<string, unknown>): AmendFlags {
+  return {
+    hasText: typeof args.text === "string",
+    hasIssue: typeof args.issue === "string" && (args.issue as string).trim() !== "",
+    hasWhy: typeof args.why === "string",
+    hasLives: typeof args.lives === "string",
+    hasTerm: typeof args.term === "string",
+    hasAliases: typeof args.aliases === "string",
+  };
+}
+
+/** At least one field is required; `--text` and `--term` must be non-empty. Exits 2 otherwise. */
+function assertAmendFlags(args: Record<string, unknown>, f: AmendFlags): void {
+  if (!f.hasText && !f.hasWhy && !f.hasLives && !f.hasTerm && !f.hasAliases && !f.hasIssue) {
     console.error(
       "spec amend: nothing to amend — pass at least one of --text / --why / --lives / --term / --aliases",
     );
     process.exit(EXIT.USAGE);
   }
-  if (hasText && (args.text as string).trim() === "") {
+  if (f.hasText && (args.text as string).trim() === "") {
     console.error("spec amend: --text must be a non-empty Requirement");
     process.exit(EXIT.USAGE);
   }
-  if (hasTerm && (args.term as string).trim() === "") {
+  if (f.hasTerm && (args.term as string).trim() === "") {
     console.error("spec amend: --term must be a non-empty headword");
     process.exit(EXIT.USAGE);
   }
-  return { hasText, hasWhy, hasLives, hasTerm, hasAliases, hasIssue };
 }
 
-/**
- * Derive the spec path from the id's key slice (never from arbitrary input),
- * read + JSON.parse the envelope, and `.find` the entry. Exits 2 on
- * domain-not-found or entry-not-found. Returns the located entry plus the
- * envelope and paths the single VAL-01 write seam needs.
- */
-async function locateAmendEntry(platformDir: string, id: string): Promise<LocatedEntry> {
-  const key = id.slice(0, id.indexOf("-"));
-  const relFile = `spec-engine/${key}/SPEC.json`;
-  const specPath = join(platformDir, "spec-engine", key, "SPEC.json");
-  if (!existsSync(specPath)) {
-    console.error(`spec amend: no domain ${key} (expected ${relFile} under ${platformDir})`);
-    process.exit(EXIT.USAGE);
-  }
-
-  const domain = JSON.parse(await Bun.file(specPath).text()) as DomainEnvelope;
-  const requirements = Array.isArray(domain.requirements) ? domain.requirements : [];
-  const req = requirements.find((r) => r?.id === id);
-  if (req === undefined) {
-    console.error(`spec amend: no entry ${id} in ${relFile}`);
-    process.exit(EXIT.USAGE);
-  }
-  return { req, domain, relFile, specPath };
+function splitAliases(raw: string): string[] {
+  return raw === ""
+    ? []
+    : raw
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s !== "");
 }
 
-/**
- * Tier 1 of the amend gate (status): only Active/Draft amend. A
- * Superseded/Retired entry is history — supersede its successor instead
- * (exit 2). Status is a free lowercase string in the JSON envelope; compare
- * case-insensitively and display Capitalized. Returns the lowercased status so
- * the caller can decide whether Tier 2 (the bound-tag gate) applies — it does
- * for Active, but a Draft is unshipped by definition and skips it.
- */
-function assertAmendableStatus(id: string, req: DomainRequirement): string {
-  const rawStatus = typeof req.status === "string" ? req.status : "";
-  const statusLc = rawStatus.toLowerCase();
-  if (statusLc !== "active" && statusLc !== "draft") {
-    const display = rawStatus ? rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1) : rawStatus;
-    console.error(
-      `spec amend: ${id} is ${display} — only Active/Draft entries amend (a superseded entry is history; supersede its successor instead)`,
-    );
-    process.exit(EXIT.USAGE);
-  }
-  return statusLc;
-}
-
-/**
- * Tier 2 of the amend gate (REQ-015, bound tags): an Active requirement that
- * any code implements/verifies is SHIPPED — refuse the in-place edit and
- * direct the author to supersede (exit 2). Cold-reindexes the platform (the
- * shared reindexAndListTags seam) and counts code-derived tags only; a
- * documents-kind mention does not make a requirement shipped (RED-15). Draft
- * entries never reach here — the caller skips Tier 2 for them.
- */
-async function assertUnshipped(platformDir: string, id: string): Promise<void> {
-  // @spec REQ-035
-  const tags = await reindexAndListTags(platformDir, id);
-  const bound = tags.filter((t) => t.kind === "implements" || t.kind === "verifies");
-  if (bound.length > 0) {
-    const site = bound[0];
-    console.error(
-      `spec amend: ${id} is shipped — ${bound.length} code tag(s) bind it (e.g. ${site.file}:${site.line}). ` +
-        "A bound requirement is immutable; supersede it with a successor instead of amending in place.",
-    );
-    process.exit(EXIT.USAGE);
-  }
-}
-
-/**
- * Apply the whitelisted field mutations, tracking what changed (for the
- * fields_changed report) and the values to run through the @-ref warner.
- * Keeps the trim + why-empty→null + lives-empty→[] semantics EXACTLY.
- */
-function applyAmendMutations(
-  req: DomainRequirement,
-  args: Record<string, unknown>,
-  fields: AmendFields,
-): { fieldsChanged: string[]; refValues: string[] } {
-  const fieldsChanged: string[] = [];
-  const refValues: string[] = [];
-  if (fields.hasText) {
-    const v = (args.text as string).trim();
-    req.statement = v;
-    fieldsChanged.push("requirement");
-    refValues.push(v);
-  }
-  if (fields.hasWhy) {
+/** Flags to the operation's field set: trimmed, with empty why → null and empty lives → []. */
+function fieldsFromArgs(args: Record<string, unknown>): AmendFields {
+  const f = amendFlags(args);
+  assertAmendFlags(args, f);
+  const fields: AmendFields = {};
+  if (f.hasText) fields.statement = (args.text as string).trim();
+  if (f.hasWhy) {
     const v = (args.why as string).trim();
-    req.why = v === "" ? null : v;
-    fieldsChanged.push("why");
-    refValues.push(v);
+    fields.why = v === "" ? null : v;
   }
-  if (fields.hasLives) {
+  if (f.hasLives) {
     const v = (args.lives as string).trim();
-    req.livesIn = v === "" ? [] : [v];
-    fieldsChanged.push("lives");
-    refValues.push(v);
+    fields.livesIn = v === "" ? [] : [v];
   }
-  // Wave B (06-02): glossary-term fields. `--term` sets the headword; `--aliases`
-  // splits on comma into aliases[]. Whitelisted mutations only — the whole
-  // object still re-validates through validateDomainFile (T-06-07).
-  // @spec REQ-033
-  // @spec REQ-034
-  if (fields.hasTerm) {
-    const v = (args.term as string).trim();
-    req.term = v;
-    fieldsChanged.push("term");
-    refValues.push(v);
-  }
-  if (fields.hasIssue) {
-    // @spec PROV-003
-    const issues = Array.isArray(req.issues) ? (req.issues as unknown[]) : [];
-    issues.push({ role: "amends-via", id: (args.issue as string).trim() });
-    req.issues = issues;
-    fieldsChanged.push("issue");
-  }
-  if (fields.hasAliases) {
-    const raw = (args.aliases as string).trim();
-    req.aliases =
-      raw === ""
-        ? []
-        : raw
-            .split(",")
-            .map((s) => s.trim())
-            .filter((s) => s !== "");
-    fieldsChanged.push("aliases");
-  }
-  return { fieldsChanged, refValues };
+  if (f.hasTerm) fields.term = (args.term as string).trim();
+  if (f.hasIssue) fields.issue = (args.issue as string).trim();
+  if (f.hasAliases) fields.aliases = splitAliases((args.aliases as string).trim());
+  return fields;
 }

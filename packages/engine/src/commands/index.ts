@@ -19,7 +19,7 @@
 // repo allowed to touch bun:sqlite). The Rust-swap seam stays clean.
 
 import { mkdirSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname } from "node:path";
 import { NotASpecPlatformError } from "@spec-engine/shared";
 import { defineCommand } from "citty";
 import { EXIT, OUT_HELP, resolveDbPath } from "../constants";
@@ -27,6 +27,7 @@ import { assertSpecPlatform, formatNotASpecPlatform } from "../indexer/discover"
 import { runIndex } from "../indexer/pipeline";
 import { maybePromptForOnboarding } from "../onboarding/prompt";
 import { openStorage } from "../storage/sqlite";
+import { platformDirArg, resolvePlatformDir } from "./_args";
 import { assertContainedPath } from "./_shared";
 
 export const indexCommand = defineCommand({
@@ -36,11 +37,7 @@ export const indexCommand = defineCommand({
       "Index a platform directory, writing the derived SQLite index to .spec-engine/index.sqlite (or --out)",
   },
   args: {
-    platformDir: {
-      type: "positional",
-      required: false,
-      description: "Platform directory containing spec-engine/ + members (default: cwd)",
-    },
+    platformDir: platformDirArg,
     out: {
       type: "string",
       description: OUT_HELP,
@@ -56,7 +53,7 @@ export const indexCommand = defineCommand({
     },
   },
   async run({ args }) {
-    const platformDir = resolve((args.platformDir as string | undefined) ?? process.cwd());
+    const platformDir = resolvePlatformDir(args);
     const outArg = args.out as string | undefined;
     // RED-14 parity fix: index was the only --out-bearing command that
     // resolved --out relative to CWD and skipped the V12 containment

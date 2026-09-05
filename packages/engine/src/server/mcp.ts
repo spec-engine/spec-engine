@@ -1,79 +1,42 @@
 // packages/engine/src/server/mcp.ts
 //
-// L4 (lifecycle pass) — the MCP front-end. Exposes the engine's read
-// surface as Model Context Protocol tools so any MCP-capable agent harness
-// (Claude Code, etc.) can route through Spec Engine natively instead of shelling
-// out to the CLI. One engine, three thin front-ends: CLI, webapp, MCP —
-// all reading through the same Storage seam.
-//
-// CORRECTNESS OVER CACHE: an MCP server is long-lived and the agent on the
-// other end edits specs and tags BETWEEN calls. Every tool call therefore
-// reindexes fresh (rm db + WAL/SHM, rebuild — the same trio discipline as
-// `check --ci` and `gate`) before reading. At PoC scale a rebuild is
-// milliseconds; a stale answer to an agent is a wrong answer.
-//
-// Tool results: one text content block whose text is the SAME JSON the
-// CLI's --json mode emits for the equivalent command — agents get one
-// shape regardless of front-end. Domain errors (malformed id, unknown
-// domain) return MCP tool errors (isError: true), never crashes.
-//
-// D-08: no bun:sqlite import — index access goes through openStorage.
+// The MCP front-end: the engine's operations as Model Context Protocol tools
+// so an agent harness calls them natively instead of shelling out. Every tool
+// call reindexes fresh, because the server is long-lived and the agent edits
+// specs and tags between calls; at this scale a rebuild is milliseconds and a
+// stale answer is a wrong answer. Results are the same JSON the CLI's --json
+// modes emit. Domain errors are MCP tool errors, never crashes. stdout is the
+// protocol channel; all chrome goes to stderr.
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import {
-  buildCoverageReport,
-  DEFAULT_QUERY_LIMIT,
-  LIMIT_MAX,
-  type Storage,
-} from "@spec-engine/shared";
+import { DEFAULT_QUERY_LIMIT, LIMIT_MAX } from "@spec-engine/shared";
 import { z } from "zod";
-import {
-  domainScope,
-  listDomainKeys,
-  nextRequirementId,
-  normalizeDomainKey,
-} from "../authoring/domains";
-import { collectDiagnostics } from "../check/sqlDiagnostics";
-import { defaultIndexPath } from "../constants";
-import { runIndex } from "../indexer/pipeline";
+import { domainScope, listDomainKeys, normalizeDomainKey } from "../authoring/domains";
+import { withIndex } from "../operations/_index";
+import { check } from "../operations/check";
+import { nextId } from "../operations/nextId";
+import { coverageReport, propagation, query, reqTags, resolveFiles } from "../operations/reads";
 import { ID_RE } from "../parser/grammar";
-import { coldResetDb, openStorage } from "../storage/sqlite";
 import { renderAuthorPrompt } from "./authorPrompt";
 
-/** Tool result helper — one JSON text block (the CLI --json shape). */
+/** Tool result helper: one JSON text block (the CLI --json shape). */
 function jsonResult(value: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(value) }] };
 }
 
-/** Tool error helper — isError result, never a thrown crash. */
+/** Tool error helper: an isError result, never a thrown crash. */
 function errorResult(message: string) {
   return { content: [{ type: "text" as const, text: message }], isError: true as const };
 }
 
 /**
- * Run `fn` against a FRESHLY rebuilt index (cold reset + reindex + close). Tool
- * calls arrive sequentially per MCP session, so the shared db path is not
- * contended within one server.
- */
-async function withFreshIndex<T>(platformDir: string, fn: (storage: Storage) => T): Promise<T> {
-  const dbPath = defaultIndexPath(platformDir);
-  coldResetDb(dbPath);
-  const storage = openStorage(dbPath);
-  try {
-    await runIndex({ platformDir, storage });
-    return fn(storage);
-  } finally {
-    storage.close();
-  }
-}
-
-/**
- * Build the Spec Engine MCP server for one platform directory. Transport-free —
- * `spec mcp` connects it to stdio; tests connect it to an
- * InMemoryTransport pair.
+ * Build the Spec Engine MCP server for one platform directory. Transport-free:
+ * `spec mcp` connects it to stdio; tests connect it to an InMemoryTransport pair.
  */
 export function buildMcpServer(platformDir: string): McpServer {
   const server = new McpServer({ name: "spec", version: "0.0.6" });
+  const fresh = <T>(fn: (storage: Parameters<typeof query>[0]) => T) =>
+    withIndex({ platformDir, build: "fresh" }, (h) => fn(h.storage));
 
   server.registerTool(
     "spec_query",
@@ -92,17 +55,11 @@ export function buildMcpServer(platformDir: string): McpServer {
           .describe(`Max hits (default ${DEFAULT_QUERY_LIMIT})`),
       },
     },
-    async ({ text, limit }) => {
-      try {
-        return await withFreshIndex(platformDir, (s) => jsonResult(s.searchFts(text, limit)));
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (/fts5/i.test(msg) || /syntax/i.test(msg)) {
-          return errorResult(`FTS5 query syntax error: ${msg} — wrap phrases in double quotes`);
-        }
-        throw err;
-      }
-    },
+    async ({ text, limit }) =>
+      fresh((s) => {
+        const r = query(s, text, limit ?? DEFAULT_QUERY_LIMIT);
+        return r.ok ? jsonResult(r.hits) : errorResult(r.detail);
+      }),
   );
 
   server.registerTool(
@@ -115,7 +72,7 @@ export function buildMcpServer(platformDir: string): McpServer {
         files: z.array(z.string().min(1)).min(1).max(100).describe("Platform-relative file paths"),
       },
     },
-    async ({ files }) => withFreshIndex(platformDir, (s) => jsonResult(s.resolveByFiles(files))),
+    async ({ files }) => fresh((s) => jsonResult(resolveFiles(s, files).rows)),
   );
 
   server.registerTool(
@@ -130,18 +87,7 @@ export function buildMcpServer(platformDir: string): McpServer {
       if (!ID_RE.test(req_id)) {
         return errorResult(`req_id must be a requirement id (KEY-NNN); got ${req_id}`);
       }
-      return withFreshIndex(platformDir, (s) =>
-        jsonResult(
-          s.listTags({ req_id }).map(({ req_id: rid, repo, file, line, kind, level }) => ({
-            req_id: rid,
-            repo,
-            file,
-            line,
-            kind,
-            level: level ?? null,
-          })),
-        ),
-      );
+      return fresh((s) => jsonResult(reqTags(s, req_id).rows));
     },
   );
 
@@ -153,8 +99,7 @@ export function buildMcpServer(platformDir: string): McpServer {
         "One row per domain over Active requirements: { domain, active, implemented, verified, orphans, unverified }.",
       inputSchema: {},
     },
-    async () =>
-      withFreshIndex(platformDir, (s) => jsonResult(buildCoverageReport(s.coverageMatrix()))),
+    async () => fresh((s) => jsonResult(coverageReport(s).rows)),
   );
 
   server.registerTool(
@@ -165,7 +110,11 @@ export function buildMcpServer(platformDir: string): McpServer {
         "Run the full check: structural integrity, coverage, cross-repo drift. Returns the diagnostic rows (severity 'error' rows are what spec check --ci fails CI on).",
       inputSchema: {},
     },
-    async () => withFreshIndex(platformDir, (s) => jsonResult(collectDiagnostics(s))),
+    async () =>
+      withIndex({ platformDir, build: "reset" }, async (h) => {
+        const r = await check({ platformDir }, h.storage);
+        return r.ok ? jsonResult(r.diagnostics) : errorResult(r.detail);
+      }),
   );
 
   server.registerTool(
@@ -180,7 +129,7 @@ export function buildMcpServer(platformDir: string): McpServer {
       if (!ID_RE.test(req_id)) {
         return errorResult(`req_id must be a requirement id (KEY-NNN); got ${req_id}`);
       }
-      return withFreshIndex(platformDir, (s) => jsonResult(s.propagationFor(req_id)));
+      return fresh((s) => jsonResult(propagation(s, req_id).rows));
     },
   );
 
@@ -193,23 +142,12 @@ export function buildMcpServer(platformDir: string): McpServer {
       inputSchema: { domain: z.string().min(1).describe("Domain key (e.g. BILLING)") },
     },
     async ({ domain }) => {
-      const key = normalizeDomainKey(domain);
-      const keys = listDomainKeys(platformDir);
-      if (!keys.includes(key)) {
-        const available = keys.length > 0 ? keys.join(", ") : "(none)";
-        return errorResult(`no domain ${key} — available: ${available}`);
-      }
-      return jsonResult({ domain: key, next_id: await nextRequirementId(platformDir, key) });
+      const r = await nextId(platformDir, domain);
+      return r.ok ? jsonResult({ domain: r.key, next_id: r.nextId }) : errorResult(r.detail);
     },
   );
 
-  // The authoring prompt: a STATIC playbook template. registerPrompt
-  // auto-advertises the `prompts` capability and derives prompts/list
-  // `arguments[]` from the Zod argsSchema — no hand-rolled JSON-RPC. The
-  // callback reads the target domain's charter via the pure-FS domainScope
-  // (no index build — a template needs no rebuild) and substitutes it into the
-  // template. The engine runs NO model here; the client's model consumes the
-  // returned text. This is the phase's LLM-free constraint, fence-enforced.
+  // A static playbook template: the engine runs no model; the client's does.
   // @spec AUTHOR-008
   server.registerPrompt(
     "author_requirements",
@@ -226,12 +164,9 @@ export function buildMcpServer(platformDir: string): McpServer {
       },
     },
     async ({ brief, domain }) => {
-      // Path-containment: normalize THEN validate against the real domain list
-      // before reading a charter — never hand an unvalidated (traversal-laden)
-      // arg to domainScope, which joins it into a SPEC.json path. Mirrors the
-      // spec_next_id tool's normalize-then-membership guard. An unknown domain
-      // degrades to a null charter (the "check placement" branch); a `../`-laden
-      // arg can never escape platformDir.
+      // The domain is normalized and checked against the enumerated keys before
+      // it is used to read a charter, so a traversal-laden value never escapes
+      // platformDir; an unknown domain degrades to a null charter.
       let resolvedDomain: string | undefined;
       let charter: string | null = null;
       if (domain) {

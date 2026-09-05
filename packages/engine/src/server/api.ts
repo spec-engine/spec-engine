@@ -1,50 +1,17 @@
 // packages/engine/src/server/api.ts
 //
-// Plan 05-03 / Task 2 — the engine-side `/api/*` Hono route module. Read
-// routes are thin handlers over the shared `Storage` interface: validate
-// query/param → call storage → c.json(rows). The webapp consumes these
-// routes via `app.request()` (Pitfall 6, in-process — no double
-// serialization, no port bind).
+// The engine-side `/api/*` Hono routes. Read routes are thin handlers over the
+// Storage handle; the write routes parse and guard the request, then call the
+// same operations the CLI calls. The webapp reaches these routes in-process via
+// `app.request()`: never replace that with a loopback fetch, which would
+// serialize twice inside one binary.
 //
-// Plan 21-01 / VAL-03: this module now also mounts the FIRST state-changing
-// routes — `POST /api/requirements` (create) and `PUT /api/requirements/:id`
-// (amend). They are NOT CSRF-inert; each is defended by (a) an Origin/Host
-// same-origin check (T-21-01 — a cross-origin browser POST is rejected 403;
-// the in-process `app.request` forward sends no Origin and is allowed), (b) a
-// required `application/json` content-type, and (c) a Content-Length / body
-// body-size cap (T-21-04). Every write goes through the SINGLE
-// `validateAndWrite()` seam in @spec-engine/shared (VAL-01 — never a bespoke
-// Bun.write of a spec path) and re-derives the index via `runIndex`
-// (cold-build invariant). The spec path is derived ONLY from the enumerated
-// safe domain key (listDomainKeys + normalizeDomainKey), never from raw input
-// (T-21-02).
-//
-// SERV-01 + SERV-03 land here. Plan 05-04 mounts SSR pages onto the same
-// Hono app; plan 05-05 composes the whole thing in `commands/serve.ts`.
-//
-// D-08 grep-fence: this file does NOT import bun:sqlite. DB access goes
-// exclusively through the Storage interface from @spec-engine/shared. CI greps
-// the bun:sqlite import statement across packages/engine/src and asserts
-// exactly one match (storage/sqlite.ts). server/* must stay clean — note
-// this comment intentionally avoids the literal import-statement pattern
-// so the grep-fence regex (`from\s+"bun:sqlite"`) stays single-line.
-//
-// Pitfall 6 (RESEARCH): SSR pages call these routes via Hono's
-// `app.request(path)` — same handler logic as tests, no Bun.serve loopback
-// round-trip. Document this for plan 05-04 maintainers: do NOT replace
-// with `fetch('http://127.0.0.1:port/api/...')` — that's a double-serialize
-// loop within the same binary.
-//
-// Pitfall 8 (RESEARCH): FTS5 grammar errors must NEVER leak SQLite
-// internals or unhandled 500s. The typed prefix `searchFts: FTS5 query
-// syntax error` (raised by storage.searchFts in sqlite.ts:457) is caught
-// and translated to a friendly 400 — defense against information disclosure
-// (T-5-03-03) and a usable client-side error shape.
+// Write routes are defended by an Origin/Host same-origin check, a required
+// `application/json` content type, and a body-size cap, and every write goes
+// through the operations layer, whose single write seam validates the whole
+// envelope.
 
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 import {
-  buildCoverageReport,
   DEFAULT_QUERY_LIMIT,
   FILES_MAX,
   featureDisabledMessage,
@@ -55,13 +22,15 @@ import {
   REQUIREMENT_STATUSES,
   type RequirementStatus,
   type Storage,
-  validateAndWrite,
 } from "@spec-engine/shared";
 import type { Context, Hono } from "hono";
-import { listDomainKeys, nextRequirementId, normalizeDomainKey } from "../authoring/domains";
-import { localToday } from "../authoring/edit";
+import { listDomainKeys, normalizeDomainKey } from "../authoring/domains";
 import { derivePlatformVersion } from "../indexer/discover";
 import { runIndex } from "../indexer/pipeline";
+import { type OpFailure, STATUS_FOR_REASON } from "../operations/_result";
+import { type AmendFields, amend } from "../operations/amend";
+import { mint } from "../operations/mint";
+import { coverageReport, propagation, query, reqTags } from "../operations/reads";
 import { renderProvenanceDecorated } from "../provenance/format";
 import { resolveAndCache } from "../provenance/resolve";
 import { renderRelations, sortRelations } from "../relations/format";
@@ -69,28 +38,26 @@ import { sortReqTags } from "../resolve/format";
 import { describeStorageError } from "../storage/errors";
 
 /**
- * Strict positive-integer shape from commands/query.ts:86-101 — mirrors
- * the CLI's WR-04 limit validation so the HTTP and CLI surfaces share a
- * single contract on `--limit` / `?limit=`. `Number.parseInt` is too
- * permissive (`"10abc"` → 10); this regex is the load-bearing check.
+ * Strict positive-integer shape, the same contract the CLI applies to
+ * `--limit`. `Number.parseInt` is too permissive (`"10abc"` → 10).
  */
 const POSITIVE_INT_RE = /^[1-9][0-9]*$/;
 
 // LIMIT_MAX / DEFAULT_QUERY_LIMIT (the `?limit=` ceiling + default, shared with
 // the CLI and MCP front-ends) are imported from @spec-engine/shared.
-// FILES_MAX (WR-02 iter1 / WR-01 iter3) is imported from @spec-engine/shared so
+// FILES_MAX is imported from @spec-engine/shared so
 // the CLI seam (commands/resolve.ts), HTTP seam (this file), and storage
 // seam (storage/sqlite.ts resolveByFiles defense-in-depth check) share a
 // single constant. A future bump only touches @spec-engine/shared.
 
 /**
- * Path-shape predicate for `/api/resolve` (WR-05). A traversal hazard is
+ * Path-shape predicate for `/api/resolve`. A traversal hazard is
  * `..` as a path SEGMENT (separated by `/` OR `\`), not as a substring.
  * Substring checks over-reject legitimate file names like
  * `my..thing/file.ts` or `version..1.2.ts`. Mirrored by the storage seam's
  * platform-relative invariant (T-5-03-02).
  *
- * WR-02 (iter2): also split on `\` so Windows-style traversal segments
+ * Also split on `\` so Windows-style traversal segments
  * (`..\..\etc\passwd`) are caught alongside POSIX (`../../etc/passwd`).
  * CI runs darwin-arm64 but the storage seam compares tag paths byte-for-byte,
  * so the cross-platform inconsistency would otherwise let a Windows caller
@@ -101,7 +68,7 @@ function hasTraversalSegment(p: string): boolean {
 }
 
 /**
- * WR-02 (iter2) cross-platform absolute-path predicate. The previous
+ * Cross-platform absolute-path predicate. The previous
  * `f.startsWith("/")` check only blocked POSIX absolutes; Windows callers
  * could submit `C:\Windows\...` or a UNC-style `\\server\share` and pass
  * the shape guard (then silently no-match the storage seam). Reject:
@@ -128,16 +95,7 @@ function resolveByReq(c: Context, storage: Storage, reqParam: string): Response 
   if (!ID_RE.test(reqParam)) {
     return c.json({ error: "req must be a requirement id (KEY-NNN)" }, 400);
   }
-  const rows = storage
-    .listTags({ req_id: reqParam })
-    .map(({ req_id, repo, file, line, kind, level }) => ({
-      req_id,
-      repo,
-      file,
-      line,
-      kind: kind as string,
-      level: (level ?? null) as string | null,
-    }));
+  const { rows } = reqTags(storage, reqParam);
   return c.json(sortReqTags(rows));
 }
 
@@ -149,7 +107,7 @@ function resolveByReq(c: Context, storage: Storage, reqParam: string): Response 
  * audiences: the SSR pages surface the hint as a readable error page rather
  * than choking on a non-JSON body, and agents driving the API get a named
  * cause they can act on. Anything the classifier does NOT recognize (our own
- * SQL bugs, plain Errors) re-throws unchanged — Pitfall 8, never silently
+ * SQL bugs, plain Errors) re-throws unchanged — never silently
  * swallow.
  *
  * This is a per-HANDLER wrapper, not a `try { await next() }` middleware,
@@ -173,15 +131,6 @@ function guarded<C extends Context>(
     }
   };
 }
-
-/**
- * The typed prefix `storage.searchFts` raises on FTS5 grammar errors
- * (sqlite.ts:457 — `searchFts: FTS5 query syntax error for ...`).
- * Operational errors (locked, OOM, disk I/O) DO NOT carry this prefix and
- * pass through unchanged — they surface as 500s so callers know it's not
- * a syntax problem. Pitfall 8 — never silently swallow.
- */
-const FTS_SYNTAX_ERROR_PREFIX = "searchFts: FTS5 query syntax error";
 
 /**
  * VAL-03 / T-21-04: upper bound on a write request body. A requirement
@@ -276,7 +225,7 @@ async function readJsonBody(
   } catch {
     return { ok: false, res: c.json({ error: "invalid request body" }, 400) };
   }
-  // WR-02: cap on BYTE length, not UTF-16 code units — a multibyte payload
+  // Cap on BYTE length, not UTF-16 code units — a multibyte payload
   // (e.g. emoji / CJK) must not slip past a 64 KiB ceiling measured in `.length`.
   if (Buffer.byteLength(raw, "utf8") > MAX_WRITE_BODY_BYTES) {
     return { ok: false, res: c.json({ error: "request body too large" }, 413) };
@@ -304,184 +253,30 @@ function toLivesIn(v: unknown): string[] {
   return [];
 }
 
-/**
- * Resolve the target domain's SPEC path from a create request body.
- *
- * T-21-02: the spec path is derived ONLY from the enumerated safe key —
- * normalizeDomainKey + membership in listDomainKeys(platformDir) — never
- * from raw user input joined onto the filesystem. Returns the resolved
- * `{ key, relFile, specPath }`, or the 400 (unknown key) / 404 (missing
- * domain file) rejection Response.
- */
-function resolveCreateTarget(
-  c: Context,
-  platformDir: string,
-  body: Record<string, unknown>,
-): { ok: true; key: string; relFile: string; specPath: string } | { ok: false; res: Response } {
-  const rawKey = typeof body.key === "string" ? body.key : "";
-  const key = normalizeDomainKey(rawKey);
-  if (key === "" || !listDomainKeys(platformDir).includes(key)) {
-    return { ok: false, res: c.json({ error: "unknown domain key" }, 400) };
+/** The amendable fields named in a PUT body, or null when it names none. */
+function amendFieldsFromBody(body: Record<string, unknown>): AmendFields | null {
+  const fields: AmendFields = {};
+  if (typeof body.statement === "string") fields.statement = body.statement;
+  if ("why" in body) fields.why = typeof body.why === "string" ? body.why : null;
+  if ("livesIn" in body) fields.livesIn = toLivesIn(body.livesIn);
+  return Object.keys(fields).length === 0 ? null : fields;
+}
+
+/** An operation's refusal as the HTTP response its reason maps to. */
+function failureResponse(c: Context, failure: OpFailure): Response {
+  if (failure.reason === "not_found") return c.json({ error: "not found" }, 404);
+  if (failure.reason === "invalid_domain_file") {
+    return failure.diagnostics
+      ? c.json({ error: "INVALID_DOMAIN_FILE", diagnostics: failure.diagnostics }, 400)
+      : c.json({ error: "INVALID_DOMAIN_FILE", detail: failure.detail }, 400);
   }
-  const relFile = `spec-engine/${key}/SPEC.json`;
-  const specPath = join(platformDir, "spec-engine", key, "SPEC.json");
-  if (!existsSync(specPath)) return { ok: false, res: c.json({ error: "not found" }, 404) };
-  return { ok: true, key, relFile, specPath };
+  return c.json({ error: failure.detail }, STATUS_FOR_REASON[failure.reason]);
 }
 
-/**
- * Build a new requirement record EXACTLY as commands/req.ts:303-314 does
- * (status "active", why||null, supersedes/supersededBy null, empty
- * relates/issues, changedAtVersion 1) so the CLI and webapp author
- * byte-identical envelopes. `statement`/`why` pass through raw so an
- * empty/whitespace statement reaches validateDomainFile and is rejected
- * there (VAL-02) rather than by a forked check here.
- */
-function buildRequirement(body: Record<string, unknown>, id: string): Record<string, unknown> {
-  return {
-    id,
-    status: "active",
-    statement: body.statement,
-    why: body.why ?? null,
-    supersedes: null,
-    supersededBy: null,
-    relates: [],
-    livesIn: toLivesIn(body.livesIn),
-    issues: [],
-  };
-}
-
-/**
- * Locate requirement `id` by scanning the enumerated domain keys for the one
- * whose SPEC.json actually contains it.
- *
- * T-21-02: the domain is resolved by scanning listDomainKeys(platformDir) and
- * JSON.parsing each SPEC.json — never a client-supplied path.
- *
- * 2.6: a malformed SPEC.json is reported as `{ kind: "invalid", relFile }`
- * rather than throwing a raw SyntaxError — the PUT handler maps it to the
- * structured `INVALID_DOMAIN_FILE` 400 used elsewhere, not an opaque 500.
- * `kind: "found"` carries the record; `kind: "not_found"` maps to 404.
- */
-type LocateResult =
-  | {
-      kind: "found";
-      specPath: string;
-      relFile: string;
-      domain: Record<string, unknown>;
-      req: Record<string, unknown>;
-    }
-  | { kind: "not_found" }
-  | { kind: "invalid"; relFile: string };
-
-async function locateRequirement(platformDir: string, id: string): Promise<LocateResult> {
-  for (const key of listDomainKeys(platformDir)) {
-    const specPath = join(platformDir, "spec-engine", key, "SPEC.json");
-    const relFile = `spec-engine/${key}/SPEC.json`;
-    let domain: Record<string, unknown>;
-    try {
-      domain = JSON.parse(await Bun.file(specPath).text()) as Record<string, unknown>;
-    } catch {
-      return { kind: "invalid", relFile };
-    }
-    const reqs = Array.isArray(domain.requirements) ? domain.requirements : [];
-    const req = reqs.find(
-      (r): r is Record<string, unknown> =>
-        typeof r === "object" && r !== null && (r as { id?: unknown }).id === id,
-    );
-    if (req) {
-      return { kind: "found", specPath, relFile, domain, req };
-    }
-  }
-  return { kind: "not_found" };
-}
-
-/**
- * Apply only the provided amend fields to `req` (amend.ts semantics — untouched
- * fields stay byte-identical). `statement` passes through raw so an empty value
- * is rejected by validateDomainFile (VAL-02); `why` collapses an absent value
- * to null; `livesIn` is normalized. Returns whether ANY field was applied so
- * the handler can emit the "nothing to amend" 400.
- */
-function applyAmendFields(req: Record<string, unknown>, body: Record<string, unknown>): boolean {
-  const hasStatement = typeof body.statement === "string";
-  const hasWhy = "why" in body;
-  const hasLives = "livesIn" in body;
-  if (!hasStatement && !hasWhy && !hasLives) return false;
-  if (hasStatement) req.statement = body.statement;
-  if (hasWhy) req.why = body.why ?? null;
-  if (hasLives) req.livesIn = toLivesIn(body.livesIn);
-  return true;
-}
-
-/** Whether the body names at least one amendable field — checked BEFORE the
- * amend gates so an empty body stays a cheap 400, never a reindex. */
-function hasAmendFields(body: Record<string, unknown>): boolean {
-  return typeof body.statement === "string" || "why" in body || "livesIn" in body;
-}
-
-/**
- * The same two-tier gate as `spec amend` (amend.ts), for the HTTP write plane.
- * Tier 1 (status): only Active/Draft entries amend — a Superseded/Retired entry
- * is history, and history is immutable over HTTP too. Tier 2 (bound tags,
- * REQ-015): an Active requirement any code implements/verifies is shipped —
- * refuse the in-place edit and direct to supersede. Reindexes first so the tag
- * answer reflects the current tree, never a warm index. Returns the 409
- * rejection, or null when the amend may proceed.
- */
-async function amendGateRejection(
-  c: Context,
-  platformDir: string,
-  storage: Storage,
-  id: string,
-  req: Record<string, unknown>,
-): Promise<Response | null> {
-  const rawStatus = typeof req.status === "string" ? req.status : "";
-  const statusLc = rawStatus.toLowerCase();
-  if (statusLc !== "active" && statusLc !== "draft") {
-    return c.json(
-      {
-        error: `${id} is ${rawStatus} — only Active/Draft entries amend (a superseded entry is history; supersede its successor instead)`,
-      },
-      409,
-    );
-  }
-  if (statusLc === "active") {
-    // @spec REQ-035
-    await runIndex({ platformDir, storage });
-    const bound = storage
-      .listTags({ req_id: id })
-      .filter((t) => t.kind === "implements" || t.kind === "verifies");
-    if (bound.length > 0) {
-      const site = bound[0];
-      return c.json(
-        {
-          error: `${id} is shipped — ${bound.length} code tag(s) bind it (e.g. ${site.file}:${site.line}). A bound requirement is immutable; supersede it with a successor instead of amending in place.`,
-        },
-        409,
-      );
-    }
-  }
-  return null;
-}
-
-/**
- * Run the FTS search and shape the `/api/query` response. Translates the typed
- * `searchFts: FTS5 query syntax error` prefix to a sanitized 400 — the message
- * keeps the FTS5 token so the webapp client can surface "wrap phrases in
- * double quotes" hints without leaking raw SQLite internals (T-5-03-03). Any
- * other storage error rethrows (500 via `guarded`, never a sanitized 400).
- */
+/** The `/api/query` response: hits, or a sanitized 400 on an FTS5 grammar error. */
 function searchFtsResponse(c: Context, storage: Storage, q: string, limit: number): Response {
-  try {
-    return c.json(storage.searchFts(q, limit));
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    if (msg.startsWith(FTS_SYNTAX_ERROR_PREFIX)) {
-      return c.json({ error: "FTS5 grammar error; wrap phrases in double quotes" }, 400);
-    }
-    throw e;
-  }
+  const r = query(storage, q, limit);
+  return r.ok ? c.json(r.hits) : c.json({ error: r.detail }, 400);
 }
 
 /**
@@ -528,7 +323,7 @@ function parseQueryLimit(
  * with `/` — as defense-in-depth alongside the storage seam's
  * platform-relative invariant (T-5-03-02).
  *
- * Phase 16 (PWEB-01): `platformDir` is an OPTIONAL third param (default
+ * `platformDir` is an OPTIONAL third param (default
  * `process.cwd()` so the existing 2-arg callers/tests are unchanged). It is
  * threaded ONLY into the `/api/provenance?resolve=1` decorated-text seam,
  * where `resolveAndCache` writes its tracker sidecar under
@@ -544,7 +339,7 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
   // No-store middleware — applies to every `/api/*` route below. Registered
   // before the handlers so the header is set even on 400/404 responses.
   //
-  // WR-06: set the header BEFORE next() so it survives a thrown handler
+  // Set the header BEFORE next() so it survives a thrown handler
   // (e.g. /api/query re-throwing a non-FTS5 error, or a prepared SELECT
   // throwing on a corrupted DB). Hono's default error handler emits a 500
   // — headers set before next() land on the eventual response regardless
@@ -590,7 +385,7 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
 
   app.get(
     "/api/report",
-    guarded((c) => c.json(buildCoverageReport(storage.coverageMatrix()))),
+    guarded((c) => c.json(coverageReport(storage).rows)),
   );
 
   // --- /api/requirements --------------------------------------------------
@@ -647,35 +442,28 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
       if (!parsed.ok) return parsed.res;
       const body = parsed.body;
 
-      const target = resolveCreateTarget(c, platformDir, body);
-      if (!target.ok) return target.res;
+      const key = normalizeDomainKey(typeof body.key === "string" ? body.key : "");
+      if (key === "" || !listDomainKeys(platformDir).includes(key)) {
+        return c.json({ error: "unknown domain key" }, 400);
+      }
 
-      // 2.6: serialize the read→next-id→write→reindex critical section so two
-      // concurrent POSTs can never read the same max seq and mint the same id.
+      // The read → next-id → write → reindex section is serialized so two
+      // concurrent POSTs can never mint the same id.
       return withWriteLock(async () => {
-        let domain: { requirements?: unknown[]; updated?: string; [k: string]: unknown };
-        try {
-          domain = JSON.parse(await Bun.file(target.specPath).text());
-        } catch {
-          return c.json(
-            { error: "INVALID_DOMAIN_FILE", detail: `${target.relFile} is not valid JSON` },
-            400,
-          );
-        }
-        const requirements = Array.isArray(domain.requirements) ? domain.requirements : [];
-        const id = await nextRequirementId(platformDir, target.key);
-        requirements.push(buildRequirement(body, id));
-        domain.requirements = requirements;
-        domain.updated = localToday();
-
-        const res = await validateAndWrite(target.specPath, domain, target.relFile);
-        if (!res.ok) {
-          // T-21-08: surface ONLY the structured diagnostics — never a raw
-          // exception / FS internals. Same object the CLI prints (VAL-02).
-          return c.json({ error: "INVALID_DOMAIN_FILE", diagnostics: res.diagnostics }, 400);
-        }
+        const r = await mint({
+          platformDir,
+          key,
+          statement: typeof body.statement === "string" ? body.statement : "",
+          why: typeof body.why === "string" ? body.why : "",
+          livesIn: toLivesIn(body.livesIn),
+          issue:
+            typeof body.issue === "string" && body.issue.trim() !== ""
+              ? body.issue.trim()
+              : undefined,
+        });
+        if (!r.ok) return failureResponse(c, r);
         await runIndex({ platformDir, storage });
-        return c.json({ ok: true, id }, 201);
+        return c.json({ ok: true, id: r.id }, 201);
       });
     }),
   );
@@ -702,34 +490,16 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
 
       const id = c.req.param("id") ?? "";
 
-      // 2.6: serialize with the create path — locate → mutate → write → reindex
-      // must not interleave with a concurrent create's next-id read.
       return withWriteLock(async () => {
-        const found = await locateRequirement(platformDir, id);
-        if (found.kind === "not_found") return c.json({ error: "not found" }, 404);
-        if (found.kind === "invalid") {
-          // 2.6: a malformed SPEC.json is the structured INVALID_DOMAIN_FILE
-          // 400 used elsewhere, never an opaque 500.
-          return c.json(
-            { error: "INVALID_DOMAIN_FILE", detail: `${found.relFile} is not valid JSON` },
-            400,
-          );
-        }
-
-        if (!hasAmendFields(body)) {
+        const fields = amendFieldsFromBody(body);
+        if (fields === null) {
           return c.json({ error: "nothing to amend — provide statement, why, or livesIn" }, 400);
         }
-
-        const gateReject = await amendGateRejection(c, platformDir, storage, id, found.req);
-        if (gateReject) return gateReject;
-
-        applyAmendFields(found.req, body);
-        found.domain.updated = localToday();
-
-        const res = await validateAndWrite(found.specPath, found.domain, found.relFile);
-        if (!res.ok) {
-          return c.json({ error: "INVALID_DOMAIN_FILE", diagnostics: res.diagnostics }, 400);
-        }
+        const r = await amend({ platformDir, id, fields }, async (reqId) => {
+          await runIndex({ platformDir, storage });
+          return storage.listTags({ req_id: reqId });
+        });
+        if (!r.ok) return failureResponse(c, r);
         await runIndex({ platformDir, storage });
         return c.json({ ok: true, id }, 200);
       });
@@ -740,7 +510,7 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
 
   app.get(
     "/api/propagation/:id",
-    guarded((c) => c.json(storage.propagationFor(c.req.param("id") ?? ""))),
+    guarded((c) => c.json(propagation(storage, c.req.param("id") ?? "").rows)),
   );
 
   // --- /api/query --------------------------------------------------------
@@ -864,7 +634,7 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
         return c.json({ error: "files query is required (one or more)" }, 400);
       }
 
-      // WR-02: cap the array length so a `?files=…&files=…` of arbitrary
+      // Cap the array length so a `?files=…&files=…` of arbitrary
       // size cannot blow past SQLITE_MAX_VARIABLE_NUMBER (32766) downstream
       // in storage.resolveByFiles. 1000 mirrors LIMIT_MAX for /api/query and
       // is more than any real platform-scale call needs. Same cap is
@@ -881,7 +651,7 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
       // never match a real tag, but rejecting them up front gives the caller
       // a clear error instead of a silent empty result.
       //
-      // WR-05: previously this was `f.includes("..")`, which over-rejected
+      // Previously this was `f.includes("..")`, which over-rejected
       // legitimate file names like `my..thing/file.ts` or `version..1.2.ts`.
       // The actual traversal hazard is `..` as a path SEGMENT.
       for (const f of files) {

@@ -17,13 +17,13 @@
 //     exit 2. Successful execution lets citty fall through to exit 0
 //     (matches commands/query.ts and commands/propagation.ts).
 //   - Multi-file inputs: citty's `type: "positional"` binds ONE slot per
-//     declared name (Pitfall 2 in 05-RESEARCH). We collect the full
+//     declared name. We collect the full
 //     positional set out of `rawArgs`, stripping the `--out` /
 //     `--platformDir` value-bearing flags and the `--json` boolean.
 //   - Comma-split fallback: a single positional containing `,` is split
 //     on comma so `spec resolve a.ts,b.ts` matches `spec resolve a.ts
 //     b.ts`. Documented in --help.
-//   - Path normalization (Pitfall 1): `tags.file` is platform-relative
+//   - Path normalization: `tags.file` is platform-relative
 //     (e.g. `api/src/renew.ts`). Every user input is normalized via
 //     `relative(platformDir, resolve(platformDir, input))`; any input
 //     whose normalized form starts with `..` is rejected with exit 2 —
@@ -48,6 +48,7 @@ import { defineCommand } from "citty";
 import { EXIT, isExistingDir, OUT_HELP, resolveDbPath } from "../constants";
 import { formatNoRequirementsIndexed } from "../indexer/discover";
 import { maybePromptForOnboarding } from "../onboarding/prompt";
+import { reqTags } from "../operations/reads";
 import { renderReqTags, renderResolve } from "../resolve/format";
 import { assertContainedPath, withReadStorage } from "./_shared";
 
@@ -60,7 +61,7 @@ import { assertContainedPath, withReadStorage } from "./_shared";
 // would land as a phantom file positional on the real argv.
 const VALUE_FLAGS = new Set(["--out", "-o", "--platformDir", "--req"]);
 
-// FILES_MAX (WR-02 iter1 / WR-01 iter3): the cap on file inputs is shared
+// FILES_MAX: the cap on file inputs is shared
 // with server/api.ts and storage/sqlite.ts via @spec-engine/shared. A future bump
 // (e.g. 1000 → 5000) only touches @spec-engine/shared so all three layers move
 // in lockstep.
@@ -144,7 +145,7 @@ function splitFilesAndPlatformDir(
   // `discoverRepos`). The spec-engine check disambiguates against
   // unrelated directories that may exist at the same path under cwd.
   //
-  // WR-04: if the last positional resolves to a directory that does NOT
+  // If the last positional resolves to a directory that does NOT
   // contain spec-engine/, the previous behaviour silently misclassified
   // it as a file — the SQL IN-clause then returned [] and the user saw
   // an empty result with no diagnostic. Emit a stderr warning in that
@@ -183,7 +184,7 @@ function splitFilesAndPlatformDir(
 }
 
 /**
- * Split every value on `,` and trim each piece; drop empties (WR-03). The
+ * Split every value on `,` and trim each piece; drop empties. The
  * one and only place comma-split lives. Before this refactor three copies
  * of this logic existed across `collectPositionalFiles` and the run
  * handler — keeping them in sync was a known maintenance hazard.
@@ -227,21 +228,9 @@ async function runReverseQuery(opts: ReverseQueryOptions): Promise<void> {
   await maybePromptForOnboarding({ platformDir, args: { noPrompt } });
 
   await withReadStorage({ platformDir, dbPath, fresh }, (storage) => {
-    // Strip the AUTOINCREMENT id — an index implementation detail, not part
-    // of the CLI contract.
-    const rows = storage
-      .listTags({ req_id: reqId })
-      .map(({ req_id, repo, file, line, kind, level }) => ({
-        req_id,
-        repo,
-        file,
-        line,
-        kind: kind as string,
-        level: (level ?? null) as string | null,
-      }));
+    const { rows, known } = reqTags(storage, reqId);
     if (rows.length === 0) {
-      // Guidance on stderr (stdout stays machine-parseable: `[]` / "").
-      if (storage.getRequirement(reqId) === null) {
+      if (!known) {
         console.error(`spec resolve: no requirement ${reqId} in the index`);
       } else {
         console.error(`spec resolve: ${reqId} has no tags in any member repo`);
@@ -282,7 +271,7 @@ function resolveFileArgs(
   // CR-01 (iter3): the iter2 `sawExplicitPlatformDirFlag` gate broke the
   // in-process test harness (6/10 cli-resolve-unit tests failed) because
   // the harness sets `args.platformDir` directly without threading a
-  // literal `--platformDir=…` token through rawArgs. The original WR-01
+  // literal `--platformDir=…` token through rawArgs. The original
   // (iter2) concern — citty greedily binding positional slot 1 to
   // `args.platformDir` for `spec resolve a.ts b.ts` — is detectable by
   // a different signal: in that misbinding case, `args.platformDir` IS
@@ -303,7 +292,7 @@ function resolveFileArgs(
         : undefined;
   const split = splitFilesAndPlatformDir(positionals, fallbackPD);
 
-  // WR-03: single argv walker (extractPositionals) → split files vs
+  // Single argv walker (extractPositionals) → split files vs
   // platformDir → commaSplit once. The args.files fallback only kicks
   // in when the rawArgs path is empty (in-process test harness passes
   // args directly without rawArgs).
@@ -373,7 +362,7 @@ async function dispatchReverseQuery(
 }
 
 /**
- * Normalize each input to platform-relative (Pitfall 1: tags.file is
+ * Normalize each input to platform-relative (tags.file is
  * platform-relative, e.g. `api/src/renew.ts`). Absolute paths get re-rooted
  * against platformDir; paths above platformDir are rejected (V12-style guard
  * on file inputs — they would never match the IN-clause and would silently
@@ -383,7 +372,7 @@ function normalizeFileInputs(files: string[], platformDir: string): string[] {
   const normalized: string[] = [];
   for (const input of files) {
     const rel = relative(platformDir, resolve(platformDir, input));
-    // WR-03 (iter2): compare the first path SEGMENT against `..` instead
+    // Compare the first path SEGMENT against `..` instead
     // of substring `rel.startsWith("..")` — the same fix iter1 applied to
     // /api/resolve (api.ts hasTraversalSegment). Substring rejection
     // over-rejects legitimate filenames like `..foo.ts` that resolve under
@@ -441,7 +430,7 @@ export const resolveCommand = defineCommand({
     },
   },
   async run({ args, rawArgs }) {
-    // Re-split rawArgs into (files, platformDir), apply the CR-01/WR-01
+    // Re-split rawArgs into (files, platformDir), apply the
     // fallback, and comma-split into the final file list (all inside
     // resolveFileArgs); the returned positionals/rawPD feed the --req path.
     const resolved = resolveFileArgs(args, rawArgs);
@@ -464,7 +453,7 @@ export const resolveCommand = defineCommand({
       return;
     }
 
-    // WR-02: cap the files array length so a misuse like `spec resolve
+    // Cap the files array length so a misuse like `spec resolve
     // $(huge-shell-expansion)` cannot blow past SQLITE_MAX_VARIABLE_NUMBER
     // (32766) downstream in storage.resolveByFiles. Mirrors the same cap
     // enforced at the HTTP seam (server/api.ts FILES_MAX).
@@ -478,14 +467,14 @@ export const resolveCommand = defineCommand({
 
     const platformDir = resolve(resolved.platformDir ?? process.cwd());
     const outArg = args.out as string | undefined;
-    // WR-01: resolve --out relative to platformDir (NOT cwd) — mirrors
+    // Resolve --out relative to platformDir (NOT cwd) — mirrors
     // commands/check.ts, commands/map.ts, commands/propagation.ts, and
     // commands/query.ts.
     const dbPath = resolveDbPath(platformDir, outArg);
 
     // V12 path-containment guard — mirrors commands/query.ts:113-121.
     //
-    // WR-03 (iter3): the guard is unconditional. The default-path branch
+    // The guard is unconditional. The default-path branch
     // (`join(platformDir, ".spec-engine", "index.sqlite")`) is trivially contained
     // today, but a future refactor that changes the default to e.g.
     // `XDG_CACHE_HOME/spec/<hash>.sqlite` would silently leak the
@@ -498,8 +487,8 @@ export const resolveCommand = defineCommand({
     // INIT-13 pre-flight: interactive prompt for skipped siblings. Runs
     // BEFORE mkdirSync(.spec-engine) so the exit-1 n-path leaves no artefacts.
     // Suppressed in non-TTY / --no-prompt contexts; falls through
-    // to NO_SPEC_CONFIG warning per Phase 8 in those cases.
-    // WR-01: only `check` registers `--ci`, so `args.ci` would be undefined
+    // to NO_SPEC_CONFIG warning in those cases.
+    // Only `check` registers `--ci`, so `args.ci` would be undefined
     // here — drop the dead plumbing rather than forward `undefined`.
     await maybePromptForOnboarding({
       platformDir,

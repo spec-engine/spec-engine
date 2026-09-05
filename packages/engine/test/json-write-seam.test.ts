@@ -23,8 +23,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { validateAndWrite, validateDomainFile } from "@spec-engine/shared";
 import { nextRequirementId, scaffoldDomainObject } from "../src/authoring/domains";
-import { appendEntry } from "../src/commands/req";
 import { runIndex } from "../src/indexer/pipeline";
+import { mint } from "../src/operations/mint";
 import { openStorage } from "../src/storage/sqlite";
 import { specTag } from "./fixtures/cloneFixture";
 
@@ -65,18 +65,23 @@ async function scaffoldPlatform(): Promise<void> {
 }
 
 // @spec SCHM-015
-describe("VAL-01 round-trip — appendEntry writes JSON the index reads back (STOR-01)", () => {
+describe("VAL-01 round-trip — mint writes JSON the index reads back (STOR-01)", () => {
   test("append → re-read shows the requirement with status active", async () => {
     await scaffoldPlatform();
     const id = await nextRequirementId(tmp, "BILLING");
     expect(id).toBe("BILLING-001");
 
-    const relFile = await appendEntry(tmp, "BILLING", id, {
-      requirement: "Charge renewals at the current plan price",
+    const minted = await mint({
+      platformDir: tmp,
+      key: "BILLING",
+      statement: "Charge renewals at the current plan price",
       why: "Revenue correctness",
-      lives: "@api/src/renew.ts",
+      livesIn: ["@api/src/renew.ts"],
     });
-    expect(relFile).toBe("spec-engine/BILLING/SPEC.json");
+    expect(minted.ok).toBe(true);
+    if (!minted.ok) return;
+    expect(minted.id).toBe(id);
+    expect(minted.file).toBe("spec-engine/BILLING/SPEC.json");
 
     const domain = JSON.parse(
       await Bun.file(join(tmp, "spec-engine", "BILLING", "SPEC.json")).text(),
@@ -95,11 +100,14 @@ describe("VAL-01 round-trip — appendEntry writes JSON the index reads back (ST
   test("the written SPEC.json indexes to the authored requirement as an Active row", async () => {
     await scaffoldPlatform();
     const id = await nextRequirementId(tmp, "BILLING");
-    await appendEntry(tmp, "BILLING", id, {
-      requirement: "Charge renewals at the current plan price",
+    const minted = await mint({
+      platformDir: tmp,
+      key: "BILLING",
+      statement: "Charge renewals at the current plan price",
       why: "Revenue correctness",
-      lives: "",
+      livesIn: [],
     });
+    expect(minted.ok && minted.id === id).toBe(true);
 
     const dbPath = join(tmp, "index.sqlite");
     const s = openStorage(dbPath);
@@ -152,7 +160,7 @@ describe("VAL-02 parity — author-time reject == index-time reject (byte-identi
     expect(existsSync(writePath)).toBe(false);
   });
 
-  test("appendEntry over a domain reduced to invalid rejects at write time (no partial write)", async () => {
+  test("a domain reduced to invalid rejects at write time (no partial write)", async () => {
     // A domain whose sole requirement carries an empty statement would fail the
     // schema; validateAndWrite must reject rather than persist a broken file.
     const sourceFile = "spec-engine/BILLING/SPEC.json";

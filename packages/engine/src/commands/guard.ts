@@ -29,7 +29,6 @@
 // D-08 grep-fence: no bun:sqlite import — worktree tag counts flow through the
 // Storage interface via withReadStorage / collectFacts.
 
-import { resolve } from "node:path";
 import { defineCommand } from "citty";
 import { gitRefResolves } from "../base/gitBase";
 import { defaultIndexPath, EXIT } from "../constants";
@@ -37,6 +36,7 @@ import { collectFacts } from "../guard/collect";
 import { renderGuard } from "../guard/format";
 import type { Loss } from "../guard/losses";
 import { classifyLosses } from "../guard/losses";
+import { platformDirArg, resolvePlatformDir } from "./_args";
 import { withReadStorage } from "./_shared";
 
 export const guardCommand = defineCommand({
@@ -46,11 +46,7 @@ export const guardCommand = defineCommand({
       "Loss detection: diff the requirement derivation at a git ref (default HEAD) against the working tree and block requirements about to be steamrolled.",
   },
   args: {
-    platformDir: {
-      type: "positional",
-      required: false,
-      description: "Platform directory containing spec-engine/ (default: cwd)",
-    },
+    platformDir: platformDirArg,
     against: {
       type: "string",
       description: "Git ref to diff the working tree against (default: HEAD)",
@@ -61,7 +57,7 @@ export const guardCommand = defineCommand({
     },
   },
   async run({ args }) {
-    const platformDir = resolve((args.platformDir as string | undefined) ?? process.cwd());
+    const platformDir = resolvePlatformDir(args);
     const ref = (args.against as string | undefined) ?? "HEAD";
     const jsonMode = Boolean(args.json);
 

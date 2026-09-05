@@ -1,36 +1,22 @@
 // packages/engine/src/commands/_shared.ts
 //
-// Leaf helpers shared by the command layer. Each was previously copy-pasted
-// across ~10-15 subcommands (see the DRY audit) — every `query.ts` etc. that
-// says "mirrors commands/map.ts / propagation.ts / check.ts" collapses onto
-// these. Extracting them also centralizes two invariants that were
-// correct-by-copy-paste and at risk of silent drift: the V12 path-containment
-// guard and the cold-reset primitive.
+// The CLI adapters over the operations layer's index helper: print what an
+// operation returns as warnings, and map the errors it lets propagate onto
+// the exit-code contract. Nothing below decides behavior.
 
-import { existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { NotASpecPlatformError, type Storage, type Tag } from "@spec-engine/shared";
-import { defaultIndexPath, EXIT, isContainedPath } from "../constants";
-import { assertSpecPlatform, formatNotASpecPlatform } from "../indexer/discover";
-import { runIndex } from "../indexer/pipeline";
+import type { Storage, Tag } from "@spec-engine/shared";
+import { NotASpecPlatformError } from "@spec-engine/shared";
+import { EXIT, isContainedPath } from "../constants";
+import { formatNotASpecPlatform } from "../indexer/discover";
+import { withIndex } from "../operations/_index";
+import type { OpFailure, OpWarning } from "../operations/_result";
 import { describeStorageError, formatStorageUnavailable } from "../storage/errors";
-import { coldResetDb, openStorage } from "../storage/sqlite";
 
-// coldResetDb is the "never trust a warm index" primitive shared by the
-// command layer AND server/mcp.ts — an IN-PLACE wipe (inode-preserving, so a
-// live `spec serve` reader never ghosts onto an unlinked file) that lives in
-// ../storage/sqlite per D-08. Re-exported here so command files pick it up
-// alongside the CLI-exiting helpers below.
 export { coldResetDb } from "../storage/sqlite";
 
 /**
- * V12 path-containment guard: a user-supplied `--out` / `--results` path must
- * resolve to somewhere inside `platformDir`, so a hostile or accidental
- * `--out ../../x.sqlite` cannot write outside the platform tree. On violation,
- * prints the command-specific `subject` and exits 2.
- *
- * `subject` is the message prefix through the flag name, e.g.
- * `"spec query: --out"` → `"spec query: --out path must be inside platformDir …"`.
+ * A user-supplied `--out` / `--results` path must resolve inside
+ * `platformDir`; otherwise print `subject` and exit 2.
  */
 export function assertContainedPath(resolved: string, platformDir: string, subject: string): void {
   if (!isContainedPath(resolved, platformDir)) {
@@ -39,13 +25,7 @@ export function assertContainedPath(resolved: string, platformDir: string, subje
   }
 }
 
-/**
- * Standard read-command handling for a caught `NotASpecPlatformError`: emit
- * the friendly, actionable message and exit 2 (usage-style) rather than
- * letting the raw stack trace escape. Any other error is rethrown unchanged,
- * so callers with richer catch logic (e.g. index.ts's FAILED→exit-1 branch)
- * should NOT route through this helper. Returns `never`.
- */
+/** A caught `NotASpecPlatformError` becomes the friendly message and exit 2; anything else rethrows. */
 export function handleNotAPlatform(e: unknown): never {
   if (e instanceof NotASpecPlatformError) {
     console.error(formatNotASpecPlatform(e.platformDir));
@@ -54,15 +34,7 @@ export function handleNotAPlatform(e: unknown): never {
   throw e;
 }
 
-/**
- * Standard handling for a caught OPERATIONAL SQLite failure (storage/errors.ts
- * classifier): emit the actionable one-liner — which names the sandbox
- * file-lock cause, contention, or cache corruption — and exit 1. A
- * non-storage error falls through (returns void) so the caller can continue
- * to its other handlers (e.g. handleNotAPlatform). Runs BEFORE any generic
- * "failed" wrapper so agents get a named cause instead of a raw SQLiteError
- * stack.
- */
+/** An operational SQLite failure becomes its actionable one-liner and exit 1; anything else falls through. */
 export function handleStorageUnavailable(e: unknown, dbPath: string): void {
   const info = describeStorageError(e);
   if (info === null) return;
@@ -70,32 +42,26 @@ export function handleStorageUnavailable(e: unknown, dbPath: string): void {
   process.exit(EXIT.FAILURE);
 }
 
-/**
- * The read-command storage scaffold, shared by map / query / propagation /
- * relations / provenance / resolve. Owns the whole lifecycle so each command
- * body shrinks to "resolve args → render":
- *
- *   1. assertSpecPlatform pre-flight BEFORE any FS write — a non-platform dir
- *      throws → friendly message → exit 2, leaving NO .spec-engine/ artifact
- *      (CLAUDE.md: the derived DB owns nothing; a failed build leaves nothing).
- *   2. mkdir the index dir; `fresh` opts into the cold path (in-place reset).
- *   3. Open, then transparently re-index when the DB was missing OR holds zero
- *      repos. RED-16 / D-12: an indexed platform always has ≥1 repo row (the
- *      canonical), so an empty repos table unambiguously means "no index here"
- *      — this covers the silent-rebuild case where openStorage wiped a DB whose
- *      _schema_version predated a SCHEMA_VERSION bump. Without the second
- *      disjunct, read commands emit empty output (exit 0) until a manual
- *      `spec index`.
- *   4. Run `fn` with the open storage, then close it in a `finally` (Bun's
- *      process.exit skips finally, so a callback that exits mid-read is
- *      responsible for its own close — matching the prior per-command code).
- *
- * A `NotASpecPlatformError` from step 1 (or anywhere in `fn`) is routed to
- * {@link handleNotAPlatform}: friendly exit 2 for not-a-platform, rethrow
- * otherwise.
- */
-/** Inputs to {@link withReadStorage}: where the platform + its index live, and
- *  whether to force a cold rebuild first. */
+/** Print an operation's warnings to stderr with the prefix each kind has always carried. */
+export function printWarnings(cmdName: string, warnings: OpWarning[] | undefined): void {
+  for (const w of warnings ?? []) {
+    if (w.kind === "ref") console.error(`spec req: warning — ${w.text}`);
+    else if (w.kind === "grammar") console.error(`${cmdName}: ${w.text}`);
+    else console.error(w.text);
+  }
+}
+
+/** Print an operation's refusal (its warnings, then its detail or diagnostics) and exit 2. */
+export function exitOnFailure(cmdName: string, failure: OpFailure): never {
+  printWarnings(cmdName, failure.warnings);
+  if (failure.diagnostics && failure.diagnostics.length > 0) {
+    for (const diag of failure.diagnostics) console.error(`${cmdName}: ${diag.detail}`);
+  } else {
+    console.error(`${cmdName}: ${failure.detail}`);
+  }
+  process.exit(EXIT.USAGE);
+}
+
 export interface ReadStorageOptions {
   platformDir: string;
   dbPath: string;
@@ -103,79 +69,28 @@ export interface ReadStorageOptions {
 }
 
 /**
- * Cold-reindex the platform and return every tag site bound to one requirement
- * id. The "never trust a warm index" cousin of {@link withReadStorage} for the
- * LIFECYCLE commands (supersede / amend): canonical truth is about to change or
- * be gated on, so the answer must reflect the current tree — a cold reset +
- * fresh `runIndex` before the single `listTags` query. D-08: index access goes
- * through openStorage, never a direct bun:sqlite import.
+ * The read-command scaffold: open the index (building it when missing, or
+ * cold when `fresh`), print the staleness notice, run `fn`, close. A
+ * non-platform directory exits 2 with the friendly message; a sandboxed or
+ * locked database exits 1 with its hint.
  */
-export async function reindexAndListTags(platformDir: string, reqId: string): Promise<Tag[]> {
-  const dbPath = defaultIndexPath(platformDir);
-  coldResetDb(dbPath);
-  const storage = openStorage(dbPath);
-  try {
-    await runIndex({ platformDir, storage });
-    return storage.listTags({ req_id: reqId });
-  } finally {
-    storage.close();
-  }
-}
-
-/**
- * Warn (stderr) when a warm index predates a change to any canonical spec
- * file — the common way a read command silently serves old numbers. Only the
- * spec-engine/ SPEC.json mtimes are compared (walking every member's code for
- * tag edits would cost more than the reindex itself), so a tag-only change can
- * still go undetected — hence "may be stale", and --fresh as the certain path.
- * Never throws; a stat failure just skips the warning.
- */
-// @spec INDX-006
-function warnIfIndexStale(platformDir: string, dbPath: string): void {
-  try {
-    const dbMtime = statSync(dbPath).mtimeMs;
-    const specsDir = join(platformDir, "spec-engine");
-    for (const entry of readdirSync(specsDir, { withFileTypes: true })) {
-      if (!entry.isDirectory()) continue;
-      const specPath = join(specsDir, entry.name, "SPEC.json");
-      if (!existsSync(specPath)) continue;
-      if (statSync(specPath).mtimeMs > dbMtime) {
-        console.error(
-          `spec: warning — spec-engine/${entry.name}/SPEC.json changed after the index was built; results may be stale. Pass --fresh to rebuild.`,
-        );
-        return;
-      }
-    }
-  } catch {
-    // Best-effort: staleness detection must never break a read command.
-  }
-}
-
 export async function withReadStorage(
   opts: ReadStorageOptions,
   fn: (storage: Storage) => void | Promise<void>,
 ): Promise<void> {
   const { platformDir, dbPath, fresh } = opts;
   try {
-    assertSpecPlatform(platformDir);
-    mkdirSync(dirname(dbPath), { recursive: true });
-    if (fresh) coldResetDb(dbPath);
-    const needsIndex = !existsSync(dbPath);
-    const storage = openStorage(dbPath);
-    try {
-      if (needsIndex || storage.listRepos().length === 0) {
-        await runIndex({ platformDir, storage });
-      } else {
-        warnIfIndexStale(platformDir, dbPath);
-      }
-      await fn(storage);
-    } finally {
-      storage.close();
-    }
+    await withIndex({ platformDir, dbPath, build: fresh ? "fresh" : "missing" }, async (h) => {
+      for (const w of h.warnings) console.error(w);
+      await fn(h.storage);
+    });
   } catch (e) {
-    // Operational storage failure (sandboxed locks / contention / corrupt
-    // cache) → actionable message + exit 1; falls through when not one.
     handleStorageUnavailable(e, dbPath);
     handleNotAPlatform(e);
   }
+}
+
+/** Cold-reindex the platform and return every tag site bound to one requirement id. */
+export async function reindexAndListTags(platformDir: string, reqId: string): Promise<Tag[]> {
+  return withIndex({ platformDir, build: "fresh" }, (h) => h.storage.listTags({ req_id: reqId }));
 }
