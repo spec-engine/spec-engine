@@ -41,7 +41,22 @@ Rules:
 - **Keep the planted defects in `fixtures/`.** They exist so `spec check` has
   something to catch.
 - **Exactly one `bun:sqlite` import**, in `packages/engine/src/storage/sqlite.ts`.
-  Enforced by `fence_d08_engine_internal` in `scripts/arch-fences.sh`.
+  Enforced by `fence_d08_engine_internal` in `scripts/arch-fences.sh` (SCHM-025).
+- **A test authors its platform through the operations.** `TestPlatform` in
+  `packages/engine/src/testing/platform.ts` scaffolds domains, mints,
+  supersedes, deprecates, moves, mints terms, and writes member configs by
+  calling `operations/`, so a fixture is what a `spec` command would have
+  written. A state the engine refuses to author (a removed entry, an
+  unapproved status flip, a forward `supersedes` pointer, a grammar declared
+  after the fact) is planted with `plantEdit` in `src/testing/plant.ts`, which
+  still writes through `validateAndWrite`. A schema-invalid file lives under
+  `src/testing/fixtures/`. Nothing else writes a `SPEC.json` by hand: the
+  SCHM-026 fence scans every source file and every test.
+- **Every fence is a requirement.** Each `fence_*` function in
+  `scripts/arch-fences.sh` carries the `@spec` tag of the requirement it
+  enforces, and its `run` label starts with that id. `scripts/` is a member
+  (`scripts/spec-engine.member.json`) so those tags index; the scanner reads
+  `.sh` files as code.
 - **The planted-fixture diagnostic baseline is copied in five places**: four
   smokes in `.github/workflows/ci.yml` and
   `packages/engine/src/commands/check.ci.test.ts`.
@@ -54,8 +69,8 @@ Rules:
   (`architecture-fences`, `corpus-hygiene`, `taxonomy`, `npm-package`, the
   webapp import fence) lives in `packages/<pkg>/test/`. The tag scanner
   classifies a file as a test by the `.test.` substring, so a co-located tag
-  still verifies; the fences and the marker ratchet skip `*.test.ts` and
-  `src/testing/`.
+  still verifies; the engine-internal fences and the marker ratchet skip
+  `*.test.ts` and `src/testing/`, the write-seam fence does not.
 - **A fence runs inside `bun test` under a 5-second budget**
   (`architecture-fences.test.ts` spawns the whole script). Keep each fence to
   one process.

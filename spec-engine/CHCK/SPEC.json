@@ -1,7 +1,7 @@
 {
   "key": "CHCK",
   "owner": null,
-  "updated": "2026-08-16",
+  "updated": "2026-09-05",
   "scope": "spec check: the diagnostic codes, their severities, the --ci cold-rebuild gate, which severity exits 1, and the spec glossary round-trip that GLOSSARY_DRIFT enforces. Belongs here: diagnostic codes and severities; the --ci gate; the exit-1 contract. Does not belong here: member discovery (INIT). Boundary case: NO_SPEC_CONFIG is emitted by discovery, but its severity is CHCK's.",
   "grammar": "ears",
   "requirements": [
@@ -477,6 +477,21 @@
           "id": "RED-169"
         }
       ],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-030",
+      "status": "active",
+      "statement": "The AGENTS.md spec check reference shall list every diagnostic code the engine can emit and no other, so an agent reading the reference sees the same code set the command produces.",
+      "why": "An agent branching on a code missing from the reference, or on one that no longer exists, misreads the gate.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "scripts/arch-fences.sh"
+      ],
+      "issues": [],
       "aliases": [],
       "cites": []
     }
