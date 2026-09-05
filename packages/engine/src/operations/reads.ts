@@ -58,8 +58,8 @@ export function toReqTagRows(tags: ReturnType<Storage["listTags"]>): ReqTagRow[]
     repo,
     file,
     line,
-    kind: kind as string,
-    level: (level ?? null) as string | null,
+    kind,
+    level: level ?? null,
   }));
 }
 

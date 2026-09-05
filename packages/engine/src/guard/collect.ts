@@ -45,7 +45,7 @@ function isSpecFile(path: string): boolean {
  *  different scanner) from being miscounted as implementations. */
 function isCodeFile(path: string): boolean {
   if (isSpecFile(path) || isIgnored(path)) return false;
-  const ext = path.includes(".") ? (path.split(".").pop() as string) : "";
+  const ext = path.includes(".") ? (path.split(".").pop() ?? "") : "";
   return CODE_EXTS.has(ext);
 }
 

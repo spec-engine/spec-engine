@@ -34,7 +34,7 @@
 // The prompt helper is storage-free (discoverRepos is too).
 
 import { createInterface } from "node:readline";
-import { initCommand } from "../commands/init";
+import { runInit } from "../commands/init";
 import { discoverRepos } from "../indexer/discover";
 
 export interface PromptArgs {
@@ -82,9 +82,7 @@ export async function maybePromptForOnboarding(opts: MaybePromptOpts): Promise<v
       // process.exit(2) paths propagate cleanly: a refused sibling
       // terminates the outer command, which is the desired behavior
       // (silently masking would hide a real error).
-      type RunFn = (ctx: { args: Record<string, unknown>; rawArgs: string[] }) => Promise<void>;
-      const initRun = (initCommand as unknown as { run: RunFn }).run;
-      await initRun({ args: { repo: s.path }, rawArgs: [] });
+      await runInit({ repo: s.path });
       continue;
     }
     // n / empty / EOF → exit 1 with the documented INIT-13 message.

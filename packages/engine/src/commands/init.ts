@@ -55,6 +55,60 @@ function resolvePinText(resolved: MemberPin, json: boolean): { pin: string; sour
   return { pin: resolved.pin, source: "fallback @1" };
 }
 
+/** The `spec init` flow over parsed arguments. The onboarding prompt runs it inline for a sibling. */
+export async function runInit(args: {
+  repo?: string | undefined;
+  specs?: string | undefined;
+  force?: boolean | undefined;
+  json?: boolean | undefined;
+}): Promise<void> {
+  const json = Boolean(args.json);
+  const resolved = await resolveMemberPin({
+    repoDir: resolveRepoArg(args.repo),
+    override: typeof args.specs === "string" ? args.specs : undefined,
+  });
+  if (!resolved.ok) exitOnFailure("spec init", resolved);
+  const { pin, source } = resolvePinText(resolved, json);
+
+  const written = await writeMemberConfig({
+    canonical: resolved.canonical,
+    pin,
+    force: Boolean(args.force),
+  });
+  if (!written.ok) exitOnFailure("spec init", written);
+
+  if (written.action === "already-configured") {
+    if (json) {
+      console.log(
+        JSON.stringify({
+          action: "already-configured",
+          path: written.path,
+          pin: written.pin,
+          extra_fields: written.extraFields,
+        }),
+      );
+      return;
+    }
+    console.log("spec init: already configured");
+    console.log(`  path: ${written.path}`);
+    console.log(`  pin:  ${written.pin}`);
+    if (written.extraFields.length > 0) {
+      console.log(
+        `  warning: file has extra fields (${written.extraFields.join(", ")}); --force would refuse to overwrite. Edit manually if you intend to re-run with --force.`,
+      );
+    }
+    return;
+  }
+
+  if (json) {
+    console.log(JSON.stringify({ action: "wrote", path: written.path, pin, source }));
+    return;
+  }
+  console.log(`spec init: wrote ${written.path}`);
+  console.log(`  pin:    ${pin}`);
+  console.log(`  source: ${source}`);
+}
+
 export const initCommand = defineCommand({
   meta: {
     name: "init",
@@ -82,50 +136,6 @@ export const initCommand = defineCommand({
     },
   },
   async run({ args }) {
-    const json = Boolean(args.json);
-    const resolved = await resolveMemberPin({
-      repoDir: resolveRepoArg(args.repo),
-      override: typeof args.specs === "string" ? args.specs : undefined,
-    });
-    if (!resolved.ok) exitOnFailure("spec init", resolved);
-    const { pin, source } = resolvePinText(resolved, json);
-
-    const written = await writeMemberConfig({
-      canonical: resolved.canonical,
-      pin,
-      force: Boolean(args.force),
-    });
-    if (!written.ok) exitOnFailure("spec init", written);
-
-    if (written.action === "already-configured") {
-      if (json) {
-        console.log(
-          JSON.stringify({
-            action: "already-configured",
-            path: written.path,
-            pin: written.pin,
-            extra_fields: written.extraFields,
-          }),
-        );
-        return;
-      }
-      console.log("spec init: already configured");
-      console.log(`  path: ${written.path}`);
-      console.log(`  pin:  ${written.pin}`);
-      if (written.extraFields.length > 0) {
-        console.log(
-          `  warning: file has extra fields (${written.extraFields.join(", ")}); --force would refuse to overwrite. Edit manually if you intend to re-run with --force.`,
-        );
-      }
-      return;
-    }
-
-    if (json) {
-      console.log(JSON.stringify({ action: "wrote", path: written.path, pin, source }));
-      return;
-    }
-    console.log(`spec init: wrote ${written.path}`);
-    console.log(`  pin:    ${pin}`);
-    console.log(`  source: ${source}`);
+    await runInit(args);
   },
 });

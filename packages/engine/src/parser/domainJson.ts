@@ -92,11 +92,10 @@ export type ParseDomainJsonResult =
  * Read a JSON domain file into a `ParsedSpec` (STOR-01/STOR-02).
  *
  * Steps:
- *   1. `JSON.parse(text)` inside try/catch — on throw the body is not JSON, so
- *      return one INVALID_DOMAIN_FILE diagnostic (STOR-03) — never throw.
- *   2. `validateDomainFile(parsed, sourceFile)` — the ONE structural gate (VAL-02).
- *      On failure return its diagnostics verbatim (byte-identical to the write path).
- *   3. Map the validated, defaults-applied `SpecDomain` → `ParsedSpec`.
+ *   1. `parseDomainText(text, sourceFile)` — the ONE read seam. A non-JSON body
+ *      or a structural reject returns INVALID_DOMAIN_FILE diagnostics (the same
+ *      rows the write path emits) — never a throw.
+ *   2. Map the validated, defaults-applied `SpecDomain` → `ParsedSpec`.
  */
 export function parseDomainJsonFile(opts: ParseDomainJsonFileOptions): ParseDomainJsonResult {
   const validated = parseDomainText(opts.text, opts.sourceFile);

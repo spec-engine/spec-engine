@@ -42,6 +42,13 @@ Rules:
   something to catch.
 - **Exactly one `bun:sqlite` import**, in `packages/engine/src/storage/sqlite.ts`.
   Enforced by `fence_d08_engine_internal` in `scripts/arch-fences.sh` (SCHM-025).
+- **Every `SPEC.json` read parses through the shared schema.** `parseDomainText`
+  in `packages/shared/src/domain.ts` is the one place bytes become a domain
+  envelope, and every operation, check, and reader consumes the `SpecDomain`
+  it returns. `JSON.parse` otherwise appears only in the readers that own
+  their own schema (the member config, the root `package.json`, the HTTP
+  body), and nothing in production source casts through `unknown`. Enforced
+  by `fence_schm030_schema_reads` (SCHM-030).
 - **A test authors its platform through the operations.** `TestPlatform` in
   `packages/engine/src/testing/platform.ts` scaffolds domains, mints,
   supersedes, deprecates, moves, mints terms, and writes member configs by

@@ -217,13 +217,14 @@ function preservedIgnore(
 ): { ok: true; ignore?: string[] } | OpFailure {
   const rawIgnore = raw.ignore;
   if (rawIgnore === undefined) return { ok: true };
-  if (!Array.isArray(rawIgnore) || !rawIgnore.every((e) => typeof e === "string" && e.length > 0)) {
+  const isEntry = (e: unknown): e is string => typeof e === "string" && e.length > 0;
+  if (!Array.isArray(rawIgnore) || !rawIgnore.every(isEntry)) {
     return fail(
       "conflict",
       `existing ${configPath} has an invalid ignore field (expected an array of non-empty strings); refusing to overwrite. Edit manually.`,
     );
   }
-  return { ok: true, ignore: rawIgnore as string[] };
+  return { ok: true, ignore: rawIgnore };
 }
 
 interface MemberConfigFields {

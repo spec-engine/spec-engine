@@ -5,7 +5,7 @@
 // NORMALIZED path and, from that, decides whether an active requirement is
 // PROVEN (≥1 verifying tag whose test PASSED) or emits `UNPROVEN_REQ`.
 //
-// Off-by-default seam (Phase 19 rationale, mirrors check/unsourced.ts): this is
+// Off-by-default seam (mirrors check/unsourced.ts): this is
 // a side-effect-free projection over already-fetched rows. It is NOT routed
 // through `validateStructure` / the `parse_diagnostics` store, and results
 // ingestion happens AFTER `runIndex` computes `build_id` — so PROVEN can never
@@ -15,7 +15,7 @@
 //
 // Mirrors the pure-function pattern of check/unsourced.ts + check/format.ts:
 // rows in, `Diagnostic[]` out, no Storage, no I/O, NO sort (downstream
-// `sortDiagnostics` in format.ts owns ordering — Pitfall 3).
+// `sortDiagnostics` in format.ts owns ordering).
 //
 // D-08 grep-fence: this file imports no SQLite runtime — no Storage, no DB.
 //
@@ -34,7 +34,7 @@
 //      `foo/bar.ts` spuriously matching `barbar.ts`.
 //   3. If a tag suffix-matches multiple distinct files, pick the file with the
 //      LONGEST common suffix. If two DISTINCT files tie at that longest suffix,
-//      the correlation is genuinely AMBIGUOUS: FAIL CLOSED (WR-04) — return
+//      the correlation is genuinely AMBIGUOUS: FAIL CLOSED — return
 //      'absent' (leave the req unproven) rather than silently binding to the
 //      lexicographically-smallest file and emitting a possibly-wrong CI-gating
 //      PROVEN/UNPROVEN verdict. A given (tag, results) input therefore always
@@ -43,8 +43,8 @@
 //
 // Status within the winning file is FILE-LEVEL (the correctness-bearing rule,
 // portable across every runner): any `fail` sinks the proof; else ≥1 `pass` is
-// proven; a file whose only testcases are `skip` proves NOTHING (skip ≠ pass,
-// Pitfall 5) → 'absent'. Line-proximity is a CONSERVATIVE refinement (WR-02):
+// proven; a file whose only testcases are `skip` proves NOTHING (skip ≠ pass)
+// → 'absent'. Line-proximity is a CONSERVATIVE refinement:
 // it may only CONFIRM a pass, never rescue one — the file-level "any fail
 // sinks" rule is ABSOLUTE, so a correlated failure anywhere in the winning file
 // always withholds the proof regardless of which testcase sits nearest the
@@ -112,7 +112,7 @@ function reduceStatus(cases: readonly TestCaseResult[]): Verdict {
  * Select the single winning testcase file for a tag. Among all testcase files
  * whose segments suffix-match `tagSegs`, the LONGEST common suffix wins. Track
  * the set of DISTINCT files at the current best length so we can detect a
- * genuine tie (WR-04). Multiple testcases sharing ONE file are not a tie — the
+ * genuine tie. Multiple testcases sharing ONE file are not a tie — the
  * Set collapses them.
  *
  * Returns the winning file path, or null when nothing suffix-matches OR when >1
@@ -140,14 +140,15 @@ function selectWinningFile(
     }
   }
   // No suffix match at all → null; exactly-one distinct file → that file; a
-  // WR-04 >1-distinct-file tie → null (fail closed). Both null cases collapse to
+  // a >1-distinct-file tie → null (fail closed). Both null cases collapse to
   // the caller's 'absent'.
   if (bestFiles.size !== 1) return null;
-  return bestFiles.values().next().value as string;
+  const [only] = bestFiles;
+  return only ?? null;
 }
 
 /**
- * Line-proximity refinement — CONSERVATIVE (WR-02): it may only ever make the
+ * Line-proximity refinement — CONSERVATIVE: it may only ever make the
  * verdict MORE cautious, never rescue a proof. Returns a Verdict when the
  * refinement decides, or null to signal "fall through to file-level
  * `reduceStatus`".
@@ -212,7 +213,7 @@ export function correlateTag(tag: Tag, results: readonly TestCaseResult[]): Verd
  * verifying tag correlating to a PASSING testcase, emit exactly one
  * error-severity `UNPROVEN_REQ` diagnostic.
  *
- * Scope discipline (Pitfall 6, no double-diagnosis): a req with ZERO verifying
+ * Scope discipline (no double-diagnosis): a req with ZERO verifying
  * tags is skipped entirely — that case belongs to UNVERIFIED_REQ (Q5) /
  * ORPHAN_REQ (Q4), never UNPROVEN_REQ. `UNPROVEN_REQ` sits strictly DOWNSTREAM
  * of "a verifying tag exists".
@@ -222,7 +223,7 @@ export function correlateTag(tag: Tag, results: readonly TestCaseResult[]): Verd
  *
  * `verifyingTags` are expected pre-filtered to `kind === "verifies"` by the
  * caller; we still guard defensively. Pure: never mutates inputs, no I/O, and
- * does NOT sort (downstream `sortDiagnostics` owns order — Pitfall 3).
+ * does NOT sort (downstream `sortDiagnostics` owns order).
  */
 // @spec PROOF-010
 export function provenDetermination(
@@ -239,7 +240,7 @@ export function provenDetermination(
 
     const tags = verifyingTags.filter((t) => t.req_id === r.id && t.kind === "verifies");
     // No verifying tag → Q4/Q5 own this req; UNPROVEN_REQ stays silent
-    // (Pitfall 6 — no double-diagnosis).
+    // (no double-diagnosis).
     if (tags.length === 0) continue;
 
     const proven = tags.some((t) => correlateTag(t, results) === "pass");

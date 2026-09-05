@@ -176,7 +176,7 @@ function extractPin(specs: string): number {
   if (!m) {
     throw new Error(`expected 'spec-engine@N', got ${JSON.stringify(specs)}`);
   }
-  return Number.parseInt(m[1] as string, 10);
+  return Number.parseInt(m[1] ?? "", 10);
 }
 
 /**

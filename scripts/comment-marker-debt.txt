@@ -1,9 +1,7 @@
 2	packages/engine/src/authoring/edit.ts
-1	packages/engine/src/authoring/filerefs.ts
 1	packages/engine/src/base/gitBase.ts
 3	packages/engine/src/check/format.ts
 3	packages/engine/src/check/propagation-teeth.ts
-10	packages/engine/src/check/proven.ts
 1	packages/engine/src/check/removed.ts
 2	packages/engine/src/check/sqlDiagnostics.ts
 5	packages/engine/src/check/statusflip.ts
@@ -17,8 +15,6 @@
 4	packages/engine/src/parser/types.ts
 6	packages/engine/src/provenance/format.ts
 3	packages/engine/src/provenance/resolve.ts
-6	packages/engine/src/results/junit.ts
-1	packages/engine/src/scanner/tags.ts
 1	packages/shared/src/config.ts
 2	packages/shared/src/gate.ts
 1	packages/shared/src/indexResult.ts
@@ -36,6 +32,4 @@
 7	packages/webapp/src/pages/provenance.ts
 5	packages/webapp/src/pages/query.ts
 4	packages/webapp/src/pages/relations.ts
-4	packages/webapp/src/pages/requirements.ts
 1	packages/webapp/src/pages/setup.ts
-8	packages/webapp/src/server.ts

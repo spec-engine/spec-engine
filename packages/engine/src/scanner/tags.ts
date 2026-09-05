@@ -67,8 +67,8 @@ export function isTestFile(fileRel: string): boolean {
 /**
  * Scan `text` for `@spec` tags. Returns one row per match.
  *
- * The caller is responsible for any downstream sort (the indexer in
- * plan 02-05 sorts by `(repo, file, line, req_id)` before insertion to
+ * The caller is responsible for any downstream sort (the indexer
+ * sorts by `(repo, file, line, req_id)` before insertion to
  * keep `tags.id` AUTOINCREMENT order stable — PARS-04).
  *
  * @param repoName            The member repo's logical name (matches
@@ -86,7 +86,7 @@ export function scanTagsInFile(
   const hits: Omit<Tag, "id">[] = [];
   const lines = text.split("\n");
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i] as string;
+    const line = lines[i] ?? "";
     // Reset the regex matcher state between lines (the `g` flag makes
     // SPEC_TAG_RE.lastIndex sticky across exec calls).
     SPEC_TAG_RE.lastIndex = 0;
@@ -96,7 +96,7 @@ export function scanTagsInFile(
       const level: TagLevel =
         rawLevel !== undefined && LEVELS.has(rawLevel) ? (rawLevel as TagLevel) : null;
       hits.push({
-        req_id: m[1] as string,
+        req_id: m[1] ?? "",
         repo: repoName,
         file: fileRelToPlatform,
         line: i + 1,

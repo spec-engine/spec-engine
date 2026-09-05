@@ -122,7 +122,7 @@ export function renderMatrix(rows: CoverageRow[], mode: RenderMode): string {
     entry.cells.set(row.repo, cellStatus(row));
   }
 
-  // Build rows as string arrays so we can compute per-column max width.
+  // Build rows as arrays of cells so we can compute per-column max width.
   const header = ["DOMAIN", "REQUIREMENT", "STATUS", ...repos];
   const lines: string[][] = [header];
   for (const entry of byReq.values()) {

@@ -21,7 +21,8 @@ export function resolveDomain(platformDir: string, input: string): ResolvedDomai
   const keys = listDomainKeys(platformDir);
   if (keys.includes(prefix)) return { ok: true, key: prefix };
   const matches = keys.filter((k) => k.startsWith(prefix));
-  if (matches.length === 1) return { ok: true, key: matches[0] as string };
+  const [only, ...rest] = matches;
+  if (only !== undefined && rest.length === 0) return { ok: true, key: only };
   if (matches.length > 1) {
     return fail("usage", `"${input}" is ambiguous — candidates: ${matches.join(", ")}`);
   }

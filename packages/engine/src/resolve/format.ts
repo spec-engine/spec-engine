@@ -146,7 +146,7 @@ export function renderReqTags(rows: ReqTagRow[], mode: RenderMode): string {
   for (const row of sorted) {
     lines.push([row.repo, row.file, String(row.line), row.kind, row.level ?? EMPTY_CELL]);
   }
-  const widths = header.map((_, col) => Math.max(...lines.map((l) => (l[col] as string).length)));
+  const widths = header.map((_, col) => Math.max(...lines.map((l) => (l[col] ?? "").length)));
   return lines
     .map((l) =>
       l
