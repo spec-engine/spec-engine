@@ -30,6 +30,8 @@ const main = defineCommand({
     check: () => import("./commands/check").then((m) => m.checkCommand),
     domain: () => import("./commands/domain").then((m) => m.domainCommand),
     map: () => import("./commands/map").then((m) => m.mapCommand),
+    get: () => import("./commands/get").then((m) => m.getCommand),
+    list: () => import("./commands/list").then((m) => m.listCommand),
     propagation: () => import("./commands/propagation").then((m) => m.propagationCommand),
     query: () => import("./commands/query").then((m) => m.queryCommand),
     relations: () => import("./commands/relations").then((m) => m.relationsCommand),

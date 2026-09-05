@@ -213,6 +213,24 @@ jobs:
           }
           echo "inverted CI assertion: OK"
 
+      - name: smoke 8a — spec get / spec list against fixture (compiled binary) [MAP-003, MAP-004]
+        run: |
+          set -euo pipefail
+          # The full-record reads through the compiled binary: one object for a
+          # known id, [] for an unknown one, and the superseded row that spec
+          # query never returns.
+          ONE=$(./dist/spec get BILLING-009 fixtures/platform-fixture --json --no-prompt)
+          test "$(echo "$ONE" | jq -r '.id')" = "BILLING-009" || { echo "FAIL: get should answer BILLING-009"; echo "$ONE"; exit 1; }
+          test "$(echo "$ONE" | jq -r '.status')" = "Active" || { echo "FAIL: BILLING-009 should be Active"; echo "$ONE"; exit 1; }
+          NONE=$(./dist/spec get BILLING-999 fixtures/platform-fixture --json --no-prompt 2>/dev/null)
+          test "$NONE" = "[]" || { echo "FAIL: unknown id should print []"; echo "$NONE"; exit 1; }
+          SUP=$(./dist/spec list fixtures/platform-fixture --status superseded --json --no-prompt)
+          echo "$SUP" | jq -e 'map(.id) | index("BILLING-001") != null' >/dev/null || { echo "FAIL: list --status superseded should include BILLING-001"; echo "$SUP"; exit 1; }
+          if ./dist/spec list fixtures/platform-fixture --status retired --json --no-prompt >/dev/null 2>&1; then
+            echo "FAIL: --status retired should exit 2"; exit 1
+          fi
+          echo "get/list smoke: OK"
+
       - name: smoke 8 — spec propagation against fixture (compiled binary) [PROP-03]
         run: |
           set -euo pipefail

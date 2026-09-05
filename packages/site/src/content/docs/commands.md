@@ -61,6 +61,14 @@ The pre-commit **loss gate**: diffs the requirement derivation at `--against <re
 
 Render the cross-repo coverage matrix. **Exit codes:** 0 / 2
 
+### `spec get <KEY-NNN> [platformDir]`
+
+Print one requirement's full record (status, key, seq, statement, why, versions, source location). `--json` prints the same object `GET /api/requirements/:id` serves. An unknown id prints `[]` with guidance on stderr and exits 0. **Exit codes:** 0 / 2
+
+### `spec list [platformDir] [--domain KEY] [--status S]`
+
+Print every requirement record in (key, seq) order, superseded and deprecated history included. `--domain` narrows to one key; `--status` to `active`, `draft`, `superseded`, or `deprecated` (any other word exits 2). **Exit codes:** 0 / 2
+
 ### `spec query <text> [platformDir]`
 
 Full-text retrieval over requirements (FTS5, BM25-ranked, best first). Superseded requirements are excluded. Glossary term definitions ride the same index and surface in a separate Terms group. `--limit N` (default 10, max 1000). Wrap multi-word phrases in quotes; bare `AND`/`OR` is an FTS5 grammar error (exit 2).
@@ -172,6 +180,6 @@ Launch the local webapp over the derived index. Binds `127.0.0.1` only. `--probe
 
 ### `spec mcp [platformDir]`
 
-Serve Spec Engine as a Model Context Protocol server over stdio. Tools: `spec_query`, `spec_resolve`, `spec_req_tags`, `spec_coverage_report`, `spec_check`, `spec_propagation`, `spec_next_id`, `spec_supersede`, `spec_deprecate` — the same JSON the CLI's `--json` modes emit, reindexed fresh per call. Also advertises the `author_requirements` prompt (a static authoring playbook; the engine itself runs no model).
+Serve Spec Engine as a Model Context Protocol server over stdio. Tools: `spec_query`, `spec_resolve`, `spec_req_tags`, `spec_coverage_report`, `spec_check`, `spec_propagation`, `spec_next_id`, `spec_get`, `spec_list`, `spec_supersede`, `spec_deprecate` — the same JSON the CLI's `--json` modes emit, reindexed fresh per call. Also advertises the `author_requirements` prompt (a static authoring playbook; the engine itself runs no model).
 
 **Exit codes:** 0 / 2
