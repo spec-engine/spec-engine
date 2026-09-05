@@ -44,7 +44,7 @@
 import { statSync } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
 import { FILES_MAX } from "@spec-engine/shared";
-import { defineCommand } from "citty";
+import { defineCommand, type ParsedArgs } from "citty";
 import { EXIT, isExistingDir, OUT_HELP, resolveDbPath } from "../constants";
 import { formatNoRequirementsIndexed } from "../indexer/discover";
 import { maybePromptForOnboarding } from "../onboarding/prompt";
@@ -263,10 +263,7 @@ interface ResolvedFileArgs {
  * existing directory (treat all positionals as files; platformDir falls
  * through to args.platformDir / cwd).
  */
-function resolveFileArgs(
-  args: Record<string, unknown>,
-  rawArgs: string[] | undefined,
-): ResolvedFileArgs {
+function resolveFileArgs(args: ResolveArgs, rawArgs: string[] | undefined): ResolvedFileArgs {
   const positionals = extractPositionals(rawArgs ?? []);
   // CR-01 (iter3): the iter2 `sawExplicitPlatformDirFlag` gate broke the
   // in-process test harness (6/10 cli-resolve-unit tests failed) because
@@ -283,7 +280,7 @@ function resolveFileArgs(
   // When citty misbound a positional, `args.platformDir` matches one of
   // the positionals; drop it and let `splitFilesAndPlatformDir`'s
   // last-positional + spec-engine/ stat decide.
-  const rawPD = args.platformDir as string | undefined;
+  const rawPD = args.platformDir;
   const fallbackPD =
     rawPD === undefined
       ? undefined
@@ -298,7 +295,7 @@ function resolveFileArgs(
   // args directly without rawArgs).
   let rawFiles: string[];
   if (positionals.length === 0) {
-    const first = args.files as string | undefined;
+    const first = args.files;
     rawFiles = first ? [first] : [];
   } else {
     rawFiles = split.files;
@@ -317,7 +314,7 @@ function resolveFileArgs(
 async function dispatchReverseQuery(
   reqArg: string,
   resolved: ResolvedFileArgs,
-  args: Record<string, unknown>,
+  args: ResolveArgs,
 ): Promise<void> {
   if (!/^[A-Z][A-Z0-9]*-\d+$/.test(reqArg)) {
     console.error(`spec resolve: --req must be a requirement id (KEY-NNN); got ${reqArg}`);
@@ -329,7 +326,7 @@ async function dispatchReverseQuery(
   const posnl =
     positionals.length > 0
       ? positionals
-      : [args.files as string | undefined, rawPD].filter((x): x is string => typeof x === "string");
+      : [args.files, rawPD].filter((x): x is string => typeof x === "string");
   // At most ONE positional, and it must be a directory (the platform
   // dir) — anything else means the caller mixed --req with file paths.
   const lone = posnl[0];
@@ -354,10 +351,10 @@ async function dispatchReverseQuery(
   await runReverseQuery({
     reqId: reqArg,
     platformDir: resolve(lone ?? process.cwd()),
-    outArg: args.out as string | undefined,
+    outArg: args.out,
     json: Boolean(args.json),
     fresh: Boolean(args.fresh),
-    noPrompt: args.noPrompt as boolean | undefined,
+    noPrompt: args.noPrompt,
   });
 }
 
@@ -387,48 +384,52 @@ function normalizeFileInputs(files: string[], platformDir: string): string[] {
   return normalized;
 }
 
+const resolveArgs = {
+  files: {
+    type: "positional",
+    required: true,
+    description:
+      "One or more file paths (platform-relative or absolute; comma-split also accepted in a single positional)",
+  },
+  platformDir: {
+    type: "positional",
+    required: false,
+    description: "Platform directory containing spec-engine/ + members (default: cwd)",
+  },
+  req: {
+    type: "string",
+    description:
+      "Reverse query (T8): list every tag site (repo, file, line, kind, level) for the given requirement id instead of resolving files. Takes no file positionals.",
+  },
+  out: {
+    type: "string",
+    description: OUT_HELP,
+  },
+  json: {
+    type: "boolean",
+    description: "Emit requirements as JSON (deterministically sorted, no chrome)",
+  },
+  fresh: {
+    type: "boolean",
+    description:
+      "Force a cold rebuild of the derived index before reading (rm + reindex; same trio as check --ci)",
+  },
+  noPrompt: {
+    type: "boolean",
+    description:
+      "Suppress interactive onboarding prompt for siblings missing spec-engine.member.json (defaults to NO_SPEC_CONFIG warning)",
+  },
+} as const;
+
+type ResolveArgs = ParsedArgs<typeof resolveArgs>;
+
 export const resolveCommand = defineCommand({
   meta: {
     name: "resolve",
     description:
       "Return the requirements tagged in the given files (RSLV-01). Accepts multiple positional file paths (e.g. `spec resolve api/src/renew.ts api/src/charge.ts`) and a comma-split fallback inside a single positional (`spec resolve a.ts,b.ts`). Paths may be platform-relative or absolute under the platform tree.",
   },
-  args: {
-    files: {
-      type: "positional",
-      required: true,
-      description:
-        "One or more file paths (platform-relative or absolute; comma-split also accepted in a single positional)",
-    },
-    platformDir: {
-      type: "positional",
-      required: false,
-      description: "Platform directory containing spec-engine/ + members (default: cwd)",
-    },
-    req: {
-      type: "string",
-      description:
-        "Reverse query (T8): list every tag site (repo, file, line, kind, level) for the given requirement id instead of resolving files. Takes no file positionals.",
-    },
-    out: {
-      type: "string",
-      description: OUT_HELP,
-    },
-    json: {
-      type: "boolean",
-      description: "Emit requirements as JSON (deterministically sorted, no chrome)",
-    },
-    fresh: {
-      type: "boolean",
-      description:
-        "Force a cold rebuild of the derived index before reading (rm + reindex; same trio as check --ci)",
-    },
-    noPrompt: {
-      type: "boolean",
-      description:
-        "Suppress interactive onboarding prompt for siblings missing spec-engine.member.json (defaults to NO_SPEC_CONFIG warning)",
-    },
-  },
+  args: resolveArgs,
   async run({ args, rawArgs }) {
     // Re-split rawArgs into (files, platformDir), apply the
     // fallback, and comma-split into the final file list (all inside
@@ -439,7 +440,7 @@ export const resolveCommand = defineCommand({
     // T8 reverse-query mode: `--req KEY-NNN` maps a requirement to its tag
     // sites. It takes NO file positionals — dispatchReverseQuery owns the
     // id validation, the mixed-path rejection, and the runReverseQuery call.
-    const reqArg = args.req as string | undefined;
+    const reqArg = args.req;
     if (reqArg !== undefined) {
       await dispatchReverseQuery(reqArg, resolved, args);
       return;
@@ -466,7 +467,7 @@ export const resolveCommand = defineCommand({
     }
 
     const platformDir = resolve(resolved.platformDir ?? process.cwd());
-    const outArg = args.out as string | undefined;
+    const outArg = args.out;
     // Resolve --out relative to platformDir (NOT cwd) — mirrors
     // commands/check.ts, commands/map.ts, commands/propagation.ts, and
     // commands/query.ts.
@@ -493,7 +494,7 @@ export const resolveCommand = defineCommand({
     await maybePromptForOnboarding({
       platformDir,
       args: {
-        noPrompt: args.noPrompt as boolean | undefined,
+        noPrompt: args.noPrompt,
       },
     });
 

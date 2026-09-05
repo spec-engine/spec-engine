@@ -54,10 +54,10 @@ export const indexCommand = defineCommand({
   },
   async run({ args }) {
     const platformDir = resolvePlatformDir(args);
-    const outArg = args.out as string | undefined;
+    const outArg = args.out;
     // RED-14 parity fix: index was the only --out-bearing command that
     // resolved --out relative to CWD and skipped the V12 containment
-    // guard. Mirror commands/check.ts WR-01 (resolve relative to
+    // guard. Mirror commands/check.ts (resolve relative to
     // platformDir) + the containment check used by map/query/propagation/
     // gate/serve so a hostile or accidental `--out ../../x.sqlite` cannot
     // write outside the platform tree.
@@ -67,13 +67,13 @@ export const indexCommand = defineCommand({
     // INIT-13 pre-flight: interactive prompt for skipped siblings. Runs
     // BEFORE mkdirSync(.spec-engine) so the exit-1 n-path leaves no artefacts.
     // Suppressed in non-TTY / --no-prompt contexts; falls through
-    // to NO_SPEC_CONFIG warning per Phase 8 in those cases.
-    // WR-01: only `check` registers `--ci`, so `args.ci` would be undefined
+    // to the NO_SPEC_CONFIG warning in those cases.
+    // Only `check` registers `--ci`, so `args.ci` would be undefined
     // here — drop the dead plumbing rather than forward `undefined`.
     await maybePromptForOnboarding({
       platformDir,
       args: {
-        noPrompt: args.noPrompt as boolean | undefined,
+        noPrompt: args.noPrompt,
       },
     });
 

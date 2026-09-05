@@ -49,14 +49,14 @@ export const relationsCommand = defineCommand({
   },
   async run({ args }) {
     const platformDir = resolvePlatformDir(args);
-    const outArg = args.out as string | undefined;
+    const outArg = args.out;
     const dbPath = resolveDbPath(platformDir, outArg);
     if (outArg) assertContainedPath(dbPath, platformDir, "spec relations: --out");
 
     await maybePromptForOnboarding({
       platformDir,
       args: {
-        noPrompt: args.noPrompt as boolean | undefined,
+        noPrompt: args.noPrompt,
       },
     });
 

@@ -37,11 +37,11 @@ describe("BROKEN_FILE_REF", () => {
     await billing.req({ statement: STATEMENT, why: "Revenue.", livesIn: ["src/missing.ts"] });
     const rows = await brokenFileRefDiagnostics(platformDir);
     expect(rows.length).toBe(1);
-    expect(rows[0].code).toBe("BROKEN_FILE_REF");
-    expect(rows[0].severity).toBe("error");
-    expect(rows[0].req_id).toBe("BILLING-001");
-    expect(rows[0].source_file).toBe("spec-engine/BILLING/SPEC.json");
-    expect(rows[0].detail).toContain("src/missing.ts");
+    expect(rows[0]?.code).toBe("BROKEN_FILE_REF");
+    expect(rows[0]?.severity).toBe("error");
+    expect(rows[0]?.req_id).toBe("BILLING-001");
+    expect(rows[0]?.source_file).toBe("spec-engine/BILLING/SPEC.json");
+    expect(rows[0]?.detail).toContain("src/missing.ts");
   });
 
   test("a resolvable livesIn entry reports nothing, with or without the @ prefix", async () => {
@@ -56,7 +56,7 @@ describe("BROKEN_FILE_REF", () => {
     writeFileSync(join(platformDir, "..", "escape.ts"), "// outside\n");
     const rows = await brokenFileRefDiagnostics(platformDir);
     expect(rows.length).toBe(1);
-    expect(rows[0].req_id).toBe("BILLING-001");
+    expect(rows[0]?.req_id).toBe("BILLING-001");
     rmSync(join(platformDir, "..", "escape.ts"), { force: true });
   });
 
@@ -94,6 +94,6 @@ describe("BROKEN_FILE_REF", () => {
     expect(JSON.stringify(first)).toBe(JSON.stringify(second));
     expect(first.length).toBe(3);
     // Sorted by line, so the first requirement in the file leads.
-    expect(first[0].req_id).toBe("BILLING-001");
+    expect(first[0]?.req_id).toBe("BILLING-001");
   });
 });

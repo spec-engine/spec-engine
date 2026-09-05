@@ -47,10 +47,10 @@ describe("supersedes forward pointer", () => {
     await pointAt("BILLING", "BILLING-002", "BILLING-999");
     const rows = await supersedesPointerDiagnostics(platformDir);
     expect(rows.length).toBe(1);
-    expect(rows[0].code).toBe("BROKEN_SUPERSEDE");
-    expect(rows[0].severity).toBe("error");
-    expect(rows[0].req_id).toBe("BILLING-002");
-    expect(rows[0].detail).toContain("BILLING-999");
+    expect(rows[0]?.code).toBe("BROKEN_SUPERSEDE");
+    expect(rows[0]?.severity).toBe("error");
+    expect(rows[0]?.req_id).toBe("BILLING-002");
+    expect(rows[0]?.detail).toContain("BILLING-999");
   });
 
   test("a self-referential pointer reports BROKEN_SUPERSEDE", async () => {
@@ -58,7 +58,7 @@ describe("supersedes forward pointer", () => {
     await pointAt("BILLING", "BILLING-002", "BILLING-002");
     const rows = await supersedesPointerDiagnostics(platformDir);
     expect(rows.length).toBe(1);
-    expect(rows[0].detail).toContain("itself");
+    expect(rows[0]?.detail).toContain("itself");
   });
 
   test("a pointer at an existing requirement in another domain resolves", async () => {

@@ -77,6 +77,22 @@ fence_ops01_write_seam() {
   fi
 }
 
+# --- SCHM-030: a SPEC.json is read only through the shared schema ----------
+# JSON.parse lives where a file's own schema lives: the domain reader in
+# shared, the member-config and package.json readers, and the HTTP body
+# reader. Nothing in production source casts through `unknown`.
+# @spec SCHM-030
+fence_schm030_schema_reads() {
+  ALLOWED='packages/shared/src/domain.ts|packages/engine/src/indexer/discover.ts|packages/engine/src/operations/init.ts|packages/engine/src/server/api.ts'
+  OFFENDERS=$(grep -RnE --include='*.ts' --exclude='*.test.ts' --exclude-dir=testing 'JSON\.parse\(|as unknown as' packages/*/src 2>/dev/null \
+    | awk -F: -v allowed="^($ALLOWED)$" '$0 ~ /as unknown as/ || $1 !~ allowed' || true)
+  if [ -n "$OFFENDERS" ]; then
+    echo "FORBIDDEN: a SPEC.json read outside the shared schema, or a cast through unknown (SCHM-030):"
+    echo "$OFFENDERS"
+    exit 1
+  fi
+}
+
 # --- SCHM-028: no CHECK/FK/UNIQUE on domain fields -------------------------
 # @spec SCHM-028
 fence_schm07_schema_constraint() {
@@ -473,6 +489,7 @@ run "CHCK-030 AGENTS.md lists every diagnostic code"           fence_agents_chec
 run "CHRT-007 charters generated from the envelopes"           fence_taxonomy_charters
 run "AUTHOR-011 process-marker ratchet"                        fence_comment_markers
 run "SCHM-027 write seam under operations"                     fence_ops01_write_seam
+run "SCHM-030 every SPEC.json read parses through the shared schema" fence_schm030_schema_reads
 
 if [ "$fail" -ne 0 ]; then
   echo ""

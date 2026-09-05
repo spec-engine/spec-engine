@@ -5,7 +5,13 @@
 // superseded with a cross-domain `supersededBy`. Both envelopes validate
 // before either is written, so a refusal never leaves one side applied.
 
-import { type Diagnostic, validateAndWrite, validateDomainFile } from "@spec-engine/shared";
+import {
+  type Diagnostic,
+  type SpecDomain,
+  type SpecRequirement,
+  validateAndWrite,
+  validateDomainFile,
+} from "@spec-engine/shared";
 import { nextRequirementId } from "../authoring/domains";
 import { localToday } from "../authoring/edit";
 import {
@@ -15,14 +21,7 @@ import {
 } from "../authoring/grammar";
 import { deriveDomainVersion } from "../parser/domainJson";
 import type { ReqTagRow } from "../resolve/format";
-import {
-  domainKeyOf,
-  type Envelope,
-  type EnvelopeFile,
-  type EnvelopeRequirement,
-  readEnvelope,
-  successorEntry,
-} from "./_envelope";
+import { domainKeyOf, type EnvelopeFile, readEnvelope, successorEntry } from "./_envelope";
 import type { FreshTags } from "./_index";
 import { fail, type OpFailure, type OpWarning } from "./_result";
 import { unresolvableRefWarnings } from "./mint";
@@ -35,11 +34,11 @@ export interface MoveInput {
   /** The normalized target domain key. Must already exist. */
   targetKey: string;
   /** Absent: copied from the source. */
-  statement?: string;
-  why?: string;
-  livesIn?: string[];
+  statement?: string | undefined;
+  why?: string | undefined;
+  livesIn?: string[] | undefined;
   /** TERM domain only: keep the authored `specVersion`. A no-op elsewhere. */
-  noBump?: boolean;
+  noBump?: boolean | undefined;
 }
 
 export interface MoveResult {
@@ -58,7 +57,7 @@ interface MoveTarget {
   ok: true;
   source: EnvelopeFile;
   target: EnvelopeFile;
-  req: EnvelopeRequirement;
+  req: SpecRequirement;
 }
 
 /** Both envelopes and the located Active source entry, or the first refusal. */
@@ -87,14 +86,12 @@ async function locateMove(
   );
   if (!target.ok) return target;
 
-  const req = source.requirements.find((r) => r?.id === id);
+  const req = source.requirements.find((r) => r.id === id);
   if (req === undefined) return fail("not_found", `no entry ${id} in ${source.relFile}`);
-  const statusLc = (typeof req.status === "string" ? req.status : "").toLowerCase();
-  if (statusLc !== "active") {
-    const display = req.status ? String(req.status) : "unknown";
+  if (req.status.toLowerCase() !== "active") {
     return fail(
       "conflict",
-      `${id} is ${display} — only Active requirements move (superseded/retired entries stay as history)`,
+      `${id} is ${req.status} — only Active requirements move (superseded/retired entries stay as history)`,
     );
   }
   return { ok: true, source, target, req };
@@ -103,15 +100,12 @@ async function locateMove(
 /** The successor's fields: the input's, else the source's. */
 function successorFields(
   input: MoveInput,
-  req: EnvelopeRequirement,
+  req: SpecRequirement,
 ): { statement: string; why: string; livesIn: string[] } {
-  const srcStatement = typeof req.statement === "string" ? req.statement : "";
-  const srcWhy = typeof req.why === "string" ? req.why : "";
-  const srcLives =
-    Array.isArray(req.livesIn) && req.livesIn.length > 0 ? String(req.livesIn[0]).trim() : "";
+  const srcLives = (req.livesIn[0] ?? "").trim();
   return {
-    statement: (input.statement ?? srcStatement).trim(),
-    why: (input.why ?? srcWhy).trim(),
+    statement: (input.statement ?? req.statement).trim(),
+    why: (input.why ?? req.why ?? "").trim(),
     livesIn: input.livesIn ?? (srcLives === "" ? [] : [srcLives]),
   };
 }
@@ -123,11 +117,11 @@ function successorFields(
  * Both sides advance `updated`.
  * @spec REQ-036
  */
-function versionSide(domain: Envelope, key: string, noBump: boolean): number | null {
+function versionSide(domain: SpecDomain, key: string, noBump: boolean): number | null {
   domain.updated = localToday();
-  if (key !== "TERM") return deriveDomainVersion(domain.requirements ?? []);
+  if (key !== "TERM") return deriveDomainVersion(domain.requirements);
   if (noBump) return null;
-  const current = typeof domain.specVersion === "number" ? domain.specVersion : 1;
+  const current = domain.specVersion ?? 1;
   const next = current + 1;
   domain.specVersion = next;
   return next;
@@ -177,12 +171,10 @@ export async function move(
   );
 
   const newId = await nextRequirementId(platformDir, targetKey);
-  const sourceCurrent =
-    typeof source.domain.specVersion === "number" ? source.domain.specVersion : 1;
+  const sourceCurrent = source.domain.specVersion ?? 1;
   req.status = "superseded";
   req.supersededBy = newId;
   target.requirements.push(successorEntry(newId, fields));
-  target.domain.requirements = target.requirements;
   const noBump = Boolean(input.noBump);
   const sourceSpecVersion = versionSide(source.domain, source.key, noBump);
   const targetSpecVersion = versionSide(target.domain, target.key, noBump);

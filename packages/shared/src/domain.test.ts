@@ -14,12 +14,19 @@
 import { describe, expect, test } from "bun:test";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { validateAndWrite, validateDomainFile } from "./domain";
+import { parseDomainText, validateAndWrite, validateDomainFile } from "./domain";
 
 const SRC = "spec-engine/BILLING/SPEC.json";
 
 // A minimal structurally-valid BILLING-shaped domain used as the base for the
 // accept cases and as a template the reject cases perturb.
+/** The i-th requirement of a test envelope; a missing one is a test bug. */
+function entry(d: ReturnType<typeof validDomain>, i: number) {
+  const r = d.requirements[i];
+  if (r === undefined) throw new Error(`no requirement ${i}`);
+  return r;
+}
+
 function validDomain() {
   return {
     key: "BILLING",
@@ -89,19 +96,19 @@ describe("validateDomainFile — structural REJECT (INVALID_DOMAIN_FILE, error s
 
   test("requirement id failing ID_RE rejects (bill-1)", () => {
     const d = validDomain();
-    d.requirements[0].id = "bill-1";
+    entry(d, 0).id = "bill-1";
     expectReject(d);
   });
 
   test("requirement id failing ID_RE rejects (BILLING, no seq)", () => {
     const d = validDomain();
-    d.requirements[0].id = "BILLING";
+    entry(d, 0).id = "BILLING";
     expectReject(d);
   });
 
   test("requirement id empty string rejects", () => {
     const d = validDomain();
-    d.requirements[0].id = "";
+    entry(d, 0).id = "";
     expectReject(d);
   });
 
@@ -113,7 +120,7 @@ describe("validateDomainFile — structural REJECT (INVALID_DOMAIN_FILE, error s
 
   test("requirement empty statement rejects", () => {
     const d = validDomain();
-    d.requirements[0].statement = "";
+    entry(d, 0).statement = "";
     expectReject(d);
   });
 
@@ -150,7 +157,7 @@ describe("validateDomainFile — structural REJECT (INVALID_DOMAIN_FILE, error s
 
   test("req_id is attributed on a requirement-scoped failure", () => {
     const d = validDomain();
-    d.requirements[1].statement = ""; // BILLING-009 fails
+    entry(d, 1).statement = ""; // BILLING-009 fails
     const res = validateDomainFile(d, SRC);
     expect(res.ok).toBe(false);
     if (res.ok) throw new Error("expected reject");
@@ -162,25 +169,25 @@ describe("validateDomainFile — structural REJECT (INVALID_DOMAIN_FILE, error s
 describe("validateDomainFile — structural ACCEPT despite SEMANTIC defect (Invariant #4)", () => {
   test("status outside the enum passes the structural tier (ok:true) — lands for BAD_STATUS downstream", () => {
     const d = validDomain();
-    d.requirements[0].status = "Bogus";
+    entry(d, 0).status = "Bogus";
     const res = validateDomainFile(d, SRC);
     expect(res.ok).toBe(true);
   });
 
   test("issue role outside the allow-list passes structurally (ok:true) — lands for UNKNOWN_ROLE downstream", () => {
     const d = validDomain();
-    d.requirements[1].issues = [{ role: "bogus-role", id: "JIRA-1" }];
+    entry(d, 1).issues = [{ role: "bogus-role", id: "JIRA-1" }];
     const res = validateDomainFile(d, SRC);
     expect(res.ok).toBe(true);
   });
 
   test("issue id is OPAQUE — a KEY-NNN-shaped issue id is accepted verbatim", () => {
     const d = validDomain();
-    d.requirements[1].issues = [{ role: "created", id: "BILLING-001" }];
+    entry(d, 1).issues = [{ role: "created", id: "BILLING-001" }];
     const res = validateDomainFile(d, SRC);
     expect(res.ok).toBe(true);
     if (!res.ok) throw new Error("expected accept");
-    expect(res.data.requirements[1].issues[0]!.id).toBe("BILLING-001");
+    expect(res.data.requirements[1]?.issues[0]?.id).toBe("BILLING-001");
   });
 
   test("a full valid BILLING-shaped domain (superseded chain, relates, livesIn, issues) accepts", () => {
@@ -346,5 +353,39 @@ describe("term field round-trip (TERM-01, dogfooded as SCHM)", () => {
     const r = reread.data.requirements[0]! as Record<string, unknown>;
     expect(r.aliases).toEqual([]);
     expect(r.cites).toEqual([]);
+  });
+});
+
+// @spec SCHM-030 unit
+describe("parseDomainText — bytes become a domain only through the schema", () => {
+  test("a valid envelope parses to the defaults-applied domain", () => {
+    const res = parseDomainText(JSON.stringify(validDomain()), SRC);
+    expect(res.ok).toBe(true);
+    if (!res.ok) throw new Error("expected accept");
+    expect(res.data.key).toBe("BILLING");
+    expect(res.data.requirements[0]?.relates).toEqual([]);
+  });
+
+  test("bytes that are not JSON are one INVALID_DOMAIN_FILE row, reason not_json", () => {
+    const res = parseDomainText("{ not json", SRC);
+    expect(res.ok).toBe(false);
+    if (res.ok) throw new Error("expected reject");
+    expect(res.reason).toBe("not_json");
+    expect(res.diagnostics).toHaveLength(1);
+    expect(res.diagnostics[0]?.code).toBe("INVALID_DOMAIN_FILE");
+    expect(res.diagnostics[0]?.source_file).toBe(SRC);
+    expect(res.diagnostics[0]?.line).toBe(0);
+    expect(res.diagnostics[0]?.detail.startsWith("not valid JSON:")).toBe(true);
+  });
+
+  test("JSON that fails the schema carries the validator's own diagnostics, reason schema", () => {
+    const input = { key: "BILLING", requirements: [] };
+    const res = parseDomainText(JSON.stringify(input), SRC);
+    expect(res.ok).toBe(false);
+    if (res.ok) throw new Error("expected reject");
+    expect(res.reason).toBe("schema");
+    const direct = validateDomainFile(input, SRC);
+    if (direct.ok) throw new Error("expected the validator to reject too");
+    expect(res.diagnostics).toEqual(direct.diagnostics);
   });
 });

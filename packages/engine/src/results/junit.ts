@@ -4,14 +4,14 @@
 // @spec PROOF-014
 // @spec PROOF-009
 //
-// GATE-01 (Phase 19): the ONE hand-rolled JUnit XML reader. Turns an untrusted
+// GATE-01: the ONE hand-rolled JUnit XML reader. Turns an untrusted
 // `--results` file's bytes into a typed `TestCaseResult[]` — one reader, no
 // per-runner adapter zoo (bun-nested vs jest/pytest-flat variance is absorbed
 // by fixed attribute-precedence, not a per-runner switch).
 //
 // Analog: scanner/tags.ts — frozen constant tables at top, ONE pure exported
 // `(text) => Row[]` function, a hand-rolled char walker, NO I/O. The caller
-// (commands/check.ts, Plan 19-03) reads the file with Bun.file(...).text() and
+// (commands/check.ts) reads the file with Bun.file(...).text() and
 // passes the text in; this module never touches the filesystem.
 //
 // SECURITY — XXE-immune by construction (T-19-01 / T-19-02, CLAUDE.md forbids
@@ -33,7 +33,7 @@
 /** One test case extracted from a JUnit XML results file.
  *
  *  `file` is returned VERBATIM (absolute or repo-relative as authored) — path
- *  normalization is the correlator's job (Plan 19-02), not the reader's.
+ *  normalization is the correlator's job, not the reader's.
  *  `line` is the numeric `testcase@line` when present (bun / pytest emit it),
  *  else null (jest / go-junit-report omit it). `status` collapses the JUnit
  *  child-element vocabulary: a `<failure>` OR `<error>` child → "fail", a
@@ -85,10 +85,7 @@ const PATH_LIKE_EXT = Object.freeze([
 /** Decode ONLY the 5 predefined XML entities; every other `&…;` token is left
  *  verbatim (XXE / billion-laughs mitigation). */
 function decodeEntities(s: string): string {
-  return s.replace(
-    /&(amp|lt|gt|quot|apos);/g,
-    (_m, name: string) => PREDEFINED_ENTITIES[name] as string,
-  );
+  return s.replace(/&(amp|lt|gt|quot|apos);/g, (m, name: string) => PREDEFINED_ENTITIES[name] ?? m);
 }
 
 /** True if a `<testsuite name>` value looks like a source path (so it can act
@@ -106,8 +103,8 @@ function parseAttrs(body: string): Attrs {
   const re = /([\w:.-]+)\s*=\s*("([^"]*)"|'([^']*)')/g;
   let m: RegExpExecArray | null = re.exec(body);
   while (m !== null) {
-    const raw = m[3] !== undefined ? m[3] : (m[4] as string);
-    attrs[m[1] as string] = decodeEntities(raw);
+    const name = m[1];
+    if (name !== undefined) attrs[name] = decodeEntities(m[3] ?? m[4] ?? "");
     m = re.exec(body);
   }
   return attrs;
@@ -120,7 +117,7 @@ function findTagEnd(text: string, start: number): number {
   let j = start + 1;
   let quote = "";
   while (j < text.length) {
-    const c = text[j] as string;
+    const c = text[j] ?? "";
     if (quote !== "") {
       if (c === quote) quote = "";
     } else if (c === '"' || c === "'") {
@@ -140,7 +137,7 @@ function findTagEnd(text: string, start: number): number {
  *  `SYSTEM "…/x>y"` literal does not end the skip early. NOTE: CDATA is handled
  *  by its own branch in the main walker BEFORE this is reached — a `<![CDATA[`
  *  section must never route here (its `]]` terminator collides with the
- *  bracket-depth logic; WR-01). Returns the index just past the closing `>`. */
+ *  bracket-depth logic). Returns the index just past the closing `>`. */
 /** Per-character scan state for `skipDeclaration`: `quote` is the open quote
  *  char ("" when unquoted), `depth` the `[ … ]` internal-subset nesting. */
 type DeclScan = { depth: number; quote: string };
@@ -165,7 +162,7 @@ function skipDeclaration(text: string, start: number): number {
   const scan: DeclScan = { depth: 0, quote: "" };
   let j = start + 2;
   while (j < text.length) {
-    if (stepDeclaration(scan, text[j] as string)) return j + 1;
+    if (stepDeclaration(scan, text[j] ?? "")) return j + 1;
     j++;
   }
   throw new JUnitParseError("unterminated <!…> declaration");
@@ -218,7 +215,7 @@ function nearestPathLikeSuiteName(suiteStack: readonly SuiteFrame[]): string {
  *   4. `testcase@classname`
  *   5. "" (empty) if none of the above resolve
  *
- *  WR-03: an explicit empty `file=""` is treated the same as absent (mirrors
+ *  An explicit empty `file=""` is treated the same as absent (mirrors
  *  the classname guard below and the truthy suite-file check) so it falls
  *  through to the suite/classname fallbacks instead of returning "" (which
  *  never suffix-matches → a silently dropped case). */
@@ -323,7 +320,7 @@ function skipNonElementMarkup(text: string, i: number): number {
     return end + 2;
   }
   if (text.startsWith("<![CDATA[", i)) {
-    // WR-01: CDATA content is RAW TEXT with a FIXED, unambiguous `]]>`
+    // CDATA content is RAW TEXT with a FIXED, unambiguous `]]>`
     // terminator — it must NOT route through `skipDeclaration` (whose
     // bracket-depth logic terminates early when CDATA content contains `]]`
     // followed later by `>`, e.g. an assertion diff `a]] b > c` or an
@@ -372,7 +369,7 @@ function consumeTag(state: ParserState, text: string, i: number): number {
   }
   const nameMatch = /^([\w:.-]+)/.exec(raw);
   if (nameMatch === null) throw new JUnitParseError("malformed tag name");
-  const tagName = nameMatch[1] as string;
+  const tagName = nameMatch[1] ?? "";
   const attrs = parseAttrs(raw.slice(tagName.length));
   if (!selfClosing) state.elementStack.push(tagName);
   onOpen(state, tagName, attrs, selfClosing);

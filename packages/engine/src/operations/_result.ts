@@ -35,7 +35,7 @@ export interface OpFailure {
 export function fail(
   reason: OpReason,
   detail: string,
-  extra: { diagnostics?: Diagnostic[]; warnings?: OpWarning[] } = {},
+  extra: { diagnostics?: Diagnostic[] | undefined; warnings?: OpWarning[] | undefined } = {},
 ): OpFailure {
   const out: OpFailure = { ok: false, reason, detail };
   if (extra.diagnostics) out.diagnostics = extra.diagnostics;

@@ -17,7 +17,7 @@
 // prompts render to stderr so stdout stays machine-parseable.
 
 import { createInterface } from "node:readline";
-import { defineCommand } from "citty";
+import { defineCommand, type ParsedArgs } from "citty";
 import { domainScope } from "../authoring/domains";
 import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
@@ -26,35 +26,39 @@ import { nextId } from "../operations/nextId";
 import { jsonArg, platformDirArg, resolvePlatformDir } from "./_args";
 import { exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
 
+const reqArgs = {
+  domainPrefix: {
+    type: "positional",
+    required: true,
+    description: "Domain key or unique case-insensitive prefix (e.g. `bil` for BILLING)",
+  },
+  platformDir: platformDirArg,
+  json: jsonArg,
+  text: {
+    type: "string",
+    description:
+      "Non-interactive authoring: the Requirement field. When set, the entry appends with zero prompts.",
+  },
+  why: { type: "string", description: "Why it matters field (only with --text)" },
+  lives: { type: "string", description: "Lives in field (only with --text)" },
+  issue: {
+    type: "string",
+    description:
+      "Originating ticket id, recorded as created-provenance on the entry (only with --text; opaque — never a requirement id)",
+  },
+} as const;
+
+type ReqArgs = ParsedArgs<typeof reqArgs>;
+
 export const reqCommand = defineCommand({
   meta: {
     name: "req",
     description:
       "Author a new requirement interactively (TTY) or print the next unused id (non-TTY)",
   },
-  args: {
-    domainPrefix: {
-      type: "positional",
-      required: true,
-      description: "Domain key or unique case-insensitive prefix (e.g. `bil` for BILLING)",
-    },
-    platformDir: platformDirArg,
-    json: jsonArg,
-    text: {
-      type: "string",
-      description:
-        "Non-interactive authoring: the Requirement field. When set, the entry appends with zero prompts.",
-    },
-    why: { type: "string", description: "Why it matters field (only with --text)" },
-    lives: { type: "string", description: "Lives in field (only with --text)" },
-    issue: {
-      type: "string",
-      description:
-        "Originating ticket id, recorded as created-provenance on the entry (only with --text; opaque — never a requirement id)",
-    },
-  },
+  args: reqArgs,
   async run({ args }) {
-    const input = args.domainPrefix as string;
+    const input = args.domainPrefix;
     const platformDir = resolvePlatformDir(args);
     try {
       assertSpecPlatform(platformDir);
@@ -66,7 +70,7 @@ export const reqCommand = defineCommand({
     if (!allocated.ok) exitOnFailure("spec req", allocated);
     const { key, nextId: id } = allocated;
 
-    const textFlag = args.text as string | undefined;
+    const textFlag = args.text;
     if (textFlag !== undefined) {
       await mintFromFlags(platformDir, key, textFlag, args);
       return;
@@ -99,7 +103,7 @@ async function mintFromFlags(
   platformDir: string,
   key: string,
   textFlag: string,
-  args: Record<string, unknown>,
+  args: ReqArgs,
 ): Promise<void> {
   const statement = textFlag.trim();
   if (statement === "") {
@@ -107,12 +111,12 @@ async function mintFromFlags(
     process.exit(EXIT.USAGE);
   }
   await printResolvedCharter(platformDir, key);
-  const lives = ((args.lives as string | undefined) ?? "").trim();
+  const lives = (args.lives ?? "").trim();
   await mintAndReport(platformDir, key, {
     statement,
-    why: ((args.why as string | undefined) ?? "").trim(),
+    why: (args.why ?? "").trim(),
     livesIn: lives ? [lives] : [],
-    issue: ((args.issue as string | undefined) ?? "").trim() || undefined,
+    issue: (args.issue ?? "").trim() || undefined,
     json: Boolean(args.json),
   });
 }
@@ -142,7 +146,13 @@ async function mintInteractively(platformDir: string, key: string, id: string): 
 async function mintAndReport(
   platformDir: string,
   key: string,
-  fields: { statement: string; why: string; livesIn: string[]; issue?: string; json: boolean },
+  fields: {
+    statement: string;
+    why: string;
+    livesIn: string[];
+    issue?: string | undefined;
+    json: boolean;
+  },
 ): Promise<void> {
   const result = await mint({ platformDir, key, ...fields });
   if (!result.ok) exitOnFailure("spec req", result);

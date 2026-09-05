@@ -2,8 +2,8 @@
 //
 // GOV-02: the pure CODEOWNERS grammar — turns authored `.github/CODEOWNERS`
 // text into ordered rules, and resolves a repo-relative path to its owning
-// handles with GitHub's LAST-match-wins semantics (Pitfall 4). Used by the
-// status-flip gate (Plan 20-02) to decide whether a superseded/retired flip
+// handles with GitHub's LAST-match-wins semantics. Used by the status-flip
+// gate to decide whether a superseded/retired flip
 // carries its domain owner's approval.
 //
 // Analog: results/junit.ts — text in, structured out, no dependency, no I/O.
@@ -36,7 +36,7 @@ export function parseCodeowners(text: string): CodeownersRule[] {
     const hash = raw.indexOf("#");
     const body = (hash === -1 ? raw : raw.slice(0, hash)).trim();
     if (body === "") continue;
-    const [pattern, ...owners] = body.split(/\s+/);
+    const [pattern = "", ...owners] = body.split(/\s+/);
     rules.push({ pattern, owners });
   }
   return rules;
@@ -69,7 +69,7 @@ export function matchesGlob(pattern: string, relPath: string): boolean {
   // A leading slash anchors to root; paths here are already root-relative.
   if (pat.startsWith("/")) pat = pat.slice(1);
 
-  // WR-04: a bare `*` (or `**` / `**/`) is GitHub's global-owner rule — it
+  // A bare `*` (or `**` / `**/`) is GitHub's global-owner rule — it
   // matches EVERY path. Without this the single-segment `*` walker would
   // length-mismatch any nested path and a `* @fallback-owner` rule would own
   // nothing (fail-closed → spurious UNAPPROVED_STATUS_FLIP). Trailing-slash
@@ -106,7 +106,7 @@ export function matchesGlob(pattern: string, relPath: string): boolean {
  */
 function prefixSegmentsMatch(patSegs: readonly string[], pathSegs: readonly string[]): boolean {
   for (let i = 0; i < patSegs.length; i++) {
-    if (!matchesSegment(patSegs[i], pathSegs[i])) return false;
+    if (!matchesSegment(patSegs[i] ?? "", pathSegs[i] ?? "")) return false;
   }
   return true;
 }

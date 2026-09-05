@@ -20,7 +20,7 @@ import { readFileSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { reqCommand } from "../commands/req";
 import { cloneFixture } from "../testing/cloneFixture";
-import { plantEdit } from "../testing/plant";
+import { entryOf, plantEdit } from "../testing/plant";
 import { statementGrammarDiagnostics } from "./grammar";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "platform-fixture");
@@ -116,7 +116,7 @@ describe("STATEMENT_GRAMMAR — the check pass", () => {
   test("a conforming statement emits nothing", async () => {
     await declareGrammar("AUTH");
     await plantEdit(platformDir, "AUTH", (doc) => {
-      doc.requirements[0].statement =
+      entryOf(doc, "AUTH-001").statement =
         "When a session is idle for 30 days, the system shall expire it.";
     });
     expect(await statementGrammarDiagnostics(platformDir)).toEqual([]);

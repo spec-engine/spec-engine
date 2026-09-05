@@ -47,11 +47,11 @@ describe("requirementRemoved() (GOV-01)", () => {
     const change: SpecRequirement[] = [];
     const out = requirementRemoved(base, change, relPath);
     expect(out.length).toBe(1);
-    expect(out[0].code).toBe("REQUIREMENT_REMOVED");
-    expect(out[0].severity).toBe("error");
-    expect(out[0].req_id).toBe("BILLING-002");
-    expect(out[0].line).toBe(0);
-    expect(out[0].source_file).toBe("spec-engine/BILLING/SPEC.json");
+    expect(out[0]?.code).toBe("REQUIREMENT_REMOVED");
+    expect(out[0]?.severity).toBe("error");
+    expect(out[0]?.req_id).toBe("BILLING-002");
+    expect(out[0]?.line).toBe(0);
+    expect(out[0]?.source_file).toBe("spec-engine/BILLING/SPEC.json");
   });
 
   test("exemption direction (a): base.supersededBy survives in change → no diagnostic", () => {
@@ -73,7 +73,7 @@ describe("requirementRemoved() (GOV-01)", () => {
     const change: SpecRequirement[] = [];
     const out = requirementRemoved(base, change, relPath);
     expect(out.length).toBe(1);
-    expect(out[0].req_id).toBe("BILLING-001");
+    expect(out[0]?.req_id).toBe("BILLING-001");
   });
 
   test("detector returns UNSORTED — order follows base iteration order", () => {

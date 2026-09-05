@@ -24,7 +24,7 @@
 // @spec AUTHOR-009
 export function renderAuthorPrompt(opts: {
   brief: string;
-  domain?: string;
+  domain?: string | undefined;
   charter: string | null;
 }): string {
   const charterBlock = opts.charter

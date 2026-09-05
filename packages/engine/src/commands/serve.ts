@@ -3,11 +3,11 @@
 // Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec SERV-008
 //
-// `spec serve [platformDir] [--port N] [--out path]` (plan 05-05 / SERV-01)
+// `spec serve [platformDir] [--port N] [--out path]`
 // composes the engine HTTP API plane (`mountApi`) and the webapp SSR pages
 // (`mountWebapp`) onto a single Hono instance and binds Bun.serve to
-// 127.0.0.1:${port}. The Phase 1 `--probe` mode is preserved verbatim so
-// the SERV-04 compile-time asset-embedding smoke (CI step 5) keeps passing.
+// 127.0.0.1:${port}. The `--probe` mode is preserved verbatim so the
+// compile-time asset-embedding smoke keeps passing.
 //
 // SECURITY (T-1-01 / T-5-05-01 mitigation): the hostname is hardcoded to
 // 127.0.0.1 at EVERY Bun.serve construction site. There is no --host /
@@ -48,15 +48,13 @@ import { assertContainedPath, handleNotAPlatform, handleStorageUnavailable } fro
 /**
  * Compose the real-serve Hono app: engine `/api/*` + webapp SSR pages on a
  * FRESH `new Hono()`. Exported so tests can compose without going through
- * citty's `run` (which would otherwise block on Bun.serve). Plan 05-05
- * `commands/serve.ts` wires the citty run handler to call this and then
- * bind Bun.serve on 127.0.0.1.
+ * citty's `run` (which would otherwise block on Bun.serve). The citty run
+ * handler calls this and then binds Bun.serve on 127.0.0.1.
  *
- * Note: we deliberately do NOT use `createApp()` (the Phase 1 probe
- * factory) because that one already registers `/` with the placeholder —
+ * Note: we deliberately do NOT use `createApp()` (the probe factory) because that one already registers `/` with the placeholder —
  * `mountWebapp` would conflict. The real-serve app is purely composed.
  *
- * Phase 16 (PWEB-01): `platformDir` is threaded through to `mountApi` so the
+ * `platformDir` is threaded through to `mountApi` so the
  * `/api/provenance?resolve=1` decorated-text seam writes its tracker sidecar
  * under `<platformDir>/.spec-engine/`. Defaults to `process.cwd()` so existing
  * callers/tests that omit it are unchanged (mountApi degrades to cwd too).
@@ -69,8 +67,7 @@ export function composeServeApp(storage: Storage, platformDir: string = process.
 }
 
 /**
- * Phase 1 `--probe` mode, preserved verbatim (SERV-04 asset-embedding smoke,
- * CI step 5): bind an ephemeral port on 127.0.0.1, GET /, assert the body
+ * The `--probe` mode, preserved verbatim (the asset-embedding smoke): bind an ephemeral port on 127.0.0.1, GET /, assert the body
  * contains the placeholder, exit. Extracted from `run` so the real-serve
  * branch stays under the biome cognitive-complexity ceiling; the two modes
  * are conceptually independent and share no state.
@@ -147,18 +144,18 @@ export const serveCommand = defineCommand({
     },
   },
   async run({ args }) {
-    // --- Phase 1 probe branch: preserved verbatim (see runProbe) -----------
+    // --- Probe branch: preserved verbatim (see runProbe) -------------------
     if (args.probe) {
       await runProbe();
       return;
     }
 
-    // --- Real-serve branch (plan 05-05 / SERV-01) --------------------------
+    // --- Real-serve branch -------------------------------------------------
 
     // T-5-05-03: strict integer shape + 0..65535 range for --port. The CLI
     // does NOT accept negative or non-integer ports; the message is faithful
     // to what the parser actually requires.
-    const rawPort = (args.port as string | undefined) ?? "0";
+    const rawPort = args.port ?? "0";
     if (!/^[0-9]+$/.test(rawPort)) {
       console.error("spec serve: --port must be an integer 0..65535");
       process.exit(EXIT.USAGE);
@@ -172,14 +169,14 @@ export const serveCommand = defineCommand({
     }
 
     const platformDir = resolvePlatformDir(args);
-    const outArg = args.out as string | undefined;
-    // WR-01: resolve --out relative to platformDir (NOT cwd) — mirrors
+    const outArg = args.out;
+    // Resolve --out relative to platformDir (NOT cwd) — mirrors
     // commands/query.ts and commands/map.ts.
     const dbPath = resolveDbPath(platformDir, outArg);
 
     // V12 path-containment guard — mirrors commands/query.ts:113-121.
     //
-    // WR-03 (iter3): the guard is unconditional. The default-path branch
+    // The guard is unconditional. The default-path branch
     // (`join(platformDir, ".spec-engine", "index.sqlite")`) is trivially contained
     // today, but a future refactor that changes the default to e.g.
     // `XDG_CACHE_HOME/spec/<hash>.sqlite` would silently leak the
@@ -203,14 +200,13 @@ export const serveCommand = defineCommand({
     // BEFORE mkdirSync(.spec-engine) so the exit-1 n-path leaves no artefacts.
     // Inserted AFTER the --probe branch returns (lines 88-121) — probe
     // never triggers the prompt (T-10-W3). Suppressed in non-TTY /
-    // --no-prompt contexts; falls through to NO_SPEC_CONFIG warning per
-    // Phase 8 in those cases.
-    // WR-01: only `check` registers `--ci`, so `args.ci` would be undefined
+    // --no-prompt contexts; falls through to the NO_SPEC_CONFIG warning in
+    // those cases. Only `check` registers `--ci`, so `args.ci` would be undefined
     // here — drop the dead plumbing rather than forward `undefined`.
     await maybePromptForOnboarding({
       platformDir,
       args: {
-        noPrompt: args.noPrompt as boolean | undefined,
+        noPrompt: args.noPrompt,
       },
     });
 
@@ -232,7 +228,7 @@ export const serveCommand = defineCommand({
       throw err;
     }
 
-    // WR-01: storage is allocated above; runIndex and Bun.serve can both
+    // Storage is allocated above; runIndex and Bun.serve can both
     // throw before we reach "server lifetime keeps the FD open." If they
     // throw, close storage explicitly so WAL siblings are flushed before
     // process exit. Once Bun.serve returns successfully we hand storage
@@ -268,7 +264,7 @@ export const serveCommand = defineCommand({
       handleStorageUnavailable(err, dbPath);
       console.error(`spec serve: failed to start on 127.0.0.1:${port}:`, err);
       process.exit(EXIT.FAILURE);
-      // WR-05 (iter2): explicit return makes the control-flow termination
+      // The explicit return makes the control-flow termination
       // local. `process.exit` is typed `never`, but if a future test harness
       // stubs it to record exits without throwing (or wraps run() in a
       // silent try/catch), the `server.port` access below would throw

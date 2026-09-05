@@ -31,6 +31,6 @@ export const noPromptArg = {
 } as const;
 
 /** The absolute platform directory: the positional, else the process cwd. */
-export function resolvePlatformDir(args: { platformDir?: unknown }): string {
-  return resolve((args.platformDir as string | undefined) ?? process.cwd());
+export function resolvePlatformDir(args: { platformDir?: string | undefined }): string {
+  return resolve(args.platformDir ?? process.cwd());
 }

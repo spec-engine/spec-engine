@@ -9,7 +9,7 @@
 //   - commands/req.ts  — authoring-time per-field validation (warn to
 //     stderr, never block the save — AUTHC-024)
 //
-// Q4 (Phase 18): the index-time extraction over raw SPEC.md text (the old
+// The index-time extraction over raw SPEC.md text (the old
 // raw-walk field extractor that fed the index-time broken-file-ref
 // diagnostic) is RETIRED with the Markdown parse path. Only the
 // authoring-time surface (extractRefsFromText + resolveFileRef) survives — it
@@ -56,7 +56,7 @@ export const FILE_REF_RE = /(?<![^\s])@([A-Za-z0-9_][A-Za-z0-9_\-./]*)/g;
 export function extractRefsFromText(s: string): string[] {
   const out: string[] = [];
   for (const m of s.matchAll(FILE_REF_RE)) {
-    const candidate = (m[1] as string).replace(/\.+$/, "");
+    const candidate = (m[1] ?? "").replace(/\.+$/, "");
     if (candidate.includes("/")) out.push(candidate);
   }
   return out;

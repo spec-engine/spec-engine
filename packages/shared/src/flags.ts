@@ -36,7 +36,8 @@ export function parseFlags(value: string | undefined): ReadonlySet<FeatureKey> {
   const enabled = new Set<FeatureKey>();
   for (const rawKey of (value ?? "").split(",")) {
     const key = rawKey.trim().toLowerCase();
-    if ((FEATURE_KEYS as string[]).includes(key)) enabled.add(key as FeatureKey);
+    const known = FEATURE_KEYS.find((k) => k === key);
+    if (known !== undefined) enabled.add(known);
   }
   return enabled;
 }

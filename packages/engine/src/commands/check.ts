@@ -64,15 +64,15 @@ export const checkCommand = defineCommand({
   },
   async run({ args }) {
     const platformDir = resolvePlatformDir(args);
-    const outArgValue = args.out as string | undefined;
+    const outArgValue = args.out;
     const dbPath = resolveDbPath(platformDir, outArgValue);
     if (outArgValue) assertContainedPath(dbPath, platformDir, "spec check: --out");
 
     await maybePromptForOnboarding({
       platformDir,
       args: {
-        ci: args.ci as boolean | undefined,
-        noPrompt: args.noPrompt as boolean | undefined,
+        ci: args.ci,
+        noPrompt: args.noPrompt,
       },
     });
 
@@ -85,15 +85,15 @@ export const checkCommand = defineCommand({
           if (args.ci) {
             console.error("spec check --ci: cold-reset prior index state (in place)");
           }
-          const resultsPath = resolveResultsPath(platformDir, args.results as string | undefined);
+          const resultsPath = resolveResultsPath(platformDir, args.results);
           const result = await check(
             {
               platformDir,
               resultsPath,
-              base: args.base as string | undefined,
-              approvedBy: args.approvedBy as string | undefined,
-              requireOwnerApproval: args.requireOwnerApproval as boolean | undefined,
-              unsourcedChange: args.unsourcedChange as boolean | undefined,
+              base: args.base,
+              approvedBy: args.approvedBy,
+              requireOwnerApproval: args.requireOwnerApproval,
+              unsourcedChange: args.unsourcedChange,
             },
             h.storage,
           );

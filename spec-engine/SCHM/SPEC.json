@@ -462,6 +462,21 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "SCHM-030",
+      "status": "active",
+      "statement": "The spec engine shall parse a SPEC.json through the shared schema before reading any field from it, so no code path handles an unvalidated envelope.",
+      "why": "A domain file read as loose JSON reaches every operation as a cast, so a malformed file is caught only at the write seam and each reader re-derives the envelope shape by hand.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/shared/src/domain.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
   ]
 }

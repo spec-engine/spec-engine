@@ -4,7 +4,7 @@
 // normalizes the target key and renders; the guards, both writes, and the
 // retag worklist live in operations/move.ts.
 
-import { defineCommand } from "citty";
+import { defineCommand, type ParsedArgs } from "citty";
 import { normalizeDomainKey } from "../authoring/domains";
 import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
@@ -17,7 +17,7 @@ import { exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
 
 /** Flags to the operation's input. An absent flag leaves the field to be copied from the source. */
 function inputFromArgs(
-  args: Record<string, unknown>,
+  args: MoveArgs,
   platformDir: string,
   id: string,
   targetKey: string,
@@ -32,49 +32,53 @@ function inputFromArgs(
   return input;
 }
 
+const moveArgs = {
+  id: {
+    type: "positional",
+    required: true,
+    description: "The requirement id to move (KEY-NNN; must be Active)",
+  },
+  newDomain: {
+    type: "positional",
+    required: true,
+    description: "The target domain key (must already exist; spec domain new <KEY> first)",
+  },
+  platformDir: platformDirArg,
+  text: {
+    type: "string",
+    description: "Rewrite the successor's Requirement (default: copied from the source)",
+  },
+  why: {
+    type: "string",
+    description: "Rewrite the successor's Why (default: copied from the source)",
+  },
+  lives: {
+    type: "string",
+    description: "Rewrite the successor's Lives in (default: copied from the source)",
+  },
+  noBump: {
+    type: "boolean",
+    description: "Do not bump either envelope's specVersion",
+  },
+  json: {
+    type: "boolean",
+    description:
+      "Emit { old_id, new_id, from_file, to_file, source_spec_version, target_spec_version, retag } as JSON",
+  },
+} as const;
+
+type MoveArgs = ParsedArgs<typeof moveArgs>;
+
 export const moveCommand = defineCommand({
   meta: {
     name: "move",
     description:
       "Move a requirement to another domain: mint the successor in <NEW-DOMAIN> carrying the source's fields, mark the source superseded, bump both specVersions, and emit the retag worklist.",
   },
-  args: {
-    id: {
-      type: "positional",
-      required: true,
-      description: "The requirement id to move (KEY-NNN; must be Active)",
-    },
-    newDomain: {
-      type: "positional",
-      required: true,
-      description: "The target domain key (must already exist; spec domain new <KEY> first)",
-    },
-    platformDir: platformDirArg,
-    text: {
-      type: "string",
-      description: "Rewrite the successor's Requirement (default: copied from the source)",
-    },
-    why: {
-      type: "string",
-      description: "Rewrite the successor's Why (default: copied from the source)",
-    },
-    lives: {
-      type: "string",
-      description: "Rewrite the successor's Lives in (default: copied from the source)",
-    },
-    noBump: {
-      type: "boolean",
-      description: "Do not bump either envelope's specVersion",
-    },
-    json: {
-      type: "boolean",
-      description:
-        "Emit { old_id, new_id, from_file, to_file, source_spec_version, target_spec_version, retag } as JSON",
-    },
-  },
+  args: moveArgs,
   async run({ args }) {
-    const id = args.id as string;
-    const rawTargetKey = args.newDomain as string;
+    const id = args.id;
+    const rawTargetKey = args.newDomain;
     const platformDir = resolvePlatformDir(args);
 
     if (!ID_RE.test(id)) {

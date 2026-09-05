@@ -1,6 +1,6 @@
 // packages/webapp/src/pages/requirements.ts
 //
-// Plan 05-04 / Task 1 — SSR requirement browser (`GET /requirements`
+// The SSR requirement browser (`GET /requirements`
 // list + `GET /requirements/:id` detail).
 //
 // D-09 / WORK-04 / Invariant #5: webapp source imports ONLY from
@@ -9,10 +9,10 @@
 //
 // Rendering shape — each handler is a single self-contained
 // `<!doctype html>` document via ONE `hono/html` tagged template
-// (Pitfall 7 auto-escape). The `raw` helper is used ONLY for the
+// (auto-escape). The `raw` helper is used ONLY for the
 // static styles.css asset (see coverage.ts header for the contract).
 //
-// Data fetch — in-process via `app.request(path)` (Pitfall 6, NEVER
+// Data fetch — in-process via `app.request(path)` (NEVER
 // `fetch("http://...")`).
 
 import type { CoverageRow, Requirement } from "@spec-engine/shared";
@@ -124,9 +124,11 @@ function lineageOf(
 ): Requirement[] {
   let rootId = r.id;
   const back = new Set<string>();
-  while (predecessorOf.has(rootId) && !back.has(rootId)) {
+  for (;;) {
+    const prev = predecessorOf.get(rootId);
+    if (prev === undefined || back.has(rootId)) break;
     back.add(rootId);
-    rootId = predecessorOf.get(rootId) as string;
+    rootId = prev;
   }
   const chain: Requirement[] = [];
   const seen = new Set<string>();
@@ -395,7 +397,7 @@ export function mountRequirements(app: Hono): void {
     ).length;
 
     // Per-requirement bound files for the LISTED reqs only: reverse-resolve
-    // each id in-process (cheap prepared queries; no network — Pitfall 6).
+    // each id in-process (cheap prepared queries; no network).
     // Parallel so page latency is one round of the derived index, not N
     // sequential reads.
     const tagLists = await Promise.all(

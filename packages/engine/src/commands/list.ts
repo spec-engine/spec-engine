@@ -4,7 +4,7 @@
 // record in (key, seq) order, history included. A `--status` value outside
 // active | draft | superseded | deprecated is exit 2.
 
-import { defineCommand } from "citty";
+import { defineCommand, type ParsedArgs } from "citty";
 import { normalizeDomainKey } from "../authoring/domains";
 import { EXIT, resolveDbPath } from "../constants";
 import { formatNoRequirementsIndexed } from "../indexer/discover";
@@ -29,7 +29,7 @@ import { assertContainedPath, withReadStorage } from "./_shared";
 const STATUS_CHOICES = STATUS_WORDS.join("|");
 
 /** The filter the flags name; a status outside the known set exits 2. */
-function filterFromArgs(args: Record<string, unknown>): ListRecordsFilter {
+function filterFromArgs(args: ListArgs): ListRecordsFilter {
   const filter: ListRecordsFilter = {};
   if (typeof args.domain === "string" && args.domain.trim() !== "") {
     filter.key = normalizeDomainKey(args.domain);
@@ -45,34 +45,38 @@ function filterFromArgs(args: Record<string, unknown>): ListRecordsFilter {
   return filter;
 }
 
+const listArgs = {
+  platformDir: platformDirArg,
+  domain: { type: "string", description: "Only this domain key (e.g. BILLING)" },
+  status: {
+    type: "string",
+    description: `Only this status: ${STATUS_CHOICES}`,
+  },
+  out: outArg,
+  json: jsonArg,
+  fresh: freshArg,
+  noPrompt: noPromptArg,
+} as const;
+
+type ListArgs = ParsedArgs<typeof listArgs>;
+
 export const listCommand = defineCommand({
   meta: {
     name: "list",
     description:
       "Print every requirement record in (key, seq) order, including superseded and deprecated history. --domain and --status filter.",
   },
-  args: {
-    platformDir: platformDirArg,
-    domain: { type: "string", description: "Only this domain key (e.g. BILLING)" },
-    status: {
-      type: "string",
-      description: `Only this status: ${STATUS_CHOICES}`,
-    },
-    out: outArg,
-    json: jsonArg,
-    fresh: freshArg,
-    noPrompt: noPromptArg,
-  },
+  args: listArgs,
   async run({ args }) {
     const filter = filterFromArgs(args);
     const platformDir = resolvePlatformDir(args);
-    const outArgValue = args.out as string | undefined;
+    const outArgValue = args.out;
     const dbPath = resolveDbPath(platformDir, outArgValue);
     if (outArgValue) assertContainedPath(dbPath, platformDir, "spec list: --out");
 
     await maybePromptForOnboarding({
       platformDir,
-      args: { noPrompt: args.noPrompt as boolean | undefined },
+      args: { noPrompt: args.noPrompt },
     });
 
     await withReadStorage({ platformDir, dbPath, fresh: !!args.fresh }, (storage) => {

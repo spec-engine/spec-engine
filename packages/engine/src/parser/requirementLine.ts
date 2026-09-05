@@ -32,7 +32,7 @@ export function findRequirementIdLine(rawLines: string[], id: string, from = 0):
 
   let loose = -1;
   for (let i = start; i < rawLines.length; i++) {
-    const line = rawLines[i];
+    const line = rawLines[i] ?? "";
     if (line === exact || line === `${exact},`) return i;
     if (loose < 0 && line.includes(needle)) loose = i;
   }

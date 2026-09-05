@@ -20,7 +20,7 @@
 // Storage interface, never a raw driver.
 
 import { join } from "node:path";
-import { type SpecRequirement, type Storage, validateDomainFile } from "@spec-engine/shared";
+import { parseDomainText, type SpecRequirement, type Storage } from "@spec-engine/shared";
 import { gitDiffNameStatus, gitShow } from "../base/gitBase";
 import { CANONICAL_SPECS_DIR } from "../constants";
 import { DEFAULT_EXTS, findDomainJsonFiles, isPathIgnored } from "../scanner/fs";
@@ -45,7 +45,7 @@ function isSpecFile(path: string): boolean {
  *  different scanner) from being miscounted as implementations. */
 function isCodeFile(path: string): boolean {
   if (isSpecFile(path) || isIgnored(path)) return false;
-  const ext = path.includes(".") ? (path.split(".").pop() as string) : "";
+  const ext = path.includes(".") ? (path.split(".").pop() ?? "") : "";
   return CODE_EXTS.has(ext);
 }
 
@@ -53,13 +53,7 @@ function isCodeFile(path: string): boolean {
  *  body contributes zero reqs and never throws — guard is advisory, so a bad
  *  base file must not crash the gate. */
 function parseReqs(text: string): SpecRequirement[] {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    return [];
-  }
-  const v = validateDomainFile(parsed, "");
+  const v = parseDomainText(text, "");
   return v.ok ? v.data.requirements : [];
 }
 

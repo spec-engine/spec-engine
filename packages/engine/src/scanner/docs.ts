@@ -74,14 +74,14 @@ export function scanDocFile(
   const mentions: DocMention[] = [];
   const lines = text.split("\n");
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i] as string;
+    const line = lines[i] ?? "";
 
     // Bindings first — they double as the per-line "already bound" set.
     const boundIds = new Set<string>();
     DOC_BINDING_RE.lastIndex = 0;
     let b: RegExpExecArray | null = DOC_BINDING_RE.exec(line);
     while (b !== null) {
-      const id = b[1] as string;
+      const id = b[1] ?? "";
       boundIds.add(id);
       tags.push({
         req_id: id,

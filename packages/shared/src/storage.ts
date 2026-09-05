@@ -5,7 +5,7 @@
 //
 // The Storage interface (D-07). Implemented exclusively by
 // packages/engine/src/storage/sqlite.ts. Webapp consumes read methods
-// over HTTP via spec serve in Phase 5; type-level: a single interface.
+// over HTTP via spec serve; type-level: a single interface.
 
 import type { DiagnosticCode } from "./diagnostics";
 import type { PropagationRow } from "./propagation";
@@ -41,7 +41,7 @@ export interface Repo {
 /**
  * A sibling directory under the platform root that exists but is NOT a
  * Spec Engine member because it lacks a `spec-engine.member.json`. Captured by
- * `discoverRepos` (DISC-02) for Phase 8's `NO_SPEC_CONFIG` diagnostic
+ * `discoverRepos` (DISC-02) for the `NO_SPEC_CONFIG` diagnostic
  * emission. Only the "directory exists, config missing" case is captured —
  * loose files at the platform root and malformed configs are excluded.
  */
@@ -134,7 +134,7 @@ export interface RelationRow {
 }
 
 /**
- * TERM-01 (Phase 6): one row per glossary-term alias — `term_id` (the owning
+ * One row per glossary-term alias — `term_id` (the owning
  * TERM's id) → `name` (the synonym string). A minimal clone of `RelationRow`'s
  * derived-row posture: no FK/CHECK/UNIQUE at the DB (SCHM-07 / Invariant #4),
  * validated (if at all) via diagnostics, never a constraint. Present-and-empty
@@ -146,7 +146,7 @@ export interface TermAliasRow {
 }
 
 /**
- * TERM-01 (Phase 6): one row per pinned `cites` reference — `req_id` (the citing
+ * One row per pinned `cites` reference — `req_id` (the citing
  * requirement) → `term_id` (the cited TERM, NULLABLE: an unresolved citation
  * still lands so `spec check` can surface UNDEFINED_TERM). `cited_as` is the
  * authored surface form, `pinned_version` the TERM spec_version the citation was
@@ -192,7 +192,7 @@ export interface ProvenanceRow {
  * PMAT-01 / PMAT-04: the row shape of the WIDENED `provenance_matrix` SQL VIEW
  * (defined in schema.ts VIEWS_DDL) — one row per provenance link, joined to its
  * requirement (req_status) and aggregated coverage (backing-test columns).
- * Consumed by Phase 13's `spec provenance` surface (Plan 02/03). The VIEW is a
+ * Consumed by the `spec provenance` surface. The VIEW is a
  * projection, never materialized (PMAT-04).
  */
 export interface ProvenanceMatrixRow {
@@ -214,7 +214,7 @@ export interface ProvenanceMatrixRow {
    * a value OUTSIDE the `RequirementStatus` union and flows through here (and
    * into the rendered header) verbatim so `spec check` can diagnose it. The
    * type is therefore widened to `RequirementStatus | string` so it does not
-   * misrepresent the unconstrained source — WR-03 (13-REVIEW review-fix).
+   * misrepresent the unconstrained source.
    */
   req_status: RequirementStatus | string;
   implemented: 0 | 1;
@@ -228,7 +228,7 @@ export interface ParseDiagnostic {
   source_file: string;
   line: number;
   /** Requirement id implicated by the structural defect, when available.
-   *  Per WR-02 (03-REVIEW), populated for BROKEN_SUPERSEDE and BAD_STATUS
+   *  Populated for BROKEN_SUPERSEDE and BAD_STATUS
    *  (which are always defects on a specific `### KEY-NNN` requirement)
    *  and for the SECOND-seen DUP_ID occurrence (which carries the
    *  colliding id verbatim). null only when no specific id is implicated. */
@@ -269,13 +269,13 @@ export interface FtsHit {
   line: number;
 }
 
-// --- Drift + Semantic diagnostic row types (Phase 3 / plan 03-01) --------
+// --- Drift + Semantic diagnostic row types --------------------------------
 //
 // `DriftRow` is the row shape of the `drift` SQL VIEW (defined alongside
 // `coverage` in schema.ts VIEWS_DDL). One row per (repo, req_id) where the
 // repo's pin is behind the requirement's `changed_at_version`. CHCK-03: this
-// VIEW is the single source of truth for drift — both `spec check` (Phase 3)
-// and `spec propagation` (Phase 4) read from it via `listDriftRows()`.
+// VIEW is the single source of truth for drift — both `spec check`
+// and `spec propagation` read from it via `listDriftRows()`.
 export interface DriftRow {
   repo: string;
   req_id: string;
@@ -288,9 +288,7 @@ export interface DriftRow {
 
 // `SemanticDiagnostic` is the row shape returned by `listSemanticDiagnostics()`,
 // which UNIONs the five semantic diagnostic queries Q1..Q5 (DANGLING_TAG,
-// SUPERSEDED_REFERENCED, DRIFT, ORPHAN_REQ, UNVERIFIED_REQ). Plan 03-02 wires
-// the real queries; this plan exports the type so `Storage` can declare the
-// method signature.
+// SUPERSEDED_REFERENCED, DRIFT, ORPHAN_REQ, UNVERIFIED_REQ).
 //
 // `repo` and `req_id` are nullable because ORPHAN_REQ + UNVERIFIED_REQ scope
 // to a requirement only (no specific repo), whereas DANGLING_TAG /
@@ -309,15 +307,9 @@ export interface SemanticDiagnostic {
 }
 
 // --- Storage interface ---------------------------------------------------
-//
-// Phase 1 stubs return [] / null / 0 where data isn't yet present.
-// Phase 2 fills in upsertRepo/upsertDomain/upsertRequirement/upsertTag.
-// Phase 3 fills in coverageMatrix / listDiagnostics / listDriftRows /
-//   listSemanticDiagnostics with real query results.
-// Phase 4 fills in searchFts / propagationFor.
 
 export interface Storage {
-  // --- Lifecycle / schema-version handling (Phase 1) ---
+  // --- Lifecycle / schema-version handling ---
   /** Path the DB is bound to (for diagnostics / logging). */
   readonly path: string;
 
@@ -329,19 +321,22 @@ export interface Storage {
   getRepo(name: string): Repo | null;
   listDomains(): Domain[];
   getDomain(key: string): Domain | null;
-  listRequirements(opts?: { key?: string; status?: RequirementStatus }): Requirement[];
+  listRequirements(opts?: {
+    key?: string | undefined;
+    status?: RequirementStatus | undefined;
+  }): Requirement[];
   getRequirement(id: string): Requirement | null;
   listTags(opts?: { repo?: string; req_id?: string; file?: string }): Tag[];
   listDiagnostics(): ParseDiagnostic[];
   /** Returns rows directly from the `drift` SQL VIEW. CHCK-03: this is the
-   *  single source of truth for drift — both `spec check` (Phase 3) and
-   *  `spec propagation` (Phase 4) consume it. No additional projection;
+   *  single source of truth for drift — both `spec check` and
+   *  `spec propagation` consume it. No additional projection;
    *  the VIEW already encodes the predicate `r.changed_at_version >
    *  repos.pinned_spec_version AND tags(repo, req_id) exists`. */
   listDriftRows(): DriftRow[];
   /** Returns the UNION of the semantic diagnostic queries Q1..Q7:
    *  Q1..Q5 (DANGLING_TAG, SUPERSEDED_REFERENCED, DRIFT, ORPHAN_REQ,
-   *  UNVERIFIED_REQ — all error severity, plan 03-02) plus the RED-16
+   *  UNVERIFIED_REQ — all error severity) plus the RED-16
    *  Relates pair Q6/Q7 (BROKEN_RELATES, RELATES_SUPERSEDED — warning
    *  severity). Mixed severities since RED-16; `spec check`'s exit code
    *  keys on error-severity rows only. */
@@ -362,7 +357,7 @@ export interface Storage {
   /** PROV-04: every `**Issues:**` provenance link in the index, ordered by the
    *  full composite key (req_id, role, issue_id, source_file, line) for
    *  deterministic output. `issue_id` is returned verbatim/opaque — never
-   *  resolved against requirements (PROV-02/SC3). The read seam Phase 13's
+   *  resolved against requirements (PROV-02/SC3). The read seam the
    *  `provenance_matrix` surface consumes. */
   listProvenance(): ProvenanceRow[];
   /** PMAT-01/04: the widened provenance × coverage projection, ordered by the
@@ -380,13 +375,13 @@ export interface Storage {
    *  Each row carries `state: PropagationState` from the 5-state machine
    *  (PROP-02). The drift overlay (`drifted: boolean`) is merged in TS from
    *  a single `listDriftRows()` call — PROP-01 forbids redefining the drift
-   *  predicate anywhere in Phase 4; the `drift` VIEW is the only source of
-   *  truth (CHCK-03). SQL implementation lands in plan 04-02. */
+   *  predicate anywhere else; the `drift` VIEW is the only source of
+   *  truth (CHCK-03). */
   propagationFor(reqId: string): PropagationRow[];
   /** Returns the requirements tagged in any of the given files. */
   resolveByFiles(files: string[]): Requirement[];
 
-  // --- Write operations (used by `spec index` in Phase 2) ---
+  // --- Write operations (used by `spec index`) ---
   /** Begin a write transaction. All upsert* calls inside fn happen atomically;
    *  throw → automatic rollback (per Bun's db.transaction wrapper). */
   withWriteTx<T>(fn: (w: WriteHandle) => T): T;

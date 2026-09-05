@@ -18,7 +18,12 @@
 // grammar pass — `livesIn` has no index column, so there is nothing to read
 // back and no SCHEMA_VERSION bump involved.
 
-import { type Diagnostic, DiagnosticCode } from "@spec-engine/shared";
+import {
+  type Diagnostic,
+  DiagnosticCode,
+  parseDomainText,
+  type SpecRequirement,
+} from "@spec-engine/shared";
 import { listDomainKeys } from "../authoring/domains";
 import { resolveFileRef } from "../authoring/filerefs";
 import { specPaths } from "../constants";
@@ -28,22 +33,21 @@ const CHECKED_STATUSES = new Set(["active", "draft"]);
 
 interface RawDomain {
   raw: string;
-  requirements: Array<{ id?: unknown; status?: unknown; livesIn?: unknown }>;
+  requirements: readonly SpecRequirement[];
 }
 
 /** Read one domain envelope. Malformed files are skipped — structural
  *  validation owns those. */
 async function readDomain(platformDir: string, key: string): Promise<RawDomain | null> {
+  const { abs, rel } = specPaths(platformDir, key);
+  let raw: string;
   try {
-    const raw = await Bun.file(specPaths(platformDir, key).abs).text();
-    const doc = JSON.parse(raw) as { requirements?: unknown };
-    return {
-      raw,
-      requirements: Array.isArray(doc.requirements) ? doc.requirements : [],
-    };
+    raw = await Bun.file(abs).text();
   } catch {
     return null;
   }
+  const parsed = parseDomainText(raw, rel);
+  return parsed.ok ? { raw, requirements: parsed.data.requirements } : null;
 }
 
 /** The BROKEN_FILE_REF rows for one requirement's `livesIn` list. */
@@ -51,13 +55,11 @@ function rowsForRequirement(
   platformDir: string,
   key: string,
   reqId: string,
-  livesIn: unknown,
+  livesIn: readonly string[],
   line: number,
 ): Diagnostic[] {
-  if (!Array.isArray(livesIn)) return [];
   const rows: Diagnostic[] = [];
   for (const entry of livesIn) {
-    if (typeof entry !== "string") continue;
     const ref = entry.startsWith("@") ? entry.slice(1) : entry;
     if (ref.length === 0 || resolveFileRef(platformDir, ref)) continue;
     rows.push({
@@ -80,14 +82,12 @@ function rowsForDomain(platformDir: string, key: string, domain: RawDomain): Dia
   let lineCursor = 0;
 
   for (const req of domain.requirements) {
-    if (typeof req?.id !== "string") continue;
     // Resolve the line before the status filter so the cursor stays monotonic
     // across entries this pass skips.
     const found = findRequirementIdLine(rawLines, req.id, lineCursor);
     if (found >= 0) lineCursor = found + 1;
 
-    const status = typeof req.status === "string" ? req.status.toLowerCase() : "";
-    if (!CHECKED_STATUSES.has(status)) continue;
+    if (!CHECKED_STATUSES.has(req.status.toLowerCase())) continue;
 
     rows.push(
       ...rowsForRequirement(platformDir, key, req.id, req.livesIn, found >= 0 ? found + 1 : 0),

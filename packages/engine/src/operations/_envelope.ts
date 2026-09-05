@@ -1,42 +1,13 @@
 // packages/engine/src/operations/_envelope.ts
 //
 // The domain-file substrate every lifecycle operation shares: read one
-// SPEC.json envelope loosely (the write seam re-validates the whole object),
-// locate the entry an id names, and word the two refusals that every locate
-// can raise. Nothing here writes.
+// SPEC.json through the shared schema, locate the entry an id names, and word
+// the refusals every locate can raise. Nothing here writes.
 
 import { existsSync } from "node:fs";
+import { parseDomainText, type SpecDomain, type SpecRequirement } from "@spec-engine/shared";
 import { specPaths } from "../constants";
 import { fail, type OpFailure } from "./_result";
-
-/** A requirement or term object inside the envelope, typed loosely on purpose. */
-export interface EnvelopeRequirement {
-  id: string;
-  status?: string;
-  statement?: string;
-  why?: string | null;
-  supersedes?: string | null;
-  supersededBy?: string | null;
-  relates?: string[];
-  livesIn?: string[];
-  issues?: unknown[];
-  changedAtVersion?: number;
-  supersededAtVersion?: number;
-  deprecatedReason?: string;
-  term?: string;
-  aliases?: string[];
-  cites?: Array<{ term: string; pinned: number }>;
-  section?: string | null;
-  [k: string]: unknown;
-}
-
-export interface Envelope {
-  key?: string;
-  specVersion?: number;
-  requirements?: EnvelopeRequirement[];
-  updated?: string;
-  [k: string]: unknown;
-}
 
 export interface EnvelopeFile {
   ok: true;
@@ -44,8 +15,9 @@ export interface EnvelopeFile {
   specPath: string;
   /** Platform-relative, e.g. `spec-engine/BILLING/SPEC.json`. */
   relFile: string;
-  domain: Envelope;
-  requirements: EnvelopeRequirement[];
+  domain: SpecDomain;
+  /** The same array as `domain.requirements`; a push here lands in the envelope. */
+  requirements: SpecRequirement[];
 }
 
 /** The domain key an id carries: everything before the first dash. */
@@ -54,15 +26,16 @@ export function domainKeyOf(id: string): string {
 }
 
 /** Capitalized status for a refusal message; the raw string when empty. */
-export function displayStatus(raw: unknown): string {
-  const s = typeof raw === "string" ? raw : "";
-  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+export function displayStatus(raw: string): string {
+  return raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : raw;
 }
 
 /**
- * Read a domain's SPEC.json. `not_found` when the file is absent (the detail
- * defaults to the phrasing `spec amend` has always used; a caller may word
- * its own), `invalid_domain_file` when the bytes are not JSON.
+ * Read a domain's SPEC.json through the shared schema. `not_found` when the
+ * file is absent (the detail defaults to the phrasing `spec amend` has always
+ * used; a caller may word its own), `invalid_domain_file` when the bytes are
+ * not JSON or the envelope fails the schema.
+ * @spec SCHM-030
  */
 export async function readEnvelope(
   platformDir: string,
@@ -76,18 +49,21 @@ export async function readEnvelope(
       missingDetail ?? `no domain ${key} (expected ${relFile} under ${platformDir})`,
     );
   }
-  let domain: Envelope;
-  try {
-    domain = JSON.parse(await Bun.file(specPath).text()) as Envelope;
-  } catch {
-    return fail("invalid_domain_file", `${relFile} is not valid JSON`);
+  const parsed = parseDomainText(await Bun.file(specPath).text(), relFile);
+  if (!parsed.ok) {
+    if (parsed.reason === "not_json") {
+      return fail("invalid_domain_file", `${relFile} is not valid JSON`);
+    }
+    return fail("invalid_domain_file", parsed.diagnostics.map((d) => d.detail).join("\n"), {
+      diagnostics: parsed.diagnostics,
+    });
   }
-  const requirements = Array.isArray(domain.requirements) ? domain.requirements : [];
-  return { ok: true, key, specPath, relFile, domain, requirements };
+  const domain = parsed.data;
+  return { ok: true, key, specPath, relFile, domain, requirements: domain.requirements };
 }
 
 export interface LocatedEntry extends EnvelopeFile {
-  req: EnvelopeRequirement;
+  req: SpecRequirement;
 }
 
 /** The domain file and the entry an id names, or `not_found` for either. */
@@ -98,7 +74,7 @@ export async function locateEntry(
 ): Promise<LocatedEntry | OpFailure> {
   const file = await readEnvelope(platformDir, domainKeyOf(id), missingDomainDetail);
   if (!file.ok) return file;
-  const req = file.requirements.find((r) => r?.id === id);
+  const req = file.requirements.find((r) => r.id === id);
   if (req === undefined) return fail("not_found", `no entry ${id} in ${file.relFile}`);
   return { ...file, req };
 }
@@ -106,8 +82,8 @@ export async function locateEntry(
 /** The successor entry both `supersede` and `move` append, in the envelope's field order. */
 export function successorEntry(
   id: string,
-  fields: { statement: string; why: string; livesIn: string[]; issue?: string },
-): EnvelopeRequirement {
+  fields: { statement: string; why: string; livesIn: string[]; issue?: string | undefined },
+): SpecRequirement {
   return {
     id,
     status: "active",
@@ -118,5 +94,7 @@ export function successorEntry(
     relates: [],
     livesIn: fields.livesIn,
     issues: fields.issue ? [{ role: "created", id: fields.issue }] : [],
+    aliases: [],
+    cites: [],
   };
 }

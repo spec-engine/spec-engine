@@ -15,9 +15,15 @@
 // Pure aside from reads: no writes, no process.exit, deterministic ordering
 // by (source_file, line, req_id).
 
-import { type Diagnostic, DiagnosticCode, parseEarsStatement } from "@spec-engine/shared";
+import {
+  type Diagnostic,
+  DiagnosticCode,
+  parseDomainText,
+  parseEarsStatement,
+  type SpecRequirement,
+} from "@spec-engine/shared";
 import { listDomainKeys } from "../authoring/domains";
-import { CANONICAL_SPECS_DIR, SPEC_FILENAME, specPaths } from "../constants";
+import { specPaths } from "../constants";
 import { findRequirementIdLine } from "../parser/requirementLine";
 
 const CHECKED_STATUSES = new Set(["active", "draft"]);
@@ -25,7 +31,7 @@ const CHECKED_STATUSES = new Set(["active", "draft"]);
 interface DeclaredDomain {
   raw: string;
   severity: "warning" | "error";
-  requirements: Array<{ id?: unknown; status?: unknown; statement?: unknown }>;
+  requirements: readonly SpecRequirement[];
 }
 
 /** Read one domain's envelope; null unless it declares `grammar: "ears"`.
@@ -34,22 +40,20 @@ async function readDeclaredDomain(
   platformDir: string,
   key: string,
 ): Promise<DeclaredDomain | null> {
+  const { abs, rel } = specPaths(platformDir, key);
+  let raw: string;
   try {
-    const raw = await Bun.file(specPaths(platformDir, key).abs).text();
-    const doc = JSON.parse(raw) as {
-      grammar?: unknown;
-      grammarSeverity?: unknown;
-      requirements?: unknown;
-    };
-    if (doc.grammar !== "ears") return null;
-    return {
-      raw,
-      severity: doc.grammarSeverity === "error" ? "error" : "warning",
-      requirements: Array.isArray(doc.requirements) ? doc.requirements : [],
-    };
+    raw = await Bun.file(abs).text();
   } catch {
     return null;
   }
+  const parsed = parseDomainText(raw, rel);
+  if (!parsed.ok || parsed.data.grammar !== "ears") return null;
+  return {
+    raw,
+    severity: parsed.data.grammarSeverity === "error" ? "error" : "warning",
+    requirements: parsed.data.requirements,
+  };
 }
 
 /** The STATEMENT_GRAMMAR rows for one declared domain. */
@@ -58,21 +62,18 @@ function rowsForDomain(key: string, domain: DeclaredDomain): Diagnostic[] {
   const rawLines = domain.raw.split("\n");
   let lineCursor = 0;
   for (const req of domain.requirements) {
-    if (typeof req?.id !== "string") continue;
     // Resolve the line before the status filter so the cursor stays monotonic
     // across entries this pass skips.
     const found = findRequirementIdLine(rawLines, req.id, lineCursor);
     if (found >= 0) lineCursor = found + 1;
-    if (typeof req.statement !== "string") continue;
-    const status = typeof req.status === "string" ? req.status.toLowerCase() : "";
-    if (!CHECKED_STATUSES.has(status)) continue;
+    if (!CHECKED_STATUSES.has(req.status.toLowerCase())) continue;
     const result = parseEarsStatement(req.statement);
     if (result.ok) continue;
     rows.push({
       code: DiagnosticCode.STATEMENT_GRAMMAR,
       severity: domain.severity,
       repo: null,
-      source_file: `${CANONICAL_SPECS_DIR}/${key}/${SPEC_FILENAME}`,
+      source_file: specPaths("", key).rel,
       line: found >= 0 ? found + 1 : 0,
       req_id: req.id,
       detail: `${result.problem}. Expected one of:\n  ${result.expected}`,

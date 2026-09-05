@@ -12,7 +12,7 @@
 // manifest is retired and a stray one is ignored with a warning.
 //
 // Source pattern: 02-RESEARCH § Platform & repo discovery (lines 908-973).
-// Pitfall 5 (Zod error surfacing): a malformed spec-engine.member.json must throw
+// Zod error surfacing: a malformed spec-engine.member.json must throw
 // a clear, location-tagged error rather than crashing deep inside Zod.
 //
 // Determinism: sibling directories are enumerated via Bun.Glob (iteration
@@ -33,6 +33,7 @@ import {
   NotASpecPlatformError,
   type Repo,
   type SkippedRepo,
+  type SpecConfig,
   SpecConfigSchema,
 } from "@spec-engine/shared";
 import { isExistingDir, PLATFORM_MANIFEST_FILENAME } from "../constants";
@@ -132,18 +133,16 @@ function looksLikeRepoRoot(dirPath: string): boolean {
 /**
  * Read and validate a `spec-engine.member.json` at `configPath`.
  * Returns the parsed config; throws a clear, location-tagged error on
- * validation failure (Pitfall 5).
+ * validation failure.
  *
- * WR-04: wraps the read in a try/catch so an ENOENT (file vanished
+ * Wraps the read in a try/catch so an ENOENT (file vanished
  * between the caller's existsSync check and this read — non-malicious
  * TOCTOU from a concurrent `git checkout`, fixture cleanup, etc.) is
  * surfaced as a clear "could not be read" message rather than a bare
  * Bun.file error that matches neither of the two clean error paths
  * this function advertises.
  */
-export async function readRepoConfig(
-  configPath: string,
-): Promise<{ specs: string; ignore?: string[]; members?: string }> {
+export async function readRepoConfig(configPath: string): Promise<SpecConfig> {
   let text: string;
   try {
     text = await Bun.file(configPath).text();
@@ -177,7 +176,7 @@ function extractPin(specs: string): number {
   if (!m) {
     throw new Error(`expected 'spec-engine@N', got ${JSON.stringify(specs)}`);
   }
-  return Number.parseInt(m[1] as string, 10);
+  return Number.parseInt(m[1] ?? "", 10);
 }
 
 /**
@@ -330,9 +329,9 @@ async function classifySibling(name: string, absPlatform: string): Promise<Sibli
   // (skipped.length would be > 0), leaving its `@spec` tags unscanned.
   //
   // The caller sorts `entries` lexicographically before folding, so the
-  // resulting `skipped[]` inherits lex-by-name ordering (Pitfall 3: Bun.Glob
+  // resulting `skipped[]` inherits lex-by-name ordering (Bun.Glob
   // iteration is non-deterministic; the upstream sort is the determinism
-  // source). Phase 8 (DISC-03) iterates `skipped[]` and emits one
+  // source). The diagnostics stage iterates `skipped[]` and emits one
   // `NO_SPEC_CONFIG` warning-severity ParseDiagnostic per entry.
   if (!existsSync(configPath)) {
     if (looksLikeRepoRoot(repoPath)) {

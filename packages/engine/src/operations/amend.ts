@@ -8,14 +8,14 @@
 // asks the caller for the requirement's tags from a freshly derived index, so
 // a draft amend never touches the index at all.
 
-import { validateAndWrite } from "@spec-engine/shared";
+import { type SpecRequirement, validateAndWrite } from "@spec-engine/shared";
 import { localToday } from "../authoring/edit";
 import {
   grammarRefusalText,
   grammarWarningText,
   judgeStatementGrammar,
 } from "../authoring/grammar";
-import { displayStatus, domainKeyOf, type EnvelopeRequirement, locateEntry } from "./_envelope";
+import { displayStatus, domainKeyOf, locateEntry } from "./_envelope";
 import type { FreshTags } from "./_index";
 import { fail, type OpFailure, type OpWarning } from "./_result";
 import { unresolvableRefWarnings } from "./mint";
@@ -24,15 +24,15 @@ export type { FreshTags } from "./_index";
 
 /** The fields an amend may change. An absent key leaves the field byte-identical. */
 export interface AmendFields {
-  statement?: string;
+  statement?: string | undefined;
   /** `null` clears the field. */
-  why?: string | null;
-  livesIn?: string[];
+  why?: string | null | undefined;
+  livesIn?: string[] | undefined;
   /** Appended as `amends-via` provenance. */
-  issue?: string;
+  issue?: string | undefined;
   /** TERM ids only. */
-  term?: string;
-  aliases?: string[];
+  term?: string | undefined;
+  aliases?: string[] | undefined;
 }
 
 export interface AmendInput {
@@ -53,23 +53,22 @@ export interface AmendResult {
 /** Status gate, then the bound-tag gate for an Active entry. Null when the amend may proceed. */
 async function gateRejection(
   id: string,
-  req: EnvelopeRequirement,
+  req: SpecRequirement,
   freshTags: FreshTags,
 ): Promise<OpFailure | null> {
-  const rawStatus = typeof req.status === "string" ? req.status : "";
-  const statusLc = rawStatus.toLowerCase();
+  const statusLc = req.status.toLowerCase();
   if (statusLc !== "active" && statusLc !== "draft") {
     return fail(
       "conflict",
-      `${id} is ${displayStatus(rawStatus)} — only Active/Draft entries amend (a superseded entry is history; supersede its successor instead)`,
+      `${id} is ${displayStatus(req.status)} — only Active/Draft entries amend (a superseded entry is history; supersede its successor instead)`,
     );
   }
   if (statusLc !== "active") return null;
   const bound = (await freshTags(id)).filter(
     (t) => t.kind === "implements" || t.kind === "verifies",
   );
-  if (bound.length === 0) return null;
-  const site = bound[0] as { file: string; line: number };
+  const site = bound[0];
+  if (site === undefined) return null;
   return fail(
     "conflict",
     `${id} is shipped — ${bound.length} code tag(s) bind it (e.g. ${site.file}:${site.line}). ` +
@@ -79,7 +78,7 @@ async function gateRejection(
 
 /** Apply the named fields; returns what changed and the values to scan for `@` refs. */
 function applyFields(
-  req: EnvelopeRequirement,
+  req: SpecRequirement,
   fields: AmendFields,
 ): { fieldsChanged: string[]; refValues: string[] } {
   const fieldsChanged: string[] = [];
@@ -108,9 +107,7 @@ function applyFields(
   }
   if (fields.issue !== undefined) {
     // @spec PROV-003
-    const issues = Array.isArray(req.issues) ? (req.issues as unknown[]) : [];
-    issues.push({ role: "amends-via", id: fields.issue });
-    req.issues = issues;
+    req.issues.push({ role: "amends-via", id: fields.issue });
     fieldsChanged.push("issue");
   }
   if (fields.aliases !== undefined) {

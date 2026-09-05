@@ -10,12 +10,16 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { type Diagnostic, DiagnosticCode, validateAndWrite } from "@spec-engine/shared";
+import {
+  type Diagnostic,
+  DiagnosticCode,
+  parseDomainText,
+  validateAndWrite,
+} from "@spec-engine/shared";
 import { localToday } from "../authoring/edit";
 import { specPaths } from "../constants";
 import { fail, type OpFailure } from "./_result";
-
-const TERM_KEY = "TERM";
+import { TERM_KEY, termStore } from "./term";
 
 // The fixed intro chrome — glossary boilerplate, verbatim, carried as a static
 // constant (it is not a term, so it lives in the template, never in the store).
@@ -50,7 +54,7 @@ export function parseGlossary(md: string): GlossaryTerm[] {
     if (m) {
       const remainder = buf.slice(m[0].length);
       const statement = remainder.replace(/^ — /, "").trim();
-      terms.push({ term: m[1], statement, section });
+      terms.push({ term: m[1] ?? "", statement, section });
     }
     buf = null;
   };
@@ -94,20 +98,14 @@ export function generateGlossary(terms: GlossaryTerm[]): string {
 
 /** Read the TERM store the way generation consumes it: active terms, id-sorted. */
 function readStoreTerms(platformDir: string): GlossaryTerm[] {
-  const specPath = join(platformDir, "spec-engine", TERM_KEY, "SPEC.json");
+  const { abs: specPath, rel: relFile } = specPaths(platformDir, TERM_KEY);
   if (!existsSync(specPath)) return [];
-  const domain = JSON.parse(readFileSync(specPath, "utf8")) as {
-    requirements?: Array<Record<string, unknown>>;
-  };
-  const reqs = Array.isArray(domain.requirements) ? domain.requirements : [];
-  return reqs
-    .filter((r) => String(r.status).toLowerCase() === "active")
-    .sort((a, b) => (String(a.id) < String(b.id) ? -1 : String(a.id) > String(b.id) ? 1 : 0))
-    .map((r) => ({
-      term: String(r.term ?? ""),
-      statement: String(r.statement ?? ""),
-      section: (r.section ?? null) as string | null,
-    }));
+  const parsed = parseDomainText(readFileSync(specPath, "utf8"), relFile);
+  if (!parsed.ok) return [];
+  return parsed.data.requirements
+    .filter((r) => r.status.toLowerCase() === "active")
+    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+    .map((r) => ({ term: r.term ?? "", statement: r.statement, section: r.section ?? null }));
 }
 
 /** The GLOSSARY.md path for a platform (repo-root sibling of spec-engine/). */
@@ -128,16 +126,12 @@ export type MigrateGlossaryResult =
 export async function migrateGlossary(
   platformDir: string,
 ): Promise<MigrateGlossaryResult | OpFailure> {
-  const { abs: specPath, rel: relFile } = specPaths(platformDir, TERM_KEY);
-  if (!existsSync(specPath)) {
-    return fail("not_found", `no TERM domain (expected ${relFile} under ${platformDir})`);
+  const store = await termStore(platformDir);
+  if (!store.ok) return store;
+  const { specPath, relFile, domain } = store;
+  if (domain.requirements.length > 0) {
+    return { ok: true, skipped: true, existing: domain.requirements.length };
   }
-  const domain = JSON.parse(readFileSync(specPath, "utf8")) as {
-    requirements?: unknown[];
-    [k: string]: unknown;
-  };
-  const existing = Array.isArray(domain.requirements) ? domain.requirements : [];
-  if (existing.length > 0) return { ok: true, skipped: true, existing: existing.length };
   const gPath = glossaryPath(platformDir);
   if (!existsSync(gPath)) {
     return fail("not_found", `no GLOSSARY.md to migrate (expected ${gPath})`);

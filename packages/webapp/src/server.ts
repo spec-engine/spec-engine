@@ -1,21 +1,19 @@
 // packages/webapp/src/server.ts
 //
-// Phase 1 webapp scaffold (D-14, D-16). The createApp() factory returns a
-// Hono app that serves the placeholder index.html embedded at compile time
-// via Bun's `import ... with { type: "text" }` attribute (Pattern 4).
+// The webapp scaffold. The createApp() factory returns a Hono app that
+// serves the placeholder page embedded at compile time via Bun's
+// `import ... with { type: "text" }` attribute.
 //
-// IMPORTANT: do NOT switch to Bun.file("./index.html") — that resolves at
-// runtime and fails inside the `bun build --compile` binary (Pitfall 10).
+// IMPORTANT: do NOT switch to Bun.file("./index.html.txt") — that resolves at
+// runtime and fails inside the `bun build --compile` binary.
 // IMPORTANT: this package may NOT import bun:sqlite, node:fs, fs, bun,
 // node:path, or anything from @spec-engine/spec-engine (enforced by D-09 lint).
 
 import { Hono } from "hono";
-// Bun inlines the file as a string when imported with the `text` attribute.
-// TS's ambient *.html declaration models the full-stack bundler shape, so we
-// cast through `unknown` to a string for the Phase 1 text-import path
-// (Pattern 4 / D-14). Runtime semantics: `bun build --compile` embeds the
-// raw file contents as a UTF-8 string.
-import htmlRaw from "./index.html" with { type: "text" };
+// Bun inlines the file as a string when imported with the `text` attribute;
+// the `.txt` extension is what types the import as a string, and
+// `bun build --compile` embeds the raw file contents as UTF-8.
+import html from "./index.html.txt" with { type: "text" };
 import { mountCoverage } from "./pages/coverage";
 import { registerErrorBoundary } from "./pages/data";
 import { mountEditor } from "./pages/editor";
@@ -28,8 +26,6 @@ import { mountRelations } from "./pages/relations";
 import { mountRequirements } from "./pages/requirements";
 import { mountSetup } from "./pages/setup";
 
-const html = htmlRaw as unknown as string;
-
 /** The embedded HTML string — exported so the `serve --probe` smoke can
  *  assert the binary really inlined it (D-14). */
 export const placeholderHtml = html;
@@ -41,10 +37,10 @@ export function createApp(): Hono {
 }
 
 /**
- * Plan 05-04 — mount the 5 SSR pages onto an existing Hono app and return
+ * Mount the SSR pages onto an existing Hono app and return
  * the same app for chainability (RED-17 added /relations). Mirrors
  * `mountApi(app, storage)`'s "mutate-one-app" composition (RESEARCH Open
- * Q1) so plan 05-05's `commands/serve.ts` can compose engine + webapp on
+ * Q1) so `commands/serve.ts` can compose engine + webapp on
  * one Hono instance:
  *
  *   const app = new Hono();
@@ -52,12 +48,12 @@ export function createApp(): Hono {
  *   mountWebapp(app);         // /, /requirements, /propagation/:id, /query, /relations, /provenance  (webapp)
  *
  * Each page handler closes over `app` so it can read its own `/api/*`
- * routes in-process via `app.request(path)` (Pitfall 6 — never
+ * routes in-process via `app.request(path)` (never
  * `fetch("http://...")`).
  *
  * NOTE: `mountWebapp` registers `/` — do NOT call it on the app returned
- * by `createApp()` (the Phase 1 probe factory) because that one already
- * has `/` bound to the placeholder. Plan 05-05's real-serve composer
+ * by `createApp()` (the probe factory) because that one already
+ * has `/` bound to the placeholder. The real-serve composer
  * builds a fresh `new Hono()` and calls both mount functions on it.
  */
 export function mountWebapp(app: Hono): Hono {

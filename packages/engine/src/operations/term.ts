@@ -7,22 +7,18 @@
 // the version bump citations drift against, and confirm a citation onto the
 // term's current version or its successor.
 
-import { type Diagnostic, validateAndWrite } from "@spec-engine/shared";
+import { type Diagnostic, type SpecRequirement, validateAndWrite } from "@spec-engine/shared";
 import { nextRequirementId } from "../authoring/domains";
 import { localToday } from "../authoring/edit";
 import { specPaths } from "../constants";
-import {
-  type EnvelopeFile,
-  type EnvelopeRequirement,
-  locateEntry,
-  readEnvelope,
-} from "./_envelope";
+import { type EnvelopeFile, locateEntry, readEnvelope } from "./_envelope";
 import { fail, type OpFailure, type OpWarning } from "./_result";
 import { unresolvableRefWarnings } from "./mint";
 
 export const TERM_KEY = "TERM";
 
-function termStore(platformDir: string): Promise<EnvelopeFile | OpFailure> {
+/** The TERM store, or `not_found` when the platform has none. */
+export function termStore(platformDir: string): Promise<EnvelopeFile | OpFailure> {
   return readEnvelope(
     platformDir,
     TERM_KEY,
@@ -47,7 +43,7 @@ export interface MintTermInput {
   term: string;
   definition: string;
   aliases: string[];
-  section?: string;
+  section?: string | undefined;
 }
 
 export interface MintTermResult {
@@ -68,7 +64,7 @@ export async function mintTerm(input: MintTermInput): Promise<MintTermResult | O
   const store = await termStore(platformDir);
   if (!store.ok) return fail(store.reason, store.detail, { warnings });
   const id = await nextRequirementId(platformDir, TERM_KEY);
-  const entry: EnvelopeRequirement = {
+  const entry: SpecRequirement = {
     id,
     status: "active",
     statement: input.definition,
@@ -85,7 +81,6 @@ export async function mintTerm(input: MintTermInput): Promise<MintTermResult | O
   };
   if (input.section !== undefined) entry.section = input.section;
   store.requirements.push(entry);
-  store.domain.requirements = store.requirements;
   store.domain.updated = localToday();
   const res = await validateAndWrite(store.specPath, store.domain, store.relFile);
   if (!res.ok) return invalidFile(res, warnings);
@@ -108,11 +103,7 @@ export async function listTerms(
     return store;
   }
   const rows = store.requirements
-    .map((r) => ({
-      id: typeof r.id === "string" ? r.id : "",
-      term: typeof r.term === "string" ? r.term : "",
-      status: typeof r.status === "string" ? r.status : "",
-    }))
+    .map((r) => ({ id: r.id, term: r.term ?? "", status: r.status }))
     .sort((a, b) => a.id.localeCompare(b.id));
   return { ok: true, rows };
 }
@@ -122,7 +113,7 @@ export interface ReviseTermInput {
   id: string;
   definition: string;
   /** Keep the authored `specVersion`; the entry's `changedAtVersion` stays too. */
-  noBump?: boolean;
+  noBump?: boolean | undefined;
 }
 
 export interface ReviseTermResult {
@@ -146,9 +137,9 @@ export async function reviseTerm(input: ReviseTermInput): Promise<ReviseTermResu
   const { platformDir, id, definition } = input;
   const store = await termStore(platformDir);
   if (!store.ok) return store;
-  const req = store.requirements.find((r) => r?.id === id);
+  const req = store.requirements.find((r) => r.id === id);
   if (req === undefined) return fail("not_found", `no entry ${id} in ${store.relFile}`);
-  const statusLc = (typeof req.status === "string" ? req.status : "").toLowerCase();
+  const statusLc = req.status.toLowerCase();
   if (statusLc !== "active" && statusLc !== "draft") {
     return fail(
       "conflict",
@@ -160,8 +151,7 @@ export async function reviseTerm(input: ReviseTermInput): Promise<ReviseTermResu
   req.statement = definition;
   let specVersion: number | null = null;
   if (!input.noBump) {
-    const current = typeof store.domain.specVersion === "number" ? store.domain.specVersion : 1;
-    specVersion = current + 1;
+    specVersion = (store.domain.specVersion ?? 1) + 1;
     store.domain.specVersion = specVersion;
     req.changedAtVersion = specVersion;
   }
@@ -200,12 +190,11 @@ async function confirmTarget(
 ): Promise<{ ok: true; targetId: string; targetPin: number } | OpFailure> {
   const store = await termStore(platformDir);
   if (!store.ok) return store;
-  const term = store.requirements.find((r) => r?.id === termId);
+  const term = store.requirements.find((r) => r.id === termId);
   if (term === undefined) return fail("not_found", `no term ${termId} in ${store.relFile}`);
-  const targetPin = typeof store.domain.specVersion === "number" ? store.domain.specVersion : 1;
-  const statusLc = (typeof term.status === "string" ? term.status : "").toLowerCase();
-  if (statusLc !== "superseded") return { ok: true, targetId: termId, targetPin };
-  const successorId = typeof term.supersededBy === "string" ? term.supersededBy : "";
+  const targetPin = store.domain.specVersion ?? 1;
+  if (term.status.toLowerCase() !== "superseded") return { ok: true, targetId: termId, targetPin };
+  const successorId = term.supersededBy ?? "";
   if (successorId === "") {
     return fail("conflict", `${termId} is superseded but names no successor`);
   }
@@ -229,16 +218,14 @@ export async function confirmTerm(input: ConfirmTermInput): Promise<ConfirmTermR
   const located = await locateEntry(platformDir, reqId);
   if (!located.ok) return located;
   const { specPath, relFile, domain, req } = located;
-  const rawStatus = typeof req.status === "string" ? req.status : "";
-  const statusLc = rawStatus.toLowerCase();
+  const statusLc = req.status.toLowerCase();
   if (statusLc !== "active" && statusLc !== "draft") {
     return fail(
       "conflict",
-      `${reqId} is ${rawStatus} — only Active/Draft entries re-pin a citation (a superseded entry is history)`,
+      `${reqId} is ${req.status} — only Active/Draft entries re-pin a citation (a superseded entry is history)`,
     );
   }
-  const cites = Array.isArray(req.cites) ? req.cites : [];
-  const cite = cites.find((c) => c?.term === termId);
+  const cite = req.cites.find((c) => c.term === termId);
   if (cite === undefined) return fail("not_found", `${reqId} does not cite ${termId}`);
 
   cite.term = target.targetId;
