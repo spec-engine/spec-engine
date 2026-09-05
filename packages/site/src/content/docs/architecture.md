@@ -100,7 +100,7 @@ Each of these exists exactly once, and a grep fence in `scripts/arch-fences.sh` 
 | `runIndex` | Every index build. One transaction, one `build_id` | reviewed, not fenced |
 | `validateAndWrite` | Every write of a `SPEC.json` file | `VAL-01 validateAndWrite seam` |
 | `bun:sqlite` import | Only `storage/sqlite.ts` may import it | `D-08 engine-internal bun:sqlite`, `D-11 bun:sqlite outside engine` |
-| `Storage` interface | Every read the CLI, API, and MCP make | the webapp import fence in `packages/webapp/test/` |
+| `Storage` interface | Every read the CLI, API, and MCP make | the webapp import fence in `packages/webapp/test/import-fence.test.ts` |
 | Operations | The write seam and the id allocator are reached only through `operations/`; no command, route, or tool imports them | `OPS-01 write seam under operations` |
 | No model calls | The engine never runs an LLM. The MCP authoring prompt is a text template | `AUTHOR-003 llm-free engine` |
 | Derived versions | No authored `specVersion` on requirement domains | `SCHM-008 no authored specVersion` |

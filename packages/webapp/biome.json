@@ -4,7 +4,7 @@
   "extends": ["../../biome.json"],
   "overrides": [
     {
-      "includes": ["src/**/*.ts"],
+      "includes": ["src/**/*.ts", "!src/**/*.test.ts", "!src/testing/**"],
       "linter": {
         "rules": {
           "style": {

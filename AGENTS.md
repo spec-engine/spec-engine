@@ -11,7 +11,7 @@ contracts, exit codes, `--json` shapes, copy-paste commands.
 - Components, seams, invariants: the
   [architecture page](packages/site/src/content/docs/architecture.md).
 
-A CI test (`packages/engine/test/docs-agents.test.ts`) fails if any public
+A CI test (`packages/engine/src/cli.docs-agents.test.ts`) fails if any public
 subcommand in `packages/engine/src/cli.ts` is missing from this file.
 
 ## Working in this repo
@@ -43,8 +43,19 @@ Rules:
 - **Exactly one `bun:sqlite` import**, in `packages/engine/src/storage/sqlite.ts`.
   Enforced by `fence_d08_engine_internal` in `scripts/arch-fences.sh`.
 - **The planted-fixture diagnostic baseline is copied in five places**: four
-  smokes in `.github/workflows/ci.yml` and `packages/engine/test/check-ci.test.ts`.
+  smokes in `.github/workflows/ci.yml` and
+  `packages/engine/src/commands/check.ci.test.ts`.
   A change to the set moves all five.
+- **A test lives beside the file it tests.** `foo.ts` is tested by `foo.test.ts`
+  in the same directory; a second test file for the same source is
+  `foo.<aspect>.test.ts` (`check.ci.test.ts`, `sqlite.fts.test.ts`). Shared
+  helpers and planted trees live in `packages/<pkg>/src/testing/`. Only a test
+  of a package- or repo-wide invariant with no single file under test
+  (`architecture-fences`, `corpus-hygiene`, `taxonomy`, `npm-package`, the
+  webapp import fence) lives in `packages/<pkg>/test/`. The tag scanner
+  classifies a file as a test by the `.test.` substring, so a co-located tag
+  still verifies; the fences and the marker ratchet skip `*.test.ts` and
+  `src/testing/`.
 - **A fence runs inside `bun test` under a 5-second budget**
   (`architecture-fences.test.ts` spawns the whole script). Keep each fence to
   one process.

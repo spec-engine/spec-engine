@@ -23,7 +23,6 @@ import { join, resolve } from "node:path";
 const REPO_ROOT = resolve(import.meta.dir, "..", "..", "..");
 const SPEC_ENGINE = join(REPO_ROOT, "spec-engine");
 const ENGINE_SRC = join(REPO_ROOT, "packages", "engine", "src");
-const ENGINE_TEST = join(REPO_ROOT, "packages", "engine", "test");
 
 const INVARIANT_RE = /\(Invariant #\d/;
 
@@ -94,7 +93,11 @@ describe("corpus hygiene (STND-02 — citation retargeting)", () => {
   });
 
   test("check-ci.test.ts cites no non-existent Invariant #7", async () => {
-    await assertAbsent(join(ENGINE_TEST, "check-ci.test.ts"), "check-ci.test.ts", "Invariant #7");
+    await assertAbsent(
+      join(ENGINE_SRC, "commands", "check.ci.test.ts"),
+      "commands/check.ci.test.ts",
+      "Invariant #7",
+    );
   });
 });
 
@@ -116,7 +119,7 @@ describe("corpus hygiene (AUTHC-017 eviction)", () => {
 
   test("the reworded citation sites carry no AUTHC-017 token", async () => {
     const sites: Array<[string, string]> = [
-      [join(ENGINE_TEST, "cli-domain.test.ts"), "cli-domain.test.ts"],
+      [join(ENGINE_SRC, "commands", "domain.test.ts"), "commands/domain.test.ts"],
       [join(ENGINE_SRC, "authoring", "filerefs.ts"), "authoring/filerefs.ts"],
       [join(ENGINE_SRC, "commands", "domain.ts"), "commands/domain.ts"],
       [join(ENGINE_SRC, "commands", "req.ts"), "commands/req.ts"],
