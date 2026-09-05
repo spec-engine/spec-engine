@@ -12,7 +12,7 @@
 // for THIS module (the mandate's motivation was speed). No file content is
 // read — this is a directory walk only.
 //
-// Determinism rule (PARS-04 / Pitfall 1): `readdir` order is not guaranteed,
+// Determinism rule: `readdir` order is not guaranteed,
 // so every helper collects into an array and `.sort()`s before returning, so
 // downstream side effects (tag insertion order → tags.id AUTOINCREMENT
 // sequence) are stable across runs and across machines.
@@ -126,15 +126,16 @@ async function walkFiles(
   return out;
 }
 
-/** Default code-file extensions (ported verbatim from `spec.mjs:10`).
- *  Exported so the pipeline can pass it explicitly when it also needs to
- *  supply `extraIgnore` (the self-member scan excludes `spec-engine/`). */
-export const DEFAULT_EXTS = ["ts", "tsx", "js", "jsx", "mjs"] as const;
+/** Default code-file extensions. A shell script is code too: the repo's
+ *  architecture fences carry their tags in `scripts/*.sh`. Exported so the
+ *  pipeline can pass it explicitly when it also needs to supply `extraIgnore`
+ *  (the self-member scan excludes `spec-engine/`). */
+export const DEFAULT_EXTS = ["ts", "tsx", "js", "jsx", "mjs", "sh"] as const;
 
 /**
  * STOR-02 (17-02): walk `canonicalDir` for files named exactly `SPEC.json`.
  * Returns the canonical-relative paths, lexicographically sorted. Post-cutover
- * (Phase 18, D2) this is the SOLE spec-file glob — the Markdown spec-file
+ * this is the SOLE spec-file glob — the Markdown spec-file
  * walker is deleted, so `spec index` discovers JSON domains only.
  *
  * Symlinks are not followed (Bun.Glob.scan default behavior).

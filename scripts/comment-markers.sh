@@ -42,7 +42,7 @@ if ! printf 'const x = 1; // WR-01 review-fix\n' | grep -qE "$MARKER"; then
   echo "SELF-TEST FAILED: the marker pattern no longer matches a planted marker"
   exit 1
 fi
-if printf '// @spec CHCK-026\n' | grep -qE "$MARKER"; then
+if printf '// @''spec CHCK-026\n' | grep -qE "$MARKER"; then
   echo "SELF-TEST FAILED: the marker pattern matches a bare @spec tag"
   exit 1
 fi

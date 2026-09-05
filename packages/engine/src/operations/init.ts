@@ -126,6 +126,10 @@ export interface WriteMemberConfigInput {
   pin: string;
   /** Rewrite an existing config, keeping its `ignore` list. */
   force?: boolean;
+  /** Repo-relative directory prefixes the scanner skips. Written on a fresh config only. */
+  ignore?: string[];
+  /** A glob that expands each matching subdirectory into its own member. Written on a fresh config only. */
+  members?: string;
 }
 
 export type WriteMemberConfigResult =
@@ -180,9 +184,17 @@ function preservedIgnore(
   return { ok: true, ignore: rawIgnore as string[] };
 }
 
-async function write(configPath: string, pin: string, ignore?: string[]): Promise<void> {
-  const body = `${JSON.stringify(ignore !== undefined ? { specs: pin, ignore } : { specs: pin }, null, 2)}\n`;
-  await Bun.write(configPath, body);
+interface MemberConfigFields {
+  specs: string;
+  ignore?: string[];
+  members?: string;
+}
+
+async function write(configPath: string, fields: MemberConfigFields): Promise<void> {
+  const body: MemberConfigFields = { specs: fields.specs };
+  if (fields.ignore !== undefined) body.ignore = fields.ignore;
+  if (fields.members !== undefined) body.members = fields.members;
+  await Bun.write(configPath, `${JSON.stringify(body, null, 2)}\n`);
 }
 
 /**
@@ -199,7 +211,7 @@ export async function writeMemberConfig(
   const { canonical, pin } = input;
   const configPath = join(canonical, MEMBER_CONFIG_FILENAME);
   if (!existsSync(configPath)) {
-    await write(configPath, pin);
+    await write(configPath, { specs: pin, ignore: input.ignore, members: input.members });
     return { ok: true, action: "wrote", path: configPath, pin };
   }
 
@@ -230,6 +242,6 @@ export async function writeMemberConfig(
   }
   const ignoreRes = preservedIgnore(configPath, rawRes.raw);
   if (!ignoreRes.ok) return ignoreRes;
-  await write(configPath, pin, ignoreRes.ignore);
+  await write(configPath, { specs: pin, ignore: ignoreRes.ignore });
   return { ok: true, action: "wrote", path: configPath, pin };
 }

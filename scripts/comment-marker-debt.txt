@@ -25,11 +25,9 @@
 6	packages/engine/src/provenance/format.ts
 3	packages/engine/src/provenance/resolve.ts
 6	packages/engine/src/results/junit.ts
-2	packages/engine/src/scanner/fs.ts
 1	packages/engine/src/scanner/tags.ts
 42	packages/engine/src/storage/sqlite.ts
 1	packages/shared/src/config.ts
-7	packages/shared/src/domain.ts
 2	packages/shared/src/gate.ts
 1	packages/shared/src/indexResult.ts
 22	packages/shared/src/schema.ts
