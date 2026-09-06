@@ -142,6 +142,19 @@ spec index . && spec check . --ci  # membership and pins are now one gate
 
 `spec check . --ci` runs platform-map's own check underneath, so one gate fails when a requirement, a tag, a pin, or the platform declaration is broken.
 
-## A future input: `dependsOn`
+## Propagation order: `dependsOn`
 
-Every repo and package in the map carries `dependsOn`, the platform's own package names it depends on. Spec Engine does not read it yet. It is the natural ordering input for propagation across members and is recorded here so the migration leaves room for it.
+Every repo and package in the map carries `dependsOn`, the platform's own package names its manifest depends on, matched within one ecosystem. Spec Engine reads it as the order in which a superseded requirement propagates: a consumer can only move to the successor after the packages it depends on ship it. `spec propagation`, `/api/propagation/:id`, `spec_propagation`, and the webapp's propagation page list members in dependency order, a member after every member it depends on, and members at the same depth by name. <!-- @spec PROP-006 -->
+
+The depth is a coverage-column fact, computed at discovery and stored in the derived index. A single-repo member's node is its map repo; a monorepo member's package column, and a lone monorepo's package column, is its map `Package`. A column depends on another column when the other's `packageName` appears in its `dependsOn`; a name that is no column (a monorepo root's own package, an absent member) is no edge. A column with no dependency is depth 0; every other column is one deeper than its deepest dependency. A dependency cycle, and every column downstream of it, sits at one depth after every column outside it, by name.
+
+```
+$ spec propagation BILLING-002 .
+REPO    STATE                VIA          DRIFT?
+shared  MIGRATED_VERIFIED    —            no
+zed     NO_DOMAIN_REFERENCE  —            no
+api     ON_PREDECESSOR       BILLING-001  no
+web     MIGRATED_UNVERIFIED  —            no
+```
+
+Here `api` depends on `shared` and `web` on `api`, so `api` is the member to migrate next. A platform with no in-platform dependencies lists members by name, as before.

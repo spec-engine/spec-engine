@@ -5,19 +5,9 @@
 // every member repo except the canonical one. The drift predicate is NOT here:
 // the `drift` VIEW in @spec-engine/shared is its single home, and the storage
 // layer overlays it onto these rows.
-
 //
-// substrate. The classifier is composed of a single recursive CTE walking the
-// predecessor chain BACKWARDS from the target (anchor: `WHERE superseded_by =
-// $target`; recursive step joins requirements whose `superseded_by` is in the
-// 04-RESEARCH — PoC chains are 1-2 deep, the guard exists for defense in
-// depth). The outer select iterates `repos` filtered to `repos.name !=
-// "did $repo migrate?" report).
-//
-// PROP-01 / CHCK-03 invariant: the predicate `r.changed_at_version >
-// repos.pinned_spec_version` does NOT appear in this SQL. The drift overlay
-// merged onto each row comes from `this.listDriftRows()` — the `drift` VIEW
-// in schema.ts is the single source of truth. One predicate, one place.
+// Rows come out in dependency order, providers before consumers, ties by name.
+// @spec PROP-006
 
 export const PROP_REPO_STATES_SQL = `
 WITH RECURSIVE ancestors(id, depth) AS (
@@ -79,5 +69,5 @@ SELECT
   ) AS via_other
 FROM repos
 WHERE repos.name != 'spec-engine'
-ORDER BY repos.name
+ORDER BY repos.dependency_depth, repos.name
 `;

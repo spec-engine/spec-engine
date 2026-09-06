@@ -22,6 +22,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { type PropagationRow, PropagationState, type Storage } from "@spec-engine/shared";
 import { runIndex } from "../../indexer/pipeline";
+import { DEPENDENCY_MEMBERS, dependencyPlatform } from "../../testing/dependencyPlatform";
+import { TestPlatform } from "../../testing/platform";
 import { openStorage } from "../sqlite";
 import { PROP_REPO_STATES_SQL } from "./propagation";
 
@@ -174,5 +176,31 @@ describe("propagationFor (PROP-02 — 5-state classifier)", () => {
     // before runtime would. The grep-style assertion matches the same
     // substring the plan's acceptance criteria locks.
     expect(PROP_REPO_STATES_SQL).toContain("a.depth < 16");
+  });
+});
+
+describe("propagationFor row order", () => {
+  // @spec PROP-006 unit
+  test("rows come out by dependency depth, providers before consumers, ties by name", async () => {
+    const fx = TestPlatform.temp("spec-propagation-order-");
+    const storage = openStorage(dbPath);
+    try {
+      const { predecessor, head } = await dependencyPlatform(fx);
+      await runIndex({ platformDir: fx.dir, storage });
+
+      const rows = storage.propagationFor(head);
+
+      expect(rows.map((r) => r.repo)).toEqual([...DEPENDENCY_MEMBERS.byDepth]);
+      expect(rows.map((r) => r.state)).toEqual([
+        PropagationState.MIGRATED_VERIFIED,
+        PropagationState.NO_DOMAIN_REFERENCE,
+        PropagationState.ON_PREDECESSOR,
+        PropagationState.MIGRATED_UNVERIFIED,
+      ]);
+      expect(rows[2]?.via_req_id).toBe(predecessor);
+    } finally {
+      storage.close();
+      fx.remove();
+    }
   });
 });

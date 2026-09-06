@@ -11,6 +11,7 @@ import {
   type Locations,
   locate,
   type Diagnostic as MapDiagnostic,
+  type Package as MapPackage,
   type Repo as MapRepo,
   map,
   type PlatformMap,
@@ -280,17 +281,112 @@ type Shape = Pick<
   "mode" | "members" | "unpinned" | "undeclared" | "diagnostics"
 >;
 
-function byName(a: Repo, b: Repo): number {
+function byName(a: { name: string }, b: { name: string }): number {
   return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
 }
 
-function column(name: string, path: string, pin: number, ignore?: string[]): Repo {
+/** The platform-map node a coverage column was named from: a single repo, or one workspace package. */
+type MapNode = Pick<MapPackage, "ecosystem" | "packageName" | "dependsOn"> | MapRepo;
+
+/** A coverage column before its dependency depth is known. */
+interface Column {
+  repo: Omit<Repo, "dependency_depth">;
+  node: MapNode;
+}
+
+function column(name: string, path: string, pin: number, node: MapNode, ignore?: string[]): Column {
   return {
-    name,
-    path,
-    pinned_spec_version: pin,
-    ...(ignore && ignore.length > 0 ? { ignore } : {}),
+    repo: {
+      name,
+      path,
+      pinned_spec_version: pin,
+      ...(ignore && ignore.length > 0 ? { ignore } : {}),
+    },
+    node,
   };
+}
+
+/** `ecosystem` and a package name as one key: dependsOn never crosses ecosystems. */
+function packageKey(ecosystem: string | undefined, packageName: string): string {
+  return `${ecosystem ?? ""}\0${packageName}`;
+}
+
+/** The column that provides each package name, first by column order. */
+function providersOf(columns: readonly Column[]): Map<string, string> {
+  const providers = new Map<string, string>();
+  for (const c of columns) {
+    if (c.node.packageName === undefined) continue;
+    const key = packageKey(c.node.ecosystem, c.node.packageName);
+    if (!providers.has(key)) providers.set(key, c.repo.name);
+  }
+  return providers;
+}
+
+/** The columns `c` depends on: its dependsOn names that another column provides. */
+function dependenciesOf(c: Column, providers: ReadonlyMap<string, string>): Set<string> {
+  const deps = new Set<string>();
+  for (const name of c.node.dependsOn) {
+    const provider = providers.get(packageKey(c.node.ecosystem, name));
+    if (provider !== undefined && provider !== c.repo.name) deps.add(provider);
+  }
+  return deps;
+}
+
+/** The dependency graph over columns: who each column waits on, and who waits on it. */
+interface DependencyGraph {
+  names: string[];
+  dependents: Map<string, string[]>;
+  waitingOn: Map<string, number>;
+}
+
+function dependencyGraph(columns: readonly Column[]): DependencyGraph {
+  const providers = providersOf(columns);
+  const dependents = new Map<string, string[]>();
+  const waitingOn = new Map<string, number>();
+  for (const c of columns) {
+    const deps = dependenciesOf(c, providers);
+    waitingOn.set(c.repo.name, deps.size);
+    for (const provider of deps) {
+      dependents.set(provider, [...(dependents.get(provider) ?? []), c.repo.name]);
+    }
+  }
+  return { names: columns.map((c) => c.repo.name).sort(), dependents, waitingOn };
+}
+
+/**
+ * Each column's depth in the dependsOn graph: 0 with no dependency on another
+ * column, else one more than its deepest dependency. A dependsOn name that is
+ * no column (a monorepo's root package, an absent member) is no edge. Every
+ * column in a cycle, or downstream of one, sits at one depth after every
+ * column outside it.
+ * @spec PROP-006
+ */
+function dependencyDepths(columns: readonly Column[]): Map<string, number> {
+  const { names, dependents, waitingOn } = dependencyGraph(columns);
+  const depth = new Map<string, number>();
+  const ready = names.filter((n) => waitingOn.get(n) === 0);
+  for (const n of ready) depth.set(n, 0);
+  for (let i = 0; i < ready.length; i++) {
+    const provider = ready[i] as string;
+    const providerDepth = depth.get(provider) ?? 0;
+    for (const consumer of dependents.get(provider) ?? []) {
+      depth.set(consumer, Math.max(depth.get(consumer) ?? 0, providerDepth + 1));
+      const left = (waitingOn.get(consumer) ?? 0) - 1;
+      waitingOn.set(consumer, left);
+      if (left === 0) ready.push(consumer);
+    }
+  }
+  const cyclic = Math.max(-1, ...depth.values()) + 1;
+  for (const n of names) if (!depth.has(n)) depth.set(n, cyclic);
+  return depth;
+}
+
+/** The columns as `Repo` rows, each stamped with its dependency depth, sorted by name. */
+function toRepos(columns: readonly Column[]): Repo[] {
+  const depth = dependencyDepths(columns);
+  return columns
+    .map((c) => ({ ...c.repo, dependency_depth: depth.get(c.repo.name) ?? 0 }))
+    .sort(byName);
 }
 
 /** A lone single repository is its own coverage column, named by its directory and pinned to the derived version. */
@@ -299,6 +395,7 @@ function selfMember(absPlatform: string, platformVersion: number): Repo {
     name: basename(absPlatform),
     path: absPlatform,
     pinned_spec_version: platformVersion,
+    dependency_depth: 0,
     selfMember: true,
   };
 }
@@ -322,19 +419,19 @@ async function packageColumns(
   prefix: string,
   repo: MapRepo,
   parentPin: number,
-): Promise<Repo[]> {
-  const out: Repo[] = [];
+): Promise<Column[]> {
+  const out: Column[] = [];
   for (const pkg of repo.packages) {
     const name = `${prefix}${pkg.path}`;
     if (name === CANONICAL_SPECS_DIR) continue;
     const path = join(repoPath, pkg.path);
     const configPath = join(path, MEMBER_CONFIG_FILENAME);
     if (!existsSync(configPath)) {
-      out.push(column(name, path, parentPin));
+      out.push(column(name, path, parentPin, pkg));
       continue;
     }
     const cfg = await readRepoConfig(configPath);
-    out.push(column(name, path, extractPin(cfg.specs), cfg.ignore));
+    out.push(column(name, path, extractPin(cfg.specs), pkg, cfg.ignore));
   }
   return out;
 }
@@ -407,7 +504,7 @@ async function membersOf(
     const repo = mapped.repos[0];
     const members =
       repo !== undefined && repo.mode === "monorepo" && repo.packages.length > 0
-        ? await packageColumns(absPlatform, "", repo, platformVersion)
+        ? toRepos(await packageColumns(absPlatform, "", repo, platformVersion))
         : [selfMember(absPlatform, platformVersion)];
     return { mode: mapped.mode, members, unpinned: [], undeclared: [], diagnostics };
   }
@@ -415,7 +512,7 @@ async function membersOf(
     const undeclared = mapped.repos.map((r) => ({ name: r.name, path: join(absPlatform, r.name) }));
     return { mode: "multi-repo", members: [], unpinned: [], undeclared, diagnostics };
   }
-  const members: Repo[] = [];
+  const columns: Column[] = [];
   const unpinned: NamedDir[] = [];
   for (const repo of mapped.repos) {
     const path = located.repos[repo.name];
@@ -428,16 +525,15 @@ async function membersOf(
     const cfg = await readRepoConfig(configPath);
     const pin = extractPin(cfg.specs);
     if (repo.mode === "monorepo" && repo.packages.length > 0) {
-      members.push(...(await packageColumns(path, `${repo.name}/`, repo, pin)));
+      columns.push(...(await packageColumns(path, `${repo.name}/`, repo, pin)));
     } else {
-      members.push(column(repo.name, path, pin, cfg.ignore));
+      columns.push(column(repo.name, path, pin, repo, cfg.ignore));
     }
   }
-  members.sort(byName);
   const undeclared = mapped.diagnostics
     .filter((d) => d.code === "UNLISTED_REPO")
     .map((d) => ({ name: d.subject, path: join(absPlatform, d.subject) }));
-  return { mode: "multi-repo", members, unpinned, undeclared, diagnostics };
+  return { mode: "multi-repo", members: toRepos(columns), unpinned, undeclared, diagnostics };
 }
 
 /**
@@ -461,6 +557,7 @@ export async function discoverRepos(platformDir: string): Promise<DiscoveredPlat
     name: CANONICAL_SPECS_DIR,
     path: canonicalPath,
     pinned_spec_version: platformVersion,
+    dependency_depth: 0,
   };
 
   const reading = readPlatformMap(absPlatform);

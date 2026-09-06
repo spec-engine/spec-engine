@@ -20,6 +20,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { PropagationState } from "@spec-engine/shared";
 import { cloneFixture } from "../testing/cloneFixture";
+import { DEPENDENCY_MEMBERS, dependencyPlatform } from "../testing/dependencyPlatform";
+import { TestPlatform } from "../testing/platform";
 import { propagationCommand } from "./propagation";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "platform-fixture");
@@ -165,6 +167,30 @@ describe("spec propagation (in-process)", () => {
 });
 
 // ---------- RED-11: pre-index / pre-spec guidance ----------
+
+describe("spec propagation row order", () => {
+  // @spec PROP-006 integration
+  test("text and --json list members by dependency depth, providers first, ties by name", async () => {
+    const fx = TestPlatform.temp("spec-propagation-cmd-order-");
+    try {
+      const { head } = await dependencyPlatform(fx);
+
+      expect(await runPropagation({ reqId: head, platformDir: fx.dir, json: true })).toBe(0);
+      const rows = JSON.parse(logs[0] ?? "[]") as Array<{ repo: string }>;
+      expect(rows.map((r) => r.repo)).toEqual([...DEPENDENCY_MEMBERS.byDepth]);
+
+      logs = [];
+      expect(await runPropagation({ reqId: head, platformDir: fx.dir })).toBe(0);
+      const table = (logs[0] ?? "").split("\n");
+      expect(table[0]).toMatch(/^REPO\s+STATE\s+VIA\s+DRIFT\?$/);
+      expect(table.slice(1).map((line) => line.split(/\s+/)[0])).toEqual([
+        ...DEPENDENCY_MEMBERS.byDepth,
+      ]);
+    } finally {
+      fx.remove();
+    }
+  });
+});
 
 describe("spec propagation — pre-index guidance (RED-11)", () => {
   test("non-platform dir: friendly message + exit 2, no stack trace, no .spec-engine artifact", async () => {

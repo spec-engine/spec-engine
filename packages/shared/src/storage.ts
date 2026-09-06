@@ -17,6 +17,12 @@ export interface Repo {
   path: string;
   pinned_spec_version: number;
   /**
+   * The member's position in the platform map's dependsOn graph: 0 with no
+   * in-platform dependency, else one more than its deepest dependency.
+   * Propagation lists members by this, providers before consumers.
+   */
+  dependency_depth: number;
+  /**
    * Discovery-time hint, never persisted: true when this Repo is a lone
    * single repository registered as its own coverage column. The pipeline
    * excludes the in-repo `spec-engine/` subfolder from that column's scan.
