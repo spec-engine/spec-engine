@@ -75,8 +75,10 @@ export const PROVENANCE_BY_ISSUE_SQL =
 // than dynamically composing the WHERE clause — every SQL statement stays
 // grep-scannable, and the bind keys are always the same `{key, status}` shape.
 
-export const LIST_REPOS_SQL = "SELECT name, path, pinned_spec_version FROM repos ORDER BY name";
-export const GET_REPO_SQL = "SELECT name, path, pinned_spec_version FROM repos WHERE name = $name";
+export const LIST_REPOS_SQL =
+  "SELECT name, path, pinned_spec_version, dependency_depth FROM repos ORDER BY name";
+export const GET_REPO_SQL =
+  "SELECT name, path, pinned_spec_version, dependency_depth FROM repos WHERE name = $name";
 export const LIST_DOMAINS_SQL =
   "SELECT key, owner, schema, spec_version, source_repo FROM domains ORDER BY key";
 export const GET_DOMAIN_SQL =

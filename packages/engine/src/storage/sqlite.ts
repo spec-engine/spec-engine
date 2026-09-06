@@ -662,7 +662,7 @@ class SqliteStorage implements Storage {
     const db = this.#db;
 
     const insRepo = db.prepare(
-      "INSERT OR REPLACE INTO repos (name, path, pinned_spec_version) VALUES ($name, $path, $pin)",
+      "INSERT OR REPLACE INTO repos (name, path, pinned_spec_version, dependency_depth) VALUES ($name, $path, $pin, $depth)",
     );
     const insDomain = db.prepare(
       "INSERT OR REPLACE INTO domains (key, owner, schema, spec_version, source_repo) " +
@@ -743,6 +743,7 @@ class SqliteStorage implements Storage {
           name: r.name,
           path: r.path,
           pin: r.pinned_spec_version,
+          depth: r.dependency_depth,
         });
       },
       upsertDomain(d) {
@@ -904,11 +905,10 @@ export function poisonRepoRow(path: string, name: string): void {
   // listRepoNamesFromDb pattern).
   const db = new Database(path);
   try {
-    db.run("INSERT INTO repos (name, path, pinned_spec_version) VALUES (?, ?, ?)", [
-      name,
-      "/dev/null",
-      999,
-    ]);
+    db.run(
+      "INSERT INTO repos (name, path, pinned_spec_version, dependency_depth) VALUES (?, ?, ?, ?)",
+      [name, "/dev/null", 999, 0],
+    );
   } finally {
     db.close();
   }
@@ -980,7 +980,7 @@ export function computeBuildId(storage: Storage): string {
       },
       {
         label: "repos",
-        sql: "SELECT name, path, pinned_spec_version FROM repos ORDER BY name",
+        sql: "SELECT name, path, pinned_spec_version, dependency_depth FROM repos ORDER BY name",
       },
       {
         label: "domains",

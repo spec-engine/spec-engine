@@ -11,7 +11,7 @@ Machine-oriented reference for coding agents. For narrative and rationale, see t
 - Code binds with `// @spec KEY-NNN`. A test tag may add `unit` | `integration` | `e2e`.
 - Tag kind is path-derived: implementation code implements, a test path verifies.
 - The index at `<platformDir>/.spec-engine/index.sqlite` is derived and disposable.
-- Coverage, drift, and propagation are SQL projections over tags. Drift compares a member's pin (`spec-engine@N`) against each referenced requirement's `changed_at_version`; the platform version is the max domain version.
+- Coverage, drift, and propagation are SQL projections over tags. Drift compares a member's pin (`spec-engine@N`) against each referenced requirement's `changed_at_version`; the platform version is the max domain version. Propagation rows come in dependency order, providers before consumers, from platform-map's `dependsOn`.
 
 The repo's `AGENTS.md` is the canonical copy of this page, with every command's flags and `--json` shape.
 

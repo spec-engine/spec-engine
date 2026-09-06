@@ -327,6 +327,7 @@ function buildRows(input: BuildRowsInput): IndexRows {
         name: canonical.name,
         path: canonical.path,
         pinned_spec_version: platformVersion,
+        dependency_depth: 0,
       } satisfies Repo,
       ...members,
     ],

@@ -175,6 +175,100 @@ describe("a declared platform: membership comes from the platform file", () => {
   });
 });
 
+describe("dependency depth comes from the platform map's dependsOn", () => {
+  const depths = (members: Array<{ name: string; dependency_depth: number }>) =>
+    members.map((m) => [m.name, m.dependency_depth]);
+
+  // @spec PROP-006 unit
+  test("a member sits one deeper than the deepest member it depends on; the rest are depth 0", async () => {
+    await fx.member("shared");
+    await fx.member("api", { dependsOn: ["shared"] });
+    await fx.member("web", { dependsOn: ["api", "shared"] });
+    await fx.member("zed");
+
+    const r = await discoverRepos(tmp);
+
+    expect(depths(r.members)).toEqual([
+      ["api", 1],
+      ["shared", 0],
+      ["web", 2],
+      ["zed", 0],
+    ]);
+  });
+
+  // @spec PROP-006 unit
+  test("a monorepo member's package columns carry their own package's dependsOn, across members too", async () => {
+    await fx.member("core");
+    const shared = await fx.member("shared");
+    shared.workspace(["packages/ui", "packages/config"]);
+    shared.file(
+      "packages/ui/package.json",
+      `${JSON.stringify({ name: "ui", private: true, dependencies: { config: "*", core: "*" } })}\n`,
+    );
+    await fx.member("web", { dependsOn: ["ui"] });
+
+    const r = await discoverRepos(tmp);
+
+    expect(depths(r.members)).toEqual([
+      ["core", 0],
+      ["shared/packages/config", 0],
+      ["shared/packages/ui", 1],
+      ["web", 2],
+    ]);
+  });
+
+  // @spec PROP-006 unit
+  test("a cycle and everything downstream of it sit at one depth after every other column", async () => {
+    await fx.member("a", { dependsOn: ["b"] });
+    await fx.member("b", { dependsOn: ["a"] });
+    await fx.member("c", { dependsOn: ["a"] });
+    await fx.member("lib");
+    await fx.member("app", { dependsOn: ["lib"] });
+
+    const r = await discoverRepos(tmp);
+
+    expect(depths(r.members)).toEqual([
+      ["a", 2],
+      ["app", 1],
+      ["b", 2],
+      ["c", 2],
+      ["lib", 0],
+    ]);
+  });
+
+  // @spec PROP-006 unit
+  test("a dependsOn name that is no column (a monorepo root, an absent package) is no edge", async () => {
+    const mono = await fx.member("mono");
+    mono.workspace(["packages/x"]);
+    await fx.member("api", { dependsOn: ["mono", "nowhere"] });
+
+    const r = await discoverRepos(tmp);
+
+    expect(depths(r.members)).toEqual([
+      ["api", 0],
+      ["mono/packages/x", 0],
+    ]);
+  });
+
+  // @spec PROP-006 unit
+  test("a lone monorepo's packages are ordered by their dependsOn; a lone single repo is depth 0", async () => {
+    fx.workspace(["packages/app", "packages/lib"]);
+    fx.file(
+      "packages/app/package.json",
+      `${JSON.stringify({ name: "app", private: true, dependencies: { lib: "*" } })}\n`,
+    );
+    await writeVersionedDomain(tmp, "X", 1);
+
+    const r = await discoverRepos(tmp);
+
+    expect(depths(r.members)).toEqual([
+      ["packages/app", 1],
+      ["packages/lib", 0],
+    ]);
+    expect(r.canonical.dependency_depth).toBe(0);
+  });
+});
+
 describe("a folder of repositories with no platform file is a preview: nothing is a member", () => {
   test("every repository is undeclared and the folder is an UNDECLARED_PLATFORM warning", async () => {
     await mkdir(join(tmp, "spec-engine"), { recursive: true });
@@ -211,6 +305,7 @@ describe("a lone repository", () => {
         name: basename(resolve(tmp)),
         path: resolve(tmp),
         pinned_spec_version: 3,
+        dependency_depth: 0,
         selfMember: true,
       },
     ]);

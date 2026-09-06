@@ -14,7 +14,6 @@
 3	packages/engine/src/provenance/resolve.ts
 2	packages/shared/src/gate.ts
 1	packages/shared/src/indexResult.ts
-22	packages/shared/src/schema.ts
 1	packages/tracker/src/adapter.ts
 1	packages/tracker/src/cache.ts
 1	packages/tracker/src/linear.ts
@@ -24,7 +23,6 @@
 6	packages/webapp/src/pages/coverage.ts
 2	packages/webapp/src/pages/data.ts
 6	packages/webapp/src/pages/editor.ts
-3	packages/webapp/src/pages/propagation.ts
 7	packages/webapp/src/pages/provenance.ts
 5	packages/webapp/src/pages/query.ts
 4	packages/webapp/src/pages/relations.ts

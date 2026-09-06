@@ -168,7 +168,12 @@ describe("openStorage busy_timeout — cross-process contention waits, not throw
       // SQLite's busy handler waits out the child's ~400ms hold and the
       // write lands.
       storage.withWriteTx((w) => {
-        w.upsertRepo({ name: "contention-probe", path: "/dev/null", pinned_spec_version: 1 });
+        w.upsertRepo({
+          name: "contention-probe",
+          path: "/dev/null",
+          pinned_spec_version: 1,
+          dependency_depth: 0,
+        });
       });
       expect(storage.listRepos().map((r) => r.name)).toContain("contention-probe");
 

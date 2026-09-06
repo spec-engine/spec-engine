@@ -172,7 +172,8 @@ How this implementation realizes them:
    a lone repo with no platform file is one column or its packages. The
    pin is the one fact `spec-engine.member.json` adds. `spec init <name>`
    declares and pins in one step; no `spec` workflow runs a platform-map
-   command. Full model: the [Platform Mapping
+   command. platform-map's `dependsOn` orders `spec propagation`: providers
+   before consumers. Full model: the [Platform Mapping
    page](packages/site/src/content/docs/platform-mapping.md).
 
 ## Exit code contract
@@ -446,6 +447,13 @@ Exit: 0 / 2. Empty result is `[]` and exit 0. Unknown id under `--req` is `[]`.
 One row per member repo: `{ repo, state, via_req_id, drifted }`. `state` is one
 of `MIGRATED_VERIFIED`, `MIGRATED_UNVERIFIED`, `ON_PREDECESSOR`,
 `ON_OTHER_DOMAIN_REQ`, `NO_DOMAIN_REFERENCE`.
+
+Rows are in dependency order: a member comes after every member it depends
+on, read from platform-map's `dependsOn` (the platform's own package names in
+a member's manifest), and members at the same depth come by name. The same
+order is served by `/api/propagation/:id`, `spec_propagation`, and the
+webapp's `/propagation/:id` page. A platform with no in-platform dependencies
+lists members by name.
 
 Exit: 0 / 2.
 

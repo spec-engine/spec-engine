@@ -1,19 +1,9 @@
 // packages/webapp/src/pages/propagation.ts
 //
-// Plan 05-04 / Task 1 — SSR propagation view (`GET /propagation/:id`).
-// Renders per-member-repo propagation state for the target requirement
-// (PROP-02 5-state machine + drift overlay).
-//
-// D-09 / WORK-04 / Invariant #5: webapp source imports ONLY from
-// `@spec-engine/shared` (types) and `hono` (runtime). NO `bun:sqlite`, no
-// `node:fs`, no `fs`, no `bun`, no `node:path`, no `@spec-engine/spec-engine`.
-//
-// Rendering shape — single self-contained `<!doctype html>` document via
-// ONE `hono/html` tagged template (Pitfall 7 auto-escape). The `raw`
-// helper is used ONLY for the static styles.css asset.
-//
-// Data fetch — `app.request("/api/propagation/" + encodeURIComponent(id))`
-// in-process (Pitfall 6).
+// `GET /propagation/:id`: the per-member propagation state of one requirement,
+// rendered in the order `/api/propagation/:id` returns it (dependency depth,
+// then name). The page imports only `@spec-engine/shared` types and `hono`.
+// @spec PROP-006
 
 import type { PropagationRow } from "@spec-engine/shared";
 import type { Hono } from "hono";

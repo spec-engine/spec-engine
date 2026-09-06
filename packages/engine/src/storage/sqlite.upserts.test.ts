@@ -32,7 +32,12 @@ afterEach(() => {
 // Sample row fixtures (deterministic, minimal).
 // ---------------------------------------------------------------------------
 
-const SAMPLE_REPO: Repo = { name: "api", path: "/x/api", pinned_spec_version: 2 };
+const SAMPLE_REPO: Repo = {
+  name: "api",
+  path: "/x/api",
+  pinned_spec_version: 2,
+  dependency_depth: 0,
+};
 
 const SAMPLE_REQ: Requirement = {
   id: "BILLING-009",
@@ -80,10 +85,13 @@ describe("upsertRepo", () => {
     s.close();
 
     const db = new Database(dbPath);
-    const row = db.query("SELECT name, path, pinned_spec_version FROM repos").get() as {
+    const row = db
+      .query("SELECT name, path, pinned_spec_version, dependency_depth FROM repos")
+      .get() as {
       name: string;
       path: string;
       pinned_spec_version: number;
+      dependency_depth: number;
     } | null;
     db.close();
 
@@ -91,13 +99,14 @@ describe("upsertRepo", () => {
     expect(row?.name).toBe("api");
     expect(row?.path).toBe("/x/api");
     expect(row?.pinned_spec_version).toBe(2);
+    expect(row?.dependency_depth).toBe(0);
   });
 
   test("idempotent: calling with same name twice leaves exactly 1 row (INSERT OR REPLACE)", () => {
     const s = openStorage(dbPath);
     s.withWriteTx((w) => {
-      w.upsertRepo({ name: "api", path: "/old/path", pinned_spec_version: 1 });
-      w.upsertRepo({ name: "api", path: "/new/path", pinned_spec_version: 2 });
+      w.upsertRepo({ name: "api", path: "/old/path", pinned_spec_version: 1, dependency_depth: 0 });
+      w.upsertRepo({ name: "api", path: "/new/path", pinned_spec_version: 2, dependency_depth: 0 });
     });
     s.close();
 
@@ -443,8 +452,13 @@ describe("withWriteTx rollback (INDX-04 / Assumption A2)", () => {
 function populateDeterministic(path: string) {
   const s = openStorage(path);
   s.withWriteTx((w) => {
-    w.upsertRepo({ name: "api", path: "/x/api", pinned_spec_version: 2 });
-    w.upsertRepo({ name: "mobile", path: "/x/mobile", pinned_spec_version: 1 });
+    w.upsertRepo({ name: "api", path: "/x/api", pinned_spec_version: 2, dependency_depth: 0 });
+    w.upsertRepo({
+      name: "mobile",
+      path: "/x/mobile",
+      pinned_spec_version: 1,
+      dependency_depth: 0,
+    });
     w.upsertDomain({
       key: "BILLING",
       owner: null,
@@ -502,8 +516,13 @@ describe("computeBuildId", () => {
     const sA = populateDeterministic(pathA);
     const sB = openStorage(pathB);
     sB.withWriteTx((w) => {
-      w.upsertRepo({ name: "api", path: "/x/api", pinned_spec_version: 2 });
-      w.upsertRepo({ name: "mobile", path: "/x/mobile", pinned_spec_version: 1 });
+      w.upsertRepo({ name: "api", path: "/x/api", pinned_spec_version: 2, dependency_depth: 0 });
+      w.upsertRepo({
+        name: "mobile",
+        path: "/x/mobile",
+        pinned_spec_version: 1,
+        dependency_depth: 0,
+      });
       w.upsertDomain({
         key: "BILLING",
         owner: null,
@@ -546,8 +565,13 @@ describe("computeBuildId", () => {
     });
     // After clearAll, sqlite_sequence is reset; re-insert the same rows.
     s.withWriteTx((w) => {
-      w.upsertRepo({ name: "api", path: "/x/api", pinned_spec_version: 2 });
-      w.upsertRepo({ name: "mobile", path: "/x/mobile", pinned_spec_version: 1 });
+      w.upsertRepo({ name: "api", path: "/x/api", pinned_spec_version: 2, dependency_depth: 0 });
+      w.upsertRepo({
+        name: "mobile",
+        path: "/x/mobile",
+        pinned_spec_version: 1,
+        dependency_depth: 0,
+      });
       w.upsertDomain({
         key: "BILLING",
         owner: null,
@@ -585,7 +609,7 @@ describe("computeBuildId", () => {
 
     // Common base rows (must NOT differ between A and B).
     const seed = (w: Parameters<Parameters<typeof sA.withWriteTx>[0]>[0]) => {
-      w.upsertRepo({ name: "api", path: "/x/api", pinned_spec_version: 2 });
+      w.upsertRepo({ name: "api", path: "/x/api", pinned_spec_version: 2, dependency_depth: 0 });
       w.upsertDomain({
         key: "BILLING",
         owner: null,

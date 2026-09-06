@@ -53,7 +53,7 @@ function seed(path: string): void {
   db.run("INSERT INTO _schema_version (version) VALUES (?)", [SCHEMA_VERSION]);
 
   const insRepo = db.prepare(
-    "INSERT INTO repos (name, path, pinned_spec_version) VALUES ($n, $p, $v)",
+    "INSERT INTO repos (name, path, pinned_spec_version, dependency_depth) VALUES ($n, $p, $v, 0)",
   );
   insRepo.run({ n: "api", p: "/x/api", v: 1 });
   insRepo.run({ n: "mobile", p: "/x/mobile", v: 1 });

@@ -78,10 +78,17 @@ export interface MemberInput {
   ignore?: string[] | undefined;
   /** Repo-relative files to write, e.g. a source file carrying a tag line. */
   files?: Record<string, string> | undefined;
+  /** Package names this member's manifest lists under `dependencies`; platform-map reads them as `dependsOn`. */
+  dependsOn?: string[] | undefined;
 }
 
 export interface MintedRequirement {
   id: string;
+}
+
+/** A `dependencies` map over the given package names, each at any version. */
+export function dependencies(names: readonly string[]): Record<string, string> {
+  return Object.fromEntries(names.map((n) => [n, "*"]));
 }
 
 /** A private package manifest naming the directory, so platform-map reads it as a repository or package. */
@@ -371,6 +378,8 @@ export class TestPlatform extends FileTree {
    */
   async member(name: string, input: MemberInput = {}): Promise<MemberHandle> {
     const handle = this.repository(name, input.files);
+    if (input.dependsOn !== undefined)
+      handle.manifest({ dependencies: dependencies(input.dependsOn) });
     unwrap(
       await initMember({
         repoDir: handle.dir,

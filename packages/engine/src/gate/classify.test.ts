@@ -33,6 +33,7 @@ function makeRepo(pinned_spec_version: number, name = "api"): Repo {
     name,
     path: `/tmp/${name}`,
     pinned_spec_version,
+    dependency_depth: 0,
   };
 }
 

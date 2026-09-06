@@ -93,7 +93,7 @@ Requirements tagged in the given files. Accepts multiple positionals, comma-spli
 
 ### `spec propagation <reqId> [platformDir]`
 
-Classify each member repo's relationship to a superseded requirement: `MIGRATED_VERIFIED`, `MIGRATED_UNVERIFIED`, `ON_PREDECESSOR`, `ON_OTHER_DOMAIN_REQ`, `NO_DOMAIN_REFERENCE` — plus a `drifted` flag per member.
+Classify each member repo's relationship to a superseded requirement: `MIGRATED_VERIFIED`, `MIGRATED_UNVERIFIED`, `ON_PREDECESSOR`, `ON_OTHER_DOMAIN_REQ`, `NO_DOMAIN_REFERENCE` — plus a `drifted` flag per member. Rows are in dependency order, providers before consumers, read from platform-map's `dependsOn`; ties by name. See [Platform Mapping](/platform-mapping/).
 
 **Exit codes:** 0 / 2
 

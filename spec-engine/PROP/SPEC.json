@@ -1,7 +1,7 @@
 {
   "key": "PROP",
   "owner": "drea",
-  "updated": "2026-07-30",
+  "updated": "2026-09-05",
   "scope": "Propagation and migration state, including the drift definition. Belongs here: the per-repo migrated or drifted state; spec propagation; the drift definition. Does not belong here: the SPEC.json model shape (SCHM). Boundary case: the drift definition is PROP's contract; the SQL view that computes it is only enforcement.",
   "grammar": "ears",
   "requirements": [
@@ -83,6 +83,21 @@
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "PROP-006",
+      "status": "active",
+      "statement": "When propagation is reported for a requirement, the spec CLI and the webapp propagation page shall list the member rows in dependency order: a member after every member it depends on in the platform map's dependsOn, and members at the same depth by name.",
+      "why": "A consumer can only migrate to a successor after the packages it depends on ship it; a name-ordered list hides that order and sends teams to migrate downstream members first.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/indexer/discover.ts"
+      ],
+      "issues": [],
       "aliases": [],
       "cites": []
     }

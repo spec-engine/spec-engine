@@ -26,8 +26,8 @@ test("DDL contains no CHECK / FOREIGN KEY / UNIQUE on domain fields (SCHM-07)", 
 // coverage error. RED now: SCHEMA_VERSION is still 8 and the DDL carries none of
 // these strings. Goes GREEN when Plan 06-01 Task 2 lands the schema changes.
 // @spec SCHM-016 unit
-test("SCHEMA_VERSION is 10 and DDL carries the TERM substrate + superseded_at_version column", () => {
-  expect(SCHEMA_VERSION).toBe(10);
+test("SCHEMA_VERSION is 11 and DDL carries the TERM substrate, superseded_at_version, and dependency_depth", () => {
+  expect(SCHEMA_VERSION).toBe(11);
   expect(DDL).toContain("term_citations");
   expect(DDL).toContain("term_aliases");
   // The term-drift VIEW skeleton (term citation pin < term's changed_at_version).
@@ -36,6 +36,8 @@ test("SCHEMA_VERSION is 10 and DDL carries the TERM substrate + superseded_at_ve
   expect(DDL).toContain("r.key != 'TERM'");
   // v10: the immutable "version this requirement died at" column.
   expect(DDL).toContain("superseded_at_version INTEGER");
+  // v11: the member's position in the platform map's dependsOn graph.
+  expect(DDL).toContain("dependency_depth      INTEGER NOT NULL");
 });
 
 test("DDL contains required tables, FTS5 external-content table, coverage VIEW, FTS triggers (SCHM-01..06, SCHM-08)", () => {
@@ -87,13 +89,14 @@ test("No .sql files exist anywhere under packages/ (SCHM-08)", async () => {
   expect(matches).toEqual([]);
 });
 
-test("Version semantics comment block defines all four version columns and DRIFT predicate (D-02)", async () => {
+test("the version-columns comment block names every version column and the drift predicate", async () => {
   const text = await Bun.file(new URL("./schema.ts", import.meta.url)).text();
   expect(text).toContain("domains.spec_version");
   expect(text).toContain("requirements.spec_version");
   expect(text).toContain("requirements.changed_at_version");
   expect(text).toContain("repos.pinned_spec_version");
-  expect(text).toContain("DRIFT predicate");
+  expect(text).toContain("repos.dependency_depth");
+  expect(text).toContain("Drift predicate");
 });
 
 test("DiagnosticCode enum has all 10 codes per REQUIREMENTS.md (260605-tqz BROKEN_FILE_REF)", () => {
