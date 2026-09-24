@@ -164,7 +164,7 @@ Cross-domain supersede for taxonomy reorganization: mints the successor as the n
 
 ### `spec amend <reqId> [platformDir]`
 
-Revise an unshipped requirement's fields in place — same ID, no version change (the domain version only derives from supersessions). Field flags name what changes (`--text`/`--why`/`--lives`, at least one); untouched fields stay byte-identical. Only Active and Draft entries amend.
+Revise an unshipped requirement's fields in place — same ID, no version change (the domain version only derives from supersessions). Field flags name what changes (`--text`/`--why`/`--lives`, at least one); untouched fields stay byte-identical. `--lives` repeats or comma-separates and replaces the whole list; `--lives ""` clears it. Only Active and Draft entries amend.
 
 **Exit codes:** 0 / 2
 

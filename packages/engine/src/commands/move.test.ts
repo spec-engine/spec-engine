@@ -155,6 +155,16 @@ describe("spec move — happy path", () => {
   // @spec REQ-036 — on requirement domains --no-bump is a no-op (no authored
   // counter to hold back); both sides still report their DAG-derived versions
   // and neither writes a specVersion.
+  // @spec REQ-043 unit
+  test("comma-separated --lives sets the successor's whole livesIn list", async () => {
+    await moveRun({
+      args: { id: "BILLING-001", newDomain: "AUTH", platformDir: platform, lives: "a.ts,b.ts" },
+      rawArgs: [],
+    });
+    const succ = (await auth.read()).requirements.find((r) => r.id === "AUTH-002");
+    expect(succ?.livesIn).toEqual(["a.ts", "b.ts"]);
+  });
+
   test("--no-bump is a no-op on requirement domains — versions stay DAG-derived", async () => {
     await moveRun({
       args: {

@@ -682,6 +682,46 @@
       ],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "REQ-042",
+      "status": "active",
+      "statement": "When an authoring command receives --lives, the spec CLI shall build livesIn from every --lives occurrence, splitting each value on commas, trimming, and dropping empty entries.",
+      "why": "A requirement is often implemented in several places; a flag that keeps only one path forces the rest out of the record.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/_args.ts"
+      ],
+      "issues": [
+        {
+          "role": "created",
+          "id": "probooks Q-16"
+        }
+      ],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-043",
+      "status": "active",
+      "statement": "When spec amend or spec supersede or spec move receives --lives, the spec CLI shall replace the target's livesIn with that list, and an empty --lives value shall clear it.",
+      "why": "One replace-or-clear idiom, the same as --aliases, so an author always knows what the stored list will be.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/amend.ts"
+      ],
+      "issues": [
+        {
+          "role": "created",
+          "id": "probooks Q-16"
+        }
+      ],
+      "aliases": [],
+      "cites": []
     }
   ]
 }

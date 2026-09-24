@@ -139,6 +139,23 @@ describe("spec amend", () => {
     expect(req?.statement).toBe("rough draft of the rule"); // untouched
   });
 
+  // @spec REQ-043 unit
+  test("repeated and comma-separated --lives replace livesIn with the whole list", async () => {
+    await amendRun({
+      args: { id: ACTIVE, platformDir: tmp, lives: "c.ts" },
+      rawArgs: ["--lives", "a.ts", "--lives", "b.ts,c.ts"],
+    });
+    const req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
+    expect(req?.livesIn).toEqual(["a.ts", "b.ts", "c.ts"]);
+  });
+
+  // @spec REQ-043 unit
+  test("an empty --lives clears livesIn", async () => {
+    await amendRun({ args: { id: ACTIVE, platformDir: tmp, lives: "" }, rawArgs: ["--lives", ""] });
+    const req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
+    expect(req?.livesIn).toEqual([]);
+  });
+
   test("no field flags non-TTY → exit 2 (nothing to amend)", async () => {
     const before = await billing.raw();
     await expectExit2(() => amendRun({ args: { id: ACTIVE, platformDir: tmp }, rawArgs: [] }));

@@ -12,7 +12,7 @@ import { coldFreshTags } from "../operations/_index";
 import { type SupersedeInput, supersede, supersedeTarget } from "../operations/supersede";
 import { ID_RE } from "../parser/grammar";
 import { renderReqTags } from "../resolve/format";
-import { platformDirArg, resolvePlatformDir } from "./_args";
+import { listFlag, platformDirArg, resolvePlatformDir } from "./_args";
 import { exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
 import { askLine } from "./req";
 
@@ -57,19 +57,21 @@ function splitAliases(raw: string): string[] {
     .filter((s) => s !== "");
 }
 
-/** Flags to the operation's input. An absent flag leaves the field to be copied from the predecessor. */
+/**
+ * Flags to the operation's input. An absent flag leaves the field to be copied from the predecessor.
+ * @spec REQ-043
+ */
 function inputFromArgs(
   args: SupersedeArgs,
+  rawArgs: readonly string[],
   platformDir: string,
   id: string,
   statement: string,
 ): SupersedeInput {
   const input: SupersedeInput = { platformDir, id, statement, noBump: Boolean(args.noBump) };
   if (typeof args.why === "string") input.why = args.why;
-  if (typeof args.lives === "string") {
-    const lives = args.lives.trim();
-    input.livesIn = lives === "" ? [] : [lives];
-  }
+  const livesIn = listFlag(rawArgs, "lives", args.lives);
+  if (livesIn !== undefined) input.livesIn = livesIn;
   if (typeof args.term === "string") input.term = args.term;
   if (typeof args.aliases === "string") input.aliases = splitAliases(args.aliases);
   const issue = (args.issue ?? "").trim();
@@ -95,7 +97,8 @@ const supersedeArgs = {
   },
   lives: {
     type: "string",
-    description: "Successor's Lives in (default: copied from the old entry)",
+    description:
+      "Successor's Lives in: repeat or comma-separate; empty clears (default: copied from the old entry)",
   },
   term: {
     type: "string",
@@ -131,7 +134,7 @@ export const supersedeCommand = defineCommand({
       "Supersede a shipped requirement: flip it to superseded, mint the successor, bump specVersion, and emit the retag worklist.",
   },
   args: supersedeArgs,
-  async run({ args }) {
+  async run({ args, rawArgs }) {
     const id = args.id;
     if (!ID_RE.test(id)) {
       console.error(`spec supersede: id must be a requirement id (KEY-NNN); got ${id}`);
@@ -146,7 +149,7 @@ export const supersedeCommand = defineCommand({
 
     const statement = await resolveSuccessorText(args, platformDir, id);
     const result = await supersede(
-      inputFromArgs(args, platformDir, id, statement),
+      inputFromArgs(args, rawArgs, platformDir, id, statement),
       coldFreshTags(platformDir),
     );
     if (!result.ok) exitOnFailure("spec supersede", result);
