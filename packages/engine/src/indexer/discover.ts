@@ -436,6 +436,59 @@ async function packageColumns(
   return out;
 }
 
+/**
+ * The package paths a monorepo root column must not scan, since each is its
+ * own column. Null when a package sits at the repo root: the root is already
+ * a column.
+ */
+function packageDirs(repo: MapRepo): string[] | null {
+  const dirs = repo.packages.map((p) => p.path);
+  return dirs.some((d) => d === "" || d === ".") ? null : dirs;
+}
+
+/**
+ * A lone monorepo's files outside every workspace package, as one column
+ * named by the directory like a lone single repo's.
+ * @spec INIT-040
+ */
+function loneRootColumn(absPlatform: string, repo: MapRepo, platformVersion: number): Column[] {
+  const dirs = packageDirs(repo);
+  const { dependency_depth: _depth, ...self } = selfMember(absPlatform, platformVersion);
+  if (dirs === null || self.name === CANONICAL_SPECS_DIR) return [];
+  return [{ repo: { ...self, ignore: dirs }, node: repo }];
+}
+
+/** A lone repository's columns: a monorepo's packages and root, else the repository itself. */
+async function loneMembers(
+  repo: MapRepo | undefined,
+  absPlatform: string,
+  platformVersion: number,
+): Promise<Repo[]> {
+  if (repo === undefined || repo.mode !== "monorepo" || repo.packages.length === 0) {
+    return [selfMember(absPlatform, platformVersion)];
+  }
+  return toRepos([
+    ...(await packageColumns(absPlatform, "", repo, platformVersion)),
+    ...loneRootColumn(absPlatform, repo, platformVersion),
+  ]);
+}
+
+/**
+ * A pinned member's columns: a monorepo's packages plus its files outside
+ * them under the member's name, else the member itself.
+ * @spec INIT-040
+ */
+async function memberColumns(repo: MapRepo, path: string, cfg: SpecConfig): Promise<Column[]> {
+  const pin = extractPin(cfg.specs);
+  if (repo.mode !== "monorepo" || repo.packages.length === 0) {
+    return [column(repo.name, path, pin, repo, cfg.ignore)];
+  }
+  const packages = await packageColumns(path, `${repo.name}/`, repo, pin);
+  const dirs = packageDirs(repo);
+  if (dirs === null) return packages;
+  return [...packages, column(repo.name, path, pin, repo, [...(cfg.ignore ?? []), ...dirs])];
+}
+
 /** How each platform-map code reaches `spec check`: kept as is, promoted to warning, or not surfaced. */
 const SURFACED: Record<MapDiagnostic["code"], { code: PlatformMapCode; promote: boolean } | null> =
   {
@@ -501,11 +554,7 @@ async function membersOf(
   const diagnostics = surfaced(mapped);
   if (mapped.mode !== "multi-repo") {
     // @spec INIT-035
-    const repo = mapped.repos[0];
-    const members =
-      repo !== undefined && repo.mode === "monorepo" && repo.packages.length > 0
-        ? toRepos(await packageColumns(absPlatform, "", repo, platformVersion))
-        : [selfMember(absPlatform, platformVersion)];
+    const members = await loneMembers(mapped.repos[0], absPlatform, platformVersion);
     return { mode: mapped.mode, members, unpinned: [], undeclared: [], diagnostics };
   }
   if (!mapped.declared) {
@@ -522,13 +571,7 @@ async function membersOf(
       unpinned.push({ name: repo.name, path });
       continue;
     }
-    const cfg = await readRepoConfig(configPath);
-    const pin = extractPin(cfg.specs);
-    if (repo.mode === "monorepo" && repo.packages.length > 0) {
-      columns.push(...(await packageColumns(path, `${repo.name}/`, repo, pin)));
-    } else {
-      columns.push(column(repo.name, path, pin, repo, cfg.ignore));
-    }
+    columns.push(...(await memberColumns(repo, path, await readRepoConfig(configPath))));
   }
   const undeclared = mapped.diagnostics
     .filter((d) => d.code === "UNLISTED_REPO")

@@ -1,7 +1,7 @@
 {
   "key": "INIT",
   "owner": "drea",
-  "updated": "2026-09-05",
+  "updated": "2026-09-24",
   "scope": "Membership, discovery, and onboarding, plus the adoption rungs. Belongs here: spec init pin authoring; member discovery; the three adoption rungs (a lone repo; plus the CI gate; plus a second repo sharing requirements). Does not belong here: check severities (CHCK). Boundary case: each rung is its own INIT requirement, independently testable.",
   "grammar": "ears",
   "requirements": [
@@ -690,6 +690,26 @@
         {
           "role": "created",
           "id": "RED-187"
+        }
+      ],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-040",
+      "status": "active",
+      "statement": "Where a monorepo has files outside every workspace package, the spec engine shall scan them as one more coverage column, named by the directory for a lone repository and by the member name for a declared member, without scanning any package's files twice.",
+      "why": "Repo-root code such as CI scripts, infrastructure and migrations implements requirements too; a tag there that no column scans reads as an orphan requirement.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/indexer/discover.ts"
+      ],
+      "issues": [
+        {
+          "role": "created",
+          "id": "probooks Q-06"
         }
       ],
       "aliases": [],

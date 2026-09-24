@@ -26,7 +26,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { discoverRepos } from "../indexer/discover";
 import { TestPlatform } from "../testing/platform";
 import { initCommand } from "./init";
@@ -527,10 +527,13 @@ describe("spec init declares a repository through platform-map", () => {
     expect(existsSync(join(tmp, "platform-map.json"))).toBe(false);
     expect(existsSync(join(tmp, "scripts", "platform-map.json"))).toBe(false);
     const r = await discoverRepos(tmp);
-    expect(r.members.map((m) => [m.name, m.pinned_spec_version])).toEqual([
-      ["packages/engine", 3],
-      ["scripts", 3],
-    ]);
+    expect(r.members.map((m) => [m.name, m.pinned_spec_version])).toEqual(
+      [
+        ["packages/engine", 3],
+        ["scripts", 3],
+        [basename(tmp), 3],
+      ].sort(([a], [b]) => String(a).localeCompare(String(b))),
+    );
   });
 
   test("a repository inside a lone monorepo that is not a workspace package is refused", async () => {
