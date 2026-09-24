@@ -64,15 +64,17 @@ platform-map classifies every member as `single-repo` or `monorepo` from its eco
 
 Each package is its own coverage column, named by the package's path relative to the member (`packages/ui`), prefixed by the member name when the member belongs to a declared platform (`shared/packages/ui`). A package inherits its member's pin unless it carries a nested `spec-engine.member.json`, whose pin and `ignore` then apply to that package alone. That is how one package can sit on `spec-engine@2` while a sibling lags on `@1`.
 
+A monorepo's files outside every workspace package (CI scripts, infrastructure, migrations at the repository root) are one more column: named by the member for a declared member, and by the directory for a lone monorepo. That column skips every package path, so no file is scanned twice, and it inherits the member's `ignore` list. When a workspace lists the repository root itself as a package, the root is already a column and no extra one is added. <!-- @spec INIT-040 -->
+
 There is no `members` glob in `spec-engine.member.json`. The workspace manifest is the one place a monorepo names its packages.
 
 ## A lone repository
 
 A repository that holds its own `spec-engine/` tree and is not a declared platform is a lone repository. platform-map maps it as `single-repo` or `monorepo` with one repo entry, and Spec Engine scans that repo without any member config or CI gate. <!-- @spec INIT-035 -->
 
-A lone `single-repo` is one coverage column named by the directory name. A lone `monorepo` has one coverage column per workspace package, named by the package's repo-relative path (`packages/engine`), with no member prefix. Every lone-repository column, and the canonical `spec-engine` row itself, is pinned to the derived platform version, so a repository is never reported drifted against its own working-tree domains. A nested `spec-engine.member.json` inside a package still overrides that package's pin. <!-- @spec INIT-028 -->
+A lone `single-repo` is one coverage column named by the directory name. A lone `monorepo` has one coverage column per workspace package, named by the package's repo-relative path (`packages/engine`), with no member prefix, plus one column named by the directory for its files outside every package. Every lone-repository column, and the canonical `spec-engine` row itself, is pinned to the derived platform version, so a repository is never reported drifted against its own working-tree domains. A nested `spec-engine.member.json` inside a package still overrides that package's pin. <!-- @spec INIT-028 -->
 
-This repository is a lone `monorepo`. Its coverage columns are `packages/engine`, `packages/shared`, `packages/site`, `packages/tracker`, `packages/webapp`, and `scripts`, each a workspace package of the root `package.json`.
+This repository is a lone `monorepo`. Its coverage columns are `packages/engine`, `packages/shared`, `packages/site`, `packages/tracker`, `packages/webapp`, and `scripts`, each a workspace package of the root `package.json`. It has no root column: a checkout directory named `spec-engine` would collide with the canonical `spec-engine` row, the same limitation a lone single repository of that name has.
 
 ## Names
 
@@ -146,7 +148,7 @@ spec index . && spec check . --ci  # membership and pins are now one gate
 
 Every repo and package in the map carries `dependsOn`, the platform's own package names its manifest depends on, matched within one ecosystem. Spec Engine reads it as the order in which a superseded requirement propagates: a consumer can only move to the successor after the packages it depends on ship it. `spec propagation`, `/api/propagation/:id`, `spec_propagation`, and the webapp's propagation page list members in dependency order, a member after every member it depends on, and members at the same depth by name. <!-- @spec PROP-006 -->
 
-The depth is a coverage-column fact, computed at discovery and stored in the derived index. A single-repo member's node is its map repo; a monorepo member's package column, and a lone monorepo's package column, is its map `Package`. A column depends on another column when the other's `packageName` appears in its `dependsOn`; a name that is no column (a monorepo root's own package, an absent member) is no edge. A column with no dependency is depth 0; every other column is one deeper than its deepest dependency. A dependency cycle, and every column downstream of it, sits at one depth after every column outside it, by name.
+The depth is a coverage-column fact, computed at discovery and stored in the derived index. A single-repo member's node is its map repo; a monorepo member's package column, and a lone monorepo's package column, is its map `Package`. A column depends on another column when the other's `packageName` appears in its `dependsOn`; a name that is no column (an absent member or package) is no edge; a monorepo's root column carries its root manifest's name and dependencies. A column with no dependency is depth 0; every other column is one deeper than its deepest dependency. A dependency cycle, and every column downstream of it, sits at one depth after every column outside it, by name.
 
 ```
 $ spec propagation BILLING-002 .

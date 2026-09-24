@@ -12,7 +12,9 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { NotASpecPlatformError } from "@spec-engine/shared";
+import { withIndex } from "../operations/_index";
 import { TestPlatform } from "../testing/platform";
+import { specTag } from "../testing/specTag";
 import {
   assertSpecPlatform,
   discoverRepos,
@@ -150,11 +152,23 @@ describe("a declared platform: membership comes from the platform file", () => {
     const r = await discoverRepos(tmp);
 
     expect(r.members.map((m) => [m.name, m.pinned_spec_version])).toEqual([
+      ["shared", 3],
       ["shared/packages/core", 1],
       ["shared/packages/ui", 3],
     ]);
-    expect(r.members[1]?.path).toBe(join(shared.dir, "packages", "ui"));
-    expect(r.members.some((m) => m.name === "shared")).toBe(false);
+    expect(r.members[2]?.path).toBe(join(shared.dir, "packages", "ui"));
+  });
+
+  // @spec INIT-040 unit
+  test("a monorepo member's root column is named by the member and skips its packages", async () => {
+    const shared = await fx.member("shared", { ignore: ["generated"] });
+    shared.workspace(["packages/ui"]);
+
+    const r = await discoverRepos(tmp);
+
+    const root = r.members.find((m) => m.name === "shared");
+    expect(root?.path).toBe(shared.dir);
+    expect(root?.ignore).toEqual(["generated", "packages/ui"]);
   });
 
   test("a member's ignore list rides on its column", async () => {
@@ -211,6 +225,7 @@ describe("dependency depth comes from the platform map's dependsOn", () => {
 
     expect(depths(r.members)).toEqual([
       ["core", 0],
+      ["shared", 0],
       ["shared/packages/config", 0],
       ["shared/packages/ui", 1],
       ["web", 2],
@@ -237,15 +252,16 @@ describe("dependency depth comes from the platform map's dependsOn", () => {
   });
 
   // @spec PROP-006 unit
-  test("a dependsOn name that is no column (a monorepo root, an absent package) is no edge", async () => {
+  test("a dependsOn name that is no column (an absent package) is no edge", async () => {
     const mono = await fx.member("mono");
     mono.workspace(["packages/x"]);
-    await fx.member("api", { dependsOn: ["mono", "nowhere"] });
+    await fx.member("api", { dependsOn: ["nowhere"] });
 
     const r = await discoverRepos(tmp);
 
     expect(depths(r.members)).toEqual([
       ["api", 0],
+      ["mono", 0],
       ["mono/packages/x", 0],
     ]);
   });
@@ -261,7 +277,7 @@ describe("dependency depth comes from the platform map's dependsOn", () => {
 
     const r = await discoverRepos(tmp);
 
-    expect(depths(r.members)).toEqual([
+    expect(depths(r.members.filter((m) => !m.selfMember))).toEqual([
       ["packages/app", 1],
       ["packages/lib", 0],
     ]);
@@ -330,13 +346,47 @@ describe("a lone repository", () => {
     const r = await discoverRepos(tmp);
 
     expect(r.mode).toBe("monorepo");
-    expect(r.members.map((m) => [m.name, m.pinned_spec_version, m.selfMember])).toEqual([
-      ["packages/engine", 2, undefined],
-      ["packages/shared", 2, undefined],
-      ["scripts", 2, undefined],
+    const packages = r.members.filter((m) => !m.selfMember);
+    expect(packages.map((m) => [m.name, m.pinned_spec_version])).toEqual([
+      ["packages/engine", 2],
+      ["packages/shared", 2],
+      ["scripts", 2],
     ]);
-    expect(r.members[0]?.path).toBe(join(tmp, "packages", "engine"));
+    expect(packages[0]?.path).toBe(join(tmp, "packages", "engine"));
     expect(r.members.some((m) => m.name === "packages")).toBe(false);
+  });
+
+  // @spec INIT-040 unit
+  test("a lone monorepo's files outside every package are one more column, named by the directory", async () => {
+    await writeVersionedDomain(tmp, "ALPHA", 2);
+    fx.workspace(["packages/engine", "scripts"]);
+
+    const r = await discoverRepos(tmp);
+
+    const root = r.members.find((m) => m.selfMember);
+    expect(root?.name).toBe(basename(tmp));
+    expect(root?.path).toBe(tmp);
+    expect(root?.pinned_spec_version).toBe(2);
+    expect(root?.ignore).toEqual(["packages/engine", "scripts"]);
+  });
+
+  // @spec INIT-040 integration
+  test("a root-level tag implements its requirement once; a package's tag is not scanned twice", async () => {
+    const alpha = await fx.domain("ALPHA");
+    const atRoot = await alpha.req({ statement: "s", why: "w" });
+    const inPackage = await alpha.req({ statement: "s", why: "w" });
+    fx.workspace(["packages/engine"]);
+    fx.file("infra/deploy.sh", `echo deploy\n# @spec ${atRoot.id}\n`);
+    fx.file("packages/engine/src/x.ts", `export const x = 1; ${specTag(inPackage.id)}`);
+
+    const tags = await withIndex({ platformDir: tmp, build: "fresh" }, (h) =>
+      h.storage.listTags({}),
+    );
+
+    expect(tags.filter((t) => t.req_id === atRoot.id).map((t) => t.repo)).toEqual([basename(tmp)]);
+    expect(tags.filter((t) => t.req_id === inPackage.id).map((t) => t.repo)).toEqual([
+      "packages/engine",
+    ]);
   });
 
   test("a nested spec-engine.member.json pins one package of a lone monorepo", async () => {

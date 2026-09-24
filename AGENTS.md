@@ -169,7 +169,7 @@ How this implementation realizes them:
    file `platform-map.json` `{ name, members, ignore }`; a member is a name
    in that file with a `{ platform, member }` marker; a monorepo's coverage
    columns are its workspace packages, named by path (`packages/engine`);
-   a lone repo with no platform file is one column or its packages. The
+   a lone repo with no platform file is one column or its packages; a monorepo's files outside every package are one more column, named by the member or, for a lone monorepo, the directory. The
    pin is the one fact `spec-engine.member.json` adds. `spec init <name>`
    declares and pins in one step; no `spec` workflow runs a platform-map
    command. platform-map's `dependsOn` orders `spec propagation`: providers
