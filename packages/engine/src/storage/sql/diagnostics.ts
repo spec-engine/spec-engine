@@ -99,6 +99,7 @@ FROM drift d
 ORDER BY d.repo, d.source_file, d.line
 `;
 
+// @spec CHCK-032
 export const Q4_ORPHAN_REQ_SQL = `
 SELECT
   'ORPHAN_REQ'                                                AS code,
@@ -125,6 +126,7 @@ ORDER BY r.key, r.seq
 //   a guide paragraph citing a requirement is not an implementation. Only
 //   code-derived kinds (implements/verifies) clear orphan status.
 
+// @spec CHCK-032
 export const Q5_UNVERIFIED_REQ_SQL = `
 SELECT
   'UNVERIFIED_REQ'                                            AS code,
