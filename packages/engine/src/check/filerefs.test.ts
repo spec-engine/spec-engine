@@ -51,6 +51,18 @@ describe("BROKEN_FILE_REF", () => {
     expect(await brokenFileRefDiagnostics(platformDir)).toEqual([]);
   });
 
+  test("every livesIn entry is checked, not only the first", async () => {
+    await billing.req({
+      statement: STATEMENT,
+      livesIn: ["src/renew.ts", "src/missing-a.ts", "src/missing-b.ts"],
+    });
+    fx.file("src/renew.ts", "// present\n");
+    const details = (await brokenFileRefDiagnostics(platformDir)).map((r) => r.detail);
+    expect(details).toHaveLength(2);
+    expect(details.join("\n")).toContain("src/missing-a.ts");
+    expect(details.join("\n")).toContain("src/missing-b.ts");
+  });
+
   test("a traversal ref is broken even when the target exists outside the root", async () => {
     await billing.req({ statement: STATEMENT, livesIn: ["../escape.ts"] });
     writeFileSync(join(platformDir, "..", "escape.ts"), "// outside\n");

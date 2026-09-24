@@ -10,7 +10,7 @@ import { assertSpecPlatform } from "../indexer/discover";
 import { coldFreshTags } from "../operations/_index";
 import { type AmendFields, amend } from "../operations/amend";
 import { ID_RE } from "../parser/grammar";
-import { jsonArg, platformDirArg, resolvePlatformDir } from "./_args";
+import { jsonArg, listFlag, livesArg, platformDirArg, resolvePlatformDir } from "./_args";
 import { exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
 
 const amendArgs = {
@@ -22,7 +22,7 @@ const amendArgs = {
   platformDir: platformDirArg,
   text: { type: "string", description: "New Requirement (statement) field value" },
   why: { type: "string", description: "New Why it matters field value" },
-  lives: { type: "string", description: "New Lives in (livesIn) field value" },
+  lives: livesArg,
   issue: {
     type: "string",
     description:
@@ -45,7 +45,7 @@ export const amendCommand = defineCommand({
       "Revise an unshipped requirement's fields in place (same id, no specVersion bump). Supersede shipped truth instead.",
   },
   args: amendArgs,
-  async run({ args }) {
+  async run({ args, rawArgs }) {
     const id = args.id;
     if (!ID_RE.test(id)) {
       console.error(`spec amend: id must be a requirement id (KEY-NNN); got ${id}`);
@@ -59,7 +59,7 @@ export const amendCommand = defineCommand({
       handleNotAPlatform(e);
     }
 
-    const fields = fieldsFromArgs(args);
+    const fields = fieldsFromArgs(args, rawArgs);
 
     const result = await amend({ platformDir, id, fields }, coldFreshTags(platformDir));
     if (!result.ok) exitOnFailure("spec amend", result);
@@ -106,8 +106,11 @@ function splitAliases(raw: string): string[] {
         .filter((s) => s !== "");
 }
 
-/** Flags to the operation's field set: trimmed, with empty why → null and empty lives → []. */
-function fieldsFromArgs(args: AmendArgs): AmendFields {
+/**
+ * Flags to the operation's field set: trimmed, with empty why → null and an empty lives list → [].
+ * @spec REQ-043
+ */
+function fieldsFromArgs(args: AmendArgs, rawArgs: readonly string[]): AmendFields {
   assertAmendFlags(args);
   const fields: AmendFields = {};
   if (args.text !== undefined) fields.statement = args.text.trim();
@@ -115,10 +118,8 @@ function fieldsFromArgs(args: AmendArgs): AmendFields {
     const v = args.why.trim();
     fields.why = v === "" ? null : v;
   }
-  if (args.lives !== undefined) {
-    const v = args.lives.trim();
-    fields.livesIn = v === "" ? [] : [v];
-  }
+  const livesIn = listFlag(rawArgs, "lives", args.lives);
+  if (livesIn !== undefined) fields.livesIn = livesIn;
   if (args.term !== undefined) fields.term = args.term.trim();
   if (args.issue !== undefined && args.issue.trim() !== "") fields.issue = args.issue.trim();
   if (args.aliases !== undefined) fields.aliases = splitAliases(args.aliases.trim());

@@ -533,7 +533,7 @@ Exit: 0 / 2.
 | --- | --- |
 | stdin not a TTY, no `--text` | Print the bare next unused id (e.g. `BILLING-010`), exit 0. No prompts, no writes. |
 | `--json`, no `--text` | Print `{ domain, next_id }`. Same zero-write contract, even on a TTY. |
-| `--text "<statement>"` | Append an Active entry with zero prompts. `--why`, `--lives`, `--issue <ticket>` fill the other fields and error without `--text`. |
+| `--text "<statement>"` | Append an Active entry with zero prompts. `--why`, `--lives`, `--issue <ticket>` fill the other fields and error without `--text`. `--lives` repeats and comma-separates: `--lives a.ts --lives b.ts,c.ts` records all three. |
 | `--draft` | Author the entry as Draft (with `--text`, or on a TTY). Off a TTY without `--text` it exits 2. |
 | TTY, no flags | Interactive authoring. |
 
@@ -592,7 +592,7 @@ in the same domain, reindexes fresh, and prints the retag worklist (the sites
 | Flag | Effect |
 | --- | --- |
 | `--text` | The successor statement. Required when not a TTY. |
-| `--why`, `--lives` | Successor fields. Default to copies of the predecessor's. |
+| `--why`, `--lives` | Successor fields. Default to copies of the predecessor's. `--lives` repeats or comma-separates and replaces the whole list; an empty value clears it. |
 | `--issue <ticket>` | Recorded as `supersedes-via` on the predecessor and `created` on the successor. |
 | `--no-bump` | TERM domain only: keep the authored `specVersion`. No-op elsewhere. |
 
@@ -624,7 +624,7 @@ Revise an Active or Draft entry in place. Same id, no version change.
 
 | Flag | Effect |
 | --- | --- |
-| `--text`, `--why`, `--lives` | Field to change. At least one flag is required. Untouched fields stay byte-identical. |
+| `--text`, `--why`, `--lives` | Field to change. At least one flag is required. Untouched fields stay byte-identical. `--lives` repeats or comma-separates and replaces the whole `livesIn` list (the `--aliases` idiom); `--lives ""` clears it. |
 | `--issue <ticket>` | Append `amends-via` provenance. |
 | `--term`, `--aliases` | TERM ids only. |
 

@@ -34,3 +34,38 @@ export const noPromptArg = {
 export function resolvePlatformDir(args: { platformDir?: string | undefined }): string {
   return resolve(args.platformDir ?? process.cwd());
 }
+
+export const livesArg = {
+  type: "string",
+  description:
+    "Lives in (livesIn) paths: repeat the flag or comma-separate; an empty value clears the list",
+} as const;
+
+/**
+ * Every value a repeatable list flag carried, each split on commas, trimmed,
+ * empties dropped. citty keeps only the last occurrence of a repeated flag, so
+ * `rawArgs` is read first; `parsed` covers an in-process call that passes no
+ * raw argv. Undefined when the flag is absent.
+ * @spec REQ-042
+ */
+export function listFlag(
+  rawArgs: readonly string[],
+  name: string,
+  parsed: string | undefined,
+): string[] | undefined {
+  const flag = `--${name}`;
+  const raw: string[] = [];
+  for (let i = 0; i < rawArgs.length; i++) {
+    const arg = rawArgs[i] as string;
+    if (arg === flag && i + 1 < rawArgs.length) raw.push(rawArgs[++i] as string);
+    else if (arg.startsWith(`${flag}=`)) raw.push(arg.slice(flag.length + 1));
+  }
+  if (raw.length === 0) {
+    if (parsed === undefined) return undefined;
+    raw.push(parsed);
+  }
+  return raw
+    .flatMap((v) => v.split(","))
+    .map((v) => v.trim())
+    .filter((v) => v !== "");
+}
