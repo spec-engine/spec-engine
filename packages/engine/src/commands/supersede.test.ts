@@ -151,6 +151,16 @@ describe("spec supersede — happy path", () => {
     expect(succ?.livesIn).toEqual(["checkout.ts"]);
   });
 
+  // @spec REQ-043 unit
+  test("repeated --lives sets the successor's whole livesIn list", async () => {
+    await supersedeRun({
+      args: { id: ACTIVE, platformDir: platform, text: "new truth", lives: "b.ts" },
+      rawArgs: ["--lives", "a.ts", "--lives", "b.ts"],
+    });
+    const succ = (await billing.read()).requirements.find((r) => r.id === SUCCESSOR);
+    expect(succ?.livesIn).toEqual(["a.ts", "b.ts"]);
+  });
+
   test("--binds is accepted but not persisted (the envelope has no binds); lives still copied", async () => {
     await supersedeRun({
       args: {

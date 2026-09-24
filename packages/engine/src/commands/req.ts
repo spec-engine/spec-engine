@@ -24,7 +24,7 @@ import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
 import { mint } from "../operations/mint";
 import { nextId } from "../operations/nextId";
-import { jsonArg, platformDirArg, resolvePlatformDir } from "./_args";
+import { jsonArg, listFlag, livesArg, platformDirArg, resolvePlatformDir } from "./_args";
 import { exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
 
 const reqArgs = {
@@ -41,7 +41,7 @@ const reqArgs = {
       "Non-interactive authoring: the Requirement field. When set, the entry appends with zero prompts.",
   },
   why: { type: "string", description: "Why it matters field (only with --text)" },
-  lives: { type: "string", description: "Lives in field (only with --text)" },
+  lives: livesArg,
   issue: {
     type: "string",
     description:
@@ -62,7 +62,7 @@ export const reqCommand = defineCommand({
       "Author a new requirement interactively (TTY) or print the next unused id (non-TTY)",
   },
   args: reqArgs,
-  async run({ args }) {
+  async run({ args, rawArgs }) {
     const input = args.domainPrefix;
     const platformDir = resolvePlatformDir(args);
     try {
@@ -77,7 +77,7 @@ export const reqCommand = defineCommand({
 
     const textFlag = args.text;
     if (textFlag !== undefined) {
-      await mintFromFlags(platformDir, key, textFlag, args);
+      await mintFromFlags(platformDir, key, textFlag, args, rawArgs);
       return;
     }
     const hasFieldFlags =
@@ -114,6 +114,7 @@ async function mintFromFlags(
   key: string,
   textFlag: string,
   args: ReqArgs,
+  rawArgs: readonly string[],
 ): Promise<void> {
   const statement = textFlag.trim();
   if (statement === "") {
@@ -121,11 +122,10 @@ async function mintFromFlags(
     process.exit(EXIT.USAGE);
   }
   await printResolvedCharter(platformDir, key);
-  const lives = (args.lives ?? "").trim();
   await mintAndReport(platformDir, key, {
     statement,
     why: (args.why ?? "").trim(),
-    livesIn: lives ? [lives] : [],
+    livesIn: listFlag(rawArgs, "lives", args.lives) ?? [],
     issue: (args.issue ?? "").trim() || undefined,
     status: statusOf(args),
     json: Boolean(args.json),
@@ -152,11 +152,11 @@ async function mintInteractively(
     return;
   }
   const why = (await askLine("Why it matters: ")).trim();
-  const lives = (await askLine("Lives in: ")).trim();
+  const livesIn = listFlag([], "lives", await askLine("Lives in: ")) ?? [];
   await mintAndReport(platformDir, key, {
     statement: requirement,
     why,
-    livesIn: lives ? [lives] : [],
+    livesIn,
     issue: undefined,
     status,
     json: false,

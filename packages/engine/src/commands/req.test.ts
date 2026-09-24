@@ -565,6 +565,16 @@ describe("spec req — field-flag authoring", () => {
     expect({ ...drafted, id: "", status: "" }).toEqual({ ...active, id: "", status: "" });
   });
 
+  // @spec REQ-042 unit
+  test("repeated and comma-separated --lives record every path", async () => {
+    setIsTTY(undefined);
+    await reqRun({
+      args: { domainPrefix: "BILLING", platformDir: tmp, text: "multi-home rule", lives: "c.ts" },
+      rawArgs: ["--text", "multi-home rule", "--lives", "a.ts", "--lives", "b.ts, c.ts"],
+    });
+    expect(added().livesIn).toEqual(["a.ts", "b.ts", "c.ts"]);
+  });
+
   test("--draft with no --text off a TTY is a usage error (exit 2, nothing written)", async () => {
     setIsTTY(undefined);
     const before = readSpec(tmp, "BILLING");
