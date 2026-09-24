@@ -14,6 +14,7 @@
 // @spec REQ-030
 // @spec REQ-032
 // @spec REQ-037
+// @spec REQ-039
 //
 // `spec req <domain-prefix> [platformDir]` resolves a case-insensitive
 // domain prefix against the filesystem domain listing. On a TTY it authors a new
@@ -545,6 +546,31 @@ describe("spec req — field-flag authoring", () => {
       }),
     );
     expect(errs.join("\n")).toContain("--text");
+    expect(readSpec(tmp, "BILLING")).toBe(before);
+  });
+
+  test("--text + --draft appends the entry as draft, every other field as the Active path writes it", async () => {
+    setIsTTY(undefined);
+    const fields = { text: "drafted rule", why: "revenue path", lives: "lib-billing/renew.ts" };
+    await reqRun({
+      args: { domainPrefix: "BILLING", platformDir: tmp, ...fields, draft: true },
+      rawArgs: [],
+    });
+    const drafted = added();
+    await reqRun({ args: { domainPrefix: "BILLING", platformDir: tmp, ...fields }, rawArgs: [] });
+    const domain = JSON.parse(readSpec(tmp, "BILLING"));
+    const active = domain.requirements.find((r: { id: string }) => r.id === "BILLING-011");
+
+    expect(drafted.status).toBe("draft");
+    expect({ ...drafted, id: "", status: "" }).toEqual({ ...active, id: "", status: "" });
+  });
+
+  test("--draft with no --text off a TTY is a usage error (exit 2, nothing written)", async () => {
+    setIsTTY(undefined);
+    const before = readSpec(tmp, "BILLING");
+    await expectExit2(() =>
+      reqRun({ args: { domainPrefix: "BILLING", platformDir: tmp, draft: true }, rawArgs: [] }),
+    );
     expect(readSpec(tmp, "BILLING")).toBe(before);
   });
 

@@ -31,7 +31,7 @@ afterEach(() => {
 });
 
 describe("spec mcp (stdio end-to-end)", () => {
-  test("initialize + tools/list over stdio returns the eleven tools; stdout carries only JSON-RPC", async () => {
+  test("initialize + tools/list over stdio returns the twelve tools; stdout carries only JSON-RPC", async () => {
     const proc = Bun.spawn(["bun", CLI, "mcp", tmp], {
       stdin: "pipe",
       stdout: "pipe",
@@ -86,6 +86,7 @@ describe("spec mcp (stdio end-to-end)", () => {
     const tools = (toolsResponse as ToolsResponse | null)?.result?.tools ?? [];
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
+      "spec_accept",
       "spec_check",
       "spec_coverage_report",
       "spec_deprecate",

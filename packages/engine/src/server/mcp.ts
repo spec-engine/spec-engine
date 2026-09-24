@@ -13,6 +13,7 @@ import { DEFAULT_QUERY_LIMIT, LIMIT_MAX } from "@spec-engine/shared";
 import { z } from "zod";
 import { domainScope, listDomainKeys, normalizeDomainKey } from "../authoring/domains";
 import { coldFreshTags, withIndex } from "../operations/_index";
+import { accept } from "../operations/accept";
 import { check } from "../operations/check";
 import { deprecate } from "../operations/deprecate";
 import { nextId } from "../operations/nextId";
@@ -274,6 +275,25 @@ export function buildMcpServer(platformDir: string): McpServer {
       return r.ok
         ? jsonResult({ id: r.id, file: r.file, reason: r.reason, sites: r.sites })
         : errorResult(r.detail);
+    },
+  );
+
+  server.registerTool(
+    "spec_accept",
+    {
+      title: "Accept a draft requirement",
+      description:
+        "Promote a Draft requirement to Active, leaving every other field untouched. The same JSON as `spec accept --json`.",
+      inputSchema: {
+        req_id: z.string().describe("The Draft requirement id to accept (KEY-NNN)"),
+      },
+    },
+    async ({ req_id }) => {
+      if (!ID_RE.test(req_id)) {
+        return errorResult(`req_id must be a requirement id (KEY-NNN); got ${req_id}`);
+      }
+      const r = await accept({ platformDir, id: req_id });
+      return r.ok ? jsonResult({ id: r.id, file: r.file }) : errorResult(r.detail);
     },
   );
 

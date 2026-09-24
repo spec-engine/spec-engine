@@ -123,7 +123,7 @@ One-time hard cutover: convert every legacy canonical `SPEC.md` to a schema-vali
 
 ### `spec req <domain-prefix> [platformDir]`
 
-**Piped:** prints the next unused requirement ID (e.g. `BILLING-010`) — zero prompts, zero writes. **TTY:** interactive authoring. **`--text` (+ `--why` / `--lives`):** appends a born-active entry non-interactively through the validated write seam. Prefix is case-insensitive (`bil` → `BILLING`; ambiguous → exit 2). `spec req <domain>` alone prints the domain's charter before authoring.
+**Piped:** prints the next unused requirement ID (e.g. `BILLING-010`) — zero prompts, zero writes. **TTY:** interactive authoring. **`--text` (+ `--why` / `--lives`):** appends a born-active entry non-interactively through the validated write seam. **`--draft`:** the entry is born Draft instead (promote it with `spec accept`). Prefix is case-insensitive (`bil` → `BILLING`; ambiguous → exit 2). `spec req <domain>` alone prints the domain's charter before authoring.
 
 **Exit codes:** 0 / 2
 
@@ -168,6 +168,12 @@ Revise an unshipped requirement's fields in place — same ID, no version change
 
 **Exit codes:** 0 / 2
 
+### `spec accept <reqId> [platformDir]`
+
+Promote a Draft requirement to Active — same ID, every other field untouched, no version change. A Draft is never an orphan, never unverified, and never counted in coverage; accepting it makes it an obligation.
+
+**Exit codes:** 0 / 2
+
 ### `spec serve [platformDir] [--port N]`
 
 Launch the local webapp over the derived index. Binds `127.0.0.1` only. `--probe` boots on an ephemeral port, smoke-tests, and exits.
@@ -180,6 +186,6 @@ Launch the local webapp over the derived index. Binds `127.0.0.1` only. `--probe
 
 ### `spec mcp [platformDir]`
 
-Serve Spec Engine as a Model Context Protocol server over stdio. Tools: `spec_query`, `spec_resolve`, `spec_req_tags`, `spec_coverage_report`, `spec_check`, `spec_propagation`, `spec_next_id`, `spec_get`, `spec_list`, `spec_supersede`, `spec_deprecate` — the same JSON the CLI's `--json` modes emit, reindexed fresh per call. Also advertises the `author_requirements` prompt (a static authoring playbook; the engine itself runs no model).
+Serve Spec Engine as a Model Context Protocol server over stdio. Tools: `spec_query`, `spec_resolve`, `spec_req_tags`, `spec_coverage_report`, `spec_check`, `spec_propagation`, `spec_next_id`, `spec_get`, `spec_list`, `spec_supersede`, `spec_deprecate`, `spec_accept` — the same JSON the CLI's `--json` modes emit, reindexed fresh per call. Also advertises the `author_requirements` prompt (a static authoring playbook; the engine itself runs no model).
 
 **Exit codes:** 0 / 2

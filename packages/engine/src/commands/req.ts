@@ -11,6 +11,7 @@
 // @spec REQ-030
 // @spec REQ-032
 // @spec REQ-037
+// @spec REQ-039
 //
 // `spec req <domain-prefix> [platformDir]`: piped, the next unused id; with
 // `--text`, a non-interactive mint; on a TTY, the per-field prompt flow. The
@@ -45,6 +46,10 @@ const reqArgs = {
     type: "string",
     description:
       "Originating ticket id, recorded as created-provenance on the entry (only with --text; opaque — never a requirement id)",
+  },
+  draft: {
+    type: "boolean",
+    description: "Author the entry as Draft instead of Active (promote it later with spec accept)",
   },
 } as const;
 
@@ -86,6 +91,11 @@ export const reqCommand = defineCommand({
       process.exit(EXIT.USAGE);
       return;
     }
+    if (args.draft && (args.json || !process.stdin.isTTY)) {
+      console.error("spec req: --draft authors an entry — pass --text, or run on a TTY");
+      process.exit(EXIT.USAGE);
+      return;
+    }
     if (args.json) {
       console.log(JSON.stringify({ domain: key, next_id: id }));
       return;
@@ -94,7 +104,7 @@ export const reqCommand = defineCommand({
       console.log(id);
       return;
     }
-    await mintInteractively(platformDir, key, id);
+    await mintInteractively(platformDir, key, id, statusOf(args));
   },
 });
 
@@ -117,13 +127,23 @@ async function mintFromFlags(
     why: (args.why ?? "").trim(),
     livesIn: lives ? [lives] : [],
     issue: (args.issue ?? "").trim() || undefined,
+    status: statusOf(args),
     json: Boolean(args.json),
   });
 }
 
+function statusOf(args: ReqArgs): "active" | "draft" {
+  return args.draft ? "draft" : "active";
+}
+
 /** The TTY path: one prompt per field, rendered on stderr; an empty Requirement aborts with exit 0. */
-async function mintInteractively(platformDir: string, key: string, id: string): Promise<void> {
-  console.error(`Authoring ${id} — Active`);
+async function mintInteractively(
+  platformDir: string,
+  key: string,
+  id: string,
+  status: "active" | "draft",
+): Promise<void> {
+  console.error(`Authoring ${id} — ${status === "draft" ? "Draft" : "Active"}`);
   await printResolvedCharter(platformDir, key);
   const requirement = (await askLine("Requirement: ")).trim();
   if (requirement === "") {
@@ -138,6 +158,7 @@ async function mintInteractively(platformDir: string, key: string, id: string): 
     why,
     livesIn: lives ? [lives] : [],
     issue: undefined,
+    status,
     json: false,
   });
 }
@@ -151,6 +172,7 @@ async function mintAndReport(
     why: string;
     livesIn: string[];
     issue?: string | undefined;
+    status: "active" | "draft";
     json: boolean;
   },
 ): Promise<void> {

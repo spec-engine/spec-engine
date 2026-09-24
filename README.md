@@ -143,7 +143,7 @@ components, the single seams, and the invariants.
 | `spec propagation <REQID> <dir>` | Per-member migration state for one requirement |
 | `spec query <text> <dir>` | Full-text search across requirements |
 | `spec resolve <files…>` | Map changed files to the requirements they touch |
-| `spec req` / `spec supersede` / `spec amend` / `spec deprecate` | Author and evolve requirements |
+| `spec req` / `spec supersede` / `spec amend` / `spec deprecate` / `spec accept` | Author and evolve requirements |
 | `spec init <repo>` | Declare a member and write its `spec-engine.member.json` |
 | `spec gate` / `spec relations` / `spec provenance` | Approval gate, cross-refs, provenance |
 | `spec serve <dir>` | Local webapp over the index |

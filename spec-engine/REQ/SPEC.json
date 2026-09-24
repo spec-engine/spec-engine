@@ -1,7 +1,7 @@
 {
   "key": "REQ",
   "owner": null,
-  "updated": "2026-09-05",
+  "updated": "2026-09-24",
   "scope": "Requirement lifecycle: spec req, spec supersede, spec amend, and @-refs. Belongs here: next-id allocation; non-interactive authoring; supersede, move, and amend; @path file-ref resolution. Does not belong here: scaffolding a domain (DOMAIN). Boundary case: minting a requirement id is REQ; scaffolding the domain that holds it is DOMAIN.",
   "grammar": "ears",
   "requirements": [
@@ -620,6 +620,66 @@
         "packages/engine/src/operations/supersede.ts"
       ],
       "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-039",
+      "status": "active",
+      "statement": "When spec req <KEY> --text runs with --draft, the spec CLI shall append the new entry with status draft, writing every other field exactly as the Active path writes it.",
+      "why": "An unreviewed candidate needs a status of its own, so a harvest can record a promise nobody has accepted yet without it reading as standing truth.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/req.ts"
+      ],
+      "issues": [
+        {
+          "role": "created",
+          "id": "probooks Q-08"
+        }
+      ],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-040",
+      "status": "active",
+      "statement": "When spec accept runs on a Draft requirement, the spec CLI shall set the entry's status to active and leave every other field byte-identical.",
+      "why": "Accepting a draft is the redline decision; it must change the status and nothing the reviewer read.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/accept.ts"
+      ],
+      "issues": [
+        {
+          "role": "created",
+          "id": "probooks Q-08"
+        }
+      ],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-041",
+      "status": "active",
+      "statement": "If spec accept targets a requirement that is not Draft, then the spec CLI shall refuse with exit 2 and write nothing.",
+      "why": "Only a draft awaits acceptance; an Active, superseded or deprecated entry changes through amend, supersede or deprecate.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/accept.ts"
+      ],
+      "issues": [
+        {
+          "role": "created",
+          "id": "probooks Q-08"
+        }
+      ],
       "aliases": [],
       "cites": []
     }

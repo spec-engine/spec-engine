@@ -29,6 +29,7 @@ import { listDomainKeys, normalizeDomainKey } from "../authoring/domains";
 import { derivePlatformVersion, platformMode } from "../indexer/discover";
 import { runIndex } from "../indexer/pipeline";
 import { type OpFailure, STATUS_FOR_REASON } from "../operations/_result";
+import { accept } from "../operations/accept";
 import { type AmendFields, amend } from "../operations/amend";
 import { deprecate } from "../operations/deprecate";
 import { mint } from "../operations/mint";
@@ -265,6 +266,18 @@ function toLivesIn(v: unknown): string[] {
   return [];
 }
 
+/** A POST body's authored fields; anything absent or mistyped takes the empty value. */
+function mintFieldsFromBody(body: Record<string, unknown>) {
+  return {
+    statement: typeof body.statement === "string" ? body.statement : "",
+    why: typeof body.why === "string" ? body.why : "",
+    livesIn: toLivesIn(body.livesIn),
+    issue:
+      typeof body.issue === "string" && body.issue.trim() !== "" ? body.issue.trim() : undefined,
+    status: body.status === "draft" ? ("draft" as const) : ("active" as const),
+  };
+}
+
 /** The amendable fields named in a PUT body, or null when it names none. */
 function amendFieldsFromBody(body: Record<string, unknown>): AmendFields | null {
   const fields: AmendFields = {};
@@ -456,17 +469,7 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
       // The read → next-id → write → reindex section is serialized so two
       // concurrent POSTs can never mint the same id.
       return withWriteLock(async () => {
-        const r = await mint({
-          platformDir,
-          key,
-          statement: typeof body.statement === "string" ? body.statement : "",
-          why: typeof body.why === "string" ? body.why : "",
-          livesIn: toLivesIn(body.livesIn),
-          issue:
-            typeof body.issue === "string" && body.issue.trim() !== ""
-              ? body.issue.trim()
-              : undefined,
-        });
+        const r = await mint({ platformDir, key, ...mintFieldsFromBody(body) });
         if (!r.ok) return failureResponse(c, r);
         await runIndex({ platformDir, storage });
         return c.json({ ok: true, id: r.id }, 201);
@@ -601,6 +604,34 @@ export function mountApi(app: Hono, storage: Storage, platformDir: string = proc
         });
         if (!r.ok) return failureResponse(c, r);
         return c.json({ ok: true, id: r.id, file: r.file, reason: r.reason, sites: r.sites }, 200);
+      });
+    }),
+  );
+
+  // --- POST /api/requirements/:id/accept ---------------------------------
+  //
+  // Promote a Draft to Active, the same shape as `spec accept --json`.
+  app.post(
+    "/api/requirements/:id/accept",
+    guarded(async function acceptRequirement(c) {
+      if (!featureEnabled("editor")) {
+        return c.json({ error: featureDisabledMessage("editor") }, 404);
+      }
+      const originReject = rejectCrossOrigin(c);
+      if (originReject) return originReject;
+      const headerReject = rejectBadWriteHeaders(c);
+      if (headerReject) return headerReject;
+      const parsed = await readJsonBody(c);
+      if (!parsed.ok) return parsed.res;
+
+      const id = c.req.param("id") ?? "";
+      if (!ID_RE.test(id)) return c.json({ error: "id must be a requirement id (KEY-NNN)" }, 400);
+
+      return withWriteLock(async () => {
+        const r = await accept({ platformDir, id });
+        if (!r.ok) return failureResponse(c, r);
+        await runIndex({ platformDir, storage });
+        return c.json({ ok: true, id: r.id, file: r.file }, 200);
       });
     }),
   );

@@ -35,6 +35,7 @@ export interface ReportDomainRow {
  * sorted. Non-Active requirements are excluded from every count — the
  * report answers "how covered is the standing truth", and superseded /
  * retired entries are history, not obligations.
+ * @spec CHCK-032
  */
 export function buildCoverageReport(rows: CoverageRow[]): ReportDomainRow[] {
   // Collapse (req × repo) to per-requirement any-repo flags first.

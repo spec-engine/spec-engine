@@ -212,6 +212,7 @@ Branch on exit codes, not on output text.
 | `spec supersede <KEY-NNN> [platformDir]` | Flip to superseded, mint the successor, emit the retag worklist | yes (object) | 0 / 2 |
 | `spec move <KEY-NNN> <NEW-DOMAIN> [platformDir]` | Cross-domain supersede | yes (object) | 0 / 2 |
 | `spec amend <KEY-NNN> [platformDir]` | Revise an unshipped entry in place | yes (object) | 0 / 2 |
+| `spec accept <KEY-NNN> [platformDir]` | Promote a Draft requirement to Active | yes (object) | 0 / 2 |
 | `spec serve [platformDir] [--port N]` | Local webapp + `/api/*` over the index | n/a (HTTP) | 0 / 1 / 2 |
 | `spec docs [--port N]` | Serve the bundled docs site offline | n/a (HTTP) | 0 / 1 / 2 |
 | `spec mcp [platformDir]` | MCP server over stdio | n/a (JSON-RPC) | 0 / 2 |
@@ -533,6 +534,7 @@ Exit: 0 / 2.
 | stdin not a TTY, no `--text` | Print the bare next unused id (e.g. `BILLING-010`), exit 0. No prompts, no writes. |
 | `--json`, no `--text` | Print `{ domain, next_id }`. Same zero-write contract, even on a TTY. |
 | `--text "<statement>"` | Append an Active entry with zero prompts. `--why`, `--lives`, `--issue <ticket>` fill the other fields and error without `--text`. |
+| `--draft` | Author the entry as Draft (with `--text`, or on a TTY). Off a TTY without `--text` it exits 2. |
 | TTY, no flags | Interactive authoring. |
 
 `--json` with `--text`: `{ id, file }`, plus `clauses: { pattern, condition,
@@ -631,6 +633,20 @@ Revise an Active or Draft entry in place. Same id, no version change.
 Exit: 0 / 2 (superseded or deprecated target; an Active entry that code already
 tags, which is shipped and must be superseded instead).
 
+### spec accept
+
+Promotes a Draft requirement to Active. Every other field stays byte-identical
+and the domain version does not move. Reword a draft with `spec amend` first;
+end one with `spec deprecate`.
+
+`--json`: `{ id, file }`.
+
+Exit: 0 / 2 (the target is not Draft: nothing is written).
+
+- A Draft never raises `ORPHAN_REQ` or `UNVERIFIED_REQ` and is not counted in
+  the coverage report. A code tag on one is `DRAFT_REFERENCED` (warning), and
+  its `livesIn` is still checked by `BROKEN_FILE_REF`.
+
 ### spec serve
 
 Binds `127.0.0.1` only. `--port 0` (default) picks a free port. `--probe`
@@ -648,7 +664,7 @@ are ignored.
 | `query` | `/query`, `/api/query?q=&limit=` |
 | `relations` | `/relations`, `/api/relations[?format=mermaid]` |
 | `provenance` | `/provenance`, `/api/provenance[?resolve=1]`, `/api/provenance/by-issue?issue=` |
-| `editor` | `/editor`, `POST` and `PUT /api/requirements`, `POST /api/requirements/:id/supersede`, `POST /api/requirements/:id/deprecate` |
+| `editor` | `/editor`, `POST` and `PUT /api/requirements`, `POST /api/requirements/:id/supersede`, `POST /api/requirements/:id/deprecate`, `POST /api/requirements/:id/accept` |
 | `glossary`, `logs` | Placeholder pages |
 
 Exit: 0 / 1 / 2.
@@ -682,6 +698,7 @@ MCP server over stdio. Register it as
 | `spec_list` | `Requirement` rows in (key, seq) order, `domain` and `status` filters; the `spec list --json` shape |
 | `spec_supersede` | `{ old_id, new_id, file, spec_version, retag }`, the `spec supersede --json` shape |
 | `spec_deprecate` | `{ id, file, reason, sites }`, the `spec deprecate --json` shape |
+| `spec_accept` | `{ id, file }`, the `spec accept --json` shape |
 
 Every tool call reindexes fresh. stdout is the protocol channel; chrome goes to
 stderr. One prompt, `author_requirements` (`brief` required, `domain`

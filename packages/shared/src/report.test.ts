@@ -51,10 +51,12 @@ describe("buildCoverageReport (W1)", () => {
     ]);
   });
 
+  // @spec CHCK-032 unit
   test("non-Active requirements are excluded from every count", () => {
     const rows: CoverageRow[] = [
       row({ req_id: "A-001", req_status: "Superseded", implemented: 1, verified: 1 }),
       row({ req_id: "A-002", implemented: 1 }),
+      row({ req_id: "A-003", req_status: "Draft" }),
     ];
     expect(buildCoverageReport(rows)).toEqual([
       { domain: "A", active: 1, implemented: 1, verified: 0, orphans: 0, unverified: 1 },

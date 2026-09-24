@@ -14,6 +14,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { Storage } from "@spec-engine/shared";
 import { Hono } from "hono";
+import { acceptCommand } from "../commands/accept";
 import { deprecateCommand } from "../commands/deprecate";
 import { moveCommand } from "../commands/move";
 import { supersedeCommand } from "../commands/supersede";
@@ -27,6 +28,7 @@ import { entryOf, plantEdit } from "../testing/plant";
 import { TestPlatform } from "../testing/platform";
 import { specTag } from "../testing/specTag";
 import { coldFreshTags, withIndex } from "./_index";
+import { accept } from "./accept";
 import { amend } from "./amend";
 import { check } from "./check";
 import { deprecate } from "./deprecate";
@@ -446,6 +448,80 @@ describe("write operations leave the same envelope from every surface", () => {
     expect(results.api).toEqual(results.operation);
     expect(results.mcp).toEqual(results.operation);
     expect((results.operation as { sites: unknown[] }).sites).toHaveLength(2);
+  });
+
+  // @spec REQ-039 integration
+  test("draft mint: the operation and the HTTP POST write byte-identical Draft entries", async () => {
+    const restore = fx.snapshotSpecs();
+    const direct = await mint({
+      platformDir: platform,
+      key: "BILLING",
+      statement,
+      why: "w",
+      livesIn: [],
+      status: "draft",
+    });
+    expect(direct.ok).toBe(true);
+    const afterDirect = await read("BILLING");
+
+    restore();
+    const posted = await apiJson("/api/requirements", {
+      method: "POST",
+      headers: apiHeaders,
+      body: JSON.stringify({ key: "BILLING", statement, why: "w", status: "draft" }),
+    });
+    expect(posted.status).toBe(201);
+    expect(await read("BILLING")).toBe(afterDirect);
+  });
+
+  // @spec REQ-040 integration
+  // @spec REQ-041 integration
+  test("accept: operation, CLI, HTTP POST, and MCP promote the same Draft identically", async () => {
+    const drafted = await mint({
+      platformDir: platform,
+      key: "BILLING",
+      statement,
+      why: "w",
+      livesIn: [],
+      status: "draft",
+    });
+    if (!drafted.ok) throw new Error(drafted.detail);
+    const id = drafted.id;
+    const results: Record<string, unknown> = {};
+    const snapshots = await writeThrough(["BILLING"], {
+      operation: async () => {
+        const r = await accept({ platformDir: platform, id });
+        expect(r.ok).toBe(true);
+        if (r.ok) results.operation = { id: r.id, file: r.file };
+      },
+      cli: () => runCli(acceptCommand, { id }),
+      api: async () => {
+        const res = await apiJson(`/api/requirements/${id}/accept`, {
+          method: "POST",
+          headers: apiHeaders,
+          body: "{}",
+        });
+        expect(res.status).toBe(200);
+        const { ok, ...rest } = res.body as Record<string, unknown>;
+        expect(ok).toBe(true);
+        results.api = rest;
+      },
+      mcp: async () => {
+        results.mcp = await mcpJson("spec_accept", { req_id: id });
+      },
+    });
+    expectAllEqual(snapshots);
+    expect(results.api).toEqual(results.operation);
+    expect(results.mcp).toEqual(results.operation);
+
+    const before = await read("BILLING");
+    const refused = await apiJson("/api/requirements/BILLING-002/accept", {
+      method: "POST",
+      headers: apiHeaders,
+      body: "{}",
+    });
+    expect(refused.status).toBe(409);
+    expect(await read("BILLING")).toBe(before);
   });
 
   test("move: the operation and the CLI write the same two envelopes", async () => {

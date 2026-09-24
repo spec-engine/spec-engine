@@ -43,6 +43,7 @@ const main = defineCommand({
     deprecate: () => import("./commands/deprecate").then((m) => m.deprecateCommand),
     move: () => import("./commands/move").then((m) => m.moveCommand),
     amend: () => import("./commands/amend").then((m) => m.amendCommand),
+    accept: () => import("./commands/accept").then((m) => m.acceptCommand),
     mcp: () => import("./commands/mcp").then((m) => m.mcpCommand),
     resolve: () => import("./commands/resolve").then((m) => m.resolveCommand),
     gate: () => import("./commands/gate").then((m) => m.gateCommand),
