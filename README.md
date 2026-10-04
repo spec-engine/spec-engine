@@ -210,8 +210,12 @@ As a Claude Code hook, so an agent is stopped the moment an edit would lose a re
 
 ```console
 $ spec serve . --port 4319
-spec: serving on http://127.0.0.1:4319
+spec: serving my-platform on http://127.0.0.1:4319
 ```
+
+Every page title, the sidebar, and `/api/platform` carry the platform's name (its
+platform file's `name`, else its directory's name) so two servers are never confused.
+No surface shows a filesystem path.
 
 `--port 0` (the default) picks a free port. The webapp reads the index, so run
 `spec index . --fresh` after editing specs or tags.
@@ -231,13 +235,37 @@ shows "coming soon" in the nav and answers 404 on its endpoints.
 
 ### Access
 
-There is no login or API key. Access is decided by where the request comes from:
+By default there is no login or API key. Access is decided by where the request comes
+from:
 
-- The server binds `127.0.0.1` only. There is no `--host` flag. Use an SSH tunnel to
-  reach it from another machine.
-- A request whose `Host` header is not a loopback name is rejected, which blocks DNS
-  rebinding.
+- The server binds one address: `127.0.0.1` unless `--host` names another.
+- A request whose `Host` header is neither a loopback name nor the bound address is
+  rejected, which blocks DNS rebinding.
 - Write routes reject a cross-origin `Origin` header.
+
+### LAN mode
+
+To open the webapp from another machine on the same private network:
+
+```bash
+spec serve --host YOUR_LAN_IP --port 4400 .
+# spec: serving my-platform on http://YOUR_LAN_IP:4400/?token=…
+```
+
+`YOUR_LAN_IP` is this machine's address on the network (macOS: `ipconfig getifaddr en0`;
+Linux: `hostname -I`).
+
+- `--host` takes only a literal loopback, RFC 1918 (`10/8`, `172.16/12`,
+  `192.168/16`), or `100.64/10` (Tailscale) address. `0.0.0.0`, `::`, hostnames, and
+  public addresses are refused.
+- Every request needs the access token. Opening the printed URL swaps the token for an
+  `HttpOnly; SameSite=Strict` cookie and drops it from the address bar. Anything
+  without it gets 401.
+- The token is random per start. Pin one with `--token` or `SPEC_SERVE_TOKEN`
+  (at least 16 of `A-Z a-z 0-9 _ -`).
+- The server is read-only: editor writes and tracker resolution (the provenance page)
+  answer 403. Pass `--allow-writes` to permit them.
+- `--probe` always binds loopback.
 
 ### Tracker token
 

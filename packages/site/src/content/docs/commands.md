@@ -174,9 +174,9 @@ Promote a Draft requirement to Active — same ID, every other field untouched, 
 
 **Exit codes:** 0 / 2
 
-### `spec serve [platformDir] [--port N]`
+### `spec serve [platformDir] [--port N] [--host IP] [--token T] [--allow-writes]`
 
-Launch the local webapp over the derived index. Binds `127.0.0.1` only. `--probe` boots on an ephemeral port, smoke-tests, and exits.
+Launch the local webapp over the derived index on `127.0.0.1`, or on a private `--host` address that requires the printed token and is read-only unless `--allow-writes`. `--probe` smoke-tests and exits.
 
 **API routes (always on):** `/api/coverage`, `/api/report` (per-domain rollup over Active reqs), `/api/repos`, `/api/platform` (the derived platform version), `/api/requirements[/:id]`, `/api/propagation/:id`, `/api/resolve?files=...`
 

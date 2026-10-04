@@ -11,6 +11,7 @@ export type PlatformMode = "single-repo" | "monorepo" | "multi-repo";
 export interface PlatformInfo {
   /** The derived platform version: the maximum domain version. */
   version: number;
+  name: string;
   source: "derived";
   mode: PlatformMode;
 }
