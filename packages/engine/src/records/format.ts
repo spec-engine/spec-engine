@@ -1,8 +1,3 @@
-// packages/engine/src/records/format.ts
-//
-// Pure formatter for `spec get` and `spec list`. Rows arrive in the index's
-// (key, seq) order and are rendered as given; JSON mode is the rows verbatim.
-
 import type { Requirement } from "@spec-engine/shared";
 import type { RenderMode } from "../constants";
 

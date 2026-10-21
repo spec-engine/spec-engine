@@ -1,9 +1,4 @@
-// packages/engine/src/operations/_result.ts
-//
-// The result contract every operation returns. An operation never exits the
-// process and never writes to a console: it succeeds with data plus any
-// warnings, or fails with a typed reason each surface maps to its own
-// vocabulary (CLI exit code, HTTP status, MCP isError).
+// An operation never exits the process and never writes to a console.
 
 import type { Diagnostic } from "@spec-engine/shared";
 

@@ -1,8 +1,3 @@
-// packages/engine/src/check/severity.ts
-//
-// Adopter severity policy from `spec-engine/check.json`, applied to the
-// finished diagnostic set so every surface grades identically.
-
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {

@@ -1,12 +1,6 @@
-// packages/engine/src/operations/glossary.ts
-//
-// The GLOSSARY.md round-trip. The committed glossary is generated from the
-// TERM store, never hand-edited: a fixed header, terms in id order, a section
-// heading once per change, one bullet per term, a single trailing newline. No
-// date or random value touches the output, so two runs are byte-identical.
-// The one-time migration parses an existing GLOSSARY.md into TERM-001..N
-// through the single validateAndWrite seam; generation writes the derived
-// human view, which is not a domain file.
+// No date or random value touches the generated output, so two runs are
+// byte-identical. GLOSSARY.md is a derived view, not a domain file, so
+// generation bypasses validateAndWrite; migration goes through it.
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";

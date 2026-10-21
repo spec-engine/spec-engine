@@ -1,7 +1,4 @@
-// packages/engine/src/operations/domain.ts
-//
-// Domain lifecycle: scaffold a new `spec-engine/<KEY>/SPEC.json` and list the
-// domains a platform holds. Both read the filesystem, never the index.
+// Reads the filesystem, never the index.
 
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";

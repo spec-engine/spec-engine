@@ -1,9 +1,5 @@
-// packages/engine/src/operations/check.ts
-//
-// The integrity check: build the index into the caller's handle, then run
-// every diagnostic pass. Everything that reads files or git runs AFTER
-// runIndex, so `build_id` is fixed the instant the index is built and no
-// flag can perturb the cold-rebuild identity.
+// Everything that reads files or git runs after runIndex, so no flag can
+// perturb `build_id` and the cold-rebuild identity.
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";

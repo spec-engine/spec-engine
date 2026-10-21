@@ -1,9 +1,3 @@
-// packages/engine/src/operations/records.ts
-//
-// Full requirement records from the derived index: one by id, or every
-// record in (key, seq) order with optional domain and status filters. Unlike
-// `query`, these include superseded and deprecated rows and never rank.
-
 import {
   REQUIREMENT_STATUSES,
   type Requirement,

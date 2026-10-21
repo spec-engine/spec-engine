@@ -1,12 +1,6 @@
-// packages/engine/src/server/mcp.ts
-//
-// The MCP front-end: the engine's operations as Model Context Protocol tools
-// so an agent harness calls them natively instead of shelling out. Every tool
-// call reindexes fresh, because the server is long-lived and the agent edits
-// specs and tags between calls; at this scale a rebuild is milliseconds and a
-// stale answer is a wrong answer. Results are the same JSON the CLI's --json
-// modes emit. Domain errors are MCP tool errors, never crashes. stdout is the
-// protocol channel; all chrome goes to stderr.
+// Every tool call reindexes fresh: the server is long-lived and the agent
+// edits specs and tags between calls. stdout is the protocol channel; all
+// chrome goes to stderr.
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { DEFAULT_QUERY_LIMIT, LIMIT_MAX } from "@spec-engine/shared";

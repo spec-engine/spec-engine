@@ -1,25 +1,8 @@
-// packages/engine/src/server/authorPrompt.ts
-//
-// L4 (lifecycle pass) — the static authoring-playbook template behind the
-// `spec mcp` author_requirements prompt. This is a PURE template renderer:
-// static {brief}/{domain}/{charter} substitution ONLY — no I/O, no fetch, no
-// model call, no Date, no randomness — so the same inputs always produce the
-// same bytes (snapshot-stable). The engine returns the filled template; the
-// MCP CLIENT's model is what consumes and runs it. That is the phase's hard
-// constraint: the engine stays LLM-free (enforced by fence_llmfree_engine).
-//
-// The full authoring standard lives in spec-engine/TAXONOMY.md — this file
-// carries the operational step sequence (the command choreography) plus the
-// EARS shapes, because a statement's shape is checked mechanically at write
-// time and the prompt must teach the same shape the validator enforces.
+// Pure template: no I/O, model call, Date, or randomness, so output is
+// byte-stable and the engine stays LLM-free (fence_llmfree_engine). The EARS
+// shapes are repeated here because the prompt must teach the shape the
+// write-time validator enforces; the full standard is spec-engine/TAXONOMY.md.
 
-/**
- * Render the authoring playbook for a brief. Three charter branches:
- *   - charter present → "Target domain: <D>" + the charter/scope text
- *   - domain given but no charter → the domain-named "check placement" branch
- *   - no domain → the "determine placement from `spec domain list`" branch
- * Pure string assembly — deterministic and byte-stable.
- */
 // @spec AUTHOR-008
 // @spec AUTHOR-009
 export function renderAuthorPrompt(opts: {

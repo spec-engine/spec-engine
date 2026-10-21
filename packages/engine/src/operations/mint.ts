@@ -1,10 +1,3 @@
-// packages/engine/src/operations/mint.ts
-//
-// Author a new Active requirement into a domain's SPEC.json. One function for
-// every surface: `spec req --text`, the interactive `spec req` flow, the HTTP
-// editor's POST, and the MCP client all end here. The whole envelope is
-// written through the single validateAndWrite seam.
-
 import { existsSync } from "node:fs";
 import {
   type EarsClauses,

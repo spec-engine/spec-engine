@@ -1,9 +1,3 @@
-// packages/engine/src/operations/_envelope.test.ts
-//
-// The envelope substrate every lifecycle operation reads through. A domain
-// file reaches an operation only as a schema-validated `SpecDomain`; a file
-// the schema rejects is a typed refusal carrying the validator's diagnostics.
-
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";

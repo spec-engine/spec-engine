@@ -1,11 +1,3 @@
-// packages/engine/src/operations/deprecate.ts
-//
-// End a requirement with no successor: mark it deprecated, record the reason
-// on the entry itself, and answer with every code tag still bound to the id
-// (each is a DEPRECATED_REFERENCED error in `spec check` until the code is
-// removed or retagged). A requirement is never deleted; the entry survives as
-// the record.
-
 import { validateAndWrite } from "@spec-engine/shared";
 import { localToday } from "../authoring/edit";
 import type { ReqTagRow } from "../resolve/format";

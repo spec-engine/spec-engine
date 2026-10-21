@@ -1,22 +1,8 @@
-// packages/engine/src/check/supersedes.ts
-//
-// Validation for the `supersedes` forward pointer.
-//
-// A supersede edge is stored in two directions: the predecessor's
-// `supersededBy` and the successor's `supersedes`. The index derives lineage
-// from `supersededBy` alone, and the authoring commands always write
-// `supersedes: null` — but the loss gates (check/removed.ts, guard/losses.ts)
-// honor a surviving requirement's `supersedes` as a removal exemption. That
-// makes it the one field a hand-edit can use to excuse a deletion, and until
-// now nothing checked that it named a real requirement.
-//
-// This pass closes that: a non-null `supersedes` must name a requirement that
-// exists somewhere in the platform, and must not name the declaring entry
-// itself. It deliberately does NOT require the target to point back — the
-// legal delete-and-replace path leaves no predecessor to carry the return
-// pointer, which is the whole reason the backward direction exists (GUARD-018).
-//
-// Reads the SPEC.json files directly: `supersedes` has no index column.
+// The loss gates (check/removed.ts, guard/losses.ts) honor a surviving entry's
+// `supersedes` as a removal exemption, so a dangling one would excuse a
+// deletion. The target is deliberately not required to point back: a
+// delete-and-replace leaves no predecessor to carry the return pointer.
+// Reads SPEC.json directly: `supersedes` has no index column.
 
 import { type Diagnostic, DiagnosticCode, parseDomainText } from "@spec-engine/shared";
 import { listDomainKeys } from "../authoring/domains";

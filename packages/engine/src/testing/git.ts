@@ -1,7 +1,5 @@
-// packages/engine/src/testing/git.ts
-//
-// Drive git in a test's own temporary tree, with a fixed identity and signing
-// off so the user's global config cannot change the outcome.
+// Fixed identity and signing off, so the user's global git config cannot
+// change the outcome.
 
 const GIT_ENV = {
   ...process.env,

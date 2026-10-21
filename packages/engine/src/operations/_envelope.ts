@@ -1,9 +1,3 @@
-// packages/engine/src/operations/_envelope.ts
-//
-// The domain-file substrate every lifecycle operation shares: read one
-// SPEC.json through the shared schema, locate the entry an id names, and word
-// the refusals every locate can raise. Nothing here writes.
-
 import { existsSync } from "node:fs";
 import { parseDomainText, type SpecDomain, type SpecRequirement } from "@spec-engine/shared";
 import { listDomainKeys } from "../authoring/domains";

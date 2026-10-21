@@ -1,9 +1,4 @@
-// packages/engine/src/indexer/discover.ts
-//
-// Platform discovery. Membership and shape come from @spec-engine/platform-map
-// (this is the one engine file that imports its map() and locate()), each
-// member's pin comes from its spec-engine.member.json, and the platform
-// version is derived from the domain files. Nothing here touches the index.
+// The one engine file that imports platform-map's map() and locate().
 
 import { existsSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";

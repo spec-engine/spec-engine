@@ -1,10 +1,4 @@
-// packages/engine/src/operations/supersede.ts
-//
-// Supersede a shipped requirement: flip the predecessor to superseded and
-// pointed forward, mint the successor Active in the same domain, stamp the
-// versions, write the envelope once, and answer with the retag worklist (the
-// tag sites `spec check` reports as SUPERSEDED_REFERENCED until retagged).
-// Every guard runs before the single write.
+// Every guard runs before the single envelope write.
 
 import { type SpecDomain, type SpecRequirement, validateAndWrite } from "@spec-engine/shared";
 import { nextRequirementId } from "../authoring/domains";

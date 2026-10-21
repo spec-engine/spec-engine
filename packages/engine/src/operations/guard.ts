@@ -1,10 +1,5 @@
-// packages/engine/src/operations/guard.ts
-//
-// Loss detection: diff the requirement derivation at a git ref against the
-// working tree and name every requirement, last implementation, or last test
-// a change is about to lose. The storage handle must hold a fresh index of
-// the working tree; the surface decides that the ref resolves before it
-// builds one.
+// The storage handle must hold a fresh index of the working tree; the surface
+// checks that the ref resolves before it builds one.
 
 import type { Storage } from "@spec-engine/shared";
 import { collectFacts } from "../guard/collect";

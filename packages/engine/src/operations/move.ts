@@ -1,9 +1,5 @@
-// packages/engine/src/operations/move.ts
-//
-// The cross-domain supersede: mint the successor as the next id in another
-// domain, carrying the source entry's fields forward, and flip the source to
-// superseded with a cross-domain `supersededBy`. Both envelopes validate
-// before either is written, so a refusal never leaves one side applied.
+// Both envelopes validate before either is written, so a refusal never
+// leaves one side applied.
 
 import {
   type Diagnostic,

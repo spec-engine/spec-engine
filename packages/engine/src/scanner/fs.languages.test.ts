@@ -1,5 +1,3 @@
-// packages/engine/src/scanner/fs.languages.test.ts
-//
 // @spec INDX-019 unit
 // @spec INDX-015
 

@@ -1,10 +1,4 @@
-// packages/webapp/src/pages/setup.ts
-//
-// System → Setup (`GET /setup`): how Spec Engine reads your code. The scan
-// mode comes from `/api/platform`, which carries platform-map's mode; the
-// member table and the counts come from the same read-only routes the rest
-// of the webapp uses, fetched in-process. The webapp stays hermetic: only
-// @spec-engine/shared types and hono.
+// The webapp stays hermetic: only @spec-engine/shared types and hono.
 
 import type {
   CoverageRow,
