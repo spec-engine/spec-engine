@@ -1,7 +1,7 @@
 {
   "key": "DIST",
   "owner": null,
-  "updated": "2026-09-05",
+  "updated": "2026-10-21",
   "scope": "The npm distribution surface: what the published @spec-engine/spec-engine artifact contains and the CLI surfaces that exist only because of it (spec docs, the non-Bun runtime guard). Belongs here: tarball-content promises; the bin wrapper's runtime guard; the offline docs command. Does not belong here: the webapp routes the artifact embeds (SERV); the compiled-binary channel (CI-owned); the docs site content (packages/site). Boundary case: spec docs binds loopback like spec serve, but it is a distribution surface over static files, so the promise lives here.",
   "grammar": "ears",
   "requirements": [
@@ -218,6 +218,68 @@
       "relates": [],
       "livesIn": [
         "scripts/arch-fences.sh"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DIST-015",
+      "status": "active",
+      "statement": "When a commit lands on main, the release-please job shall open or update one release pull request that bumps the packages/engine version, the release manifest, and packages/engine/CHANGELOG.md from the conventional commits since the last release.",
+      "why": "Without it a release depends on a hand bump and a hand tag: a missed bump publishes under a stale version and the changelog is never written.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        ".github/workflows/ci.yml",
+        "release-please-config.json",
+        ".release-please-manifest.json"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DIST-016",
+      "status": "active",
+      "statement": "When the release pull request merges or a v* tag is pushed, the CI publish job shall publish @spec-engine/spec-engine to npm through keyless OIDC, in the same workflow run, only after every gate job in that run passes.",
+      "why": "A tag release-please creates with GITHUB_TOKEN triggers no other workflow, so a publish left to a tag-push run never fires; a publish that skips a gate ships an unvalidated artifact.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        ".github/workflows/ci.yml"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DIST-017",
+      "status": "active",
+      "statement": "If the release tag does not match the packages/engine package version, then the CI publish job shall fail before packing.",
+      "why": "npm versions are immutable: a mismatched publish burns the version number and ships the content under the wrong release.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        ".github/workflows/ci.yml"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DIST-018",
+      "status": "active",
+      "statement": "The repository shall declare every dependency as an exact version and carry a Renovate config that keeps those pins exact and current.",
+      "why": "A range resolves to whatever the registry serves on install day, so two installs of one commit diverge; exact pins nobody updates rot into unpatched versions.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "renovate.json"
       ],
       "issues": [],
       "aliases": [],
