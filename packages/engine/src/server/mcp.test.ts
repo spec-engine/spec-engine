@@ -66,19 +66,22 @@ describe("spec mcp — tool surface", () => {
     expect(client.getServerVersion()?.version).toBe(packageJson.version);
   });
 
-  test("lists the twelve tools", async () => {
+  test("lists the fifteen tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
       "spec_accept",
+      "spec_amend",
       "spec_check",
       "spec_coverage_report",
       "spec_deprecate",
       "spec_get",
       "spec_list",
+      "spec_move",
       "spec_next_id",
       "spec_propagation",
       "spec_query",
+      "spec_req",
       "spec_req_tags",
       "spec_resolve",
       "spec_supersede",

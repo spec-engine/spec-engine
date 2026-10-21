@@ -436,6 +436,66 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "SERV-028",
+      "status": "active",
+      "statement": "When the spec mcp server receives a spec_req tool call, the spec mcp command shall author the requirement through the mint operation and return the spec req --json shape.",
+      "why": "An agent on MCP cannot mint a requirement, or mints one through forked logic that writes a different envelope than spec req.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/server/mcp.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SERV-029",
+      "status": "active",
+      "statement": "When the spec mcp server receives a spec_amend tool call, the spec mcp command shall revise the requirement through the amend operation and return the spec amend --json shape.",
+      "why": "An agent on MCP cannot amend an unshipped requirement, or amends it under different gates than spec amend.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/server/mcp.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SERV-030",
+      "status": "active",
+      "statement": "When the spec mcp server receives a spec_move tool call, the spec mcp command shall move the requirement through the move operation and return the spec move --json shape.",
+      "why": "An agent on MCP cannot move a requirement across domains, or moves it without the retag worklist spec move returns.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/server/mcp.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SERV-031",
+      "status": "active",
+      "statement": "When spec serve receives POST /api/requirements/:id/move with the editor feature enabled, the spec serve command shall move the requirement through the move operation under the write lock and return the spec move --json shape.",
+      "why": "An HTTP client cannot move a requirement across domains, or two concurrent writes race on the same next id.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/server/api.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
   ]
 }

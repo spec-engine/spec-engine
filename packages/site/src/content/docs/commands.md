@@ -186,6 +186,6 @@ Launch the local webapp over the derived index on `127.0.0.1`, or on a private `
 
 ### `spec mcp [platformDir]`
 
-Serve Spec Engine as a Model Context Protocol server over stdio. Tools: `spec_query`, `spec_resolve`, `spec_req_tags`, `spec_coverage_report`, `spec_check`, `spec_propagation`, `spec_next_id`, `spec_get`, `spec_list`, `spec_supersede`, `spec_deprecate`, `spec_accept` — the same JSON the CLI's `--json` modes emit, reindexed fresh per call. Also advertises the `author_requirements` prompt (a static authoring playbook; the engine itself runs no model).
+Serve Spec Engine as a Model Context Protocol server over stdio. Tools: `spec_query`, `spec_resolve`, `spec_req_tags`, `spec_coverage_report`, `spec_check`, `spec_propagation`, `spec_next_id`, `spec_get`, `spec_list`, `spec_req`, `spec_amend`, `spec_supersede`, `spec_move`, `spec_deprecate`, `spec_accept` — the same JSON the CLI's `--json` modes emit, reindexed fresh per call. Also advertises the `author_requirements` prompt (a static authoring playbook; the engine itself runs no model).
 
 **Exit codes:** 0 / 2

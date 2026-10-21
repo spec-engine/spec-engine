@@ -746,7 +746,7 @@ are ignored.
 | `query` | `/query`, `/api/query?q=&limit=` |
 | `relations` | `/relations`, `/api/relations[?format=mermaid]` |
 | `provenance` | `/provenance`, `/api/provenance[?resolve=1]`, `/api/provenance/by-issue?issue=` |
-| `editor` | `/editor`, `POST` and `PUT /api/requirements`, `POST /api/requirements/:id/supersede`, `POST /api/requirements/:id/deprecate`, `POST /api/requirements/:id/accept` |
+| `editor` | `/editor`, `POST` and `PUT /api/requirements`, `POST /api/requirements/:id/supersede`, `POST /api/requirements/:id/move`, `POST /api/requirements/:id/deprecate`, `POST /api/requirements/:id/accept` |
 | `glossary`, `logs` | Placeholder pages |
 
 Exit: 0 / 1 / 2.
@@ -781,6 +781,9 @@ MCP server over stdio. Register it as
 | `spec_supersede` | `{ old_id, new_id, file, spec_version, retag }`, the `spec supersede --json` shape; optional `why`, `lives_in`, `relates`, `issue` arguments |
 | `spec_deprecate` | `{ id, file, reason, sites }`, the `spec deprecate --json` shape |
 | `spec_accept` | `{ id, file }`, the `spec accept --json` shape |
+| `spec_req` | `{ id, file, clauses? }`, the `spec req --text --json` shape; `domain` (key or prefix) and `text` required, optional `why`, `lives`, `relates`, `issue`, `draft` |
+| `spec_amend` | `{ id, file, fields_changed }`, the `spec amend --json` shape; `id` required, optional `text`, `why`, `lives`, `relates`, `issue` |
+| `spec_move` | `{ old_id, new_id, from_file, to_file, source_spec_version, target_spec_version, retag }`, the `spec move --json` shape; `id` and `newDomain` required, optional `text`, `why`, `lives` |
 
 Every tool call reindexes fresh. stdout is the protocol channel; chrome goes to
 stderr. One prompt, `author_requirements` (`brief` required, `domain`
