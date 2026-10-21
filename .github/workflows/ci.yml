@@ -4,17 +4,18 @@ on:
   pull_request: {}
   push:
     branches: [main]
-    tags: ['v*']  # PUB-01: a version tag re-runs every gate, then publishes
+    tags: ['v*']  # a hand-pushed version tag re-runs every gate, then publishes
 
 permissions:
   contents: read
 
-# 2.2: cancel superseded runs on the same ref so a rapid push sequence doesn't
-# run stale commits to completion on the 10x-priced macOS runner. `main` pushes
-# and PR updates each get their own group keyed by ref.
+# 2.2: cancel superseded PR runs on the same ref so a rapid push sequence doesn't
+# run stale commits to completion on the 10x-priced macOS runner. A `main` run
+# is never cancelled: it may be mid-publish of a release release-please just
+# tagged, and no later run publishes that tag.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build-and-smoke:
@@ -213,8 +214,28 @@ jobs:
       - name: build (astro build — fails on a missing asset/broken ref)
         run: bun run build:site
 
-  # PUB-01 (mirrors platform-map): tag-gated keyless npm publish via OIDC
-  # trusted publishing. No stored token — `id-token: write` mints a
+  # @spec DIST-015
+  release-please:
+    name: release-please (release PR, tag, GitHub Release)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    outputs:
+      release_created: ${{ steps.release.outputs['packages/engine--release_created'] }}
+      tag_name: ${{ steps.release.outputs['packages/engine--tag_name'] }}
+
+    steps:
+      - id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  # Keyless npm publish via OIDC trusted publishing. No stored token — `id-token: write` mints a
   # short-lived OIDC credential per run; provenance auto-attaches from
   # publishConfig.provenance in packages/engine/package.json.
   #
@@ -230,11 +251,23 @@ jobs:
   # One-time operator gate: register the GitHub trusted publisher for
   # @spec-engine/spec-engine on npmjs.com (org/user: spec-engine,
   # repository: spec-engine, workflow filename: ci.yml, no environment)
-  # BEFORE the first tagged run.
+  # BEFORE the first release.
+  #
+  # Two triggers: a hand-pushed `v*` tag, or release-please creating the
+  # release in this same run. Its tag is pushed with GITHUB_TOKEN, which
+  # starts no other workflow, so this run is the only one that can publish
+  # it. `!cancelled()` keeps a skipped release-please (tag and PR runs) from
+  # skipping publish; the gates are then checked by result.
+  # @spec DIST-016
   publish:
-    name: publish to npm (tag-gated, OIDC keyless)
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [build-and-smoke, test-linux, site]
+    name: publish to npm (on release, OIDC keyless)
+    if: >-
+      !cancelled()
+      && needs.build-and-smoke.result == 'success'
+      && needs.test-linux.result == 'success'
+      && needs.site.result == 'success'
+      && (startsWith(github.ref, 'refs/tags/v') || needs.release-please.outputs.release_created == 'true')
+    needs: [build-and-smoke, test-linux, site, release-please]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -252,9 +285,12 @@ jobs:
       - name: install (frozen lockfile)
         run: bun install --frozen-lockfile
 
+      # @spec DIST-017
       - name: tag ↔ package version parity
+        env:
+          RELEASE_TAG: ${{ needs.release-please.outputs.tag_name || github.ref_name }}
         run: |
-          TAG="${GITHUB_REF_NAME#v}"
+          TAG="${RELEASE_TAG#v}"
           PKG=$(bun -p 'require("./packages/engine/package.json").version')
           test "$TAG" = "$PKG" || {
             echo "tag v$TAG != packages/engine version $PKG — bump the version before tagging"; exit 1;
@@ -263,7 +299,7 @@ jobs:
       - name: "pack with bun (runs prepack, rewrites workspace: deps)"
         run: cd packages/engine && bun pm pack
 
-      - name: rehearse the tarball (CONTRIBUTING release-loop step 3, mechanized)
+      - name: rehearse the tarball (file list and manifest)
         run: |
           cd packages/engine
           TARBALL=$(ls spec-engine-spec-engine-*.tgz)

@@ -78,25 +78,43 @@ Only `packages/engine` publishes — as **`@spec-engine/spec-engine`**, a single
 bundled package (the workspace packages inline into `dist/impl.js` at prepack;
 `shared`/`tracker`/`webapp`/`site` stay private forever).
 
-CI publishes on tag, keyless:
+CI releases and publishes, keyless:
 
-- Pushing a `v<version>` tag re-runs every CI gate on the tagged commit, then the
-  `publish` job in `.github/workflows/ci.yml` ships to npm via OIDC trusted publishing.
+- `release-please` (a job in `.github/workflows/ci.yml`, configured by
+  `release-please-config.json` and `.release-please-manifest.json`) runs on every
+  push to `main`.
+- The `publish` job in the same workflow ships to npm via OIDC trusted publishing,
+  after every gate job in that run passes.
 - No stored token. Provenance is attached automatically (`publishConfig.provenance`).
 - One-time prerequisites: the npm org `spec-engine` exists, and the GitHub trusted
   publisher is registered for `@spec-engine/spec-engine` (org `spec-engine`, repository
   `spec-engine`, workflow `ci.yml`, no environment).
+- One-time repository prerequisites: the setting "Allow GitHub Actions to create and
+  approve pull requests" is on (release-please opens its PR with `GITHUB_TOKEN`), and
+  the Renovate GitHub App is installed on the repository.
 
+<!-- @spec DIST-015 -->
+<!-- @spec DIST-016 -->
 Release loop:
 
-1. Bump `version` in `packages/engine/package.json`, run `bun install` (a
-   stale lockfile packs the wrong number), and land the bump on `main`
-   through a normal PR.
-2. Tag and push: `git tag v<version> && git push --tags`. CI does the rest —
-   the publish job refuses a tag that doesn't match the package version, and
-   re-runs the pack rehearsal (file list is `dist/` +
+1. Merge pull requests with conventional-commit titles (`feat:`, `fix:`, `feat!:`).
+2. release-please opens or updates one release PR that bumps
+   `packages/engine/package.json`, the manifest, and `packages/engine/CHANGELOG.md`.
+   A `Release-As: x.y.z` commit footer overrides the computed version.
+3. Merging the release PR tags `v<version>`, creates the GitHub Release, and publishes
+   in that same run. A tag pushed with `GITHUB_TOKEN` starts no other workflow.
+   <!-- @spec DIST-017 --> The publish job refuses a tag that does not match the
+   package version and re-runs the pack rehearsal (file list is `dist/` +
    `package.json`/`README.md`/`LICENSE` only; no `workspace:*` survives in the
    manifest) before uploading.
+
+A hand-pushed `v<version>` tag still re-runs every gate and publishes, for a release
+cut outside release-please.
+
+<!-- @spec DIST-018 -->
+Dependencies are exact pins. Renovate (`renovate.json`) keeps them exact and current:
+one weekly PR for grouped minor and patch updates, a separate PR per major, and a
+weekly `bun.lock` maintenance PR.
 
 Inside the publish job:
 

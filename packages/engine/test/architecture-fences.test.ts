@@ -89,6 +89,26 @@ describe("architecture fences (scripts/arch-fences.sh)", () => {
     fenceHeld("DIST-014");
   });
 
+  // @spec DIST-015 unit
+  test("DIST-015: release-please runs on main and releases packages/engine under v<version> tags", () => {
+    fenceHeld("DIST-015");
+  });
+
+  // @spec DIST-016 unit
+  test("DIST-016: publish runs on a v* tag or a release-please release, after every gate job", () => {
+    fenceHeld("DIST-016");
+  });
+
+  // @spec DIST-017 unit
+  test("DIST-017: the release tag is checked against the package version before packing", () => {
+    fenceHeld("DIST-017");
+  });
+
+  // @spec DIST-018 unit
+  test("DIST-018: every dependency is an exact pin and Renovate is told to keep it so", () => {
+    fenceHeld("DIST-018");
+  });
+
   // @spec TRK-004 unit
   test("TRK-004: engine internals never import the tracker and carry no external host literal", () => {
     fenceHeld("TRK-004");

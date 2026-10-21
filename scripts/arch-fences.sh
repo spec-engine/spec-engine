@@ -484,6 +484,18 @@ fence_taxonomy_charters() {
   fi
 }
 
+# --- DIST-015..018: the release pipeline config --------------------------
+# ci.yml and the JSON configs hold no scannable tag; scripts/release-config.ts
+# parses them and states each requirement's shape.
+# @spec DIST-015
+fence_dist015_release_pr() { bun scripts/release-config.ts DIST-015; }
+# @spec DIST-016
+fence_dist016_publish_on_release() { bun scripts/release-config.ts DIST-016; }
+# @spec DIST-017
+fence_dist017_version_parity() { bun scripts/release-config.ts DIST-017; }
+# @spec DIST-018
+fence_dist018_exact_pins() { bun scripts/release-config.ts DIST-018; }
+
 run "SCHM-025 bun:sqlite outside the engine"                  fence_d11_bun_sqlite
 run "SCHM-025 bun:sqlite outside storage/sqlite.ts"           fence_d08_engine_internal
 run "SCHM-028 no CHECK, FK, or UNIQUE on domain fields"        fence_schm07_schema_constraint
@@ -492,6 +504,10 @@ run "PROV-006 issue_id is never an identity"                   fence_prov02_issu
 run "DIST-012 README names spec init and NO_SPEC_CONFIG"       fence_docs01_readme_tokens
 run "DIST-013 README and AGENTS.md name the JSON model and the proof gate" fence_ma4_v13_doc_reference
 run "DIST-014 no stale example config"                         fence_clean01_no_stale_example
+run "DIST-015 release-please opens the release PR"           fence_dist015_release_pr
+run "DIST-016 publish runs on release after every gate"      fence_dist016_publish_on_release
+run "DIST-017 tag and package version match before packing"  fence_dist017_version_parity
+run "DIST-018 dependencies are exact pins, Renovate keeps them" fence_dist018_exact_pins
 run "TRK-004 engine internals never import the tracker or reach the network" fence_trk02_tracker_import
 run "TRK-007 tracker sends queries only"                       fence_trk04_no_mutation
 run "TRK-009 token never logged"                               fence_trk06_no_token_log
