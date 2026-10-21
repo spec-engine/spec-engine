@@ -145,8 +145,10 @@ How this implementation realizes them:
    are permanent. Changes supersede or `spec deprecate`, never overwrite.
 2. Code binds with a tag: `// @spec KEY-NNN`. A test tag may add a level token
    `unit` | `integration` | `e2e`. The scanner reads `.ts`, `.tsx`, `.js`,
-   `.jsx`, `.mjs`, `.sh`, `.lua`, `.luau`, `.go`, and `.rs` files; the tag
-   regex ignores the comment leader, so `--`, `//`, and `#` all work.
+   `.jsx`, `.mjs`, `.sh`, `.lua`, `.luau`, `.go`, `.rs`, `.tf`, `.toml`,
+   `.sql`, and `.css` files and any file named `Dockerfile` or
+   `Dockerfile.<suffix>`; the tag regex ignores the comment leader, so `--`,
+   `//`, `#`, and `/* … */` all work.
 3. Tag kind is path-derived. A tag in implementation code **implements**; a tag
    in a test path **verifies**. Never write those words in the tag. A test
    path contains `.test.`, `.spec.`, `__tests__/`, `/tests/`, `/e2e/`, or
@@ -244,9 +246,20 @@ Build or refresh the derived index.
 
 `--json`: `{ build_id, repos, domains, requirements, tags, diagnostics }`.
 
-Exit: 0 built / 1 crashed mid-index / 2 not a platform or bad args.
+Exit: 0 built / 1 an invalid SPEC.json refused the build, or the build crashed
+/ 2 not a platform or bad args.
 
 - `build_id` is deterministic for identical inputs (cold-rebuild equivalence).
+- A `SPEC.json` that is not JSON or fails the shared schema refuses the whole
+  build, and the index on disk is left as it was. Every file is parsed first,
+  so one run reports every invalid file. Under `--json` the result is
+  `{ build_id: null, repos: 0, domains: 0, requirements: 0, tags: 0,
+  diagnostics: [...] }`, the array holding the `INVALID_DOMAIN_FILE` rows in
+  the `spec check --json` row shape; text mode prints only those rows on
+  stderr. Every other index-building command prints only the same rows and
+  exits 1 (`check`, `gate`, `guard`, `serve`, and the read commands); a
+  lifecycle command that reindexes for its worklist (`supersede`, `amend`,
+  `deprecate`, `move`, `term confirm`) exits 2 after its write.
 - Also writes `.spec-engine/doctor.md`, a list of doc lines that mention a
   requirement id without an explicit `<!-- @spec ID -->` binding.
 
@@ -539,8 +552,10 @@ Exit: 0 wrote or already configured / 2. Branch on `action`, not the exit code.
   engine's own checkout (root package named `@spec-engine/spec-engine`),
   where only the path below the platform root is judged.
 - `ignore: ["dir", …]` excludes repo-relative directory prefixes from that
-  repo's scans. The `members` glob is gone: a monorepo's columns are its
-  workspace manifest's packages.
+  repo's scans: `vendor` hides `vendor/x.ts` but not `src/vendor/x.ts`. A
+  monorepo root column excludes its workspace package paths the same way. The
+  `members` glob is gone: a monorepo's columns are its workspace manifest's
+  packages.
 
 ### spec domain
 

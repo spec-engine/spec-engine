@@ -35,7 +35,7 @@ The platform root is the directory that holds the canonical `spec-engine/` tree.
 
 The index-building commands take the platform directory as an argument and ask platform-map to describe that directory. A directory that platform-map does not recognize as a starting point, one with neither a `.git` entry nor a `platform-map.json` inside a larger repository (a spec tree kept in a subfolder, such as a committed fixture), is mapped as a lone single repository: one coverage column named by the directory, and no platform-map diagnostics.
 
-The platform version is derived, never authored. It is the maximum of the domain versions under `spec-engine/`. A domain file that fails to parse contributes nothing to that number and is reported as `INVALID_DOMAIN_FILE` at parse time; the walk itself never fails on it. <!-- @spec INIT-029 -->
+The platform version is derived, never authored. It is the maximum of the domain versions under `spec-engine/`. A domain file that fails to parse contributes nothing to that number, and the index build then refuses: the command prints only that file's `INVALID_DOMAIN_FILE` rows and exits 1, leaving the index on disk as it was. <!-- @spec INIT-029 -->
 
 ## Members
 

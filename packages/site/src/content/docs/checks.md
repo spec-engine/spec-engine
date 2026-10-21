@@ -9,7 +9,7 @@ description: Diagnostic codes and what they mean
 
 | Code | Severity | Condition |
 | --- | --- | --- |
-| `INVALID_DOMAIN_FILE` | error | A `SPEC.json` fails the structural schema (bad JSON, malformed `key`/`id`, missing `statement`, unknown envelope key) — loud, never a silent zero |
+| `INVALID_DOMAIN_FILE` | error | A `SPEC.json` fails the structural schema (bad JSON, malformed `key`/`id`, missing `statement`, unknown envelope key). The index build refuses, and `spec check` prints only these rows, one per failing field across every invalid file |
 | `DUP_ID` | error | The same requirement ID appears twice |
 | `BROKEN_SUPERSEDE` | error | `supersededBy` points at a missing ID |
 | `CYCLIC_SUPERSEDE` | error | A circular supersession chain (`A → B → A`) — the chain is the change history, so a cycle is corrupt history |
