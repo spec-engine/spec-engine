@@ -1,10 +1,6 @@
-// packages/engine/src/commands/docs.test.ts
-//
-// `spec docs` unit surface: the static-file handler (routing order,
-// containment, 404 fallback) and the docs-root fallback chain. The handler
-// is exercised directly via Request/Response — no port binding — so the
-// suite stays hermetic; the end-to-end boot path is `spec docs --probe`
-// (CI smoke territory, same division as serve.ts's SERV-04 probe).
+// The handler is driven directly via Request/Response, with no port bound,
+// so the suite stays hermetic; the end-to-end boot path is `spec docs
+// --probe` in the CI smokes.
 
 import { afterAll, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";

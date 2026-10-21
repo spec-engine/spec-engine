@@ -1,16 +1,3 @@
-// packages/engine/src/commands/propagation.json-snapshot.test.ts
-//
-// PROP-01 / PROP-03 byte-stability lock: `spec propagation BILLING-009 --json`
-// against the canonical platform-fixture must produce byte-identical output
-// across consecutive cold rebuilds, and the row shape is pinned by a
-// snapshot so future fixture or state-machine changes surface immediately.
-//
-// Runs the citty command in-process (mirroring map-json-snapshot.test.ts).
-//
-// WR-06: each test runs against a CLONED fixture in tmpdir so the canonical
-// `fixtures/platform-fixture/` tree is never mutated by the indexer's
-// .spec-engine/ writes.
-
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { rmSync } from "node:fs";
 import { resolve } from "node:path";
@@ -32,7 +19,8 @@ class ExitError extends Error {
 }
 
 beforeEach(() => {
-  // WR-06: clone the canonical fixture into a fresh tmpdir per test.
+  // A clone, so the indexer's .spec-engine/ writes never touch the canonical
+  // fixtures/platform-fixture/ tree.
   clone = cloneFixture(FIXTURE);
   logs = [];
   originalLog = console.log;
@@ -71,12 +59,10 @@ async function runPropagation(args: Record<string, unknown>): Promise<number> {
 
 describe("spec propagation BILLING-009 --json against canonical platform-fixture", () => {
   test("two consecutive invocations produce byte-identical output", async () => {
-    // First invocation: DB is missing → runIndex builds it; emits JSON.
     await runPropagation({ reqId: "BILLING-009", platformDir: clone, json: true });
     const outA = logs[0] ?? "";
     logs.length = 0;
 
-    // Cold-state guarantee: re-clone and re-run from scratch.
     rmSync(clone, { recursive: true, force: true });
     clone = cloneFixture(FIXTURE);
     await runPropagation({ reqId: "BILLING-009", platformDir: clone, json: true });
@@ -98,9 +84,8 @@ describe("spec propagation BILLING-009 --json against canonical platform-fixture
     await runPropagation({ reqId: "BILLING-009", platformDir: clone, json: true });
     const parsed = JSON.parse(logs[0] ?? "[]") as Array<Record<string, unknown>>;
 
-    // Project to the contract keys (defensive against future field additions):
-    // the (repo, state, via_req_id, drifted) projection is the PROP-01 /
-    // PROP-03 contract that `spec propagation --json` exposes downstream.
+    // Projected to the contract keys so an added field does not churn the
+    // snapshot.
     const shape = parsed.map((r) => ({
       repo: r.repo,
       state: r.state,

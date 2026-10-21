@@ -1,13 +1,7 @@
-// packages/engine/src/commands/check.ts
-//
 // @spec CHCK-012
 // @spec CHCK-013
 // @spec CHCK-014
 // @spec CHCK-025
-//
-// `spec check [platformDir] [--out <path>] [--ci] [--json]`: the integrity
-// gate. Exit 0 clean, 1 on any error-severity diagnostic, 2 on a crash, bad
-// args, or a path-containment violation.
 
 import { resolve } from "node:path";
 import { NotASpecPlatformError } from "@spec-engine/shared";
@@ -33,18 +27,18 @@ export const checkCommand = defineCommand({
     out: outArg,
     ci: {
       type: "boolean",
-      description: "Force cold rebuild: rm db+wal+shm BEFORE indexing (CHCK-01)",
+      description: "Force cold rebuild: rm db+wal+shm BEFORE indexing",
     },
     json: jsonArg,
     noPrompt: noPromptArg,
     unsourcedChange: {
       type: "boolean",
       description:
-        "Opt-in: emit warning-severity UNSOURCED_CHANGE for Superseded requirements lacking a supersedes-via issue (OFF by default; USRC-02)",
+        "Opt-in: emit warning-severity UNSOURCED_CHANGE for Superseded requirements lacking a supersedes-via issue (OFF by default)",
     },
     results: {
       type: "string",
-      description: "Ingest a JUnit XML results file; enforce the trusted-red PROVEN gate (GATE-01)",
+      description: "Ingest a JUnit XML results file; enforce the trusted-red PROVEN gate",
     },
     base: {
       type: "string",
@@ -129,7 +123,6 @@ export const checkCommand = defineCommand({
   },
 });
 
-/** `--results` resolves against platformDir and must stay inside it. Exits 2 otherwise. */
 function resolveResultsPath(
   platformDir: string,
   resultsArg: string | undefined,
@@ -145,7 +138,6 @@ function resolveResultsPath(
   return resultsPath;
 }
 
-/** A crash is exit 2 with the reason; a non-platform directory gets the friendly message. */
 function exitAfterCrash(e: unknown): never {
   if (e instanceof NotASpecPlatformError) {
     console.error(formatNotASpecPlatform(e.platformDir));

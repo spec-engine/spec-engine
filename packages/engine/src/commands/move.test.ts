@@ -1,12 +1,5 @@
-// packages/engine/src/commands/move.test.ts
-//
-// `spec move <KEY-NNN> <NEW-DOMAIN>`: the cross-domain counterpart of
-// supersede. Mints the successor in the TARGET domain carrying the source's
-// fields, flips the source to superseded (cross-domain supersededBy), reports
-// each envelope's derived version, and emits the retag worklist. Guards run
-// before any write.
-//
-// Tag lines composed via src/testing/specTag.ts (dogfood rule).
+// Tag lines are composed via src/testing/specTag.ts so the self-scan never
+// indexes them as this repo's tags.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { entryOf, plantEdit } from "../testing/plant";
@@ -91,10 +84,9 @@ async function expectExit2(fn: () => Promise<void>): Promise<void> {
 }
 
 describe("spec move — happy path", () => {
-  // @spec REQ-036 — move reports each side's DAG-derived version. The source
-  // gains a supersede edge (0 → 1 edge, derived 1 → 2); the target gains only an
-  // Active successor (no edge), so its derived version is UNCHANGED at 1. Neither
-  // envelope carries an authored specVersion.
+  // @spec REQ-036
+  // The source gains a supersede edge (derived 1 → 2); the target gains only
+  // an Active successor, so its derived version stays 1.
   test("flips source, mints successor in target, reports each side's derived version", async () => {
     await moveRun({
       args: { id: "BILLING-001", newDomain: "AUTH", platformDir: platform, json: true },
@@ -104,22 +96,17 @@ describe("spec move — happy path", () => {
     const billingDoc = await billing.read();
     const authDoc = await auth.read();
     const src = billingDoc.requirements.find((r) => r.id === "BILLING-001");
-    // Source flipped to superseded, pointing cross-domain at the successor.
     expect(src?.status).toBe("superseded");
     expect(src?.supersededBy).toBe("AUTH-002");
-    // Died-at stamp is the source's DAG-derived version (one edge → 2).
     expect(src?.supersededAtVersion).toBe(2);
-    // Successor appended Active in AUTH, copying the source's fields.
     const succ = authDoc.requirements.find((r) => r.id === "AUTH-002");
     expect(succ?.status).toBe("active");
     expect(succ?.statement).toBe("BILLING-001 statement");
     expect(succ?.why).toBe("BILLING-001 why");
     expect(succ?.livesIn).toEqual(["billing-001.ts"]);
-    // Neither requirement domain carries an authored specVersion.
     expect(billingDoc.specVersion).toBeUndefined();
     expect(authDoc.specVersion).toBeUndefined();
 
-    // JSON output: derived source/target versions + retag worklist.
     const out = JSON.parse(logs.join("\n")) as {
       old_id: string;
       new_id: string;
@@ -153,9 +140,6 @@ describe("spec move — happy path", () => {
     expect(succ?.why).toBe("an idle session must not stay authenticated forever");
   });
 
-  // @spec REQ-036 — on requirement domains --no-bump is a no-op (no authored
-  // counter to hold back); both sides still report their DAG-derived versions
-  // and neither writes a specVersion.
   // @spec REQ-043 unit
   test("comma-separated --lives sets the successor's whole livesIn list", async () => {
     await moveRun({
@@ -189,6 +173,7 @@ describe("spec move — happy path", () => {
     expect(succ?.issues).toEqual([]);
   });
 
+  // @spec REQ-036
   test("--no-bump is a no-op on requirement domains — versions stay DAG-derived", async () => {
     await moveRun({
       args: {
@@ -224,7 +209,6 @@ describe("spec move — guards (exit 2, nothing written)", () => {
       }),
     );
     expect(errs.join("\n")).toContain("use spec supersede");
-    // Unchanged.
     expect(await statusOf("BILLING-001")).toBe("active");
   });
 

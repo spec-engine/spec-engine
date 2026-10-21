@@ -1,14 +1,7 @@
-// packages/engine/src/commands/docs.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec DIST-005
 // @spec DIST-006
 // @spec DIST-007
 // @spec DIST-008
-//
-// `spec docs [--port N] [--probe]` serves the PREBUILT documentation site
-// (Starlight, packages/site) over loopback HTTP, fully offline. No platform
-// dir, no index, no prompt — the command never touches `.spec-engine/`.
 //
 // Asset resolution is module-relative (import.meta.url), NEVER cwd-relative:
 // the published artifact ships the site at dist/docs/ (scripts/build-npm.ts)
@@ -17,10 +10,10 @@
 // CLI runs from any other directory — the classic embedded-UI bug (and why
 // Hono's serveStatic, whose root resolves against cwd, is not used here).
 //
-// SECURITY: the hostname is hardcoded to 127.0.0.1 at EVERY Bun.serve
-// construction site — same T-1-01 posture as commands/serve.ts; there is no
-// --host surface. Path traversal is contained by normalizing every request
-// path against the docs root and refusing anything that escapes it.
+// SECURITY: the hostname is hardcoded to 127.0.0.1 at every Bun.serve
+// construction site; there is no --host surface. Path traversal is
+// contained by normalizing every request path against the docs root and
+// refusing anything that escapes it.
 
 import { existsSync, statSync } from "node:fs";
 import { join, normalize, sep } from "node:path";
@@ -29,10 +22,8 @@ import { defineCommand } from "citty";
 import { EXIT } from "../constants";
 
 /**
- * First candidate directory containing an index.html wins; null when none
- * does. Split from `resolveDocsRoot` so tests can drive the fallback order
- * with temp dirs instead of depending on whether this machine has built the
- * site.
+ * Split from `resolveDocsRoot` so tests can drive the fallback order with
+ * temp dirs instead of depending on whether this machine has built the site.
  */
 export function resolveDocsRootFrom(candidates: string[]): string | null {
   for (const candidate of candidates) {
@@ -95,10 +86,9 @@ export function createDocsFetchHandler(root: string): (req: Request) => Response
 }
 
 /**
- * `--probe` smoke, mirroring serve.ts's SERV-04 shape (and its RED-14
- * exit-below-try discipline): bind an ephemeral loopback port, GET /, assert
- * the site title renders, exit 0/1. Exported so the unit suite can drive it
- * against a temp docs root without depending on a built site.
+ * The success exit stays below the try/catch, as in serve.ts's probe.
+ * Exported so the unit suite can drive it against a temp docs root without
+ * depending on a built site.
  * @spec DIST-006
  */
 export async function runProbe(root: string): Promise<void> {
@@ -131,8 +121,7 @@ export async function runProbe(root: string): Promise<void> {
 }
 
 /**
- * The missing-docs-root usage error: exit 2 with the `bun run build:site`
- * hint. Extracted so the unit suite can assert the exit code + guidance.
+ * Extracted so the unit suite can assert the exit code and guidance.
  * @spec DIST-008
  */
 export function exitNoDocsRoot(): void {
@@ -154,7 +143,7 @@ export const docsCommand = defineCommand({
       type: "string",
       default: "4100",
       description:
-        "Port (default 4100; 0 = ephemeral). Hostname is hardcoded 127.0.0.1 (T-1-01); no --host accepted.",
+        "Port (default 4100; 0 = ephemeral). Hostname is hardcoded 127.0.0.1; no --host accepted.",
     },
     probe: {
       type: "boolean",
@@ -174,7 +163,6 @@ export const docsCommand = defineCommand({
       return;
     }
 
-    // Port validation mirrors serve.ts T-5-05-03: strict integer, 0..65535.
     const rawPort = args.port ?? "0";
     if (!/^[0-9]+$/.test(rawPort)) {
       console.error("spec docs: --port must be an integer 0..65535");
@@ -190,7 +178,7 @@ export const docsCommand = defineCommand({
 
     let server: ReturnType<typeof Bun.serve>;
     try {
-      // SECURITY: hardcoded loopback (T-1-01). NO --host arg surface.
+      // SECURITY: hardcoded loopback; there is deliberately no --host.
       server = Bun.serve({
         port,
         hostname: "127.0.0.1",

@@ -1,15 +1,3 @@
-// packages/engine/src/commands/map.drift-smalls.test.ts
-//
-// The small statement-5/6 drift fixes (DRIFT-PLAN.md task 12):
-//
-//   - DRAFT_REFERENCED, graded by tag kind.
-//   - GLOSSARY_DRIFT (warning): the committed GLOSSARY.md no longer matches
-//     what the TERM store generates — surfaced by spec check itself, not just
-//     this repo's CI fence.
-//   - Warm-index staleness warning: a read command serving an index older
-//     than a changed SPEC.json says so on stderr and names --fresh.
-//
-// Verifies:
 // @spec CHCK-033 integration
 // @spec CHCK-034 integration
 // @spec CHCK-024 integration
@@ -119,7 +107,6 @@ describe("GLOSSARY_DRIFT — spec check surfaces the round-trip break itself", (
     expect(drifted?.severity).toBe("warning");
     expect(drifted?.detail).toContain("spec glossary");
 
-    // Regenerate byte-identically → clean.
     writeFileSync(
       join(platformDir, "GLOSSARY.md"),
       generateGlossary([
@@ -140,7 +127,6 @@ describe("staleness warning — a warm index older than a spec edit says so", ()
   const mapRun = (mapCommand as unknown as { run: RunFn }).run;
 
   test("spec map on a warm index warns after a SPEC.json changes, and --fresh silences it", async () => {
-    // Warm the index.
     await mapRun({ args: { platformDir, noPrompt: true }, rawArgs: [] });
     expect(errs.join("\n")).not.toContain("may be stale");
 

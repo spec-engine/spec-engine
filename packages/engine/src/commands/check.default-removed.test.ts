@@ -1,13 +1,3 @@
-// packages/engine/src/commands/check.default-removed.test.ts
-//
-// D3 (2026-07-30): deletion detection runs by DEFAULT in spec check. With no
-// --base flag, the working tree is diffed against HEAD whenever git resolves;
-// outside git the check stays silent (never-fail-non-git, like spec guard).
-// The supersession exemption applies only to entries Active at HEAD — history
-// (superseded/deprecated) removal is always reported (the GUARD-011 rule at
-// the check layer).
-//
-// Verifies:
 // @spec CHCK-023 integration
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
@@ -69,7 +59,6 @@ function initRepo(): void {
   git("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "seed");
 }
 
-/** Delete one requirement entry from a fixture domain in the working tree. */
 function deleteEntry(key: string, id: string): Promise<void> {
   return plantEdit(platformDir, key, (doc) => {
     doc.requirements = doc.requirements.filter((r) => r.id !== id);
@@ -88,7 +77,7 @@ async function runCheckJson(): Promise<{ code: number; rows: Diagnostic[] }> {
   return { code, rows };
 }
 
-describe("default deletion detection (D3 / CHCK-011)", () => {
+describe("default deletion detection", () => {
   test("deleting an Active requirement fails a plain spec check — no flag needed", async () => {
     initRepo();
     // AUTH-001 is Active with zero tags: its removal is ONLY visible to the
@@ -120,8 +109,8 @@ describe("default deletion detection (D3 / CHCK-011)", () => {
 
   test("deleting history (a Superseded entry) is reported even though its successor survives", async () => {
     initRepo();
-    // BILLING-001 is Superseded by the surviving BILLING-009 — before the
-    // history rule, that successor edge silently excused pruning the record.
+    // BILLING-001 is Superseded by the surviving BILLING-009; that successor
+    // edge must not excuse pruning the record.
     await deleteEntry("BILLING", "BILLING-001");
     const { code, rows } = await runCheckJson();
     expect(code).toBe(1);

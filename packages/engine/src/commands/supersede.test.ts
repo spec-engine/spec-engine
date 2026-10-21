@@ -1,13 +1,5 @@
-// packages/engine/src/commands/supersede.test.ts
-//
-// `spec supersede <KEY-NNN>`: the core lifecycle operation, mechanized. Flips
-// the old entry to `superseded` (supersededBy NEW), mints the successor Active
-// (fields from flags; why/lives default-copied from the old entry), bumps the
-// envelope `updated`, reindexes fresh, and emits the retag worklist (the old
-// id's tag sites — the same sites spec check will flag as SUPERSEDED_REFERENCED
-// until retagged). The envelope is written once through validateAndWrite.
-//
-// Tag lines composed via src/testing/specTag.ts (dogfood rule).
+// Tag lines are composed via src/testing/specTag.ts so the self-scan never
+// indexes them as this repo's tags.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { entryOf, plantEdit } from "../testing/plant";
@@ -34,7 +26,6 @@ class ExitError extends Error {
 type RunFn = (ctx: { args: Record<string, unknown>; rawArgs: string[] }) => Promise<void>;
 const supersedeRun = (supersedeCommand as unknown as { run: RunFn }).run;
 
-/** The Active entry under test, the history it replaced, and the successor it will get. */
 const ACTIVE = "BILLING-002";
 const HISTORY = "BILLING-001";
 const SUCCESSOR = "BILLING-003";
@@ -95,10 +86,9 @@ async function expectExit2(fn: () => Promise<void>): Promise<void> {
 }
 
 describe("spec supersede — happy path", () => {
-  // @spec REQ-036 — a requirement domain reports the DAG-derived version, never
-  // an authored counter. The fixture already holds one superseded edge, so
-  // before this run the derived version is 2; superseding the Active entry adds
-  // the second edge and the reported/died-at version is 3.
+  // @spec REQ-036
+  // The fixture already holds one superseded edge (derived version 2); this
+  // supersede adds the second, so the died-at version is 3.
   test("flips old entry, mints successor with copied fields, reports the derived version, emits worklist", async () => {
     await supersedeRun({
       args: {
@@ -110,22 +100,16 @@ describe("spec supersede — happy path", () => {
       rawArgs: [],
     });
     const domain = await billing.read();
-    // Old entry flipped to superseded, pointing at the successor.
     const old = domain.requirements.find((r) => r.id === ACTIVE);
     expect(old?.status).toBe("superseded");
     expect(old?.supersededBy).toBe(SUCCESSOR);
-    // Stamped with the DAG-derived version it died at (two edges → 3).
     expect(old?.supersededAtVersion).toBe(3);
-    // Successor appended Active with the new statement.
     const succ = domain.requirements.find((r) => r.id === SUCCESSOR);
     expect(succ?.status).toBe("active");
     expect(succ?.statement).toBe("charge at the CURRENT plan price");
-    // why/lives copied from the old entry by default.
     expect(succ?.why).toBe("revenue");
     expect(succ?.livesIn).toEqual(["renew.ts"]);
-    // A requirement domain carries NO authored specVersion.
     expect(domain.specVersion).toBeUndefined();
-    // JSON output: ids, file, DERIVED spec_version, retag worklist (both sites).
     expect(logs).toHaveLength(1);
     const out = JSON.parse(logs[0] ?? "");
     expect(out.old_id).toBe(ACTIVE);
@@ -181,9 +165,7 @@ describe("spec supersede — happy path", () => {
     expect(succ?.livesIn).toEqual(["renew.ts"]); // still copied
   });
 
-  // @spec REQ-036 — on a requirement domain --no-bump is a no-op: there is no
-  // authored counter to hold back, so the died-at stamp is still the DAG-derived
-  // version (two edges → 3) and no specVersion is written.
+  // @spec REQ-036
   test("--no-bump is a no-op on a requirement domain — the version stays DAG-derived", async () => {
     await supersedeRun({
       args: { id: ACTIVE, platformDir: platform, text: "new truth", noBump: true },
@@ -267,8 +249,6 @@ describe("spec supersede — an id held outside its prefix's domain", () => {
   });
 });
 
-// ── supersede is domain-generic and works on TERM ids, but the successor
-// object must carry the predecessor's term/aliases (not drop them). ─────────
 describe("spec supersede — TERM successor carries term/aliases", () => {
   async function writeTermDomain(): Promise<DomainHandle> {
     const terms = await fx.terms();
@@ -294,7 +274,6 @@ describe("spec supersede — TERM successor carries term/aliases", () => {
     const succ = domain.requirements.find((r) => r.id === "TERM-002");
     expect(succ?.status).toBe("active");
     expect(succ?.statement).toBe("a revised definition of the term");
-    // term/aliases copied from the predecessor by default (not dropped).
     expect(succ?.term).toBe("Domain");
     expect(succ?.aliases).toEqual(["subject area", "namespace"]);
   });

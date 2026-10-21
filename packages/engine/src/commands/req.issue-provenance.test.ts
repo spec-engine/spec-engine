@@ -1,18 +1,3 @@
-// packages/engine/src/commands/req.issue-provenance.test.ts
-//
-// PROV-003: the authoring commands can finally WRITE issue provenance — the
-// engine used to warn (UNSOURCED_CHANGE) about missing supersedes-via links
-// while offering no way to record them.
-//
-//   spec req --issue       → { role: "created" } on the new entry
-//   spec supersede --issue → { role: "supersedes-via" } on the predecessor
-//                            and { role: "created" } on the successor
-//   spec amend --issue     → { role: "amends-via" } appended
-//
-// The id is opaque provenance: stored verbatim, never validated as a
-// requirement id, never routing.
-//
-// Verifies:
 // @spec PROV-003 unit
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";

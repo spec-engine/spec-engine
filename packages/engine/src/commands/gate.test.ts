@@ -1,33 +1,3 @@
-// packages/engine/src/commands/gate.test.ts
-//
-// Phase 06 Plan 04 Task 1 — in-process CLI tests for `spec gate`
-// (commands/gate.ts). Locks GATE-01 (PASS) + GATE-02 (NOT_FOUND, DRAFT,
-// SUPERSEDED, VERSION_PIN) at the citty seam, plus the edge cases that
-// distinguish the gate from a single-decision branch:
-//
-//   - Pitfall 8 / T-06-03-05: unknown repo → exit 2 with "unknown repo"
-//     on stderr; NEVER conflated with NOT_FOUND.
-//   - T-06-03-01 / V12: --out outside platformDir → exit 2 with
-//     "must be inside platformDir".
-//   - T-06-03-04: empty / whitespace repo or reqId → exit 2.
-//   - RESEARCH Open Q4: text mode appends `build_id: <hash>` tail;
-//     JSON mode does NOT emit `build_id:` (keeps stdout jq-parsable).
-//
-// DRAFT and VERSION_PIN coverage uses cloneFixture-mutation rather than
-// a canonical fixture plant — this preserves CHCK-04's inverted CI
-// assertion untouched. Each mutation is documented inline next to the
-// test that performs it.
-//
-// Harness pattern mirrors cli-resolve-unit.test.ts: ExitError class,
-// beforeEach/afterEach stubs over console.log + console.error +
-// process.exit, RunFn cast over gateCommand, runGate helper returning
-// the exit code.
-//
-// WR-06 invariant (T-06-04-01): every test calls cloneFixture(FIXTURE)
-// in beforeEach. afterEach rmSync's the clone. fixtures/platform-fixture/
-// is NEVER mutated by this file — verified post-suite via
-// `git status fixtures/platform-fixture/`.
-
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -54,8 +24,8 @@ class ExitError extends Error {
 }
 
 beforeEach(() => {
-  // WR-06: clone the canonical fixture into a fresh tmpdir per test so
-  // mutations + .spec-engine/ writes land outside the canonical tree.
+  // A clone, so mutations and .spec-engine/ writes land outside the
+  // canonical fixtures/platform-fixture/ tree.
   clone = cloneFixture(FIXTURE);
   logs = [];
   errs = [];
@@ -98,23 +68,15 @@ async function runGate(args: Record<string, unknown>): Promise<number> {
   }
 }
 
-/** Return the LAST stdout line that parses as JSON. The gate text-mode
- *  appends a `build_id: <hash>` line; the JSON outcome is emitted as
- *  the first stdout chunk. In JSON mode, the SOLE stdout line is the
- *  outcome — so logs.at(-1) is always the right pick. In text mode
- *  the caller asserts on the joined stdout instead. */
+/** JSON mode only: there the outcome is the sole stdout line. */
 function lastLogAsJson<T = Record<string, unknown>>(): T {
   const last = logs.at(-1) ?? "";
   return JSON.parse(last) as T;
 }
 
 describe("spec gate (in-process)", () => {
-  // ---------------------------------------------------------------------
-  // T1 — PASS (GATE-01 happy path). api is pinned @2; BILLING-009 is
-  // Active and changed_at_version=2 (it supersedes BILLING-001 in the
-  // canonical spec). Pin >= changed_at → PASS.
-  // ---------------------------------------------------------------------
-  test("PASS: api BILLING-009 against canonical fixture (GATE-01)", async () => {
+  test("PASS: api BILLING-009 against canonical fixture", async () => {
+    // api is pinned @2; BILLING-009 changed at @2 by superseding BILLING-001.
     const code = await runGate({
       repo: "api",
       reqId: "BILLING-009",
@@ -134,12 +96,7 @@ describe("spec gate (in-process)", () => {
     expect(out.changed_at_version).toBe(2);
   });
 
-  // ---------------------------------------------------------------------
-  // T2 — SUPERSEDED (GATE-02; ROADMAP Success Criterion #1). mobile is
-  // pinned @1 and references BILLING-001 which is Superseded by
-  // BILLING-009 in the canonical spec.
-  // ---------------------------------------------------------------------
-  test("SUPERSEDED: mobile BILLING-001 — detail names successor BILLING-009 (GATE-02)", async () => {
+  test("SUPERSEDED: mobile BILLING-001 — detail names successor BILLING-009", async () => {
     const code = await runGate({
       repo: "mobile",
       reqId: "BILLING-001",
@@ -152,11 +109,7 @@ describe("spec gate (in-process)", () => {
     expect(out.detail).toContain("BILLING-009");
   });
 
-  // ---------------------------------------------------------------------
-  // T3 — NOT_FOUND: requirement id that doesn't exist in the canonical
-  // spec. status field is explicit null per classifyGate's contract.
-  // ---------------------------------------------------------------------
-  test("NOT_FOUND: api BILLING-999 — status === null (GATE-02)", async () => {
+  test("NOT_FOUND: api BILLING-999 — status === null", async () => {
     const code = await runGate({
       repo: "api",
       reqId: "BILLING-999",
@@ -169,11 +122,7 @@ describe("spec gate (in-process)", () => {
     expect(out.status).toBeNull();
   });
 
-  // ---------------------------------------------------------------------
-  // T4 — NOT_FOUND: a different non-existent id, demonstrating that
-  // NOT_FOUND is exclusively the requirement-misses path (Pitfall 8).
-  // ---------------------------------------------------------------------
-  test("NOT_FOUND: api COMPLETELY-MADE-UP-1000 — proves NOT_FOUND is req-only (Pitfall 8)", async () => {
+  test("NOT_FOUND: api COMPLETELY-MADE-UP-1000 — NOT_FOUND is req-only", async () => {
     const code = await runGate({
       repo: "api",
       reqId: "COMPLETELY-MADE-UP-1000",
@@ -185,15 +134,7 @@ describe("spec gate (in-process)", () => {
     expect(out.reason).toBe("NOT_FOUND");
   });
 
-  // ---------------------------------------------------------------------
-  // T5 — DRAFT via cloneFixture mutation (GATE-02). Flip BILLING-009's
-  // status heading in the cloned BILLING/SPEC.md from "Active" to
-  // "Draft". Canonical fixture is NOT touched.
-  // ---------------------------------------------------------------------
-  test("DRAFT: cloneFixture mutation flips BILLING-009 Active → Draft (GATE-02)", async () => {
-    // Status flip in the cloned BILLING/SPEC.json ONLY. The canonical fixture
-    // file under fixtures/platform-fixture/spec-engine/BILLING/SPEC.json is
-    // never touched.
+  test("DRAFT: cloneFixture mutation flips BILLING-009 Active → Draft", async () => {
     await plantEdit(clone, "BILLING", (spec) => {
       const b9 = entryOf(spec, "BILLING-009");
       expect(b9.status).toBe("active");
@@ -211,21 +152,7 @@ describe("spec gate (in-process)", () => {
     expect(out.reason).toBe("DRAFT");
   });
 
-  // ---------------------------------------------------------------------
-  // T6 — VERSION_PIN via cloneFixture mutation (GATE-02). Plant a new
-  // BILLING-011 Active req in the cloned spec; the parser derives
-  // changed_at_version=2 for a freshly-added req ONLY when it's part
-  // of a supersession chain (see parser/spec.ts:240-248). To trigger
-  // that branch we ALSO flip BILLING-002 to "Superseded by BILLING-011"
-  // — that makes BILLING-011 the "new one in a recent supersession",
-  // landing it at changed_at_version=spec_version=2. Then plant a tag
-  // a BILLING-011 tag in a new file under mobile/src/ (mobile is
-  // pinned @1 per spec-engine.member.json) so the member references the
-  // new req. Result: req.changed_at_version=2 > pin=1 → VERSION_PIN.
-  //
-  // All mutations are scoped to `clone` — canonical untouched.
-  // ---------------------------------------------------------------------
-  test("VERSION_PIN: cloneFixture mutation supersedes BILLING-002 + mobile@1 tag (GATE-02)", async () => {
+  test("VERSION_PIN: cloneFixture mutation supersedes BILLING-002 + mobile@1 tag", async () => {
     // Supersede BILLING-002 with a new Active successor. Under the DERIVED
     // domain version (1 + edge count), the fixture already carries one edge
     // (BILLING-001→009); this supersession adds the second, so the derived
@@ -251,8 +178,6 @@ describe("spec gate (in-process)", () => {
       platformDir: clone,
       json: true,
     });
-    // Debug aid: if the test would fail, print the parsed outcome so
-    // the changed_at_version derivation is visible in test output.
     const out = lastLogAsJson<{
       reason: string;
       detail: string;
@@ -261,7 +186,7 @@ describe("spec gate (in-process)", () => {
     }>();
     if (code !== 1 || out.reason !== "VERSION_PIN") {
       console.error(
-        `T6 diagnostic: code=${code} reason=${out.reason} ` +
+        `VERSION_PIN diagnostic: code=${code} reason=${out.reason} ` +
           `changed_at_version=${out.changed_at_version} pin=${out.pinned_spec_version} ` +
           `detail=${out.detail}`,
       );
@@ -273,11 +198,7 @@ describe("spec gate (in-process)", () => {
     expect(out.changed_at_version).toBe(3);
   });
 
-  // ---------------------------------------------------------------------
-  // T7 — unknown repo → exit 2 (Pitfall 8 / T-06-03-05). Distinguishes
-  // from NOT_FOUND which is reserved for the requirement-missing path.
-  // ---------------------------------------------------------------------
-  test("unknown repo → exit 2 with 'unknown repo' on stderr (Pitfall 8)", async () => {
+  test("unknown repo → exit 2 with 'unknown repo' on stderr, never NOT_FOUND", async () => {
     const code = await runGate({
       repo: "ghost-repo",
       reqId: "BILLING-009",
@@ -292,11 +213,7 @@ describe("spec gate (in-process)", () => {
     expect(logs.length).toBe(0);
   });
 
-  // ---------------------------------------------------------------------
-  // T8 — V12 path-containment (T-06-03-01). --out outside platformDir
-  // exits 2 with the canonical "must be inside platformDir" message.
-  // ---------------------------------------------------------------------
-  test("V12: --out outside platformDir → exit 2 with 'must be inside platformDir'", async () => {
+  test("--out outside platformDir → exit 2 with 'must be inside platformDir'", async () => {
     const evilOut = resolve(clone, "..", "evil.sqlite");
     const code = await runGate({
       repo: "api",
@@ -308,9 +225,6 @@ describe("spec gate (in-process)", () => {
     expect(errs.join("\n")).toMatch(/must be inside platformDir/);
   });
 
-  // ---------------------------------------------------------------------
-  // T9 — empty repo → exit 2 (T-06-03-04 input validation).
-  // ---------------------------------------------------------------------
   test("empty repo → exit 2", async () => {
     const code = await runGate({
       repo: "",
@@ -321,9 +235,6 @@ describe("spec gate (in-process)", () => {
     expect(errs.join("\n")).toMatch(/<repo> and <reqId> are required/);
   });
 
-  // ---------------------------------------------------------------------
-  // T10 — whitespace-only reqId → exit 2 (T-06-03-04 trim guard).
-  // ---------------------------------------------------------------------
   test("whitespace-only reqId → exit 2", async () => {
     const code = await runGate({
       repo: "api",
@@ -334,10 +245,6 @@ describe("spec gate (in-process)", () => {
     expect(errs.join("\n")).toMatch(/<repo> and <reqId> are required/);
   });
 
-  // ---------------------------------------------------------------------
-  // T11 — text mode emits `build_id: <hash>` tail (RESEARCH Open Q4 /
-  // parity with check.ts:123-124).
-  // ---------------------------------------------------------------------
   test("text mode appends build_id tail line (parity with check.ts)", async () => {
     const code = await runGate({
       repo: "api",
@@ -349,9 +256,6 @@ describe("spec gate (in-process)", () => {
     expect(logs.join("\n")).toMatch(/^build_id: [0-9a-f]{64}$/m);
   });
 
-  // ---------------------------------------------------------------------
-  // T12 — JSON mode does NOT emit build_id (keeps stdout jq-parsable).
-  // ---------------------------------------------------------------------
   test("JSON mode does NOT emit build_id (clean for jq)", async () => {
     const code = await runGate({
       repo: "api",
@@ -361,20 +265,12 @@ describe("spec gate (in-process)", () => {
     });
     expect(code).toBe(0);
     expect(logs.join("\n")).not.toContain("build_id:");
-    // And the sole stdout line parses as the GateOutcome JSON object.
     expect(logs.length).toBe(1);
     const out = lastLogAsJson<{ pass: boolean }>();
     expect(out.pass).toBe(true);
   });
 
-  // -------------------------------------------------------------------------
-  // RED-14 dead-end audit: four gate seams existed without a covering test —
-  // the RED-11 not-a-platform exit, the advisory missing-manifest warning,
-  // and the WR-03 EPIPE-tolerance paths (swallow EPIPE-shaped write errors;
-  // crash on anything else).
-  // -------------------------------------------------------------------------
-
-  test("non-platform dir → friendly RED-11 message + exit 2 (RED-14)", async () => {
+  test("non-platform dir → friendly message + exit 2", async () => {
     const bare = mkdtempSync(join(tmpdir(), "spec-gate-bare-"));
     try {
       const code = await runGate({ repo: "api", reqId: "BILLING-009", platformDir: bare });
@@ -387,10 +283,9 @@ describe("spec gate (in-process)", () => {
     }
   });
 
-  test("no spec-engine.platform.json → zero manifest chrome, gate still runs (RED-85)", async () => {
-    // The manifest is retired: its absence is the NORMAL state, so the old
-    // RED-14 "is missing" advisory must never resurface — the platform
-    // version is derived from the domain SPEC.json files inside discoverRepos.
+  test("no spec-engine.platform.json → zero manifest chrome, gate still runs", async () => {
+    // The manifest is retired: its absence is the normal state, and the
+    // platform version is derived from the domain SPEC.json files.
     const code = await runGate({
       repo: "api",
       reqId: "BILLING-009",
@@ -401,7 +296,7 @@ describe("spec gate (in-process)", () => {
     expect(errs.join("\n")).not.toContain("spec-engine.platform.json");
   });
 
-  test("WR-03: EPIPE-shaped stdout write failures are swallowed — gate still exits 0 (RED-14)", async () => {
+  test("EPIPE-shaped stdout write failures are swallowed — gate still exits 0", async () => {
     // Simulate `spec gate ... | head -1`: the member closed stdout, so
     // BOTH text-mode writes (decision line + build_id tail) throw EPIPE.
     console.log = () => {
@@ -416,7 +311,7 @@ describe("spec gate (in-process)", () => {
     expect(code).toBe(0);
   });
 
-  test("WR-03: ERR_STREAM_DESTROYED is treated as EPIPE-shaped (RED-14)", async () => {
+  test("ERR_STREAM_DESTROYED is treated as EPIPE-shaped", async () => {
     console.log = () => {
       throw Object.assign(new Error("stream destroyed"), { code: "ERR_STREAM_DESTROYED" });
     };
@@ -429,7 +324,7 @@ describe("spec gate (in-process)", () => {
     expect(code).toBe(0);
   });
 
-  test("WR-03: a NON-EPIPE stdout failure still crashes with exit 2 (RED-14)", async () => {
+  test("a NON-EPIPE stdout failure still crashes with exit 2", async () => {
     // A primitive throw exercises isEpipe's non-object guard; the rethrow
     // must land in the outer catch → "crashed" + exit 2, NOT exit 0/1.
     console.log = () => {

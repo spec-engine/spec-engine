@@ -1,22 +1,7 @@
-// packages/engine/src/commands/index.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec INDX-009
 //
-// `spec index [platformDir] [--out <path>] [--json]` — citty subcommand
-// wrapping the runIndex pipeline (INDX-01..04 wired through PARS-05).
-//
-// Defaults:
-//   - platformDir → process.cwd()
-//   - --out       → <platformDir>/.spec-engine/index.sqlite
-//   - --json      → false (human-readable summary)
-//
-// JSON mode emits exactly the IndexResult shape so CI can parse it via jq /
-// bun -e and assert build_id equivalence (CI-02 — scripts/smoke/06-cold-rebuild.sh).
-//
-// HARD CONSTRAINT (D-08): this file does NOT import bun:sqlite directly.
-// Storage construction goes through `openStorage` (the only file in the
-// repo allowed to touch bun:sqlite). The Rust-swap seam stays clean.
+// This file must not import bun:sqlite: storage is built through
+// `openStorage`, the one file allowed to touch it.
 
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
@@ -55,21 +40,13 @@ export const indexCommand = defineCommand({
   async run({ args }) {
     const platformDir = resolvePlatformDir(args);
     const outArg = args.out;
-    // RED-14 parity fix: index was the only --out-bearing command that
-    // resolved --out relative to CWD and skipped the V12 containment
-    // guard. Mirror commands/check.ts (resolve relative to
-    // platformDir) + the containment check used by map/query/propagation/
-    // gate/serve so a hostile or accidental `--out ../../x.sqlite` cannot
-    // write outside the platform tree.
+    // --out resolves against platformDir, not cwd, and must stay inside it,
+    // so `--out ../../x.sqlite` cannot write outside the platform tree.
     const dbPath = resolveDbPath(platformDir, outArg);
     if (outArg) assertContainedPath(dbPath, platformDir, "spec index: --out");
 
-    // INIT-13 pre-flight: interactive prompt for skipped siblings. Runs
-    // BEFORE mkdirSync(.spec-engine) so the exit-1 n-path leaves no artefacts.
-    // Suppressed in non-TTY / --no-prompt contexts; falls through
-    // to the NO_SPEC_CONFIG warning in those cases.
-    // Only `check` registers `--ci`, so `args.ci` would be undefined
-    // here — drop the dead plumbing rather than forward `undefined`.
+    // Runs before mkdirSync(.spec-engine) so declining the prompt leaves no
+    // artefacts. No `ci` arg: only `check` registers `--ci`.
     await maybePromptForOnboarding({
       platformDir,
       args: {
@@ -77,13 +54,10 @@ export const indexCommand = defineCommand({
       },
     });
 
-    // Hoisted so the catch/finally can close it if openStorage succeeded.
     let storage: ReturnType<typeof openStorage> | undefined;
     try {
-      // Pre-flight: a non-platform dir throws BEFORE mkdirSync/openStorage,
-      // so the not-a-platform case leaves NO .spec-engine/ artifact and stays
-      // idempotent across runs. CLAUDE.md: the derived DB owns nothing — a
-      // failed build leaves no artifact.
+      // Must throw before mkdirSync/openStorage so a non-platform dir is left
+      // with no .spec-engine/ artifact.
       assertSpecPlatform(platformDir);
 
       mkdirSync(dirname(dbPath), { recursive: true });
@@ -102,9 +76,6 @@ export const indexCommand = defineCommand({
         console.log(`  diagnostics:  ${result.diagnostics}`);
       }
     } catch (err) {
-      // Missing-canonical case → friendly, actionable message + exit 2
-      // (usage-style, aligned with map/check). Genuine indexing crashes
-      // (malformed config, Zod, hashing) keep the FAILED-exit-1 behavior.
       if (err instanceof NotASpecPlatformError) {
         console.error(formatNotASpecPlatform(err.platformDir));
         process.exit(EXIT.USAGE);

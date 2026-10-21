@@ -1,11 +1,4 @@
-// packages/engine/src/commands/map.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec MAP-002
-//
-// `spec map [platformDir] [--out <path>] [--json] [--fresh]`: the
-// requirement-by-repo coverage matrix. Read-only: the data never drives a
-// non-zero exit; bad args and a `--out` outside the platform exit 2.
 
 import { defineCommand } from "citty";
 import { OUT_HELP, resolveDbPath } from "../constants";

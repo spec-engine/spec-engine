@@ -1,32 +1,3 @@
-// packages/engine/src/commands/term.test.ts
-//
-// Wave B (06-02) — `spec term`: the glossary-term authoring surface, a thin
-// req.ts-style wrapper over the EXISTING lifecycle machinery (FORK 4). A term
-// IS a requirement row (Fork 1 = reuse): the definition lives in `statement`,
-// the headword in `term`, its synonyms in `aliases`. Authoring writes through
-// the ONE validateAndWrite seam (VAL-01); `spec term list` reads the
-// filesystem (D-08 — no bun:sqlite in the command).
-//
-// Behaviors asserted:
-//   - author: `spec term <name> --def <def>` appends TERM-NNN (term=name,
-//     statement=def, aliases from --aliases), status active, through
-//     validateAndWrite; the append round-trips + advances nextRequirementId.
-//   - list: `spec term list` prints each TERM entry's id + name (+ status),
-//     sorted by id.
-//   - next-id (non-TTY, no --def): mirror req.ts's D-02 contract — print the
-//     next unused TERM id, zero prompts, zero writes; --json emits
-//     { domain, next_id }.
-//   - revise (A2 in-place-with-bump): `spec term revise TERM-NNN --def`
-//     rewrites the definition in place (SAME id) and BUMPS the envelope
-//     specVersion — the one op requirements do not have (makes TERM_DRIFT
-//     fire in Wave E).
-//
-// Non-TTY term id contract (chosen to match req.ts:167-172): when no
-// --def/--text is supplied the command is a pure id query — bare next id on
-// stdout (or { domain, next_id } under --json), zero writes. `--def` is the
-// authoring gate (like req.ts's --text), so a term is only written when its
-// definition is supplied. Tag lines composed via fixtures/specTag.ts.
-//
 // @spec REQ-033 unit
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
@@ -84,7 +55,6 @@ afterEach(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 
-/** Scaffold the reserved, empty TERM domain (mirror the real spec-engine/TERM). */
 async function writeTermDomain(root: string): Promise<void> {
   await TestPlatform.at(root).terms();
 }
@@ -109,8 +79,7 @@ function setIsTTY(value: boolean | undefined): void {
   Object.defineProperty(process.stdin, "isTTY", { value, configurable: true });
 }
 
-// ── Test A — author ─────────────────────────────────────────────────────────
-describe("spec term — author (Wave B)", () => {
+describe("spec term — author", () => {
   test("`spec term <name> --def` appends TERM-001 with term/statement, status active", async () => {
     await writeTermDomain(tmp);
     await termRun({
@@ -152,8 +121,7 @@ describe("spec term — author (Wave B)", () => {
   });
 });
 
-// ── Test B — list ───────────────────────────────────────────────────────────
-describe("spec term list — enumerate (Wave B)", () => {
+describe("spec term list — enumerate", () => {
   test("lists both terms' ids + names after authoring, sorted by id", async () => {
     await writeTermDomain(tmp);
     await termRun({
@@ -187,8 +155,7 @@ describe("spec term list — enumerate (Wave B)", () => {
   });
 });
 
-// ── Test C — next-id (non-TTY id query, no --def) ────────────────────────────
-describe("spec term — non-TTY id query (D-02 mirror)", () => {
+describe("spec term — non-TTY id query", () => {
   test("no --def, non-TTY → prints the next unused TERM id, zero writes", async () => {
     await writeTermDomain(tmp);
     const specPath = join(tmp, "spec-engine", "TERM", "SPEC.json");
@@ -210,8 +177,7 @@ describe("spec term — non-TTY id query (D-02 mirror)", () => {
   });
 });
 
-// ── Test (revise) — the A2 in-place-with-bump op ─────────────────────────────
-describe("spec term revise — in-place definition edit with version bump (A2)", () => {
+describe("spec term revise — in-place definition edit with version bump", () => {
   // @spec SCHM-021 unit
   test("revises the statement in place (same id) and bumps envelope specVersion", async () => {
     await writeTermDomain(tmp);

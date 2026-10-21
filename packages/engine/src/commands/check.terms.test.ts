@@ -1,31 +1,9 @@
-// packages/engine/src/commands/check.terms.test.ts
-//
-// Phase 6 Wave D (TERM-04, dogfooded in CHCK). The two reference-integrity
-// diagnostics over the term store:
-//
-//   - UNDEFINED_TERM (error):  a `cites` entry that resolves to no TERM
-//     (term_id NULL via LEFT JOIN) — the §4.10 "left to interpretation, now
-//     caught" payoff. ERROR severity, so it flips `spec check --ci` to exit 1.
-//   - ORPHAN_TERM (warning):   an Active TERM entry that no requirement cites
-//     (glossary rot). WARNING severity, so a freshly-migrated/uncited term
-//     keeps `spec check --ci` at exit 0 (Wave-F migrates ~30 fresh terms at
-//     once — an error would red the gate the instant GLOSSARY.md lands).
-//
-// The fixtures under fixtures/diagnostics/{undefined-term,orphan-term,
-// term-clean} are PLANTED test data — they carry the deliberate defects
-// (the ghost cite, the uncited term) so `spec check` has something to catch.
-// Never "fix" them. Their @spec-free SPEC.json rows never index into THIS
-// repo's real corpus (the scanner ignores every `fixtures/` subtree).
-//
-// Content + severity are asserted through openStorage + runIndex +
-// listSemanticDiagnostics (mirrors check-diagnostics.test.ts); the exit-code
-// behavior is asserted through checkCommand.run against a CLONE (mirrors
-// check-ci.test.ts, so the command's `.spec-engine/` dir lands in a tmpdir,
-// never inside the committed fixture).
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec CHCK-016 integration
 // @spec CHCK-017 integration
+//
+// The fixtures under testing/fixtures/diagnostics/{undefined-term,orphan-term,
+// term-clean} carry deliberate defects (the ghost cite, the uncited term).
+// Never "fix" them.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -40,7 +18,7 @@ const FIXTURES_ROOT = resolve(import.meta.dir, "..", "testing", "fixtures", "dia
 const UNDEFINED_TERM_FIXTURE = join(FIXTURES_ROOT, "undefined-term");
 const ORPHAN_TERM_FIXTURE = join(FIXTURES_ROOT, "orphan-term");
 const TERM_CLEAN_FIXTURE = join(FIXTURES_ROOT, "term-clean");
-// The real repo root (contains spec-engine/) — the self-corpus proof.
+
 const REPO_ROOT = resolve(import.meta.dir, "..", "..", "..", "..");
 
 class ExitError extends Error {
@@ -91,9 +69,7 @@ afterEach(() => {
 type RunFn = (ctx: { args: Record<string, unknown>; rawArgs: string[] }) => Promise<void>;
 const checkRun = (checkCommand as unknown as { run: RunFn }).run;
 
-/** Run `spec check --ci` in-process against a CLONE of `fixtureDir` (so the
- *  command's `.spec-engine/` dir lands in a tmpdir, never in the committed
- *  fixture) and return the process.exit code the ExitError stub surfaced. */
+/** A clone, so the command's `.spec-engine/` never lands in the committed fixture. */
 async function runCheckCi(fixtureDir: string): Promise<number> {
   const cloned = cloneFixture(fixtureDir);
   clones.push(cloned);
@@ -171,7 +147,7 @@ describe("clean fixture — every citation resolves, every term cited", () => {
   });
 });
 
-describe("self-corpus — the real platform after the Wave F GLOSSARY migration", () => {
+describe("self-corpus — the real platform after the GLOSSARY migration", () => {
   test("migrated terms are uncited ORPHAN_TERM WARNINGS; UNDEFINED_TERM stays absent; gate exit 0", async () => {
     const s = openStorage(dbPath);
     try {
@@ -180,15 +156,11 @@ describe("self-corpus — the real platform after the Wave F GLOSSARY migration"
       // No requirement cites a term yet (every `cites` is []), so a citation to
       // an unresolvable term can never fire.
       expect(rows.some((d) => d.code === "UNDEFINED_TERM")).toBe(false);
-      // Wave F migrated GLOSSARY.md into TERM-001..N — those Active terms are not
-      // cited yet, so ORPHAN_TERM fires for them. It MUST stay warning-severity:
-      // an uncited freshly-migrated term is glossary rot to flag, never a
-      // build-breaker.
+      // The terms migrated from GLOSSARY.md are not cited yet, so ORPHAN_TERM
+      // fires for them; it must stay warning-severity or the self-gate reds.
       const orphans = rows.filter((d) => d.code === "ORPHAN_TERM");
       expect(orphans.length).toBeGreaterThan(0);
       expect(orphans.every((d) => d.severity === "warning")).toBe(true);
-      // The `spec check --ci` exit contract IS `rows.some(severity === "error")`;
-      // the migrated-but-uncited terms are warnings, so the self-gate stays exit 0.
       expect(rows.some((d) => d.severity === "error")).toBe(false);
     } finally {
       s.close();

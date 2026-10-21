@@ -1,23 +1,4 @@
-// packages/engine/src/commands/query.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec QURY-005
-//
-// Unit tests for `spec query` (commands/query.ts). In-process invocation
-// of the citty command with process.exit stubbed to throw ExitError so the
-// test runner can assert on the exit code without terminating.
-//
-// Scope: COMMAND-level behavior — empty-text guard, V12 path-containment,
-// FTS5 grammar-error stderr path, --limit parsing (non-integer / zero /
-// >1000 / truncation), JSON shape against the canonical fixture trace,
-// and text-mode column headers. The storage-seam fixture trace is locked
-// separately in fts.test.ts (plan 04-03); this file locks the CLI surface
-// for QURY-01 + QURY-02.
-//
-// Mirrors the harness pattern from cli-check-unit.test.ts /
-// cli-propagation-unit.test.ts (ExitError, beforeEach stub block, RunFn
-// cast). Tests that touch the platform fixture use cloneFixture (WR-06) so
-// fixtures/platform-fixture/ is never mutated.
 
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
@@ -43,8 +24,8 @@ class ExitError extends Error {
 }
 
 beforeEach(() => {
-  // WR-06: clone the canonical fixture into a fresh tmpdir per test so
-  // the indexer's .spec-engine/ writes land outside the canonical tree.
+  // A clone, so the indexer's .spec-engine/ writes land outside the
+  // canonical fixtures/platform-fixture/ tree.
   clone = cloneFixture(FIXTURE);
   logs = [];
   errs = [];
@@ -75,8 +56,6 @@ const queryRun = (queryCommand as unknown as { run: RunFn }).run;
 async function runQuery(args: Record<string, unknown>): Promise<number> {
   try {
     await queryRun({ args, rawArgs: [] });
-    // Success path: commands/query.ts does not call process.exit on
-    // success — citty exits 0 on normal return. Mirror cli-propagation.
     return 0;
   } catch (e) {
     if (e instanceof ExitError) return e.code;
@@ -91,11 +70,9 @@ describe("spec query (in-process)", () => {
     expect(errs[0] ?? "").toMatch(/spec query: <text> is required/);
   });
 
-  test("QURY-02 acceptance: 'renewal charge' returns BILLING-009 as top hit (--json)", async () => {
-    // Empirical end-to-end QURY-02 lock at the CLI surface. The storage-
-    // level claim (porter stemming: renewal ↔ renews) is locked in
-    // plan 04-03's fts.test.ts; this test confirms the citty surface
-    // surfaces it byte-for-byte.
+  test("'renewal charge' returns BILLING-009 as top hit (--json)", async () => {
+    // Porter stemming (renewal ↔ renews) is covered at the storage seam by
+    // the FTS tests; this pins it through the citty surface.
     const code = await runQuery({
       text: "renewal charge",
       platformDir: clone,
@@ -153,7 +130,7 @@ describe("spec query (in-process)", () => {
     expect(parsed.length).toBeLessThanOrEqual(1);
   });
 
-  test("V12 path-containment: --out outside platformDir exits 2", async () => {
+  test("path containment: --out outside platformDir exits 2", async () => {
     const code = await runQuery({
       text: "renewal charge",
       platformDir: clone,
@@ -194,24 +171,11 @@ describe("spec query (in-process)", () => {
     expect(typeof hit?.text).toBe("string");
   });
 
-  test("operational (non-FTS5) storage errors propagate unwrapped (WR-01 throw-e branch)", async () => {
-    // Locks the `throw e` branch in commands/query.ts that became live
-    // after WR-01 narrowed the storage-level wrap to actual FTS5 grammar
-    // errors. Operational errors (database is locked, disk I/O,
-    // corruption, missing FTS table, etc.) MUST propagate as raw
-    // native bun:sqlite errors — NOT be relabeled as "spec query: FTS5
-    // query syntax error", which would mislead users debugging a real
-    // I/O or schema problem (IN-05 / WR-01 pairing in 04-REVIEW.md).
-    //
-    // Strategy: index once via a benign run, then DROP the FTS5 virtual
-    // table out from under the storage layer. The next searchFts call
-    // hits "no such table: requirements_fts" — a SQLITE_ERROR that does
-    // NOT match the `/fts5:|syntax error/i` narrowing regex in
-    // storage/sqlite.ts:429. Asserts the error escapes the command's
-    // catch block via `throw e` (NOT the friendly stderr path) and that
-    // no "FTS5 query syntax error" message is emitted to stderr.
-
-    // 1. Warm the index with a normal query so .spec-engine/index.sqlite exists.
+  test("operational (non-FTS5) storage errors propagate unwrapped (the throw-e branch)", async () => {
+    // Relabeling an operational error (locked DB, disk I/O, missing FTS
+    // table) as an FTS5 syntax error would mislead someone debugging a real
+    // I/O or schema problem. Dropping requirements_fts yields a SQLITE_ERROR
+    // that the storage seam's FTS5 narrowing regex does not match.
     const warm = await runQuery({
       text: "renewal charge",
       platformDir: clone,
@@ -219,33 +183,18 @@ describe("spec query (in-process)", () => {
     });
     expect(warm).toBe(0);
 
-    // 2. Drop the FTS5 virtual table so the next searchFts fails with a
-    //    non-grammar SQLITE_ERROR. Opening directly is fine in tests —
-    //    D-08 grep-fence applies only to packages/engine/src/storage/sqlite.ts.
+    // A direct bun:sqlite open is allowed here: the engine-internal fence
+    // skips tests.
     const dbPath = join(clone, ".spec-engine", "index.sqlite");
     const direct = new Database(dbPath);
     direct.exec("DROP TABLE requirements_fts;");
     direct.close();
 
-    // 3. Reset captured stderr so we can assert no FTS5-syntax message
-    //    is emitted on the failing run.
     errs.length = 0;
     logs.length = 0;
 
-    // 4. The second query MUST throw past runQuery (operational error,
-    //    not an ExitError). If the `throw e` branch regressed back to
-    //    wrapping everything as "FTS5 query syntax error", runQuery
-    //    would instead return exit code 2.
-    //
-    // WR-06 (iter-3): use a `returnedNormally` boolean sentinel set ONLY
-    //    inside the try block after the call succeeds, so a silent-swallow
-    //    regression (e.g., refactor `throw e` to `return;`) is caught by
-    //    a dedicated `expect(returnedNormally).toBe(false)` assertion
-    //    rather than masquerading as a synthetic-Error success path.
-    //    Without this, the prior single-variable shape let a synthetic
-    //    `throw new Error("...")` inside the try flow into the same
-    //    `propagated` slot as a real propagated SQLITE_ERROR, and every
-    //    "not-FTS5-wrapped" assertion passed for the wrong reason.
+    // A separate sentinel, so a swallowed error (`throw e` turned into
+    // `return;`) cannot pass as a propagated one.
     let returnedNormally = false;
     let propagated: unknown;
     try {
@@ -254,55 +203,27 @@ describe("spec query (in-process)", () => {
         platformDir: clone,
         json: true,
       });
-      // Only reached on silent-swallow regression — caught by step 5
-      // below, NOT by the catch handler.
       returnedNormally = true;
     } catch (e) {
       propagated = e;
     }
 
-    // 5. Catch the silent-swallow regression directly. If `runQuery`
-    //    returned without throwing, the throw-e branch is broken.
     expect(returnedNormally).toBe(false);
 
-    // 6. The propagated error must be a real Error (NOT an ExitError —
-    //    that would mean the friendly process.exit(2) path ran), and
-    //    its message must NOT be the wrapped "searchFts: FTS5 query
-    //    syntax error..." form.
     expect(propagated).toBeInstanceOf(Error);
     const msg = (propagated as Error).message;
     expect(msg).not.toMatch(/^searchFts: FTS5 query syntax error/);
 
-    // 7. Belt-and-braces: positively pin the propagated error to the
-    //    operational-error shape we induced. Dropping the FTS5 virtual
-    //    table makes the next searchFts hit a SQLITE_ERROR whose
-    //    message contains "no such table: requirements_fts". Locking
-    //    this shape catches a separate silent-failure mode: a storage
-    //    seam rewrite that converts SQLITE_ERROR into some other
-    //    message that happens to fail /^searchFts: FTS5/ but is still
-    //    the wrong shape (e.g., a generic "internal error"). Pairs
-    //    with the storage-side WR-01 narrowing.
     expect(msg).toMatch(/requirements_fts|no such table|SQLITE_ERROR/);
-
-    // 8. Stderr must NOT contain the friendly user-facing FTS5 message —
-    //    that would mean the command misclassified an operational error.
     expect(errs.join("\n")).not.toMatch(/FTS5 query syntax error/);
   });
 });
 
-// ---------- RED-11: pre-index / pre-spec guidance ----------
-//
-// A non-platform dir must produce the friendly first-spec message + exit 2
-// (NOT the raw NotASpecPlatformError stack trace runIndex used to throw),
-// and must write NO .spec-engine/ artifact — the old behavior littered an empty
-// index that poisoned every later run into silently printing nothing.
-
-describe("spec query — pre-index guidance (RED-11)", () => {
+describe("spec query — pre-index guidance", () => {
   function makeBareDir(): string {
     return mkdtempSync(join(tmpdir(), "spec-query-red11-"));
   }
 
-  /** spec-engine/ present with a manifest but zero requirements. */
   function makeEmptyPlatform(): string {
     const dir = makeBareDir();
     mkdirSync(join(dir, "spec-engine"), { recursive: true });

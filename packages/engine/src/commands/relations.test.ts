@@ -1,23 +1,3 @@
-// packages/engine/src/commands/relations.test.ts
-//
-// RED-17: unit tests for `spec relations` (commands/relations.ts) at the
-// COMMAND layer. In-process invocation of the citty command with
-// process.exit stubbed to throw ExitError — mirrors cli-map-unit.test.ts.
-//
-// Scope:
-//   (a) relates-fixture content: default (text) mode emits a mermaid
-//       `graph LR` block with deduped undirected edges, including the
-//       deliberately broken REL-999 target (Invariant #4 — broken refs
-//       land in the index; `spec check` owns the diagnostics).
-//   (b) --json emits the sorted RelationRow[] array.
-//   (c) indexed-but-empty platform: actionable stderr message, no stdout,
-//       exit 0 (text mode); --json emits "[]" with NO message.
-//   (d) missing platform (no spec-engine/) → friendly message + exit 2.
-//
-// Storage is exercised through openStorage inside the command — these are
-// integration-flavored command tests; relations-format.test.ts owns the
-// pure-formatter cases. No bun:sqlite import here (D-08).
-
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -77,8 +57,7 @@ afterEach(() => {
 type RunFn = (ctx: { args: Record<string, unknown>; rawArgs: string[] }) => Promise<void>;
 const relationsRun = (relationsCommand as unknown as { run: RunFn }).run;
 
-/** Run relations in-process. Returns the exit code if the command called
- *  process.exit, or -1 if it returned normally (implicit exit 0). */
+/** -1 when relations returned without calling process.exit: an implicit exit 0. */
 async function runRelations(args: Record<string, unknown>): Promise<number> {
   try {
     await relationsRun({ args, rawArgs: [] });
@@ -89,26 +68,23 @@ async function runRelations(args: Record<string, unknown>): Promise<number> {
   }
 }
 
-/** Clone relates-fixture into tmp and strip any stale committed-index
- *  leftovers so the command builds a FRESH derived index (the canonical
- *  truth is the spec — CLAUDE.md: delete + rebuild must be identical). */
+/** Strips any stale index leftovers so the command builds a fresh one. */
 function cloneRelatesFixture(): string {
   const clone = cloneFixture(RELATES_FIXTURE);
   rmSync(join(clone, ".spec-engine"), { recursive: true, force: true });
   return clone;
 }
 
-/** Indexed-but-empty platform: canonical spec-engine/ + manifest, no SPEC.md. */
 function makeEmptyPlatform(root: string): void {
   mkdirSync(join(root, "spec-engine"), { recursive: true });
 }
 
-describe("spec relations — relates-fixture content (a)", () => {
+describe("spec relations — relates-fixture content", () => {
   test("text mode emits a mermaid graph with nodes, labels, and deduped undirected edges", async () => {
     const clone = cloneRelatesFixture();
     try {
       const code = await runRelations({ platformDir: clone });
-      expect(code).toBe(-1); // implicit exit 0
+      expect(code).toBe(-1);
       const out = logs.join("\n");
       const lines = out.split("\n");
       expect(lines[0]).toBe("graph LR");
@@ -141,7 +117,7 @@ describe("spec relations — relates-fixture content (a)", () => {
         "REL-003>REL-002",
         "REL-003>REL-999",
       ]);
-      // Rows carry the Relates field's source location (fixture migrated to JSON in 18-03).
+      // Rows carry the Relates field's source location.
       expect(rows[0]?.source_file).toContain("SPEC.json");
       expect(rows[0]?.line).toBeGreaterThan(0);
     } finally {
@@ -150,7 +126,7 @@ describe("spec relations — relates-fixture content (a)", () => {
   });
 });
 
-describe("spec relations — empty platform (c)", () => {
+describe("spec relations — empty platform", () => {
   test("text mode: actionable stderr message, no stdout, exit 0", async () => {
     makeEmptyPlatform(tmp);
     const code = await runRelations({ platformDir: tmp });
@@ -170,7 +146,7 @@ describe("spec relations — empty platform (c)", () => {
   });
 });
 
-describe("spec relations — missing platform (d)", () => {
+describe("spec relations — missing platform", () => {
   test("no spec-engine/ → friendly message (no stack trace) + exit 2", async () => {
     const code = await runRelations({ platformDir: tmp });
     expect(code).toBe(2);
@@ -179,7 +155,7 @@ describe("spec relations — missing platform (d)", () => {
   });
 });
 
-describe("spec relations — V12 --out path containment", () => {
+describe("spec relations — --out path containment", () => {
   test("--out resolving outside platformDir → exit 2 'must be inside platformDir'", async () => {
     makeEmptyPlatform(tmp);
     const code = await runRelations({ platformDir: tmp, out: join(tmp, "..", "evil.sqlite") });

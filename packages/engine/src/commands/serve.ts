@@ -1,24 +1,14 @@
-// packages/engine/src/commands/serve.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec SERV-019
 // @spec SERV-023
 //
 // The all-zeros address must never appear in this file: serve.test.ts greps
 // for it as the guard against a wildcard bind.
 //
-// V12 path-containment: `--out` is resolved relative to platformDir and
-// MUST stay under platformDir — mirrors `commands/query.ts:113-121`.
-//
 // Storage lifecycle: real-serve mode keeps storage open for the process
-// lifetime — there is NO try/finally close around the Bun.serve bind.
-// The server is read-only, so the long-lived connection is safe; SIGINT
-// terminates the process (and Bun closes the file descriptor) when the
-// developer is done. Documented in RESEARCH § Anti-Patterns and accepted
-// as T-5-05-05.
+// lifetime; there is deliberately no try/finally close around the Bun.serve
+// bind. SIGINT terminates the process and Bun closes the file descriptor.
 //
-// D-08 grep-fence: this file does NOT import bun:sqlite. DB access goes
-// through `openStorage` (Storage seam from @spec-engine/shared).
+// This file must not import bun:sqlite: DB access goes through `openStorage`.
 
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
@@ -50,18 +40,14 @@ import {
 } from "./_shared";
 
 /**
- * Compose the real-serve Hono app: engine `/api/*` + webapp SSR pages on a
- * FRESH `new Hono()`. Exported so tests can compose without going through
- * citty's `run` (which would otherwise block on Bun.serve). The citty run
- * handler calls this and then binds Bun.serve on 127.0.0.1.
+ * Exported so tests can compose the app without citty's `run`, which blocks
+ * on Bun.serve.
  *
- * Note: we deliberately do NOT use `createApp()` (the probe factory) because that one already registers `/` with the placeholder —
- * `mountWebapp` would conflict. The real-serve app is purely composed.
+ * Deliberately not `createApp()` (the probe factory): that one already
+ * registers `/` with the placeholder, which `mountWebapp` would conflict with.
  *
- * `platformDir` is threaded through to `mountApi` so the
- * `/api/provenance?resolve=1` decorated-text seam writes its tracker sidecar
- * under `<platformDir>/.spec-engine/`. Defaults to `process.cwd()` so existing
- * callers/tests that omit it are unchanged (mountApi degrades to cwd too).
+ * `platformDir` reaches `mountApi` so `/api/provenance?resolve=1` writes its
+ * tracker sidecar under `<platformDir>/.spec-engine/`.
  */
 export function composeServeApp(
   storage: Storage,
@@ -79,7 +65,6 @@ function usageError(message: string): never {
   process.exit(EXIT.USAGE);
 }
 
-/** Exits the process with 2 when --host or a pinned token is refused. */
 export function resolveBind(args: {
   host?: string | undefined;
   token?: string | undefined;
@@ -106,29 +91,25 @@ export function resolveBind(args: {
 }
 
 /**
- * The `--probe` mode, preserved verbatim (the asset-embedding smoke): bind an ephemeral port on 127.0.0.1, GET /, assert the body
- * contains the placeholder, exit. Extracted from `run` so the real-serve
- * branch stays under the biome cognitive-complexity ceiling; the two modes
- * are conceptually independent and share no state.
+ * Extracted from `run` so the real-serve branch stays under the biome
+ * cognitive-complexity ceiling; the two modes share no state.
  *
  * @spec SERV-011
  * @spec SERV-012
  */
 async function runProbe(): Promise<void> {
   const app = createApp();
-  // SECURITY: hardcoded loopback (T-1-01 mitigation). Do NOT take a --host
-  // arg; the probe lives only on the developer's own machine.
+  // SECURITY: hardcoded loopback. Do not take a --host arg; the probe lives
+  // only on the developer's own machine.
   const server = Bun.serve({
     port: 0,
     hostname: "127.0.0.1",
     fetch: app.fetch,
   });
 
-  // RED-14: the success-path exit lives BELOW the try/catch. With it
-  // inside, the catch conflated "probe passed" with "probe crashed" the
-  // moment process.exit is anything but a hard terminator (e.g. the
-  // ExitError test stub) — the thrown exit-0 sentinel was swallowed and
-  // re-raised as exit 1. Only the fetch/assert work is guarded.
+  // The success-path exit lives below the try/catch: inside it, a
+  // process.exit that throws (the ExitError test stub) would be swallowed
+  // and re-raised as exit 1. Only the fetch/assert work is guarded.
   try {
     const url = `http://127.0.0.1:${server.port}/`;
     const res = await fetch(url);
@@ -139,7 +120,7 @@ async function runProbe(): Promise<void> {
     }
     const body = await res.text();
     if (!body.includes("Spec Engine — coming online")) {
-      console.error(`serve --probe FAILED: body did not contain the placeholder string (D-14)`);
+      console.error(`serve --probe FAILED: body did not contain the placeholder string`);
       server.stop();
       process.exit(EXIT.FAILURE);
     }
@@ -157,7 +138,7 @@ export const serveCommand = defineCommand({
   meta: {
     name: "serve",
     description:
-      "Run the local webapp. Binds 127.0.0.1 on --port, or one private --host address behind an access token. --probe is the SERV-04 asset-embedding smoke.",
+      "Run the local webapp. Binds 127.0.0.1 on --port, or one private --host address behind an access token. --probe is the asset-embedding smoke.",
   },
   args: {
     platformDir: platformDirArg,
@@ -197,17 +178,11 @@ export const serveCommand = defineCommand({
     },
   },
   async run({ args }) {
-    // --- Probe branch: preserved verbatim (see runProbe) -------------------
     if (args.probe) {
       await runProbe();
       return;
     }
 
-    // --- Real-serve branch -------------------------------------------------
-
-    // T-5-05-03: strict integer shape + 0..65535 range for --port. The CLI
-    // does NOT accept negative or non-integer ports; the message is faithful
-    // to what the parser actually requires.
     const rawPort = args.port ?? "0";
     if (!/^[0-9]+$/.test(rawPort)) {
       console.error("spec serve: --port must be an integer 0..65535");
@@ -225,39 +200,21 @@ export const serveCommand = defineCommand({
 
     const platformDir = resolvePlatformDir(args);
     const outArg = args.out;
-    // Resolve --out relative to platformDir (NOT cwd) — mirrors
-    // commands/query.ts and commands/map.ts.
     const dbPath = resolveDbPath(platformDir, outArg);
-
-    // V12 path-containment guard — mirrors commands/query.ts:113-121.
-    //
-    // The guard is unconditional. The default-path branch
-    // (`join(platformDir, ".spec-engine", "index.sqlite")`) is trivially contained
-    // today, but a future refactor that changes the default to e.g.
-    // `XDG_CACHE_HOME/spec/<hash>.sqlite` would silently leak the
-    // containment invariant with no test to catch it. One comparison per
-    // invocation; cheap insurance against future default-path drift.
     if (outArg) assertContainedPath(dbPath, platformDir, "spec serve: --out");
 
-    // RED-11 pre-flight: a non-platform dir must produce a friendly,
-    // actionable message + exit 2 BEFORE mkdirSync/openStorage — not the
-    // generic "failed to start" wrapper around the NotASpecPlatformError
-    // runIndex would throw. Running the guard before any FS write also
-    // means no stale `.spec-engine/` artifact is left behind to poison the next
-    // invocation into serving an empty index. Mirrors commands/map.ts.
+    // Must run before mkdirSync/openStorage: otherwise runIndex's
+    // NotASpecPlatformError surfaces as the generic "failed to start", and a
+    // stale `.spec-engine/` is left behind to serve an empty index next time.
     try {
       assertSpecPlatform(platformDir);
     } catch (e) {
       handleNotAPlatform(e);
     }
 
-    // INIT-13 pre-flight: interactive prompt for skipped siblings. Runs
-    // BEFORE mkdirSync(.spec-engine) so the exit-1 n-path leaves no artefacts.
-    // Inserted AFTER the --probe branch returns (lines 88-121) — probe
-    // never triggers the prompt (T-10-W3). Suppressed in non-TTY /
-    // --no-prompt contexts; falls through to the NO_SPEC_CONFIG warning in
-    // those cases. Only `check` registers `--ci`, so `args.ci` would be undefined
-    // here — drop the dead plumbing rather than forward `undefined`.
+    // Runs after the --probe branch returns (the probe never prompts) and
+    // before mkdirSync(.spec-engine), so declining leaves no artefacts. No
+    // `ci` arg: only `check` registers `--ci`.
     await maybePromptForOnboarding({
       platformDir,
       args: {
@@ -267,14 +224,12 @@ export const serveCommand = defineCommand({
 
     mkdirSync(dirname(dbPath), { recursive: true });
 
-    // Capture existence BEFORE openStorage — openStorage creates the file
-    // on demand. If the DB is missing, populate it via runIndex (transparent
-    // re-index for read commands; same pattern as `spec query`).
+    // Captured before openStorage, which creates the file on demand.
     const needsIndex = !existsSync(dbPath);
     // Fail-fast diagnosis: openStorage takes the WAL locks, so a sandboxed
     // process (file locks denied → SQLITE_IOERR_VNODE) dies HERE with the
     // actionable one-liner instead of binding the port and 500ing on every
-    // later request. Non-storage errors rethrow into citty as before.
+    // later request.
     let storage: Storage;
     try {
       storage = openStorage(dbPath);
@@ -283,22 +238,18 @@ export const serveCommand = defineCommand({
       throw err;
     }
 
-    // Storage is allocated above; runIndex and Bun.serve can both
-    // throw before we reach "server lifetime keeps the FD open." If they
-    // throw, close storage explicitly so WAL siblings are flushed before
-    // process exit. Once Bun.serve returns successfully we hand storage
-    // off to the server's process lifetime (T-5-05-05) and intentionally
-    // do NOT close.
+    // If runIndex or Bun.serve throws, close storage so WAL siblings are
+    // flushed before exit. Once Bun.serve returns, storage belongs to the
+    // server's process lifetime and is intentionally not closed.
     let server: ReturnType<typeof Bun.serve>;
     try {
       if (needsIndex || storage.listRepos().length === 0) {
-        // RED-16: the second disjunct catches the D-12 silent-rebuild case —
-        // the DB file EXISTED (so needsIndex is false) but openStorage wiped
-        // it because its _schema_version predated a SCHEMA_VERSION bump. An
-        // indexed platform always has >= 1 repo row (the canonical), so an
-        // empty repos table unambiguously means "no index here"; without
-        // this, every read command emits empty output (exit 0) until the
-        // user manually runs `spec index`.
+        // The second disjunct catches the silent-rebuild case: the DB file
+        // existed (so needsIndex is false) but openStorage wiped it because
+        // its _schema_version predated a SCHEMA_VERSION bump. An indexed
+        // platform always has >= 1 repo row (the canonical), so an empty
+        // repos table means "no index here"; without this, every read serves
+        // empty output until someone runs `spec index`.
         await runIndex({ platformDir, storage });
       }
 
@@ -311,24 +262,15 @@ export const serveCommand = defineCommand({
     } catch (err) {
       storage.close();
       handleInvalidDomainFiles(err, false);
-      // Named-cause path first: a sandboxed/locked/corrupt index database
-      // prints the storage/errors.ts hint + exits 1. The startup probe that
-      // trips it is the listRepos()/runIndex read-write pass above — the
-      // same locks every later request would need.
       handleStorageUnavailable(err, dbPath);
       console.error(`spec serve: failed to start on ${urlHost(host, port)}:`, err);
       process.exit(EXIT.FAILURE);
-      // The explicit return makes the control-flow termination
-      // local. `process.exit` is typed `never`, but if a future test harness
-      // stubs it to record exits without throwing (or wraps run() in a
-      // silent try/catch), the `server.port` access below would throw
-      // TypeError on an unset `let server`. This `return` decouples
-      // correctness from that non-local invariant.
+      // `process.exit` is typed `never`, but a test stub that records exits
+      // without throwing would reach the unset `server` below.
       return;
     }
 
-    // Do NOT close storage here — the server lifecycle outlives this run()
-    // call (T-5-05-05). SIGINT releases the file descriptor.
+    // Do not close storage here: the server outlives this run() call.
     const serving = `spec: serving ${platformName(platformDir)} on ${server.url.origin}`;
     if (lan === null) {
       console.log(serving);

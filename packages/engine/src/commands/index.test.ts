@@ -1,17 +1,4 @@
-// packages/engine/src/commands/index.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec INDX-009
-//
-// RED-14 dead-end audit: `spec index` (commands/index.ts) had NO test at
-// the citty command layer — its --json mode, the RED-11 not-a-platform
-// branch, and the generic "spec index FAILED" exit-1 branch were all
-// uncovered (the pipeline beneath it is covered by pipeline.test.ts /
-// cold-rebuild.test.ts; CI smoke 6 covers the compiled binary).
-//
-// Harness mirrors cli-map-unit.test.ts: ExitError class, beforeEach /
-// afterEach stubs over console.log + console.error + process.exit, RunFn
-// cast over indexCommand.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { cpSync, existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -65,21 +52,19 @@ afterEach(() => {
 type RunFn = (ctx: { args: Record<string, unknown>; rawArgs: string[] }) => Promise<void>;
 const indexRun = (indexCommand as unknown as { run: RunFn }).run;
 
-/** Run index in-process. Returns the exit code if the command called
- *  process.exit, or -1 if it returned normally (success path returns
- *  without exiting — exit 0 is implicit). */
+/** -1 when index returned without calling process.exit: an implicit exit 0. */
 async function runIndexCmd(args: Record<string, unknown>): Promise<number> {
   try {
     await indexRun({ args, rawArgs: [] });
-    return -1; // returned normally → implicit exit 0
+    return -1;
   } catch (e) {
     if (e instanceof ExitError) return e.code;
     throw e;
   }
 }
 
-describe("spec index (in-process, RED-14)", () => {
-  test("--json emits exactly the IndexResult object on stdout (CI-02 contract)", async () => {
+describe("spec index (in-process)", () => {
+  test("--json emits exactly the IndexResult object on stdout", async () => {
     const clone = cloneFixture(FIXTURE);
     try {
       const code = await runIndexCmd({ platformDir: clone, json: true });
@@ -111,17 +96,14 @@ describe("spec index (in-process, RED-14)", () => {
     }
   });
 
-  test("non-platform dir → friendly RED-11 message + exit 2, no .spec-engine artifact", async () => {
+  test("non-platform dir → friendly message + exit 2, no .spec-engine artifact", async () => {
     const code = await runIndexCmd({ platformDir: tmp });
     expect(code).toBe(2);
     expect(errs.join("\n")).toContain("is not a Spec Engine platform yet");
     expect(existsSync(join(tmp, ".spec-engine"))).toBe(false);
   });
 
-  test("V12: --out outside platformDir → exit 2 'must be inside platformDir' (parity with every other command)", async () => {
-    // RED-14 audit finding: index was the ONLY --out-bearing command with
-    // neither the platformDir-relative resolution nor the V12 containment
-    // guard (check/map/query/propagation/gate/serve all have both).
+  test("--out outside platformDir → exit 2 'must be inside platformDir'", async () => {
     const clone = cloneFixture(FIXTURE);
     // Anchor the escape target to the (unique) clone name so a stale file
     // from an earlier run can never satisfy/poison the assertion.
@@ -137,7 +119,7 @@ describe("spec index (in-process, RED-14)", () => {
     }
   });
 
-  test("V12: relative --out resolves under platformDir, NOT cwd (parity with check.ts WR-01)", async () => {
+  test("relative --out resolves under platformDir, NOT cwd", async () => {
     const clone = cloneFixture(FIXTURE);
     const cwdGhost = resolve(process.cwd(), "custom");
     try {
@@ -153,10 +135,8 @@ describe("spec index (in-process, RED-14)", () => {
   });
 
   test("genuine indexing crash (malformed member config) → 'spec index FAILED' + exit 1", async () => {
-    // A real platform whose sibling carries a Zod-invalid spec-engine.member.json:
-    // assertSpecPlatform passes, runIndex throws — the generic FAILED
-    // branch must keep its exit-1 contract (distinct from the exit-2
-    // not-a-platform path).
+    // A Zod-invalid member config passes assertSpecPlatform, then runIndex
+    // throws.
     const member = await TestPlatform.at(tmp).member("member");
     writeFileSync(join(member.dir, "spec-engine.member.json"), JSON.stringify({ specs: "bogus" }));
 

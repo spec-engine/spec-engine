@@ -1,6 +1,3 @@
-// packages/engine/src/commands/init.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec INIT-015
 // @spec INIT-016
 // @spec INIT-017
@@ -82,7 +79,6 @@ afterEach(() => {
 type RunFn = (ctx: { args: Record<string, unknown>; rawArgs: string[] }) => Promise<void>;
 const initRun = (initCommand as unknown as { run: RunFn }).run;
 
-/** 0 when run() returns cleanly, else the captured exit code. */
 async function runInit(args: Record<string, unknown>): Promise<number> {
   try {
     await initRun({ args, rawArgs: [] });
@@ -93,7 +89,7 @@ async function runInit(args: Record<string, unknown>): Promise<number> {
   }
 }
 
-describe("spec init — INIT-01 default cwd + positional repo + existence guard", () => {
+describe("spec init — default cwd + positional repo + existence guard", () => {
   test("scaffolds in cwd when REPO is omitted", async () => {
     process.chdir(tmp);
     const code = await runInit({});
@@ -127,7 +123,7 @@ describe("spec init — INIT-01 default cwd + positional repo + existence guard"
   });
 });
 
-describe("spec init — INIT-02 refuse inside spec-engine/ (4 cases: basename, nested, symlink, cwd-inside)", () => {
+describe("spec init — refuse inside spec-engine/ (4 cases: basename, nested, symlink, cwd-inside)", () => {
   test("(a) refuses when REPO basename is 'spec-engine'", async () => {
     mkdirSync(join(tmp, "spec-engine"), { recursive: true });
     const code = await runInit({ repo: join(tmp, "spec-engine") });
@@ -159,7 +155,7 @@ describe("spec init — INIT-02 refuse inside spec-engine/ (4 cases: basename, n
   });
 });
 
-describe("spec init — INIT-03 already configured (no-force no-op, exit 0)", () => {
+describe("spec init — already configured (no-force no-op, exit 0)", () => {
   test("prints existing pin + exits 0 when spec-engine.member.json exists and --force is false", async () => {
     writeFileSync(
       join(tmp, "spec-engine.member.json"),
@@ -172,7 +168,7 @@ describe("spec init — INIT-03 already configured (no-force no-op, exit 0)", ()
   });
 });
 
-describe("spec init — INIT-04 --force shape-safety (raw Object.keys, not the schema)", () => {
+describe("spec init — --force shape-safety (raw Object.keys, not the schema)", () => {
   test("--force overwrites cleanly when existing has only specs key", async () => {
     writeFileSync(
       join(tmp, "spec-engine.member.json"),
@@ -210,7 +206,7 @@ describe("spec init — INIT-04 --force shape-safety (raw Object.keys, not the s
   });
 });
 
-describe("spec init — INIT-05 --specs Zod validation", () => {
+describe("spec init — --specs Zod validation", () => {
   test("valid --specs writes that pin", async () => {
     const code = await runInit({ repo: tmp, specs: "spec-engine@42" });
     expect(code).toBe(0);
@@ -238,7 +234,7 @@ describe("spec init — INIT-05 --specs Zod validation", () => {
   });
 });
 
-describe("spec init — INIT-06 + INIT-07 pin resolution + fallback note", () => {
+describe("spec init — pin resolution + fallback note", () => {
   test("without --specs and no sibling platform, falls back to spec-engine@1 with stdout note", async () => {
     const code = await runInit({ repo: tmp });
     expect(code).toBe(0);
@@ -276,8 +272,8 @@ describe("spec init — stray retired spec-engine.platform.json", () => {
   });
 });
 
-describe("spec init — INIT-09 + INIT-10 write seam + stdout summary", () => {
-  test("writes pretty-printed JSON with trailing newline (INIT-09)", async () => {
+describe("spec init — write seam + stdout summary", () => {
+  test("writes pretty-printed JSON with trailing newline", async () => {
     const code = await runInit({ repo: tmp });
     expect(code).toBe(0);
     const body = await Bun.file(join(tmp, "spec-engine.member.json")).text();
@@ -285,7 +281,7 @@ describe("spec init — INIT-09 + INIT-10 write seam + stdout summary", () => {
     expect(body.endsWith("\n")).toBe(true);
   });
 
-  test("stdout includes absolute path + resolved pin on success (INIT-10)", async () => {
+  test("stdout includes absolute path + resolved pin on success", async () => {
     const code = await runInit({ repo: tmp });
     expect(code).toBe(0);
     expect(logs.some((m) => m.includes("spec init:") && m.includes(resolve(tmp)))).toBe(true);
@@ -293,7 +289,7 @@ describe("spec init — INIT-09 + INIT-10 write seam + stdout summary", () => {
   });
 });
 
-describe("spec init — INIT-14 refuse on platform dir (contains spec-engine/)", () => {
+describe("spec init — refuse on platform dir (contains spec-engine/)", () => {
   test("REPO containing spec-engine/ as a child is refused with exit 2", async () => {
     mkdirSync(join(tmp, "spec-engine"), { recursive: true });
     const code = await runInit({ repo: tmp });
@@ -309,7 +305,7 @@ describe("spec init — INIT-14 refuse on platform dir (contains spec-engine/)",
   });
 });
 
-describe("spec init — path-resolution failures honor INIT-11 exit 2", () => {
+describe("spec init — path-resolution failures exit 2", () => {
   test("symlink loop at REPO → exit 2 with friendly message, no stack-trace crash", async () => {
     symlinkSync(join(tmp, "loop"), join(tmp, "loop"));
     const code = await runInit({ repo: join(tmp, "loop") });

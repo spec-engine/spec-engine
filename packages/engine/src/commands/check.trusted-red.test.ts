@@ -1,38 +1,4 @@
-// packages/engine/src/commands/check.trusted-red.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec PROOF-011
-//
-// GATE-03 (green-suite-hides-removal) at the INTEGRATION layer — the headline
-// proof that the trusted-red gate is more than presence-only. Two variants,
-// both run in-process against a tmpdir clone of the canonical platform-fixture
-// (the canonical fixture is never mutated — all deletes + generated JUnit land
-// inside the clone; `rmSync` in afterEach).
-//
-// The controlled pair used throughout (verified against the live fixture):
-//   R = BILLING-009 — active; impl tag in `api/src/renew.ts`, verifying tag in
-//                     `api/test/renew.e2e.test.ts` (line 1). Clean: no other
-//                     planted diagnostic touches BILLING-009.
-//   S = BILLING-007 — active; verifying tags in `api/test/tax.test.ts` and
-//                     `admin/test/reports.int.test.ts`. Its passing tests keep
-//                     the "rest of the suite green" while we sink R.
-//
-// Baseline: R + S both PROVEN (their verifying test files PASS) → NO
-//   UNPROVEN_REQ row for R. (Exit may still be 1 from the fixture's other
-//   planted defects — we assert the SPECIFIC absence of an UNPROVEN_REQ for R.)
-//
-// Variant A (green-suite-hides-removal): delete R's `src/renew.ts` AND
-//   `test/renew.e2e.test.ts`; supply an entirely-green JUnit (only S's passing
-//   tests). R is now an active req with no passing verifying proof → exit 1
-//   with R flagged. Nuance (documented in 19-RESEARCH § GATE-03): with BOTH
-//   tags gone, R trips ORPHAN_REQ / UNVERIFIED_REQ (presence-mode codes), not
-//   UNPROVEN_REQ — so we assert exit 1 AND that some diagnostic implicates R.
-//
-// Variant B (verifier-present-but-failing — the distinct trusted-red teeth):
-//   keep R's verifying tag/file; supply a JUnit where R's testcase carries a
-//   `<failure>` while every OTHER testcase passes (suite otherwise green) → a
-//   SPECIFIC `UNPROVEN_REQ` row for R. This is exactly the case a presence-only
-//   (`verified=1`) gate would wave through.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -44,13 +10,15 @@ import { checkCommand } from "./check";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "platform-fixture");
 
-// The controlled provable pair (against the canonical fixture — no seeded
-// member needed; verified via the live fixture's tags + SPEC.json statuses).
+// The canonical fixture's provable pair. R: active, impl tag in
+// api/src/renew.ts, verifying tag in api/test/renew.e2e.test.ts, touched by
+// no other planted diagnostic. S: active, verified by two test files whose
+// passing tests keep the rest of the suite green.
 const R = "BILLING-009";
 const R_IMPL = ["api", "src", "renew.ts"] as const;
 const R_TEST = ["api", "test", "renew.e2e.test.ts"] as const;
-// Tag `file` paths as the indexer records them (`${repo}/${relPath}`) — the
-// JUnit `file=` attrs must suffix-match these for the 19-02 correlator.
+// Tag `file` paths as the indexer records them (`${repo}/${relPath}`): the
+// JUnit `file=` attrs must suffix-match these for the correlator.
 const R_VERIFY_FILE = "api/test/renew.e2e.test.ts";
 const S = "BILLING-007";
 const S_VERIFY_FILES = ["api/test/tax.test.ts", "admin/test/reports.int.test.ts"] as const;
@@ -65,8 +33,6 @@ class ExitError extends Error {
  *  comment line so the correlator's line-proximity refinement keeps it. */
 type Case = { file: string; name: string; line?: number; status: "pass" | "fail" | "skip" };
 
-/** Render a minimal, well-formed JUnit document from a list of cases. Uses the
- *  flat jest/pytest shape (a single <testsuite>) with per-testcase `file=`. */
 function junitXml(cases: Case[]): string {
   const rows = cases
     .map((c) => {
@@ -121,12 +87,7 @@ afterEach(() => {
 type RunFn = (ctx: { args: Record<string, unknown>; rawArgs: string[] }) => Promise<void>;
 const checkRun = (checkCommand as unknown as { run: RunFn }).run;
 
-/**
- * Write `cases` as a JUnit XML inside the clone (so the 19-03 `--results`
- * containment guard passes — it resolves against platformDir), then invoke
- * `checkCommand.run({ platformDir: clone, json: true, results })` in-process.
- * Returns the parsed diagnostic rows (stdout JSON array) + the exit code.
- */
+/** The XML is written inside the clone so the `--results` containment guard passes. */
 async function runGate(
   clone: string,
   cases: Case[],
@@ -162,18 +123,16 @@ async function runGate(
   return { got, exitCode };
 }
 
-describe("GATE-03 green-suite-hides-removal (integration, both variants)", () => {
+describe("green-suite-hides-removal (integration, both variants)", () => {
   test("baseline: R + S proven → NO UNPROVEN_REQ row for R", async () => {
     const clone = cloneFixture(FIXTURE);
     clones.push(clone);
-    // All verifying test files PASS → R and S both PROVEN.
     const { got, exitCode } = await runGate(clone, [
       { file: R_VERIFY_FILE, name: "renew e2e", line: 2, status: "pass" },
       { file: S_VERIFY_FILES[0], name: "tax unit", line: 2, status: "pass" },
       { file: S_VERIFY_FILES[1], name: "reports integration", line: 2, status: "pass" },
     ]);
-    // The fixture's other planted defects keep exit at 1 — but R must NOT be
-    // UNPROVEN when its verifying test passes.
+    // The fixture's other planted defects keep exit at 1.
     expect(exitCode).toBe(1);
     expect(got.some((d) => d.code === "UNPROVEN_REQ" && d.req_id === R)).toBe(false);
     expect(got.some((d) => d.code === "UNPROVEN_REQ" && d.req_id === S)).toBe(false);
@@ -182,37 +141,29 @@ describe("GATE-03 green-suite-hides-removal (integration, both variants)", () =>
   test("variant A: deleting R's impl + verifying files → exit 1 with R flagged, suite all-green", async () => {
     const clone = cloneFixture(FIXTURE);
     clones.push(clone);
-    // Remove R's implementing code AND its verifying test from the clone.
     rmSync(join(clone, ...R_IMPL));
     rmSync(join(clone, ...R_TEST));
-    // Entirely-green JUnit — only S's passing tests remain.
     const { got, exitCode } = await runGate(clone, [
       { file: S_VERIFY_FILES[0], name: "tax unit", line: 2, status: "pass" },
       { file: S_VERIFY_FILES[1], name: "reports integration", line: 2, status: "pass" },
     ]);
-    // A green suite cannot hide the removal: check still goes RED, R flagged.
     expect(exitCode).toBe(1);
     expect(got.some((d) => d.req_id === R)).toBe(true);
-    // Nuance: with BOTH tags gone R has no verifying tag → it is ORPHAN_REQ /
-    // UNVERIFIED_REQ (presence-mode codes), NOT UNPROVEN_REQ (which requires a
-    // surviving verifying tag). Variant B covers the UNPROVEN_REQ teeth.
+    // With both tags gone R trips the presence codes (ORPHAN_REQ /
+    // UNVERIFIED_REQ); UNPROVEN_REQ needs a surviving verifying tag.
     expect(got.some((d) => d.code === "UNPROVEN_REQ" && d.req_id === R)).toBe(false);
   });
 
   test("variant B: verifier present but its test FAILS (rest green) → specific UNPROVEN_REQ for R", async () => {
     const clone = cloneFixture(FIXTURE);
     clones.push(clone);
-    // R's verifying tag/file stays in place; its testcase FAILS while every
-    // other testcase passes — the distinct trusted-red case presence can't catch.
     const { got, exitCode } = await runGate(clone, [
       { file: R_VERIFY_FILE, name: "renew e2e", line: 2, status: "fail" },
       { file: S_VERIFY_FILES[0], name: "tax unit", line: 2, status: "pass" },
       { file: S_VERIFY_FILES[1], name: "reports integration", line: 2, status: "pass" },
     ]);
     expect(exitCode).toBe(1);
-    // The headline assertion: a SPECIFIC UNPROVEN_REQ row for R.
     expect(got.some((d) => d.code === "UNPROVEN_REQ" && d.req_id === R)).toBe(true);
-    // S stays proven (its tests passed) — the gate is precise, not always-red.
     expect(got.some((d) => d.code === "UNPROVEN_REQ" && d.req_id === S)).toBe(false);
   });
 });
