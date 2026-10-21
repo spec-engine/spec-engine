@@ -85,7 +85,7 @@ export type SpecRequirement = z.infer<typeof SpecRequirementSchema>;
 export type SpecDomain = z.infer<typeof SpecDomainSchema>;
 
 /** Best-effort `req_id` for a diagnostic; never load-bearing. */
-function reqIdForIssuePath(input: unknown, path: (string | number)[]): string | null {
+function reqIdForIssuePath(input: unknown, path: readonly PropertyKey[]): string | null {
   if (path.length < 2 || path[0] !== "requirements" || typeof path[1] !== "number") {
     return null;
   }
