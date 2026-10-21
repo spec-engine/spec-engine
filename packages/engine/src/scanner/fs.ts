@@ -1,39 +1,12 @@
-// packages/engine/src/scanner/fs.ts
+// A manual `node:fs` recursion rather than a `**` glob: an ignored directory is
+// pruned before descending, so `node_modules/` (often 100k+ files) is never
+// enumerated at all.
 //
-// PARS-03 + PARS-04: filesystem walker for the indexer.
+// `readdir` order is not guaranteed, so every walk sorts before returning:
+// tag insertion order fixes the tags.id AUTOINCREMENT sequence.
 //
-// 2.5 (walk-level pruning): the walk is a manual `node:fs` recursion that
-// SKIPS an ignored directory before descending into it, instead of globbing
-// the WHOLE tree with `Bun.Glob("**/…")` and filtering the results afterward.
-// On a real member repo the old walk-then-filter enumerated every file under
-// `node_modules/` (often 100k+) only to throw them away; pruning at the
-// directory level never opens those subtrees at all. A pruning walk is faster
-// than a full `**` glob here, so this supersedes the earlier Bun.Glob mandate
-// for THIS module (the mandate's motivation was speed). No file content is
-// read — this is a directory walk only.
-//
-// Determinism rule: `readdir` order is not guaranteed,
-// so every helper collects into an array and `.sort()`s before returning, so
-// downstream side effects (tag insertion order → tags.id AUTOINCREMENT
-// sequence) are stable across runs and across machines.
-//
-// Symlinks are NOT followed: `Dirent.isDirectory()`/`isFile()` both report
-// false for a symlink (it is `isSymbolicLink()`), so it matches neither the
-// descend branch nor the keep branch and is skipped — the same non-follow
-// behavior the previous `Bun.Glob.scan` default had.
-//
-// Ignore-list contract: a path is ignored when any built-in token appears at a
-// segment boundary at any depth, or when it starts with a caller-supplied
-// `extra` token. Built-in tokens:
-//   - node_modules/
-//   - .git/
-//   - .spec-engine/  (derived index dir — keep tag scans away from generated artifacts)
-//   - .factory/  (planning docs — no .ts should ever land here, defensive)
-//   - .next/ .turbo/ .cache/  (build/tool caches common in members)
-//   - dist/ build/ coverage/
-//   - fixtures/  (planted test-fixture trees — the mess in them is the test,
-//                 never a live coverage claim)
-// A real `.gitignore` integration is a v2 concern (CLAUDE.md "What NOT to Use").
+// Symlinks are not followed: a symlink Dirent is neither `isDirectory()` nor
+// `isFile()`, so it matches no branch. `.gitignore` is deliberately not read.
 
 import type { Dirent } from "node:fs";
 import { readdir } from "node:fs/promises";
@@ -42,7 +15,8 @@ import { join } from "node:path";
 /** Ignore tokens, matched at a SEGMENT boundary (see `isPathIgnored`). The
  *  trailing slash on every entry is load-bearing: it anchors the match to a
  *  directory-segment end so `dist/` never matches a file like `dist.ts` nor a
- *  sibling dir like `mydist/`. */
+ *  sibling dir like `mydist/`. `fixtures/` holds planted test trees: the mess
+ *  in them is the test, never a live coverage claim. */
 export const IGNORE_SUBSTR = Object.freeze([
   "node_modules/",
   ".git/",
@@ -73,14 +47,8 @@ export function isPathIgnored(path: string, extra: readonly string[] = []): bool
   );
 }
 
-/**
- * Recurse one directory (module-level, not a closure, to keep the cognitive
- * complexity low): read `<rootDir>/<relDir>`, prune ignored subtrees before
- * descending, and push kept files into `out`. Dot-prefixed entries are skipped
- * (`Bun.Glob.scan({ dot: false })` parity). An unreadable directory is skipped
- * rather than throwing — a walk must never crash the indexer. Symlinks report
- * `isSymbolicLink()` (neither file nor directory) so they are not followed.
- */
+/** Dot-prefixed entries are skipped. An unreadable directory is skipped rather
+ *  than thrown: a walk must never crash the indexer. */
 async function walkInto(
   rootDir: string,
   relDir: string,
@@ -96,7 +64,7 @@ async function walkInto(
     return;
   }
   for (const ent of entries) {
-    if (ent.name.startsWith(".")) continue; // dot:false semantics
+    if (ent.name.startsWith(".")) continue;
     const rel = relDir ? `${relDir}/${ent.name}` : ent.name;
     if (ent.isDirectory()) {
       if (!isPathIgnored(`${rel}/`, extraIgnore)) {
@@ -108,12 +76,6 @@ async function walkInto(
   }
 }
 
-/**
- * 2.5: walk `rootDir`, pruning ignored directories BEFORE descending, and
- * return the repo-relative paths of files for which `keep` returns true,
- * lexicographically sorted. `extraIgnore` applies on top of the built-in tokens
- * for THIS walk only.
- */
 async function walkFiles(
   rootDir: string,
   keep: (relPath: string) => boolean,
@@ -160,32 +122,13 @@ export function isTagSource(rel: string, exts: readonly string[] = DEFAULT_EXTS)
   return isDockerfile(name) || (dot > 0 && exts.includes(name.slice(dot + 1)));
 }
 
-/**
- * STOR-02 (17-02): walk `canonicalDir` for files named exactly `SPEC.json`.
- * Returns the canonical-relative paths, lexicographically sorted. Post-cutover
- * this is the SOLE spec-file glob — the Markdown spec-file
- * walker is deleted, so `spec index` discovers JSON domains only.
- *
- * Symlinks are not followed (Bun.Glob.scan default behavior).
- */
 export async function findDomainJsonFiles(canonicalDir: string): Promise<string[]> {
   return walkFiles(canonicalDir, (rel) => rel === "SPEC.json" || rel.endsWith("/SPEC.json"), []);
 }
 
-/**
- * Walk `repoDir` for files matching `**\/*.{ts,tsx,js,jsx,mjs}` (or the
- * caller-supplied `exts` list). Returns repo-relative paths, lexicographically
- * sorted, with ignored substrings filtered out.
- *
- * `extraIgnore` applies on top of `IGNORE_SUBSTR` for THIS call only, matched
- * as repo-relative prefixes. It lets the self-member scan (RUNG1-01)
- * exclude the in-repo `spec-engine/` subfolder so the canonical SPEC.md dir
- * (and any `.ts` beside it) is never double-counted as member code. The
- * default `[]` keeps every existing two-arg / three-arg-with-exts caller
- * byte-identical.
- *
- * Symlinks are not followed (Bun.Glob.scan default behavior).
- */
+/** `extraIgnore` holds repo-relative prefixes for this call only, e.g. the
+ *  in-repo `spec-engine/` dir so nothing beside the canonical specs is counted
+ *  as member code. */
 export async function findCodeFiles(
   repoDir: string,
   exts: readonly string[] = DEFAULT_EXTS,
@@ -194,24 +137,13 @@ export async function findCodeFiles(
   return walkFiles(repoDir, (rel) => isTagSource(rel, exts), extraIgnore);
 }
 
-/**
- * RED-15: walk `repoDir` for documentation markdown (`**\/*.md`). Same
- * ignore-list + determinism contract as `findCodeFiles`. Files named
- * exactly `SPEC.md` are excluded — those are spec sources owned by the
- * canonical dir (and the self-member scan already excludes
- * `spec-engine/` via `extraIgnore`); a stray SPEC.md elsewhere in a
- * member is still not documentation.
- *
- * Symlinks are not followed (Bun.Glob.scan default behavior).
- */
 export async function findDocFiles(
   repoDir: string,
   extraIgnore: readonly string[] = [],
 ): Promise<string[]> {
   return walkFiles(
     repoDir,
-    // Documentation markdown, EXCLUDING SPEC.md (spec sources owned by the
-    // canonical dir; a stray SPEC.md elsewhere is still not documentation).
+    // A SPEC.md anywhere is a spec source, never documentation.
     (rel) => rel.endsWith(".md") && rel !== "SPEC.md" && !rel.endsWith("/SPEC.md"),
     extraIgnore,
   );

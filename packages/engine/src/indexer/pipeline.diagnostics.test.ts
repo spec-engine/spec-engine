@@ -1,13 +1,3 @@
-// packages/engine/src/indexer/pipeline.diagnostics.test.ts
-//
-// Plan 03-02 / Task 3 (RED → GREEN): assert the five semantic diagnostic
-// queries Q1..Q5 (DANGLING_TAG, SUPERSEDED_REFERENCED, DRIFT, ORPHAN_REQ,
-// UNVERIFIED_REQ) produce exactly the planted set against the canonical
-// fixture. Source of truth: 03-RESEARCH § Inverted CI Assertion.
-//
-// Pattern mirrors check-drift-view.test.ts and cold-rebuild.test.ts: tmpdir
-// DB, openStorage, runIndex, then listSemanticDiagnostics().
-
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -29,8 +19,8 @@ afterEach(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 
-describe("listSemanticDiagnostics against canonical fixture (Q1..Q5, CHCK-02)", () => {
-  test("Q1: DANGLING_TAG fires for admin/BILLING-999", async () => {
+describe("listSemanticDiagnostics against canonical fixture", () => {
+  test("DANGLING_TAG fires for admin/BILLING-999", async () => {
     const s = openStorage(dbPath);
     try {
       await runIndex({ platformDir: FIXTURE, storage: s });
@@ -45,7 +35,7 @@ describe("listSemanticDiagnostics against canonical fixture (Q1..Q5, CHCK-02)", 
     }
   });
 
-  test("Q2: SUPERSEDED_REFERENCED fires for mobile/BILLING-001", async () => {
+  test("SUPERSEDED_REFERENCED fires for mobile/BILLING-001", async () => {
     const s = openStorage(dbPath);
     try {
       await runIndex({ platformDir: FIXTURE, storage: s });
@@ -61,7 +51,7 @@ describe("listSemanticDiagnostics against canonical fixture (Q1..Q5, CHCK-02)", 
     }
   });
 
-  test("Q3: DRIFT row matches drift VIEW positive case (mobile/BILLING-001)", async () => {
+  test("DRIFT row matches drift VIEW positive case (mobile/BILLING-001)", async () => {
     const s = openStorage(dbPath);
     try {
       await runIndex({ platformDir: FIXTURE, storage: s });
@@ -77,7 +67,7 @@ describe("listSemanticDiagnostics against canonical fixture (Q1..Q5, CHCK-02)", 
     }
   });
 
-  test("Q4: ORPHAN_REQ fires for AUTH-001 with repo=null", async () => {
+  test("ORPHAN_REQ fires for AUTH-001 with repo=null", async () => {
     const s = openStorage(dbPath);
     try {
       await runIndex({ platformDir: FIXTURE, storage: s });
@@ -91,7 +81,7 @@ describe("listSemanticDiagnostics against canonical fixture (Q1..Q5, CHCK-02)", 
     }
   });
 
-  test("Q5: UNVERIFIED_REQ fires for BILLING-002 with repo=null", async () => {
+  test("UNVERIFIED_REQ fires for BILLING-002 with repo=null", async () => {
     const s = openStorage(dbPath);
     try {
       await runIndex({ platformDir: FIXTURE, storage: s });
@@ -105,7 +95,7 @@ describe("listSemanticDiagnostics against canonical fixture (Q1..Q5, CHCK-02)", 
     }
   });
 
-  test("Q4 negative: BILLING-001 (Superseded) does NOT fire ORPHAN_REQ", async () => {
+  test("BILLING-001 (Superseded) does NOT fire ORPHAN_REQ", async () => {
     const s = openStorage(dbPath);
     try {
       await runIndex({ platformDir: FIXTURE, storage: s });
@@ -117,7 +107,7 @@ describe("listSemanticDiagnostics against canonical fixture (Q1..Q5, CHCK-02)", 
     }
   });
 
-  test("Q5 negative: BILLING-007 has src+test tags → no UNVERIFIED_REQ", async () => {
+  test("BILLING-007 has src+test tags → no UNVERIFIED_REQ", async () => {
     const s = openStorage(dbPath);
     try {
       await runIndex({ platformDir: FIXTURE, storage: s });
@@ -129,7 +119,7 @@ describe("listSemanticDiagnostics against canonical fixture (Q1..Q5, CHCK-02)", 
     }
   });
 
-  test("exact diagnostic set against canonical fixture (CHCK-04 prefiguring)", async () => {
+  test("exact diagnostic set against canonical fixture", async () => {
     const s = openStorage(dbPath);
     try {
       await runIndex({ platformDir: FIXTURE, storage: s });
@@ -147,12 +137,7 @@ describe("listSemanticDiagnostics against canonical fixture (Q1..Q5, CHCK-02)", 
     }
   });
 
-  test("severity matches the per-code contract (Q1..Q5 error; Q6/Q7 Relates warnings)", async () => {
-    // RED-16 widened SemanticDiagnostic.severity: the Relates diagnostics
-    // (BROKEN_RELATES / RELATES_SUPERSEDED) are warnings; everything else
-    // stays error-severity. Assert the contract per code rather than a
-    // blanket 'always error' (which became false the moment a fixture
-    // carries a Relates field).
+  test("severity matches the per-code contract", async () => {
     // @spec CHCK-035 unit
     const WARNING_CODES = new Set(["BROKEN_RELATES", "RELATES_SUPERSEDED", "UNVERIFIED_REQ"]);
     const s = openStorage(dbPath);
@@ -168,7 +153,7 @@ describe("listSemanticDiagnostics against canonical fixture (Q1..Q5, CHCK-02)", 
     }
   });
 
-  test("source_file is platform-relative, never absolute (pitfall guard)", async () => {
+  test("source_file is platform-relative, never absolute", async () => {
     const s = openStorage(dbPath);
     try {
       await runIndex({ platformDir: FIXTURE, storage: s });

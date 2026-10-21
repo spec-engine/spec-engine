@@ -1,20 +1,8 @@
-// packages/engine/src/check/unsourced.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec INDX-008 unit
-//
-// USRC-01 / USRC-03 unit cases for the pure `unsourcedChanges()` detector.
-// Drives the function directly with synthetic Requirement[] + ProvenanceRow[]
-// inputs — no Storage, no bun:sqlite, no fixtures. This is the off-by-default
-// seam: the function is a side-effect-free projection over already-fetched
-// rows, so it cannot perturb build_id / the cold-rebuild smokes / the 6-row
-// inverted-CI baseline.
-
 import { describe, expect, test } from "bun:test";
 import type { ProvenanceRow, Requirement, RequirementStatus } from "@spec-engine/shared";
 import { unsourcedChanges } from "./unsourced";
 
-// Cloned from diagnostics.test.ts mkReq — synthetic Requirement builder.
 function mkReq(over: Partial<Requirement>): Requirement {
   return {
     id: "X-001",
@@ -44,7 +32,7 @@ function mkProv(over: Partial<ProvenanceRow>): ProvenanceRow {
   };
 }
 
-describe("unsourcedChanges() unit cases (USRC-01/03)", () => {
+describe("unsourcedChanges()", () => {
   test("empty inputs → empty array", () => {
     expect(unsourcedChanges([], [])).toEqual([]);
   });
@@ -83,10 +71,7 @@ describe("unsourcedChanges() unit cases (USRC-01/03)", () => {
     expect(unsourcedChanges(reqs, prov)).toEqual([]);
   });
 
-  test("supersedes-via keyed on the SUCCESSOR's id does NOT clear the superseded req (A1)", () => {
-    // The successor BILLING-009 carries supersedes-via — but that does NOT
-    // source the superseded BILLING-001. Only BILLING-001's OWN provenance
-    // clears it. So BILLING-001 still flags.
+  test("supersedes-via keyed on the SUCCESSOR's id does NOT clear the superseded req", () => {
     const reqs = [
       mkReq({
         id: "BILLING-001",
@@ -120,7 +105,6 @@ describe("unsourcedChanges() unit cases (USRC-01/03)", () => {
         status: "Superseded" as RequirementStatus,
       }),
     ];
-    // 'created' role of the same id is not a supersedes-via — still flags.
     const prov = [mkProv({ req_id: "BILLING-001", role: "created" })];
     expect(unsourcedChanges(reqs, prov).length).toBe(1);
   });

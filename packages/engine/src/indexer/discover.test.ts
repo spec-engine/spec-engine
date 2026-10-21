@@ -1,5 +1,3 @@
-// packages/engine/src/indexer/discover.test.ts
-//
 // @spec INIT-037
 // @spec INIT-032
 // @spec INIT-035

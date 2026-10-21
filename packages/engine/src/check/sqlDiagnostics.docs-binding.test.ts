@@ -1,19 +1,9 @@
-// packages/engine/src/check/sqlDiagnostics.docs-binding.test.ts
+// Runs against the committed fixtures/docs-fixture/ with the DB in a tmpdir;
+// doctor.md is written beside the DB, never into the fixture tree.
 //
-// RED-15 integration: documentation lines bind to requirements through the
-// full index pipeline, requirement changes surface bound doc lines on
-// `spec check`, doc bindings never masquerade as code, and ambiguous
-// prose mentions land in a derived doctor.md for triage.
-//
-// Runs against the COMMITTED fixtures/docs-fixture/ (read-only at the
-// platform layer) with the DB in a per-suite tmpdir — the doctor.md
-// artifact is written BESIDE the DB (dirname(storage.path)), never into
-// the committed fixture tree.
-//
-// The fixture's planted mess (per CLAUDE.md, never "fix" it). NOTE: the
-// binding token and ids are kept apart in these comments — this repo
-// self-consumes and the code scanner matches the tag pattern anywhere in a
-// .ts line, comments included (same reason src/testing/specTag.ts exists):
+// The fixture's planted defects (never "fix" them). The binding token and the
+// ids are kept apart in these comments: the scanner matches the tag pattern
+// anywhere in a .ts line, comments included (see src/testing/specTag.ts):
 //   web/docs/guide.md:3   HTML-comment binding for DOCS-001 — valid
 //   web/docs/guide.md:6   HTML-comment binding for DOCS-002 — superseded → SUPERSEDED_REFERENCED
 //   web/docs/guide.md:9   HTML-comment binding for DOCS-999 — dangling → DANGLING_TAG
@@ -51,7 +41,7 @@ afterAll(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 
-describe("doc bindings index as documents-kind tags (RED-15)", () => {
+describe("doc bindings index as documents-kind tags", () => {
   test("index counts 2 code tags + 4 doc bindings = 6 tags; code-block example does NOT bind", () => {
     expect(result.tags).toBe(6);
   });
@@ -63,13 +53,13 @@ describe("doc bindings index as documents-kind tags (RED-15)", () => {
     expect(ids).toEqual(["DOCS-001", "DOCS-002", "DOCS-004"]);
   });
 
-  test("no phantom EXAMPLE-001 tag anywhere (criterion 1: code-block examples never bind)", () => {
+  test("no phantom EXAMPLE-001 tag anywhere (code-block examples never bind)", () => {
     const codes = collectDiagnostics(storage);
     expect(codes.some((d) => d.req_id === "EXAMPLE-001")).toBe(false);
   });
 });
 
-describe("req→doc direction: requirement changes surface bound doc lines (RED-15)", () => {
+describe("req→doc direction: requirement changes surface bound doc lines", () => {
   test("doc binding to a superseded requirement fires SUPERSEDED_REFERENCED at the doc line", () => {
     const hit = collectDiagnostics(storage).find(
       (d) => d.code === "SUPERSEDED_REFERENCED" && d.req_id === "DOCS-002",
@@ -89,7 +79,7 @@ describe("req→doc direction: requirement changes surface bound doc lines (RED-
   });
 });
 
-describe("doc bindings never masquerade as code (RED-15)", () => {
+describe("doc bindings never masquerade as code", () => {
   test("a doc-only-bound Active requirement still reports ORPHAN_REQ", () => {
     // DOCS-004 is bound ONLY by the HTML-comment binding in guide.md. A doc
     // binding is not an implementation — orphan detection must see through it.
@@ -124,7 +114,7 @@ describe("doc bindings never masquerade as code (RED-15)", () => {
   });
 });
 
-describe("doctor.md ambiguity triage (RED-15)", () => {
+describe("doctor.md ambiguity triage", () => {
   test("doctor.md is written beside the index DB", () => {
     expect(existsSync(doctorPath)).toBe(true);
   });
@@ -139,7 +129,6 @@ describe("doctor.md ambiguity triage (RED-15)", () => {
     const doctor = readFileSync(doctorPath, "utf8");
     expect(doctor).not.toContain("JIRA-123");
     expect(doctor).not.toContain("EXAMPLE-001");
-    // The binding lines bind their ids — none of them is ambiguous.
     expect(doctor).not.toContain("guide.md:3");
     expect(doctor).not.toContain("guide.md:6");
     expect(doctor).not.toContain("guide.md:9");

@@ -1,16 +1,3 @@
-// packages/engine/src/check/grammar.test.ts
-//
-// The STATEMENT_GRAMMAR check pass (check/grammar.ts) + the write-time gate
-// (authoring/grammar.ts). A domain that declares `grammar: "ears"` gets its
-// Active/Draft statements judged against the five EARS shapes:
-//
-//   - check: nonconforming statements emit STATEMENT_GRAMMAR at the domain's
-//     grammarSeverity (default warning — never reds the gate; "error" does).
-//     Terminal-status entries and the TERM domain are never judged.
-//   - write: `spec req --text` warns-and-writes under warning severity and
-//     refuses (exit 2) under error severity. Freeform domains never gate.
-//
-// Verifies:
 // @spec CHCK-008 integration
 // @spec REQ-020 integration
 // @spec SCHM-010 integration
@@ -93,7 +80,6 @@ describe("STATEMENT_GRAMMAR — the check pass", () => {
     expect(rows[0]?.code).toBe("STATEMENT_GRAMMAR");
     expect(rows[0]?.severity).toBe("warning");
     expect(rows[0]?.req_id).toBe("AUTH-001");
-    // The detail teaches the fix — a filled example, not a rule name.
     expect(rows[0]?.detail).toContain("shall");
     expect(rows[0]?.detail).toContain("spec resolve shall print [] and exit 0");
   });
@@ -124,7 +110,6 @@ describe("STATEMENT_GRAMMAR — the check pass", () => {
 
   test("the grammar declaration round-trips through validateAndWrite (strip-trap)", async () => {
     await declareGrammar("AUTH", "error");
-    // A second pass through the seam with no edit must keep both fields.
     await plantEdit(platformDir, "AUTH", () => {});
     const reread = readAuth();
     expect(reread.grammar).toBe("ears");

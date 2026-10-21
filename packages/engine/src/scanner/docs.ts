@@ -1,30 +1,17 @@
-// packages/engine/src/scanner/docs.ts
-//
-// RED-15: documentation-binding scanner for member `.md` files.
-//
-// Markdown is NOT code, so the code scanner's "match `@spec` anywhere on
-// the line" rule (scanner/tags.ts Design note 1) would be a footgun here:
-// READMEs and guides legitimately SHOW `// @spec KEY-NNN` examples in
-// prose and fenced code blocks (this repo's own README does), and none of
-// those may mint a tag. Only the explicit HTML-comment form binds:
+// Markdown is not code, so the code scanner's "match `@spec` anywhere on the
+// line" rule would be a footgun: READMEs show `// @spec KEY-NNN` examples in
+// prose and fenced blocks, and none of those may mint a tag. Only the explicit
+// HTML-comment form binds:
 //
 //   Guides render at build time. <!-- @spec KEY-NNN -->
 //
-// (Generic KEY-NNN placeholder here on purpose: this repo self-consumes,
-// and the CODE scanner matches `@spec <real-id>` anywhere in a .ts line —
-// a realistic example id in this comment would index as a dangling tag.)
+// The KEY-NNN placeholder is deliberate: the code scanner matches
+// `@spec <real-id>` anywhere in a .ts line, so a real id here would index as a
+// dangling tag.
 //
-// Bindings index as kind `documents` (level is always null — levels are a
-// test-tag concept). Everything else requirement-id-shaped on a line
-// WITHOUT a binding for that same id is returned as a MENTION candidate;
-// the pipeline filters candidates against the known-requirement set (so
-// issue-tracker refs like JIRA-123 never surface) and routes the
-// survivors into doctor.md for human triage.
-//
-// Line-based like scanTagsInFile: fenced code blocks are NOT parsed out.
-// A fenced example containing the literal HTML-comment binding form would
-// bind — accepted PoC limitation, documented here; the realistic fenced
-// example is the code-comment form, which never matches.
+// Line-based: fenced code blocks are not parsed out, so a fenced example of
+// the HTML-comment form would bind. Accepted; the realistic fenced example is
+// the code-comment form, which never matches.
 
 import type { Tag } from "@spec-engine/shared";
 
@@ -52,18 +39,8 @@ export interface DocMention {
 }
 
 /**
- * Scan one markdown file for explicit doc bindings and mention candidates.
- *
- * Per line: every `<!-- @spec ID -->` becomes a `documents`-kind tag; every
- * other id-shaped token on the line that is NOT bound on that same line
- * becomes a mention candidate. A line binding DOCS-003 while mentioning
- * DOCS-002 in prose therefore yields one tag (DOCS-003) and one candidate
- * (DOCS-002).
- *
- * @param repoName           The member repo's logical name (matches `repos.name`).
- * @param fileRelToPlatform  Path RELATIVE to the platform root — stored verbatim
- *                           into `tags.file` (same invariant as scanTagsInFile).
- * @param text               Full text content of the markdown file.
+ * @param fileRelToPlatform  Path relative to the platform root, stored verbatim
+ *                           into `tags.file`.
  */
 export function scanDocFile(
   repoName: string,

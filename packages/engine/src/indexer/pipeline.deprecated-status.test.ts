@@ -1,18 +1,5 @@
-// packages/engine/src/indexer/pipeline.deprecated-status.test.ts
+// The gate's DEPRECATED fail reason is covered in gate-classify.test.ts.
 //
-// The Deprecated status (D2 rename from "Retired") and its formerly blind
-// spots. A deprecated requirement is end-of-life with no successor; the three
-// behaviors here are what makes that status mean something:
-//
-//   - a code tag on a deprecated requirement is an ERROR diagnostic
-//     (DEPRECATED_REFERENCED — the SUPERSEDED_REFERENCED analogue), and
-//   - a deprecated requirement never surfaces in live search, and
-//   - the legacy authored spelling "retired" still reads as Deprecated
-//     (alias on the parse path — old files keep working).
-//
-// The gate branch (fail reason DEPRECATED) is covered in gate-classify.test.ts.
-//
-// Verifies:
 // @spec CHCK-007 integration
 // @spec QURY-004 integration
 
@@ -40,13 +27,12 @@ afterEach(() => {
   rmSync(platformDir, { recursive: true, force: true });
 });
 
-/** Flip one requirement's authored status in the cloned fixture's SPEC.json. */
 function setStatus(key: string, id: string, status: string): Promise<void> {
   return plantEdit(platformDir, key, (doc) => {
     const req = entryOf(doc, id);
     req.status = status;
-    // A deprecated entry has no successor — drop the supersede link when the
-    // flip replaces a fixture-planted Superseded status.
+    // A deprecated entry has no successor, and the fixture plants a
+    // Superseded one.
     req.supersededBy = null;
   });
 }
@@ -58,8 +44,7 @@ async function diagnose(): Promise<Diagnostic[]> {
 
 describe("Deprecated status — reference diagnostic, search exclusion, legacy alias", () => {
   test("a code tag on a deprecated requirement fires DEPRECATED_REFERENCED as an error", async () => {
-    // BILLING-001 is tagged in mobile/src/billing.ts. Deprecated instead of
-    // Superseded, the tag must fire the analogous error — not vanish.
+    // BILLING-001 is tagged in mobile/src/billing.ts.
     await setStatus("BILLING", "BILLING-001", "deprecated");
     const rows = await diagnose();
     const hit = rows.find((d) => d.code === "DEPRECATED_REFERENCED");
@@ -67,14 +52,12 @@ describe("Deprecated status — reference diagnostic, search exclusion, legacy a
     expect(hit?.severity).toBe("error");
     expect(hit?.req_id).toBe("BILLING-001");
     expect(hit?.repo).toBe("mobile");
-    // The superseded diagnostic no longer claims this row.
     expect(rows.some((d) => d.code === "SUPERSEDED_REFERENCED" && d.req_id === "BILLING-001")).toBe(
       false,
     );
   });
 
   test("a deprecated requirement is excluded from live search", async () => {
-    // AUTH-001 is Active and searchable; deprecated, the same query is empty.
     await runIndex({ platformDir, storage });
     expect(storage.searchFts("session expires").some((h) => h.req_id === "AUTH-001")).toBe(true);
 
@@ -86,9 +69,7 @@ describe("Deprecated status — reference diagnostic, search exclusion, legacy a
   test("the legacy authored spelling 'retired' reads as Deprecated", async () => {
     await setStatus("AUTH", "AUTH-001", "retired");
     const rows = await diagnose();
-    // No BAD_STATUS for the legacy spelling…
     expect(rows.some((d) => d.code === "BAD_STATUS" && d.req_id === "AUTH-001")).toBe(false);
-    // …and the row carries the Deprecated status downstream (search excludes it).
     expect(storage.searchFts("session expires").some((h) => h.req_id === "AUTH-001")).toBe(false);
   });
 });

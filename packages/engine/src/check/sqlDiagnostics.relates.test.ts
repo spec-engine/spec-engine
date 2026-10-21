@@ -1,22 +1,6 @@
-// packages/engine/src/check/sqlDiagnostics.relates.test.ts
-//
-// RED-16: the `relates: [KEY-NNN, KEY-MMM]` field links a requirement to
-// other requirements so that when a related requirement CHANGES (is
-// superseded), the relation surfaces on `spec check` instead of rotting
-// silently. Two seams under test (the Markdown parser unit seam is retired
-// with the hard cutover — D2; relation extraction is now exercised end-to-end
-// through the JSON reader by the integration blocks below):
-//
-//   1. Index/storage — relations land in the derived `relations` table,
-//      readable via storage.listRelations() (deterministic order), and
-//      participate in build_id (cold-rebuild equivalence).
-//   2. Check — RELATES_SUPERSEDED + BROKEN_RELATES warning diagnostics
-//      located at the source requirement's id line.
-//
-// Integration runs against the COMMITTED fixtures/relates-fixture/ (migrated
-// to JSON in 18-03) with the DB in a tmpdir (mirrors docs-binding.test.ts).
-// The fixture's only diagnostics are the planted Relates defects — code tags
-// cover both Active requirements so ORPHAN/UNVERIFIED stay quiet.
+// Runs against the committed fixtures/relates-fixture/ with the DB in a
+// tmpdir. Code tags cover both Active requirements, so the fixture's only
+// diagnostics are its planted relates defects.
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -28,8 +12,6 @@ import { openStorage } from "../storage/sqlite";
 import { collectDiagnostics } from "./sqlDiagnostics";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "relates-fixture");
-
-// --- Index/storage + check seams ---------------------------------------------
 
 let tmp: string;
 let storage: Storage;
@@ -46,11 +28,9 @@ afterAll(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 
-describe("relations in the derived index (RED-16)", () => {
+describe("relations in the derived index", () => {
   test("listRelations returns the fixture's three relations, deterministically ordered", () => {
-    // Fixture migrated to JSON in 18-03: the domainJson reader assigns each
-    // relation the SOURCE requirement's `"id"` line (REL-001 → 8, REL-003 → 35),
-    // not the authored Relates-field line the Markdown parser used.
+    // A relation is located at the source requirement's `"id"` line.
     expect(storage.listRelations()).toEqual([
       {
         from_id: "REL-001",
@@ -87,8 +67,8 @@ describe("relations in the derived index (RED-16)", () => {
   });
 });
 
-describe("spec check surfaces relations when the target changed (RED-16)", () => {
-  test("RELATES_SUPERSEDED warning: REL-003 relates to superseded REL-002, located at the Relates line", () => {
+describe("spec check surfaces relations when the target changed", () => {
+  test("RELATES_SUPERSEDED warning: REL-003 relates to superseded REL-002, located at the source id line", () => {
     const hit = collectDiagnostics(storage).find((d) => d.code === "RELATES_SUPERSEDED");
     expect(hit).toBeDefined();
     expect(hit?.req_id).toBe("REL-003");
@@ -109,9 +89,7 @@ describe("spec check surfaces relations when the target changed (RED-16)", () =>
   });
 
   test("the planted Relates defects are the fixture's ONLY diagnostics (all warnings → check exits 0)", () => {
-    // T5: the fixture's planted REL-001 self-reference (Relates line 11)
-    // now surfaces as SELF_RELATES instead of vanishing silently. Still
-    // warnings-only, so check stays exit 0.
+    // REL-001's planted self-reference surfaces as SELF_RELATES.
     const codes = collectDiagnostics(storage)
       .map((d) => d.code)
       .sort();

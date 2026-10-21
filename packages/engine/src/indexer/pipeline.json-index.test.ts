@@ -1,19 +1,3 @@
-// packages/engine/src/indexer/pipeline.json-index.test.ts
-//
-// STOR-01/STOR-02/STOR-03 (17-02, Task 3): end-to-end integration over the
-// committed planted-mess JSON fixture (`fixtures/json-fixture/`, a SEPARATE tree
-// from the Markdown `fixtures/platform-fixture/`). Proves:
-//   - a JSON domain file indexes into the correct internal rows (requirements,
-//     provenance) with lowercase statuses case-mapped to Capitalized;
-//   - the opaque KEY-NNN issue id (AUTH-001 created:BILLING-001) stores verbatim;
-//   - a planted bad issue role (BILLING-002 bogus-role) yields a UNKNOWN_ROLE
-//     diagnostic AND its well-formed issues still store (Invariant #4);
-//   - coverage is exercised — the api member's BILLING-009 spec tag lands;
-//   - an invalid SPEC.json refuses the whole build with its INVALID_DOMAIN_FILE
-//     rows, and the index on disk is left as it was.
-//
-// Scaffolding mirrors cold-rebuild.test.ts (mkdtempSync / openStorage / runIndex).
-
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { cpSync, existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -49,7 +33,7 @@ afterEach(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 
-describe("JSON domain file → internal rows (STOR-01/STOR-02)", () => {
+describe("JSON domain file → internal rows", () => {
   test("requirements land with lowercase statuses case-mapped to Capitalized", async () => {
     const s = openStorage(dbPath);
     try {
@@ -69,7 +53,6 @@ describe("JSON domain file → internal rows (STOR-01/STOR-02)", () => {
       expect(byId.get("BILLING-002")?.status).toBe("Active");
       expect(byId.get("BILLING-007")?.status).toBe("Active");
       expect(byId.get("AUTH-001")?.status).toBe("Active");
-      // statement → text mapping is lossless
       expect(byId.get("AUTH-001")?.text).toBe("A session expires 30 days after last activity.");
     } finally {
       s.close();
@@ -92,14 +75,13 @@ describe("JSON domain file → internal rows (STOR-01/STOR-02)", () => {
         ["created", "ENG-1432"],
         ["supersedes-via", "ENG-1781"],
       ]);
-      // Opaque KEY-NNN-shaped issue id stored verbatim (PROV-02) — never resolved.
       expect(pairs("AUTH-001")).toEqual([["created", "BILLING-001"]]);
     } finally {
       s.close();
     }
   });
 
-  test("BILLING-002's planted bad role → UNKNOWN_ROLE, but its well-formed issues still store (Invariant #4)", async () => {
+  test("BILLING-002's planted bad role → UNKNOWN_ROLE, but its well-formed issues still store", async () => {
     const s = openStorage(dbPath);
     try {
       await runIndex({ platformDir: JSON_FIXTURE, storage: s });
@@ -107,7 +89,6 @@ describe("JSON domain file → internal rows (STOR-01/STOR-02)", () => {
       const unknown = s.listDiagnostics().filter((d) => d.code === "UNKNOWN_ROLE");
       expect(unknown.some((d) => d.req_id === "BILLING-002")).toBe(true);
 
-      // The two well-formed issues on BILLING-002 still landed.
       const prov002 = s
         .listProvenance()
         .filter((p) => p.req_id === "BILLING-002")
@@ -192,12 +173,7 @@ describe("an invalid SPEC.json refuses the build", () => {
   });
 });
 
-// TERM-03 (Phase 6, Wave C): with `cites` POPULATED (not the present-and-empty
-// Wave-A state), cold-rebuild build_id stays byte-identical and listTermCitations
-// returns rows in the deterministic composite-key order the storage/build_id
-// sections use. Determinism is the T-06-08 tampering mitigation — a scan-order-
-// dependent resolution would flip the hash here.
-describe("citations populated: build_id byte-identity + deterministic order (TERM-03)", () => {
+describe("citations populated: build_id byte-identity + deterministic order", () => {
   function removeDbAndWalSiblings(path: string): void {
     for (const sfx of ["", "-wal", "-shm"]) {
       const p = path + sfx;
@@ -249,8 +225,6 @@ describe("citations populated: build_id byte-identity + deterministic order (TER
     try {
       await runIndex({ platformDir: fixture, storage: s });
       const cites = s.listTermCitations();
-      // Both cites resolve to TERM-001 (one by id, one by the "namespace" alias),
-      // ordered by req_id.
       expect(cites.map((c) => [c.req_id, c.term_id, c.cited_as])).toEqual([
         ["BILLING-001", "TERM-001", "TERM-001"],
         ["BILLING-002", "TERM-001", "namespace"],

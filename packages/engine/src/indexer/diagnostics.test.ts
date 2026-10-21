@@ -1,17 +1,7 @@
-// packages/engine/src/indexer/diagnostics.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec INDX-008 unit
 //
-// PARS-02 mechanical assertion: DUP_ID, BROKEN_SUPERSEDE, and BAD_STATUS
-// are captured at parse time AND the offending requirement row still
-// lands in the DB (Invariant #4).
-//
-// Unit-level: drive `validateStructure(specs)` directly with synthetic
-// ParsedSpec inputs.
-// End-to-end: run the full `runIndex` pipeline against three test-only
-// fixtures under packages/engine/src/testing/fixtures/diagnostics/ — one per
-// structural code. The canonical platform-fixture stays clean.
+// The planted trees live under src/testing/fixtures/diagnostics/ so the
+// canonical platform-fixture stays clean.
 
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
@@ -51,15 +41,10 @@ function mkSpec(over: Partial<ParsedSpec> & { requirements: Requirement[] }): Pa
     schema: null,
     spec_version: 1,
     updated: null,
-    // RED-16: relations default empty; structural validation does not
-    // consume them (Relates diagnostics are semantic, Q6/Q7 in sqlite.ts).
     relations: [],
-    // T5: surfaced self-references default empty (SELF_RELATES pass).
     self_relates: [],
-    // PROV-01/05: provenance + unknown-role tokens default empty.
     provenance: [],
     unknown_roles: [],
-    // TERM-01 (Phase 6): term-store collections default empty (Wave C flatten).
     term_aliases: [],
     term_citations: [],
     ...over,
@@ -77,8 +62,6 @@ beforeEach(() => {
 afterEach(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
-
-// --- Unit tests over validateStructure ------------------------------------
 
 describe("validateStructure unit cases", () => {
   test("empty input → empty output", () => {
@@ -144,8 +127,7 @@ describe("validateStructure unit cases", () => {
     const specs = [
       mkSpec({
         requirements: [
-          // Cast to RequirementStatus (matches what the parser does for
-          // Invalid raw statuses — Pitfall 3).
+          // The parser casts an invalid raw status the same way.
           mkReq({ id: "Z-001", status: "Drft" as RequirementStatus }),
         ],
       }),
@@ -182,9 +164,7 @@ describe("validateStructure unit cases", () => {
   });
 });
 
-// --- End-to-end tests over the runIndex pipeline --------------------------
-
-describe("runIndex against test-only diagnostic fixtures (PARS-02 end-to-end)", () => {
+describe("runIndex against test-only diagnostic fixtures", () => {
   test("DUP_ID: diagnostic captured AND the offending row lands in requirements", async () => {
     const platformDir = join(FIXTURES_ROOT, "dup-id");
     const s = openStorage(dbPath);
@@ -205,9 +185,7 @@ describe("runIndex against test-only diagnostic fixtures (PARS-02 end-to-end)", 
       expect(diagRows.length).toBeGreaterThanOrEqual(1);
       expect(diagRows[0]?.source_file).toBe("spec-engine/X/SPEC.json");
 
-      // Invariant #4: the offending requirement row STILL lands. With
-      // INSERT OR REPLACE on PK collision, the second occurrence wins —
-      // exactly one row for X-001 must exist.
+      // INSERT OR REPLACE on the PK collision: the second occurrence wins.
       const reqRows = db
         .query("SELECT id, source_file FROM requirements WHERE id='X-001'")
         .all() as Array<{ id: string; source_file: string }>;
@@ -267,9 +245,8 @@ describe("runIndex against test-only diagnostic fixtures (PARS-02 end-to-end)", 
         .all() as Array<{ code: string; source_file: string; detail: string }>;
       expect(diagRows.length).toBe(1);
       expect(diagRows[0]?.source_file).toBe("spec-engine/Z/SPEC.json");
-      // Migrate (18-03) lowercases status VERBATIM (Q-invariant: bad status must
-      // lowercase, not normalize to a valid enum) so the planted "Drft" migrates
-      // to "drft" — BAD_STATUS still fires on the unknown token.
+      // Migration lowercases a bad status rather than normalizing it, so the
+      // planted "Drft" reads "drft".
       expect(diagRows[0]?.detail).toContain("drft");
 
       const reqRow = db.query("SELECT id, status FROM requirements WHERE id='Z-001'").get() as {
@@ -277,7 +254,6 @@ describe("runIndex against test-only diagnostic fixtures (PARS-02 end-to-end)", 
         status: string;
       } | null;
       expect(reqRow).not.toBeNull();
-      // Verbatim raw (now lowercased) status survives all the way to the DB.
       expect(reqRow?.status).toBe("drft");
     } finally {
       db.close();
@@ -285,14 +261,7 @@ describe("runIndex against test-only diagnostic fixtures (PARS-02 end-to-end)", 
   });
 });
 
-// ----------------------------------------------------------------------------
-// Audit hygiene pass T5 — SELF_RELATES: a Relates token naming its own
-// requirement is authored noise; the parser drops it from `relations` but
-// surfaces it, and validateStructure turns it into a warning (consistent
-// with how every other authoring mistake gets a code).
-// ----------------------------------------------------------------------------
-
-describe("validateStructure — SELF_RELATES (T5)", () => {
+describe("validateStructure — SELF_RELATES", () => {
   test("one warning per surfaced self-reference, at the Relates line", () => {
     const specs = [
       mkSpec({
@@ -316,14 +285,7 @@ describe("validateStructure — SELF_RELATES (T5)", () => {
   });
 });
 
-// ----------------------------------------------------------------------------
-// Audit hygiene pass T6 — CYCLIC_SUPERSEDE: a circular supersession chain
-// (A→B→A, or A→A) is corrupt change history. Previously it was never
-// diagnosed — the propagation CTE just stops at depth 16, silently. Error
-// severity, matching the other structural chain defects (BROKEN_SUPERSEDE).
-// ----------------------------------------------------------------------------
-
-describe("validateStructure — CYCLIC_SUPERSEDE (T6)", () => {
+describe("validateStructure — CYCLIC_SUPERSEDE", () => {
   test("two-node cycle emits one error per requirement in the cycle", () => {
     const specs = [
       mkSpec({

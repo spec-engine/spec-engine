@@ -1,17 +1,3 @@
-// packages/engine/src/base/gitBase.test.ts
-//
-// gitShow / gitLsTree are the only git subprocess seam for the governance and
-// propagation gates. This test proves:
-//   - gitShow returns the committed bytes at <ref>:<path>, null when absent;
-//   - gitLsTree enumerates the committed spec files at the ref (recursive,
-//     names only), the whole-file-deletion-safe base enumeration, never a
-//     working-tree glob;
-//   - an unsafe ref (space / leading `-` / `;`) is rejected before any spawn:
-//     gitShow returns null and gitLsTree returns [].
-//
-// The tmp platform is a real `git init`. A git identity is injected via env so
-// the commit succeeds in CI.
-
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -109,9 +95,7 @@ describe("gitBase — gitShow / gitLsTree (ref-validated argv-array git readers)
     });
   });
 
-  test("a safe ref shape (HEAD, a sha, a branch/tag) is accepted", () => {
-    // The committed HEAD is a safe ref; already covered, but assert the
-    // allow-shape does not reject ordinary refs.
+  test("a safe ref shape such as HEAD is accepted", () => {
     expect(gitShow(repo, "HEAD", REL)).not.toBeNull();
   });
 });

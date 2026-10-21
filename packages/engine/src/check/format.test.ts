@@ -1,9 +1,3 @@
-// packages/engine/src/check/format.test.ts
-//
-// Pure-function tests for the diagnostic formatter (CHCK-02 / CHCK-04 sort
-// determinism). No filesystem, no DB — just hand-rolled Diagnostic[]
-// arrays exercising the sort comparator and the text + JSON output shapes.
-
 import { describe, expect, test } from "bun:test";
 import type { Diagnostic } from "@spec-engine/shared";
 import { renderDiagnostics, sortDiagnostics } from "./format";
@@ -78,10 +72,7 @@ describe("sortDiagnostics — composite sort key", () => {
     expect(sorted[1]?.repo).toBeNull();
   });
 
-  // RED-14 dead-end audit: the comparator's tie-break branches (same code →
-  // repo cmp; same repo → source_file cmp; same file → line cmp) existed
-  // without a covering test.
-  test("same code: two non-null repos sort alphabetically (RED-14)", () => {
+  test("same code: two non-null repos sort alphabetically", () => {
     const input: Diagnostic[] = [
       D({ code: "DRIFT", repo: "mobile", source_file: "m.ts", line: 1 }),
       D({ code: "DRIFT", repo: "admin", source_file: "a.ts", line: 1 }),
@@ -90,7 +81,7 @@ describe("sortDiagnostics — composite sort key", () => {
     expect(sorted.map((d) => d.repo)).toEqual(["admin", "mobile"]);
   });
 
-  test("same code + same repo: source_file ASC decides (RED-14)", () => {
+  test("same code + same repo: source_file ASC decides", () => {
     const input: Diagnostic[] = [
       D({ code: "DRIFT", repo: "api", source_file: "z/late.ts", line: 1 }),
       D({ code: "DRIFT", repo: "api", source_file: "a/early.ts", line: 9 }),
@@ -99,7 +90,7 @@ describe("sortDiagnostics — composite sort key", () => {
     expect(sorted.map((d) => d.source_file)).toEqual(["a/early.ts", "z/late.ts"]);
   });
 
-  test("same code + repo + source_file: line ASC decides, null line first (RED-14)", () => {
+  test("same code + repo + source_file: line ASC decides, null line first", () => {
     const input: Diagnostic[] = [
       D({ code: "DRIFT", repo: "api", source_file: "same.ts", line: 7 }),
       D({ code: "DRIFT", repo: "api", source_file: "same.ts", line: null }),
@@ -109,12 +100,9 @@ describe("sortDiagnostics — composite sort key", () => {
     expect(sorted.map((d) => d.line)).toEqual([null, 3, 7]);
   });
 
-  // WR-01 (Phase 14) determinism hardening: rows that collide on every prior
-  // key (code, repo, source_file, line) must order deterministically by
-  // req_id, independent of caller input order. UNSOURCED_CHANGE rows share
-  // code + repo:null, so this tie-break is what keeps a second engine caller
-  // (e.g. the webapp) from emitting unstable output.
-  test("same code + repo + source_file + line: req_id ASC decides (WR-01)", () => {
+  // UNSOURCED_CHANGE rows collide on every prior key, so without the req_id
+  // tie-break a second caller (the webapp) would emit unstable output.
+  test("same code + repo + source_file + line: req_id ASC decides", () => {
     const a = D({
       code: "UNSOURCED_CHANGE" as Diagnostic["code"],
       repo: null,
@@ -129,12 +117,11 @@ describe("sortDiagnostics — composite sort key", () => {
       line: 0,
       req_id: "AUTH-009",
     });
-    // Both input orders must yield the same req_id ordering.
     expect(sortDiagnostics([a, b]).map((d) => d.req_id)).toEqual(["AUTH-009", "BILLING-001"]);
     expect(sortDiagnostics([b, a]).map((d) => d.req_id)).toEqual(["AUTH-009", "BILLING-001"]);
   });
 
-  test("null req_id sorts before a non-null req_id on otherwise-equal keys (WR-01)", () => {
+  test("null req_id sorts before a non-null req_id on otherwise-equal keys", () => {
     const input: Diagnostic[] = [
       D({ code: "DRIFT", repo: "api", source_file: "same.ts", line: 1, req_id: "Z-1" }),
       D({ code: "DRIFT", repo: "api", source_file: "same.ts", line: 1, req_id: null }),
@@ -175,7 +162,6 @@ describe("renderDiagnostics — JSON mode", () => {
   test("no whitespace in serialized output (deterministic byte form)", () => {
     const rows: Diagnostic[] = [D({})];
     const json = renderDiagnostics(rows, "json");
-    // JSON.stringify with no spaces argument has no `\n` or `  ` indentation.
     expect(json).not.toContain("\n");
     expect(json).not.toContain("  ");
   });
@@ -211,7 +197,6 @@ describe("renderDiagnostics — text mode", () => {
       }),
     ];
     const text = renderDiagnostics(rows, "text");
-    // The two tabs around the empty repo field must be adjacent: `code\t\tfile:line\t...`.
     expect(text).toContain("ORPHAN_REQ\t\tspec-engine/AUTH/SPEC.md:7\tAUTH-001\t");
     expect(text).not.toContain("null");
   });

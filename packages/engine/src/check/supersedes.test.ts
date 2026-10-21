@@ -1,12 +1,6 @@
-// packages/engine/src/check/supersedes.test.ts
+// No operation authors a forward `supersedes` pointer (the delete-and-replace
+// path is manual), so each pointer is planted through the seam.
 //
-// The `supersedes` forward-pointer validation (check/supersedes.ts). The loss
-// gates honor a non-null `supersedes` as a removal exemption, so it must name
-// a real requirement other than the declaring entry. No operation authors a
-// forward pointer (the delete-and-replace path is manual), so each pointer is
-// planted through the seam.
-//
-// Verifies:
 // @spec CHCK-029 unit
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";

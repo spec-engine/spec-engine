@@ -1,21 +1,9 @@
-// packages/engine/src/check/proven.correlate.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec PROOF-014 unit
-//
-// GATE-01 (correlation half) unit cases for the pure `correlateTag()` helper.
-// Drives the function directly with synthetic Tag[] + TestCaseResult[] inputs —
-// no Storage, no bun:sqlite, no fixtures. Correlation is the crux: tags carry
-// file+line+kind but NO test name, so the load-bearing join is a normalized
-// path (longest-common-suffix on segment boundaries) with line-proximity as a
-// refinement only when both sides emit a line.
-
 import { describe, expect, test } from "bun:test";
 import type { Tag } from "@spec-engine/shared";
 import type { TestCaseResult } from "../results/junit";
 import { commonSuffixLen, correlateTag, normalizeToSegments } from "./proven";
 
-// Synthetic verifying-tag builder (mirrors unsourced.test.ts mkReq style).
 function mkTag(over: Partial<Tag>): Tag {
   return {
     id: 1,
@@ -29,7 +17,6 @@ function mkTag(over: Partial<Tag>): Tag {
   };
 }
 
-// Synthetic testcase builder.
 function mkResult(over: Partial<TestCaseResult>): TestCaseResult {
   return {
     file: "api/test/renew.e2e.test.ts",
@@ -84,14 +71,11 @@ describe("correlateTag() (tag ↔ testcase verdict)", () => {
   });
 
   test("longest-common-suffix tie-break: the deeper matching file wins", () => {
-    // Both files suffix-match the tag; the absolute (3-segment overlap) file is
-    // failing, the shallow (2-segment overlap) file is passing. Longest-common-
-    // suffix picks the absolute file → verdict 'fail'.
     const tag = mkTag({ file: "api/test/renew.e2e.test.ts" });
     const results = [
-      mkResult({ file: "renew.e2e.test.ts", line: null, status: "pass" }), // suffix len 1
+      mkResult({ file: "renew.e2e.test.ts", line: null, status: "pass" }),
       mkResult({
-        file: "/abs/scratch/api/test/renew.e2e.test.ts", // suffix len 3
+        file: "/abs/scratch/api/test/renew.e2e.test.ts",
         line: null,
         status: "fail",
       }),
@@ -99,11 +83,7 @@ describe("correlateTag() (tag ↔ testcase verdict)", () => {
     expect(correlateTag(tag, results)).toBe("fail");
   });
 
-  test("WR-04: two distinct files tying at the longest suffix → ambiguous → fail closed ('absent')", () => {
-    // Two distinct absolute files each FULLY suffix-match the 3-segment tag
-    // (common-suffix length 3) but disagree (one fail, one pass). Rather than
-    // silently binding to the lexicographically-smallest file, the ambiguous
-    // correlation fails closed → 'absent' (the req stays unproven).
+  test("two distinct files tying at the longest suffix → ambiguous → fail closed ('absent')", () => {
     const tag = mkTag({ file: "api/test/renew.e2e.test.ts" });
     const results = [
       mkResult({ file: "/y/api/test/renew.e2e.test.ts", line: null, status: "fail" }),
@@ -112,9 +92,7 @@ describe("correlateTag() (tag ↔ testcase verdict)", () => {
     expect(correlateTag(tag, results)).toBe("absent");
   });
 
-  test("WR-04: ambiguity fails closed even when both tied files pass (it is about the tie, not the verdict)", () => {
-    // A short tag path (1 segment) suffix-matches two distinct files at length 1.
-    // Even though both pass, we refuse to bind — the correlation is ambiguous.
+  test("ambiguity fails closed even when both tied files pass (it is about the tie, not the verdict)", () => {
     const tag = mkTag({ file: "renew.e2e.test.ts" });
     const results = [
       mkResult({ file: "a/renew.e2e.test.ts", line: null, status: "pass" }),
@@ -123,9 +101,7 @@ describe("correlateTag() (tag ↔ testcase verdict)", () => {
     expect(correlateTag(tag, results)).toBe("absent");
   });
 
-  test("WR-04: multiple testcases sharing ONE file are NOT a tie (Set collapses them)", () => {
-    // Two testcases, same file, same suffix length — not ambiguous. The
-    // fail-closed guard must not trip on repeated testcases of one file.
+  test("multiple testcases sharing ONE file are NOT a tie (Set collapses them)", () => {
     const tag = mkTag({ file: "api/test/renew.e2e.test.ts" });
     const results = [
       mkResult({ file: "/x/api/test/renew.e2e.test.ts", name: "a", line: null, status: "pass" }),
@@ -159,10 +135,7 @@ describe("correlateTag() (tag ↔ testcase verdict)", () => {
     expect(correlateTag(mkTag({}), [])).toBe("absent");
   });
 
-  test("WR-02: line-proximity confirms the nearest at-or-after pass when the file has no failure", () => {
-    // @spec comment at line 10; two PASSING testcases — one below the comment
-    // (line 4) and the tag's actual test at/after (line 12). No failure present,
-    // so line-proximity confirms the pass → 'pass'.
+  test("line-proximity confirms the nearest at-or-after pass when the file has no failure", () => {
     const tag = mkTag({ file: "api/test/renew.e2e.test.ts", line: 10 });
     const results = [
       mkResult({ file: "api/test/renew.e2e.test.ts", name: "earlier", line: 4, status: "pass" }),
@@ -171,12 +144,7 @@ describe("correlateTag() (tag ↔ testcase verdict)", () => {
     expect(correlateTag(tag, results)).toBe("pass");
   });
 
-  test("WR-02: a correlated fail in the winning file sinks the proof even when a nearer test passes", () => {
-    // The exact false-green the fix closes: an unrelated PASSING test sits just
-    // after the @spec comment (line 12) while the real verifying test FAILS
-    // below (line 4 here plays the failing role). The old refinement narrowed to
-    // the nearest passing test and reported PROVEN, masking the failure. The
-    // file-level "any fail sinks" rule is absolute → 'fail'.
+  test("a correlated fail in the winning file sinks the proof even when a nearer test passes", () => {
     const tag = mkTag({ file: "api/test/renew.e2e.test.ts", line: 10 });
     const results = [
       mkResult({
@@ -195,10 +163,7 @@ describe("correlateTag() (tag ↔ testcase verdict)", () => {
     expect(correlateTag(tag, results)).toBe("fail");
   });
 
-  test("WR-02: nearest-line pass must NOT report PROVEN when a later correlated test fails", () => {
-    // Passing but unrelated test just after the @spec comment (line 11); the
-    // real verifying test fails further down (line 20). Nearest-line pass must
-    // not upgrade the verdict — any correlated fail sinks it.
+  test("nearest-line pass must NOT report PROVEN when a later correlated test fails", () => {
     const tag = mkTag({ file: "api/test/renew.e2e.test.ts", line: 10 });
     const results = [
       mkResult({
@@ -217,11 +182,7 @@ describe("correlateTag() (tag ↔ testcase verdict)", () => {
     expect(correlateTag(tag, results)).toBe("fail");
   });
 
-  test("WR-02: a real pass must NOT be hidden by a nearer skip", () => {
-    // The nearest test at-or-after the @spec comment is a `skip` (line 11); the
-    // real passing verifying test is further down (line 20). The old code
-    // returned reduceStatus([skip]) === 'absent' and stopped — a false red.
-    // Conservative semantics fall through to file-level → the real pass wins.
+  test("a real pass must NOT be hidden by a nearer skip", () => {
     const tag = mkTag({ file: "api/test/renew.e2e.test.ts", line: 10 });
     const results = [
       mkResult({
@@ -236,8 +197,6 @@ describe("correlateTag() (tag ↔ testcase verdict)", () => {
   });
 
   test("line-proximity degrades to file-level when no testcase is at-or-after the comment", () => {
-    // tag.line 99 is past every testcase → no at-or-after candidate → file-level,
-    // where a fail is present → 'fail'.
     const tag = mkTag({ file: "api/test/renew.e2e.test.ts", line: 99 });
     const results = [
       mkResult({ file: "api/test/renew.e2e.test.ts", name: "a", line: 4, status: "pass" }),
@@ -247,7 +206,6 @@ describe("correlateTag() (tag ↔ testcase verdict)", () => {
   });
 
   test("line-proximity degrades to file-level when testcases carry no line", () => {
-    // tag has a line but the runner (jest) emitted no testcase lines → file-level.
     const tag = mkTag({ file: "api/test/renew.e2e.test.ts", line: 10 });
     const results = [
       mkResult({ file: "api/test/renew.e2e.test.ts", name: "a", line: null, status: "pass" }),

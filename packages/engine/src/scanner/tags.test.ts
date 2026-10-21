@@ -1,24 +1,12 @@
-// packages/engine/src/scanner/tags.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec INDX-010 unit
 // @spec INDX-011 unit
-//
-// PARS-03 + PARS-04 unit coverage for the scanner modules.
-// Closes PARS-03 by mechanically demonstrating the @spec regex, path-based
-// kind inference, level extraction, multi-match-per-line, and 1-based line
-// numbers.
-// Closes PARS-04 by demonstrating IGNORE_SUBSTR filtering AND sort
-// determinism over 10 back-to-back invocations of findCodeFiles
-// (defensive guard against Bun.Glob iteration-order instability —
-// Bun discussion #10112, 02-RESEARCH Pitfall 1).
 
 import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-// DOGFOOD: literal `@spec <ID>` pairs in source would index as dangling tags
-// of THIS repo under self-consumption — compose them at runtime instead.
+// Literal `@spec <ID>` pairs in this source would index as dangling tags of
+// this repo, so they are composed at runtime.
 import { SPEC_TOKEN, specTag } from "../testing/specTag";
 import { findCodeFiles, IGNORE_SUBSTR, isPathIgnored } from "./fs";
 import { isTestFile, LEVELS, SPEC_TAG_RE, scanTagsInFile, TEST_MATCH } from "./tags";
@@ -26,22 +14,18 @@ import { isTestFile, LEVELS, SPEC_TAG_RE, scanTagsInFile, TEST_MATCH } from "./t
 const SCANNER_FIXTURES = join(import.meta.dir, "..", "testing", "fixtures", "scanner");
 const API_FIXTURE = join(SCANNER_FIXTURES, "api");
 
-// ----------------------------------------------------------------------------
-// findCodeFiles — happy path + IGNORE_SUBSTR + sort determinism (PARS-04)
-// ----------------------------------------------------------------------------
-
 describe("findCodeFiles", () => {
   test("returns only the src + test files under api/, filters node_modules/ and dist/", async () => {
     const out = await findCodeFiles(API_FIXTURE);
     expect(out).toEqual(["src/sample.ts", "test/sample.test.ts"]);
   });
 
-  test("output is lexicographically sorted (PARS-04)", async () => {
+  test("output is lexicographically sorted", async () => {
     const out = await findCodeFiles(API_FIXTURE);
     expect(out).toEqual([...out].sort());
   });
 
-  test("10× invocation is byte-identical (Bun.Glob ordering defensive guard)", async () => {
+  test("10× invocation is byte-identical", async () => {
     const first = await findCodeFiles(API_FIXTURE);
     for (let i = 0; i < 9; i++) {
       const next = await findCodeFiles(API_FIXTURE);
@@ -49,7 +33,7 @@ describe("findCodeFiles", () => {
     }
   });
 
-  test("default ext set rejects .md / .json (only ts/tsx/js/jsx/mjs)", async () => {
+  test("default ext set rejects .md / .json", async () => {
     let tmp: string | null = null;
     try {
       tmp = mkdtempSync(join(tmpdir(), "spec-scanner-ext-"));
@@ -63,14 +47,12 @@ describe("findCodeFiles", () => {
     }
   });
 
-  test("extraIgnore=['spec-engine/'] excludes the in-repo canonical dir (RUNG1-01 self-member scan)", async () => {
+  test("extraIgnore=['spec-engine/'] excludes the in-repo canonical dir", async () => {
     let tmp: string | null = null;
     try {
       tmp = mkdtempSync(join(tmpdir(), "spec-scanner-extra-ignore-"));
       mkdirSync(join(tmp, "spec-engine", "ORDERS"), { recursive: true });
       mkdirSync(join(tmp, "src"), { recursive: true });
-      // A stray .ts beside the canonical SPEC.md — must NOT be scanned as
-      // member code in self-member mode.
       writeFileSync(join(tmp, "spec-engine", "x.ts"), specTag("ORDERS-001"));
       writeFileSync(join(tmp, "src", "a.ts"), specTag("ORDERS-001"));
 
@@ -81,21 +63,14 @@ describe("findCodeFiles", () => {
     }
   });
 
-  test("default (no extraIgnore) two-arg call is byte-identical to before (regression)", async () => {
-    // The new optional third param defaults to [] — existing callers that
-    // pass zero or two args must see exactly the same output as before.
+  test("an omitted extraIgnore matches an explicit empty list", async () => {
     const twoArg = await findCodeFiles(API_FIXTURE);
     const explicitEmpty = await findCodeFiles(API_FIXTURE, ["ts", "tsx", "js", "jsx", "mjs"], []);
     expect(twoArg).toEqual(["src/sample.ts", "test/sample.test.ts"]);
     expect(explicitEmpty).toEqual(twoArg);
   });
 
-  test("fixtures/ subtrees are ignored — planted fixture code is never a live coverage claim (DOGFOOD)", async () => {
-    // Dogfooding spec on its own repo surfaced this: fixture trees exist
-    // to hold PLANTED tags (the mess is the test), so scanning them as
-    // member code mints dangling tags / phantom coverage in the host
-    // repo's index. Same reasoning as dist/ + coverage/: generated-or-
-    // planted artifacts are not the codebase.
+  test("fixtures/ subtrees are ignored at any depth", async () => {
     let tmp: string | null = null;
     try {
       tmp = mkdtempSync(join(tmpdir(), "spec-scanner-fixtures-ignore-"));
@@ -112,7 +87,7 @@ describe("findCodeFiles", () => {
     }
   });
 
-  test("2.5 segment anchor: a sibling dir like src/mydist/ is NOT ignored (only real dist/)", async () => {
+  test("a sibling dir like src/mydist/ is NOT ignored (only real dist/)", async () => {
     let tmp: string | null = null;
     try {
       tmp = mkdtempSync(join(tmpdir(), "spec-scanner-anchor-"));
@@ -123,20 +98,16 @@ describe("findCodeFiles", () => {
       writeFileSync(join(tmp, "src", "dist", "skip.ts"), "export const b = 2;\n");
       writeFileSync(join(tmp, "buildings", "keep.ts"), "export const c = 3;\n");
       const out = await findCodeFiles(tmp);
-      // The real `dist/` segment is pruned; `mydist/` and `buildings/` (mere
-      // substrings of ignore tokens, not segments) are kept.
       expect(out).toEqual(["buildings/keep.ts", "src/mydist/keep.ts"]);
     } finally {
       if (tmp) rmSync(tmp, { recursive: true, force: true });
     }
   });
 
-  test("2.5 isPathIgnored anchors to segment boundaries", () => {
-    // Real segments → ignored.
+  test("isPathIgnored anchors to segment boundaries", () => {
     expect(isPathIgnored("node_modules/pkg/index.ts")).toBe(true);
     expect(isPathIgnored("src/dist/out.js")).toBe(true);
     expect(isPathIgnored("a/b/fixtures/planted.ts")).toBe(true);
-    // Substrings that are NOT segments → NOT ignored.
     expect(isPathIgnored("src/mydist/out.ts")).toBe(false);
     expect(isPathIgnored("buildings/a.ts")).toBe(false);
     expect(isPathIgnored("src/renew.ts")).toBe(false);
@@ -152,7 +123,7 @@ describe("findCodeFiles", () => {
     expect(isPathIgnored("generatedx/x.ts", ["generated"])).toBe(false);
   });
 
-  test("IGNORE_SUBSTR includes the standard denylist plus dot-dir cousins (WR-06)", () => {
+  test("IGNORE_SUBSTR includes the standard denylist plus dot-dir cousins", () => {
     expect([...IGNORE_SUBSTR]).toEqual([
       "node_modules/",
       ".git/",
@@ -168,10 +139,6 @@ describe("findCodeFiles", () => {
     ]);
   });
 });
-
-// ----------------------------------------------------------------------------
-// isTestFile — substring classification rules
-// ----------------------------------------------------------------------------
 
 describe("isTestFile", () => {
   test.each<[string, boolean]>([
@@ -218,10 +185,6 @@ describe("isTestFile", () => {
     ]);
   });
 });
-
-// ----------------------------------------------------------------------------
-// scanTagsInFile — PARS-03 closure
-// ----------------------------------------------------------------------------
 
 describe("scanTagsInFile", () => {
   test("happy path: src file with 2 @spec lines → 2 implements tags", () => {

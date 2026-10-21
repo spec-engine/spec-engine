@@ -1,34 +1,7 @@
-// packages/engine/src/parser/domainJson.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec SCHM-013
 // @spec INDX-016
 //
-// The JSON domain-file reader, the engine's only spec read path. Maps a
-// `SPEC.json` envelope `{ key, owner, specVersion, updated, requirements[] }`
-// to the internal row shapes (`Requirement` / `RelationRow` / `ProvenanceRow`)
-// that `computeBuildId`, the coverage VIEW, and every member read from.
-//
-// Design notes:
-//   1. ONE structural validator (VAL-02): this reader delegates ALL structural
-//      validation to `validateDomainFile` from `@spec-engine/shared` (shipped by 17-01).
-//      There is NO second validator here — a structurally-invalid file returns the
-//      SAME INVALID_DOMAIN_FILE diagnostics the write path emits.
-//   2. TWO-TIER (Invariant #4): `status` and `issues[].role` are free strings at
-//      the structural tier. A lowercase JSON status is case-mapped to the internal
-//      Capitalized `RequirementStatus`; an UNKNOWN status casts through the seam
-//      verbatim (mirroring spec.ts:239-240) so `validateStructure` emits BAD_STATUS
-//      downstream. The `RequirementStatus` union is UNCHANGED.
-//   3. DETERMINISTIC line: `JSON.parse` discards source positions, so the
-//      reader derives `line` from the RAW text via a LITERAL substring search
-//      for `"id": "<id>"` — NEVER a dynamically-built RegExp (a ReDoS
-//      mitigation). build_id hashes `line`, so it must be stable.
-//   4. PURITY: no DB driver import, no `Bun.file` — this module transforms text →
-//      ParsedSpec. The pipeline owns the file read (mirrors spec.ts's purity note
-//      and the D-08 grep-fence, which forbids the sqlite driver import here).
-//   5. STOR-03: a non-JSON body or a structural reject returns a discriminated
-//      `{ ok: false; diagnostics }` — the em-dash silent-zero is gone; the caller
-//      surfaces the diagnostics LOUDLY and the file contributes ZERO requirements.
+// Pure: no DB driver import and no `Bun.file`. The pipeline owns the file read.
 
 import {
   type Diagnostic,
@@ -43,10 +16,8 @@ import {
 import { findRequirementIdLine } from "./requirementLine";
 import type { ParsedSpec, RawTermCitation } from "./types";
 
-// Lowercase authored JSON status → internal Capitalized RequirementStatus. A
-// status outside this map is an unknown/planted defect: it casts through the
-// RequirementStatus seam verbatim so BAD_STATUS lands (Invariant #4). The union
-// itself is never widened here.
+// A status outside this map casts through the RequirementStatus seam verbatim
+// so BAD_STATUS lands downstream. The union itself is never widened here.
 const STATUS_CASE_MAP: Readonly<Record<string, RequirementStatus>> = Object.freeze({
   active: "Active",
   draft: "Draft",
@@ -57,26 +28,17 @@ const STATUS_CASE_MAP: Readonly<Record<string, RequirementStatus>> = Object.free
   retired: "Deprecated",
 });
 
-// PROV-01/05: closed allow-list of provenance roles — identical contract to
-// parser/spec.ts VALID_ROLES. A role outside this set (or an empty issue id)
-// is surfaced as UNKNOWN_ROLE and never stored.
 const VALID_ROLES: ReadonlySet<string> = new Set(["created", "supersedes-via", "amends-via"]);
 
 export interface ParseDomainJsonFileOptions {
-  /** RAW file text — the reader `JSON.parse`s it AND scans it for the literal
-   *  `"id": "<id>"` line to derive a deterministic `line`. */
+  /** Also scanned for the literal `"id": "<id>"` line to derive `line`. */
   text: string;
-  /** Platform-relative path to the SPEC.json (e.g. "spec-engine/BILLING/SPEC.json")
-   *  — copied verbatim into each emitted row's source_file. NEVER absolute (T-17-04). */
+  /** Platform-relative, never absolute: copied into each row's source_file. */
   sourceFile: string;
-  /** Fallback domain key when the envelope `key` is absent (schema requires it,
-   *  so this is defensive). */
   fallbackKey: string;
 }
 
-/** Options for the PURE mapper `parseDomainJson` — the validated domain plus the
- *  raw text (needed for the deterministic `line` scan) and the platform-relative
- *  source path. The caller (index pipeline) has already run `validateDomainFile`. */
+/** `data` has already been validated by the caller. */
 export interface ParseDomainJsonOptions {
   data: SpecDomain;
   text: string;
@@ -88,15 +50,6 @@ export type ParseDomainJsonResult =
   | { ok: true; spec: ParsedSpec }
   | { ok: false; diagnostics: Diagnostic[] };
 
-/**
- * Read a JSON domain file into a `ParsedSpec` (STOR-01/STOR-02).
- *
- * Steps:
- *   1. `parseDomainText(text, sourceFile)` — the ONE read seam. A non-JSON body
- *      or a structural reject returns INVALID_DOMAIN_FILE diagnostics (the same
- *      rows the write path emits) — never a throw.
- *   2. Map the validated, defaults-applied `SpecDomain` → `ParsedSpec`.
- */
 export function parseDomainJsonFile(opts: ParseDomainJsonFileOptions): ParseDomainJsonResult {
   const validated = parseDomainText(opts.text, opts.sourceFile);
   if (!validated.ok) {
@@ -106,24 +59,17 @@ export function parseDomainJsonFile(opts: ParseDomainJsonFileOptions): ParseDoma
   return { ok: true, spec: parseDomainJson({ data: validated.data, ...opts }) };
 }
 
-// The validated domain's requirement element — the structural gate
-// (`validateDomainFile`) has already applied defaults, so `relates`/`issues`
-// are present arrays and `id`/`status`/`statement` are populated strings.
+// Validation has applied defaults, so `relates`/`issues` are always arrays.
 type DomainRequirement = SpecDomain["requirements"][number];
 
-/** One mapped requirement plus the derived supersede flag the second
- *  `changed_at_version` pass consumes. `authoredChangedAtVersion` carries the
- *  entry's own `changedAtVersion` field (TERM-05): the second pass honors it for
- *  key='TERM' so an in-place `spec term revise` version-bump makes the term drift
- *  against older citation pins (non-TERM derivation is UNCHANGED). */
+/** `authoredChangedAtVersion` is honored only for key='TERM' (see
+ *  `assignChangedAtVersion`). */
 interface Working {
   req: Requirement;
   isSuperseded: boolean;
   authoredChangedAtVersion: number | undefined;
 }
 
-/** Relates accumulators (RED-16 parity): authored-order rows, self-refs
- *  surfaced separately, plus the per-file dedupe Sets (one entry per (from,to)). */
 interface RelatesAcc {
   relations: RelationRow[];
   seenRelates: Set<string>;
@@ -131,17 +77,12 @@ interface RelatesAcc {
   seenSelfRelates: Set<string>;
 }
 
-/** Issues accumulators (PROV-01/02/05 parity): authored-order provenance rows,
- *  the per-file dedupe Set, and the surfaced unknown-role rows. */
 interface IssuesAcc {
   provenance: ProvenanceRow[];
   seenProv: Set<string>;
   unknownRoles: ParsedSpec["unknown_roles"];
 }
 
-/** Term-store accumulators (TERM-03, Wave C — flattenRelates/flattenIssues
- *  parity): authored-order alias rows (canonical name + each alias) and RAW
- *  citation rows (pre-resolution), each with its own per-file dedupe Set. */
 interface TermAcc {
   aliases: TermAliasRow[];
   seenAliases: Set<string>;
@@ -149,35 +90,17 @@ interface TermAcc {
   seenCitations: Set<string>;
 }
 
-/**
- * Map an ALREADY-VALIDATED `SpecDomain` → `ParsedSpec`: internal row
- * construction, relates/issues flatten, and the `changed_at_version` second
- * pass.
- *
- * This is the pure mapper. The index pipeline calls `validateDomainFile` for the
- * structural gate (VAL-02) and then this function on success; the convenience
- * wrapper `parseDomainJsonFile` above does parse + validate + map for standalone
- * callers (e.g. the reader unit test). Both share this ONE mapping so the read
- * path cannot fork. The heavy per-requirement work is split into named helpers
- * (`findRequirementIdLine`, `mapRequirementRow`, `flattenRelates`,
- * `flattenIssues`, `assignChangedAtVersion`) — this driver just wires them.
- */
+/** The one mapping from a validated domain to `ParsedSpec`. The pipeline and
+ *  `parseDomainJsonFile` both call it, so the read path cannot fork. */
 export function parseDomainJson(opts: ParseDomainJsonOptions): ParsedSpec {
   const { data, text, sourceFile, fallbackKey } = opts;
 
   const key = data.key.length > 0 ? data.key : fallbackKey;
   const owner = data.owner ?? null;
-  // STOR-02 omits `schema` from the JSON envelope — the Markdown parser derives
-  // it from frontmatter; the JSON reader emits null (no schema column drift).
+  // The JSON envelope carries no `schema`.
   const schema: string | null = null;
-  // SCHM-006 / SCHM-007: the domain version is DERIVED from the supersede DAG,
-  // never read from the authored envelope `specVersion` (retired as a source of
-  // truth). Every `supersededBy` edge is exactly one lifecycle step, so
-  // `1 + edgeCount` reproduces the "counter advances once per supersede"
-  // contract as a pure, monotonic projection over the requirements — the stable
-  // anchor member pins / drift / gate resolve against. Authored `specVersion`
-  // on the envelope (and any authored `changedAtVersion` on non-TERM entries)
-  // is IGNORED here; the number cannot lie because no human writes it.
+  // Derived from the supersede DAG; the authored envelope `specVersion` is
+  // ignored, so the number cannot lie because no human writes it.
   const spec_version = deriveDomainVersion(data.requirements);
   const updated: string | null = data.updated ?? null;
 
@@ -238,22 +161,11 @@ export function parseDomainJson(opts: ParseDomainJsonOptions): ParsedSpec {
     self_relates: relatesAcc.selfRelates,
     provenance: issuesAcc.provenance,
     unknown_roles: issuesAcc.unknownRoles,
-    // The `term`/`aliases` flatten (term_aliases) and the RAW `cites` flatten
-    // (term_citations, pre-resolution). The pipeline
-    // aggregates the aliases into a name→term_id map and resolves each raw
-    // citation's `cited_as` to a term_id (or null) across the whole platform.
     term_aliases: termAcc.aliases,
     term_citations: termAcc.citations,
   };
 }
 
-/**
- * Build one internal `Requirement` row from a validated domain requirement.
- * TWO-TIER (Invariant #4): case-map the lowercase JSON status to the internal
- * Capitalized `RequirementStatus`; an UNKNOWN status casts through the seam
- * verbatim (spec.ts:239-240 parity) so `validateStructure` emits BAD_STATUS
- * downstream. `changed_at_version` is a placeholder patched by the second pass.
- */
 function mapRequirementRow(
   r: DomainRequirement,
   key: string,
@@ -284,16 +196,9 @@ function mapRequirementRow(
     // Authored once at supersession, never recomputed — carried through verbatim.
     superseded_at_version: r.supersededAtVersion ?? null,
   };
-  // TERM-05: retain the entry's authored `changedAtVersion` for the second pass
-  // to honor (key='TERM' only). `undefined` for a requirement that never set it.
   return { req, isSuperseded, authoredChangedAtVersion: r.changedAtVersion };
 }
 
-/**
- * Flatten `relates[]` → RelationRow (RED-16): authored order, self-references
- * surfaced into `self_relates` (first occurrence wins) instead of stored, and
- * per-(from,to) duplicates deduped across the file.
- */
 function flattenRelates(
   r: DomainRequirement,
   sourceFile: string,
@@ -318,13 +223,8 @@ function flattenRelates(
   }
 }
 
-/**
- * Flatten `issues[]` → ProvenanceRow (PROV-01/02/05). A role outside the
- * VALID_ROLES allow-list, or an empty issue id, is surfaced as UNKNOWN_ROLE and
- * DROPPED (PROV-05, spec.ts:334-343 parity) — never silently stored. A
- * well-formed issue_id is OPAQUE — ID_RE is NEVER applied, so a KEY-NNN-shaped
- * value stores verbatim (PROV-02) — and per-(req,role,issue) duplicates dedupe.
- */
+/** A well-formed issue_id is opaque: the requirement-id pattern is never
+ *  applied, so a KEY-NNN-shaped value stores verbatim. */
 function flattenIssues(
   r: DomainRequirement,
   sourceFile: string,
@@ -353,13 +253,8 @@ function flattenIssues(
 }
 
 /**
- * Flatten a requirement's `term` + `aliases` → TermAliasRow (TERM-03,
- * flattenRelates parity). Only a TERM entry carries these fields; a
- * non-term requirement has `term` undefined and `aliases` empty, so nothing is
- * pushed. One row per canonical `term` name AND one per alias (so a
- * citation-by-name resolves against EITHER the headword or a synonym); blanks
- * are skipped and per-(term_id,name) duplicates deduped. `term_id` is the
- * owning requirement's own id — a term IS a requirement (FORK 1).
+ * One row per headword and per alias, so a citation by name resolves against
+ * either.
  * @spec INDX-012
  */
 function flattenAliases(r: DomainRequirement, acc: TermAcc): void {
@@ -380,13 +275,8 @@ function flattenAliases(r: DomainRequirement, acc: TermAcc): void {
 }
 
 /**
- * Flatten a requirement's `cites[]` → RawTermCitation (TERM-03, flattenRelates
- * parity). One RAW row per `{ term, pinned }` entry: `cited_as` is the authored
- * surface form (a TERM id OR an exact term name/alias — the pipeline resolves it
- * later), `pinned_version` the pinned TERM spec_version. Blank `term` values are
- * skipped and per-(req,cited_as) duplicates deduped. `term_id` is NOT resolved
- * here — a citation may name a term defined in another spec, so resolution is a
- * platform-wide pipeline step (Invariant #4: an unresolvable cite still lands).
+ * `term_id` is not resolved here: a citation may name a term defined in
+ * another domain, so the pipeline resolves it across the whole platform.
  * @spec INDX-012
  */
 function flattenCites(r: DomainRequirement, sourceFile: string, line: number, acc: TermAcc): void {
@@ -408,15 +298,9 @@ function flattenCites(r: DomainRequirement, sourceFile: string, line: number, ac
 }
 
 /**
- * SCHM-006 / SCHM-007: derive the domain version from the supersede DAG. Each
- * requirement carrying a `supersededBy` link is one supersession event, so the
- * domain version is `1 + (number of superseded requirements)` — the initial
- * state is version 1 and every supersede advances it by exactly one. This is a
- * pure projection over the requirement list (no authored counter, no event
- * timestamps): it only ever increases as requirements supersede, giving pins /
- * drift / gate a stable, monotonic anchor. A cross-domain `spec move` counts in
- * the SOURCE domain (its requirement died here) regardless of where the
- * successor id lives — the count is over this domain's own edges.
+ * Each superseded requirement is one supersession, so the version is
+ * `1 + count`: monotonic, with no authored counter. A cross-domain `spec move`
+ * counts in the source domain, wherever the successor lives.
  */
 export function deriveDomainVersion(
   requirements: readonly { supersededBy?: string | null | undefined }[],
@@ -431,18 +315,10 @@ export function deriveDomainVersion(
 }
 
 /**
- * Second pass — assign `changed_at_version` (spec.ts:362-384 parity). A
- * superseded requirement — and the requirement it points to via `superseded_by`
- * — changed at `spec_version`; everything else stays at 1.
- *
- * TERM-05 exception (SCOPED to key='TERM' ONLY): a non-superseded glossary TERM
- * honors its AUTHORED `changedAtVersion` (default 1) instead of the forced-1.
- * This is what makes an in-place `spec term revise` version-bump (which sets the
- * entry's `changedAtVersion` to the new specVersion) exceed an older citation's
- * pin, so the `term_drift` VIEW fires TERM_DRIFT (Wave E). The scope is
- * deliberately the reserved TERM domain: non-TERM `changed_at_version`
- * derivation is IDENTICAL to before, so the existing drift-view + build_id
- * cold-rebuild tests stay byte-identical (T-06-15 regression guard).
+ * A non-superseded TERM honors its authored `changedAtVersion`, so a
+ * `spec term revise` bump drifts older citation pins. The exception is scoped
+ * to the TERM domain so every other domain's `changed_at_version`, and with it
+ * build_id, stays unchanged.
  */
 function assignChangedAtVersion(working: Working[], spec_version: number): void {
   const supersededIds = new Set<string>();
@@ -457,7 +333,6 @@ function assignChangedAtVersion(working: Working[], spec_version: number): void 
     } else if (supersededIds.has(w.req.id)) {
       w.req.changed_at_version = spec_version;
     } else if (w.req.key === "TERM") {
-      // Honor the authored changedAtVersion for glossary terms (drift pin).
       w.req.changed_at_version = w.authoredChangedAtVersion ?? 1;
     } else {
       w.req.changed_at_version = 1;
