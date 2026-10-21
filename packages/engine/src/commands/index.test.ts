@@ -173,21 +173,15 @@ describe("spec index over an invalid SPEC.json", () => {
     });
 
   // @spec INDX-017 unit
-  test("--json prints the IndexResult with zero counts and the refusal rows, exit 1", async () => {
+  test("--json prints only the refusal rows in the check --json shape, exit 1", async () => {
     const clone = cloneFixture(FIXTURE);
     try {
       plantNotJson(clone);
       const code = await runIndexCmd({ platformDir: clone, json: true });
       expect(code).toBe(1);
       expect(logs.length).toBe(1);
-      const result = JSON.parse(logs[0] as string) as {
-        repos: number;
-        requirements: number;
-        diagnostics: Array<{ code: string; source_file: string }>;
-      };
-      expect(result.repos).toBe(0);
-      expect(result.requirements).toBe(0);
-      expect(result.diagnostics.map((d) => [d.code, d.source_file])).toEqual([
+      const rows = JSON.parse(logs[0] as string) as Array<{ code: string; source_file: string }>;
+      expect(rows.map((d) => [d.code, d.source_file])).toEqual([
         ["INVALID_DOMAIN_FILE", "spec-engine/BROKEN/SPEC.json"],
       ]);
     } finally {

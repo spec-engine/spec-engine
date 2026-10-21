@@ -25,9 +25,8 @@ CHECK_EXIT=$?
 set -e
 
 test "$INDEX_EXIT" = "1" || fail "spec index should exit 1 on an invalid SPEC.json, got $INDEX_EXIT"
-test "$(echo "$INDEX_OUT" | jq -r '.requirements')" = "0" || fail "spec index --json reported requirements from a refused build"
 assert_only_refusal_rows "spec index --json" \
-  "$(echo "$INDEX_OUT" | jq -r '.diagnostics[] | "\(.code)\t\(.source_file)\t\(.detail)"')"
+  "$(echo "$INDEX_OUT" | jq -r '.[] | "\(.code)\t\(.source_file)\t\(.detail)"')"
 
 test "$CHECK_EXIT" = "1" || fail "spec check --ci should exit 1 on an invalid SPEC.json, got $CHECK_EXIT"
 assert_only_refusal_rows "spec check --ci --json" \

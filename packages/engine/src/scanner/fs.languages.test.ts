@@ -9,7 +9,7 @@ import { runIndex } from "../indexer/pipeline";
 import { openStorage } from "../storage/sqlite";
 import { TestPlatform } from "../testing/platform";
 import { SPEC_TOKEN, specTag } from "../testing/specTag";
-import { DEFAULT_EXTS, findCodeFiles } from "./fs";
+import { DEFAULT_EXTS, findCodeFiles, isTagSource } from "./fs";
 
 let fx: TestPlatform;
 
@@ -150,5 +150,17 @@ describe("the scanner reads every listed source kind", () => {
     } finally {
       s.close();
     }
+  });
+});
+
+describe("isTagSource", () => {
+  // @spec INDX-019 unit
+  test("accepts every DEFAULT_EXTS file and a Dockerfile, rejects docs and extensionless files", () => {
+    for (const ext of DEFAULT_EXTS) expect(isTagSource(`deep/dir/x.${ext}`)).toBe(true);
+    expect(isTagSource("infra/Dockerfile")).toBe(true);
+    expect(isTagSource("infra/Dockerfile.dev")).toBe(true);
+    expect(isTagSource("README.md")).toBe(false);
+    expect(isTagSource("bin/run")).toBe(false);
+    expect(isTagSource("dir.x/Makefile")).toBe(false);
   });
 });

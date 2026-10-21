@@ -252,11 +252,9 @@ Exit: 0 built / 1 an invalid SPEC.json refused the build, or the build crashed
 - `build_id` is deterministic for identical inputs (cold-rebuild equivalence).
 - A `SPEC.json` that is not JSON or fails the shared schema refuses the whole
   build, and the index on disk is left as it was. Every file is parsed first,
-  so one run reports every invalid file. Under `--json` the result is
-  `{ build_id: null, repos: 0, domains: 0, requirements: 0, tags: 0,
-  diagnostics: [...] }`, the array holding the `INVALID_DOMAIN_FILE` rows in
-  the `spec check --json` row shape; text mode prints only those rows on
-  stderr. Every other index-building command prints only the same rows and
+  so one run reports every invalid file. Under `--json` stdout holds only
+  the `INVALID_DOMAIN_FILE` rows in the `spec check --json` row shape; text
+  mode prints only those rows on stderr. Every other index-building command prints only the same rows and
   exits 1 (`check`, `gate`, `guard`, `serve`, and the read commands); a
   lifecycle command that reindexes for its worklist (`supersede`, `amend`,
   `deprecate`, `move`, `term confirm`) exits 2 after its write.

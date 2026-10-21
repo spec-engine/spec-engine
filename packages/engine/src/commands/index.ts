@@ -20,9 +20,8 @@
 
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { InvalidDomainFilesError, NotASpecPlatformError } from "@spec-engine/shared";
+import { NotASpecPlatformError } from "@spec-engine/shared";
 import { defineCommand } from "citty";
-import { sortDiagnostics } from "../check/format";
 import { EXIT, OUT_HELP, resolveDbPath } from "../constants";
 import { assertSpecPlatform, formatNotASpecPlatform } from "../indexer/discover";
 import { runIndex } from "../indexer/pipeline";
@@ -30,19 +29,6 @@ import { maybePromptForOnboarding } from "../onboarding/prompt";
 import { openStorage } from "../storage/sqlite";
 import { platformDirArg, resolvePlatformDir } from "./_args";
 import { assertContainedPath, handleInvalidDomainFiles } from "./_shared";
-
-/** The `--json` IndexResult of a refused build: zero counts, the refusal rows in `diagnostics`.
- *  @spec INDX-017 */
-function refusedIndexResult(err: InvalidDomainFilesError) {
-  return {
-    build_id: null,
-    repos: 0,
-    domains: 0,
-    requirements: 0,
-    tags: 0,
-    diagnostics: sortDiagnostics(err.diagnostics),
-  };
-}
 
 export const indexCommand = defineCommand({
   meta: {
@@ -123,11 +109,7 @@ export const indexCommand = defineCommand({
         console.error(formatNotASpecPlatform(err.platformDir));
         process.exit(EXIT.USAGE);
       }
-      if (err instanceof InvalidDomainFilesError && args.json) {
-        console.log(JSON.stringify(refusedIndexResult(err)));
-        process.exit(EXIT.FAILURE);
-      }
-      handleInvalidDomainFiles(err, false);
+      handleInvalidDomainFiles(err, !!args.json);
       console.error("spec index FAILED:", err);
       process.exit(EXIT.FAILURE);
     } finally {

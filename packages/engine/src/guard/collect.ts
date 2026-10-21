@@ -23,11 +23,9 @@ import { join } from "node:path";
 import { parseDomainText, type SpecRequirement, type Storage } from "@spec-engine/shared";
 import { gitDiffNameStatus, gitShow } from "../base/gitBase";
 import { CANONICAL_SPECS_DIR } from "../constants";
-import { DEFAULT_EXTS, findDomainJsonFiles, isPathIgnored } from "../scanner/fs";
+import { findDomainJsonFiles, isPathIgnored, isTagSource } from "../scanner/fs";
 import { scanTagsInFile } from "../scanner/tags";
 import type { GuardFacts, TagSite } from "./losses";
-
-const CODE_EXTS: ReadonlySet<string> = new Set(DEFAULT_EXTS);
 
 function isIgnored(path: string): boolean {
   return isPathIgnored(path);
@@ -40,13 +38,9 @@ function isSpecFile(path: string): boolean {
   );
 }
 
-/** A tag-bearing code file: a DEFAULT_EXTS source file, not a spec file, not
- *  ignored. Restricting to code exts keeps `<!-- @spec -->` doc tags (a
- *  different scanner) from being miscounted as implementations. */
+/** Doc files carry `<!-- @spec -->` tags for a different scanner; only tag-source files count as implementations. */
 function isCodeFile(path: string): boolean {
-  if (isSpecFile(path) || isIgnored(path)) return false;
-  const ext = path.includes(".") ? (path.split(".").pop() ?? "") : "";
-  return CODE_EXTS.has(ext);
+  return !isSpecFile(path) && !isIgnored(path) && isTagSource(path);
 }
 
 /** Parse SPEC.json bytes → requirements through the ONE validator. A malformed

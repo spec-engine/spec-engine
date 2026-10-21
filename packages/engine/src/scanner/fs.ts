@@ -152,6 +152,14 @@ function isDockerfile(name: string): boolean {
   return name === "Dockerfile" || (name.startsWith("Dockerfile.") && name.length > 11);
 }
 
+/** Whether the file at `rel` is one the tag scanner reads; `guard` applies the same test at a base ref.
+ *  @spec INDX-019 */
+export function isTagSource(rel: string, exts: readonly string[] = DEFAULT_EXTS): boolean {
+  const name = rel.slice(rel.lastIndexOf("/") + 1);
+  const dot = name.lastIndexOf(".");
+  return isDockerfile(name) || (dot > 0 && exts.includes(name.slice(dot + 1)));
+}
+
 /**
  * STOR-02 (17-02): walk `canonicalDir` for files named exactly `SPEC.json`.
  * Returns the canonical-relative paths, lexicographically sorted. Post-cutover
@@ -183,16 +191,7 @@ export async function findCodeFiles(
   exts: readonly string[] = DEFAULT_EXTS,
   extraIgnore: readonly string[] = [],
 ): Promise<string[]> {
-  const extSet = new Set(exts);
-  return walkFiles(
-    repoDir,
-    (rel) => {
-      const name = rel.slice(rel.lastIndexOf("/") + 1);
-      const dot = name.lastIndexOf(".");
-      return isDockerfile(name) || (dot > 0 && extSet.has(name.slice(dot + 1)));
-    },
-    extraIgnore,
-  );
+  return walkFiles(repoDir, (rel) => isTagSource(rel, exts), extraIgnore);
 }
 
 /**
