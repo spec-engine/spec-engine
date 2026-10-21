@@ -2,7 +2,7 @@
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec SCHM-013
-// @spec SCHM-014
+// @spec INDX-016
 //
 // The JSON domain-file reader, the engine's only spec read path. Maps a
 // `SPEC.json` envelope `{ key, owner, specVersion, updated, requirements[] }`

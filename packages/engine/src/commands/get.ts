@@ -57,18 +57,21 @@ export const getCommand = defineCommand({
       args: { noPrompt: args.noPrompt },
     });
 
-    await withReadStorage({ platformDir, dbPath, fresh: !!args.fresh }, (storage) => {
-      const result = getRecord(storage, reqId);
-      if (result.row === null) {
-        console.error(
-          result.platformEmpty
-            ? formatNoRequirementsIndexed(platformDir)
-            : `spec get: no requirement ${reqId} in the index under ${platformDir} (check the id, or re-run with --fresh after editing specs)`,
-        );
-        console.log("[]");
-        return;
-      }
-      console.log(args.json ? JSON.stringify(result.row) : renderRecords([result.row], "text"));
-    });
+    await withReadStorage(
+      { platformDir, dbPath, fresh: !!args.fresh, json: !!args.json },
+      (storage) => {
+        const result = getRecord(storage, reqId);
+        if (result.row === null) {
+          console.error(
+            result.platformEmpty
+              ? formatNoRequirementsIndexed(platformDir)
+              : `spec get: no requirement ${reqId} in the index under ${platformDir} (check the id, or re-run with --fresh after editing specs)`,
+          );
+          console.log("[]");
+          return;
+        }
+        console.log(args.json ? JSON.stringify(result.row) : renderRecords([result.row], "text"));
+      },
+    );
   },
 });

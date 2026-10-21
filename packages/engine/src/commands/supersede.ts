@@ -8,12 +8,11 @@
 import { defineCommand, type ParsedArgs } from "citty";
 import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
-import { coldFreshTags } from "../operations/_index";
 import { type SupersedeInput, supersede, supersedeTarget } from "../operations/supersede";
 import { ID_RE } from "../parser/grammar";
 import { renderReqTags } from "../resolve/format";
 import { listFlag, platformDirArg, resolvePlatformDir } from "./_args";
-import { exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
+import { cliFreshTags, exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
 import { askLine } from "./req";
 
 /**
@@ -150,7 +149,7 @@ export const supersedeCommand = defineCommand({
     const statement = await resolveSuccessorText(args, platformDir, id);
     const result = await supersede(
       inputFromArgs(args, rawArgs, platformDir, id, statement),
-      coldFreshTags(platformDir),
+      cliFreshTags(platformDir),
     );
     if (!result.ok) exitOnFailure("spec supersede", result);
     printWarnings("spec supersede", result.warnings);

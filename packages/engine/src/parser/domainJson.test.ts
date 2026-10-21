@@ -2,7 +2,7 @@
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec SCHM-013 unit
-// @spec SCHM-014 unit
+// @spec INDX-016 unit
 //
 // Verifies POC-014: SPEC.json parses as a domain envelope; malformed statuses
 // surface as BAD_STATUS and structurally-invalid files as INVALID_DOMAIN_FILE

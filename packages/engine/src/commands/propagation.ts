@@ -54,13 +54,16 @@ export const propagationCommand = defineCommand({
       args: { noPrompt: args.noPrompt },
     });
 
-    await withReadStorage({ platformDir, dbPath, fresh: !!args.fresh }, (storage) => {
-      const result = propagation(storage, reqId);
-      if (!args.json && result.platformEmpty) {
-        console.error(formatNoRequirementsIndexed(platformDir));
-        return;
-      }
-      console.log(renderPropagation(result.rows, args.json ? "json" : "text"));
-    });
+    await withReadStorage(
+      { platformDir, dbPath, fresh: !!args.fresh, json: !!args.json },
+      (storage) => {
+        const result = propagation(storage, reqId);
+        if (!args.json && result.platformEmpty) {
+          console.error(formatNoRequirementsIndexed(platformDir));
+          return;
+        }
+        console.log(renderPropagation(result.rows, args.json ? "json" : "text"));
+      },
+    );
   },
 });

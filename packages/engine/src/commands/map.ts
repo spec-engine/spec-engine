@@ -56,13 +56,16 @@ export const mapCommand = defineCommand({
       },
     });
 
-    await withReadStorage({ platformDir, dbPath, fresh: !!args.fresh }, (storage) => {
-      const { rows } = coverageMatrix(storage);
-      if (!args.json && rows.length === 0) {
-        console.error(formatNoRequirementsIndexed(platformDir));
-        return;
-      }
-      console.log(renderMatrix(rows, args.json ? "json" : "text"));
-    });
+    await withReadStorage(
+      { platformDir, dbPath, fresh: !!args.fresh, json: !!args.json },
+      (storage) => {
+        const { rows } = coverageMatrix(storage);
+        if (!args.json && rows.length === 0) {
+          console.error(formatNoRequirementsIndexed(platformDir));
+          return;
+        }
+        console.log(renderMatrix(rows, args.json ? "json" : "text"));
+      },
+    );
   },
 });

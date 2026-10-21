@@ -29,7 +29,12 @@ import {
 } from "../operations/term";
 import { ID_RE } from "../parser/grammar";
 import { platformDirArg } from "./_args";
-import { exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
+import {
+  exitOnFailure,
+  handleInvalidDomainFiles,
+  handleNotAPlatform,
+  printWarnings,
+} from "./_shared";
 
 /** Split a `--aliases "a, b, c"` flag into a trimmed, empty-filtered array. */
 function parseAliases(raw: string | undefined): string[] {
@@ -174,7 +179,10 @@ async function confirmTermCommand(opts: {
 
   const result = await confirmTerm({ platformDir, reqId, termId });
   if (!result.ok) exitOnFailure("spec term confirm", result);
-  await withIndex({ platformDir, build: "fresh" }, () => undefined);
+  await withIndex({ platformDir, build: "fresh" }, () => undefined).catch((e) => {
+    handleInvalidDomainFiles(e, false, EXIT.USAGE);
+    throw e;
+  });
 
   const { pinned, file } = result;
   if (opts.json) {

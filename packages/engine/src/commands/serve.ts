@@ -42,7 +42,12 @@ import {
 } from "../server/lan";
 import { openStorage } from "../storage/sqlite";
 import { platformDirArg, resolvePlatformDir } from "./_args";
-import { assertContainedPath, handleNotAPlatform, handleStorageUnavailable } from "./_shared";
+import {
+  assertContainedPath,
+  handleInvalidDomainFiles,
+  handleNotAPlatform,
+  handleStorageUnavailable,
+} from "./_shared";
 
 /**
  * Compose the real-serve Hono app: engine `/api/*` + webapp SSR pages on a
@@ -305,6 +310,7 @@ export const serveCommand = defineCommand({
       });
     } catch (err) {
       storage.close();
+      handleInvalidDomainFiles(err, false);
       // Named-cause path first: a sandboxed/locked/corrupt index database
       // prints the storage/errors.ts hint + exits 1. The startup probe that
       // trips it is the listRepos()/runIndex read-write pass above — the

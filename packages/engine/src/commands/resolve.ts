@@ -227,7 +227,7 @@ async function runReverseQuery(opts: ReverseQueryOptions): Promise<void> {
 
   await maybePromptForOnboarding({ platformDir, args: { noPrompt } });
 
-  await withReadStorage({ platformDir, dbPath, fresh }, (storage) => {
+  await withReadStorage({ platformDir, dbPath, fresh, json }, (storage) => {
     const { rows, known } = reqTags(storage, reqId);
     if (rows.length === 0) {
       if (!known) {
@@ -498,19 +498,22 @@ export const resolveCommand = defineCommand({
       },
     });
 
-    await withReadStorage({ platformDir, dbPath, fresh: !!args.fresh }, (storage) => {
-      const rows = storage.resolveByFiles(normalized);
-      // RED-11: distinguish "no requirement tagged in these files" (a normal
-      // empty result) from "this platform has no requirements at all" (a
-      // brand-new platform that deserves first-spec guidance). Text mode
-      // only — JSON consumers depend on "[]" on stdout. Still exit 0.
-      if (!args.json && rows.length === 0 && storage.listRequirements().length === 0) {
-        console.error(formatNoRequirementsIndexed(platformDir));
-        return;
-      }
-      const output = renderResolve(rows, args.json ? "json" : "text");
-      console.log(output);
-    });
+    await withReadStorage(
+      { platformDir, dbPath, fresh: !!args.fresh, json: !!args.json },
+      (storage) => {
+        const rows = storage.resolveByFiles(normalized);
+        // RED-11: distinguish "no requirement tagged in these files" (a normal
+        // empty result) from "this platform has no requirements at all" (a
+        // brand-new platform that deserves first-spec guidance). Text mode
+        // only — JSON consumers depend on "[]" on stdout. Still exit 0.
+        if (!args.json && rows.length === 0 && storage.listRequirements().length === 0) {
+          console.error(formatNoRequirementsIndexed(platformDir));
+          return;
+        }
+        const output = renderResolve(rows, args.json ? "json" : "text");
+        console.log(output);
+      },
+    );
     // Read-only command: exit 0 unconditionally on success.
   },
 });

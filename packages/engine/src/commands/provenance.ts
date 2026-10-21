@@ -98,21 +98,24 @@ export const provenanceCommand = defineCommand({
       },
     });
 
-    await withReadStorage({ platformDir, dbPath, fresh: !!args.fresh }, async (storage) => {
-      const { rows } = provenance(storage, issueId || undefined);
-      if (!args.json && rows.length === 0) {
-        console.error(
-          issueId
-            ? formatNoProvenanceForIssue(issueId, platformDir)
-            : formatNoProvenance(platformDir),
-        );
-        return;
-      }
-      const mode = args.json ? "json" : "text";
-      const output = args.resolveIssues
-        ? renderProvenanceDecorated(rows, await resolveAndCache(rows, platformDir), mode)
-        : renderProvenance(rows, mode);
-      console.log(output);
-    });
+    await withReadStorage(
+      { platformDir, dbPath, fresh: !!args.fresh, json: !!args.json },
+      async (storage) => {
+        const { rows } = provenance(storage, issueId || undefined);
+        if (!args.json && rows.length === 0) {
+          console.error(
+            issueId
+              ? formatNoProvenanceForIssue(issueId, platformDir)
+              : formatNoProvenance(platformDir),
+          );
+          return;
+        }
+        const mode = args.json ? "json" : "text";
+        const output = args.resolveIssues
+          ? renderProvenanceDecorated(rows, await resolveAndCache(rows, platformDir), mode)
+          : renderProvenance(rows, mode);
+        console.log(output);
+      },
+    );
   },
 });

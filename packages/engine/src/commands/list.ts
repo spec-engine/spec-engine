@@ -79,17 +79,20 @@ export const listCommand = defineCommand({
       args: { noPrompt: args.noPrompt },
     });
 
-    await withReadStorage({ platformDir, dbPath, fresh: !!args.fresh }, (storage) => {
-      const result = listRecords(storage, filter);
-      if (!args.json && result.rows.length === 0) {
-        console.error(
-          result.platformEmpty
-            ? formatNoRequirementsIndexed(platformDir)
-            : `spec list: no requirements match under ${platformDir}`,
-        );
-        return;
-      }
-      console.log(renderRecords(result.rows, args.json ? "json" : "text"));
-    });
+    await withReadStorage(
+      { platformDir, dbPath, fresh: !!args.fresh, json: !!args.json },
+      (storage) => {
+        const result = listRecords(storage, filter);
+        if (!args.json && result.rows.length === 0) {
+          console.error(
+            result.platformEmpty
+              ? formatNoRequirementsIndexed(platformDir)
+              : `spec list: no requirements match under ${platformDir}`,
+          );
+          return;
+        }
+        console.log(renderRecords(result.rows, args.json ? "json" : "text"));
+      },
+    );
   },
 });

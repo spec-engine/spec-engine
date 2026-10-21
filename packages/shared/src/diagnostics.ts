@@ -78,3 +78,19 @@ export class NotASpecPlatformError extends Error {
     Object.setPrototypeOf(this, NotASpecPlatformError.prototype);
   }
 }
+
+/**
+ * Thrown by the index build when any `SPEC.json` is not JSON or fails the
+ * shared schema. Carries one `INVALID_DOMAIN_FILE` row per failure across every
+ * file, so a surface can print them all and nothing else.
+ */
+export class InvalidDomainFilesError extends Error {
+  public readonly diagnostics: Diagnostic[];
+
+  constructor(diagnostics: Diagnostic[]) {
+    super(diagnostics.map((d) => `${d.source_file ?? ""}: ${d.detail}`).join("\n"));
+    this.name = "InvalidDomainFilesError";
+    this.diagnostics = diagnostics;
+    Object.setPrototypeOf(this, InvalidDomainFilesError.prototype);
+  }
+}

@@ -20,7 +20,7 @@ import { maybePromptForOnboarding } from "../onboarding/prompt";
 import { withIndex } from "../operations/_index";
 import { type CheckResult, check } from "../operations/check";
 import { jsonArg, noPromptArg, outArg, platformDirArg, resolvePlatformDir } from "./_args";
-import { assertContainedPath } from "./_shared";
+import { assertContainedPath, handleInvalidDomainFiles } from "./_shared";
 
 export const checkCommand = defineCommand({
   meta: {
@@ -105,6 +105,7 @@ export const checkCommand = defineCommand({
         },
       );
     } catch (e) {
+      handleInvalidDomainFiles(e, jsonMode);
       exitAfterCrash(e);
     }
     if (outcome === undefined) {

@@ -9,9 +9,8 @@
 //   - a planted bad issue role (BILLING-002 bogus-role) yields a UNKNOWN_ROLE
 //     diagnostic AND its well-formed issues still store (Invariant #4);
 //   - coverage is exercised — the api member's BILLING-009 spec tag lands;
-//   - a structurally-invalid SPEC.json is rejected LOUDLY as an error-severity
-//     INVALID_DOMAIN_FILE and contributes ZERO requirements (STOR-03) — no
-//     silent-zero, no crash.
+//   - an invalid SPEC.json refuses the whole build with its INVALID_DOMAIN_FILE
+//     rows, and the index on disk is left as it was.
 //
 // Scaffolding mirrors cold-rebuild.test.ts (mkdtempSync / openStorage / runIndex).
 
@@ -19,6 +18,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { cpSync, existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { InvalidDomainFilesError, type Storage } from "@spec-engine/shared";
 import { openStorage } from "../storage/sqlite";
 import { specTag } from "../testing/cloneFixture";
 import { TestPlatform } from "../testing/platform";
@@ -135,44 +135,57 @@ describe("JSON domain file → internal rows (STOR-01/STOR-02)", () => {
   });
 });
 
-describe("structurally-invalid SPEC.json is rejected LOUDLY (STOR-03)", () => {
-  test("a requirement missing id → error-severity INVALID_DOMAIN_FILE + ZERO requirements for that domain", async () => {
-    // A tmp platform with ONE planted invalid SPEC.json (a requirement missing
-    // its `id` — a structural reject) plus a minimal member so discoverRepos
-    // succeeds.
+/** The refusal `runIndex` throws for `platformDir`, or a failure when it builds. */
+async function refusal(platformDir: string, storage: Storage): Promise<InvalidDomainFilesError> {
+  try {
+    await runIndex({ platformDir, storage });
+  } catch (e) {
+    if (e instanceof InvalidDomainFilesError) return e;
+    throw e;
+  }
+  throw new Error("runIndex built an index over an invalid SPEC.json");
+}
+
+describe("an invalid SPEC.json refuses the build", () => {
+  // @spec INDX-016 unit
+  test("every invalid file is reported, as INVALID_DOMAIN_FILE rows only", async () => {
     const modFixture = join(tmp, "invalid-json-fixture");
     await platformWithPlantedBilling(modFixture, "missing-id");
-
-    const modDbPath = join(tmp, "invalid.sqlite");
-    const s = openStorage(modDbPath);
+    cpSync(join(PLANTED, "not-json", "spec-engine"), join(modFixture, "spec-engine"), {
+      recursive: true,
+    });
+    const s = openStorage(join(tmp, "invalid.sqlite"));
     try {
-      await runIndex({ platformDir: modFixture, storage: s });
-
-      const invalid = s.listDiagnostics().filter((d) => d.code === "INVALID_DOMAIN_FILE");
-      expect(invalid.length).toBeGreaterThan(0);
-      expect(invalid.every((d) => d.severity === "error")).toBe(true);
-      expect(invalid[0]?.source_file).toBe("spec-engine/BILLING/SPEC.json");
-
-      // ZERO requirements from the rejected domain — not a silent-zero, LOUD.
-      expect(s.listRequirements({ key: "BILLING" })).toEqual([]);
+      const err = await refusal(modFixture, s);
+      expect(err.diagnostics.every((d) => d.code === "INVALID_DOMAIN_FILE")).toBe(true);
+      expect(err.diagnostics.every((d) => d.severity === "error")).toBe(true);
+      expect([...new Set(err.diagnostics.map((d) => d.source_file))].sort()).toEqual([
+        "spec-engine/BILLING/SPEC.json",
+        "spec-engine/BROKEN/SPEC.json",
+      ]);
+      expect(err.diagnostics.some((d) => d.detail.includes("not valid JSON"))).toBe(true);
     } finally {
       s.close();
     }
   });
 
-  test("a non-JSON SPEC.json body → error-severity INVALID_DOMAIN_FILE, not a crash", async () => {
-    const modFixture = join(tmp, "nonjson-fixture");
-    await platformWithPlantedBilling(modFixture, "not-json");
-
-    const modDbPath = join(tmp, "nonjson.sqlite");
-    const s = openStorage(modDbPath);
+  // @spec INDX-016 unit
+  test("a refused build leaves the index on disk as it was", async () => {
+    const root = join(tmp, "warm");
+    await platformWithPlantedBilling(root, "missing-id");
+    rmSync(join(root, "spec-engine", "BILLING"), { recursive: true });
+    const fx = TestPlatform.at(root);
+    await (await fx.domain("ALPHA")).reqs(2);
+    const s = openStorage(join(tmp, "warm.sqlite"));
     try {
-      await runIndex({ platformDir: modFixture, storage: s });
-      const invalid = s.listDiagnostics().filter((d) => d.code === "INVALID_DOMAIN_FILE");
-      expect(invalid.length).toBe(1);
-      expect(invalid[0]?.severity).toBe("error");
-      expect(invalid[0]?.detail).toContain("not valid JSON");
-      expect(s.listRequirements()).toEqual([]);
+      const built = await runIndex({ platformDir: root, storage: s });
+      cpSync(join(PLANTED, "not-json", "spec-engine"), join(root, "spec-engine"), {
+        recursive: true,
+      });
+      await refusal(root, s);
+      expect(s.listRequirements().map((r) => r.id)).toEqual(["ALPHA-001", "ALPHA-002"]);
+      expect(s.listDiagnostics().some((d) => d.code === "INVALID_DOMAIN_FILE")).toBe(false);
+      expect(built.requirements).toBe(2);
     } finally {
       s.close();
     }

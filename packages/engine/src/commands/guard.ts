@@ -54,7 +54,7 @@ export const guardCommand = defineCommand({
 
     let losses: Loss[] = [];
     await withReadStorage(
-      { platformDir, dbPath: defaultIndexPath(platformDir), fresh: true },
+      { platformDir, dbPath: defaultIndexPath(platformDir), fresh: true, json: jsonMode },
       async (storage) => {
         losses = (await guard(storage, platformDir, ref)).losses;
       },

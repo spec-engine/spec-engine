@@ -7,12 +7,11 @@
 import { defineCommand } from "citty";
 import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
-import { coldFreshTags } from "../operations/_index";
 import { deprecate } from "../operations/deprecate";
 import { ID_RE } from "../parser/grammar";
 import { renderReqTags } from "../resolve/format";
 import { platformDirArg, resolvePlatformDir } from "./_args";
-import { exitOnFailure, handleNotAPlatform } from "./_shared";
+import { cliFreshTags, exitOnFailure, handleNotAPlatform } from "./_shared";
 
 export const deprecateCommand = defineCommand({
   meta: {
@@ -57,7 +56,7 @@ export const deprecateCommand = defineCommand({
       handleNotAPlatform(e);
     }
 
-    const result = await deprecate({ platformDir, id, reason }, coldFreshTags(platformDir));
+    const result = await deprecate({ platformDir, id, reason }, cliFreshTags(platformDir));
     if (!result.ok) exitOnFailure("spec deprecate", result);
     const { file, sites } = result;
 

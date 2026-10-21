@@ -45,7 +45,7 @@ import type {
   TermCitationRow,
   WriteHandle,
 } from "@spec-engine/shared";
-import { DiagnosticCode } from "@spec-engine/shared";
+import { type Diagnostic, DiagnosticCode, InvalidDomainFilesError } from "@spec-engine/shared";
 import { parseDomainJsonFile } from "../parser/domainJson";
 import type { ParsedSpec } from "../parser/types";
 import { type DocMention, scanDocFile } from "../scanner/docs";
@@ -68,7 +68,8 @@ export interface RunIndexOptions {
  *   1. Resolve `platformDir` to absolute.
  *   2. discoverRepos → canonical + platformVersion + members.
  *   3. findDomainJsonFiles → parseDomainJsonFile per file → ParsedSpec[]
- *      (JSON is the SOLE spec format post-cutover — D2).
+ *      (JSON is the SOLE spec format post-cutover — D2); any invalid file
+ *      throws InvalidDomainFilesError before anything is written.
  *   4. findCodeFiles per member → scanTagsInFile per file → Tag[];
  *      findDocFiles per member → scanDocFile → documents-kind Tag[] +
  *      mention candidates (RED-15).
@@ -97,7 +98,7 @@ export async function runIndex(opts: RunIndexOptions): Promise<IndexResult> {
   } = await discoverRepos(platformDir);
 
   // Stage 1 — read every SPEC.json through the ONE reader (one engine).
-  const { specs, structuralDiagnostics } = await readSpecs(canonical);
+  const specs = await readSpecs(canonical);
 
   // Stage 2 — scan every member for @spec code tags + doc mentions (RED-15).
   const { tagHits, docMentionCandidates } = await scanMembers(members);
@@ -109,7 +110,6 @@ export async function runIndex(opts: RunIndexOptions): Promise<IndexResult> {
     members,
     specs,
     tagHits,
-    structuralDiagnostics,
     unpinned,
     platformDiagnostics,
   });
@@ -137,54 +137,29 @@ export async function runIndex(opts: RunIndexOptions): Promise<IndexResult> {
 // --- Stage 1: read every SPEC.json -----------------------------------------
 
 /**
- * Read every SPEC.json under the canonical dir through the ONE reader
- * (one engine). Returns the parsed specs plus the structural
- * INVALID_DOMAIN_FILE diagnostics collected along the way.
- *
- * The pipeline calls the SAME `parseDomainJsonFile` the reader unit test
- * exercises — JSON.parse (a non-JSON body is INVALID_DOMAIN_FILE, not a crash
- * — STOR-03) → the ONE structural validator `validateDomainFile` (VAL-02,
- * byte-identical to the write path) → the pure mapper into the UNCHANGED
- * internal rows. Production no longer inlines a forked copy of those three
- * steps, so the test cannot stay green while production diverges. A structural
- * failure contributes ZERO requirements LOUDLY — the em-dash silent-zero is
- * gone. The reader's `Diagnostic.line` (`number | null`) is normalized to the
- * storage `ParseDiagnostic.line` (`number`) at this SINGLE storage boundary
- * via `d.line ?? 0`.
+ * Read every SPEC.json under the canonical dir through the one reader,
+ * `parseDomainJsonFile`. Every file is parsed before any refusal, so one run
+ * reports every invalid file; the throw lands before `writeIndex`, so the
+ * index on disk is left as it was.
+ * @spec INDX-016
  */
-async function readSpecs(
-  canonical: Repo,
-): Promise<{ specs: ParsedSpec[]; structuralDiagnostics: Omit<ParseDiagnostic, "id">[] }> {
-  // SPEC.json is the SOLE spec format — the Markdown parse
-  // path is deleted, so `spec index` reads JSON only.
+async function readSpecs(canonical: Repo): Promise<ParsedSpec[]> {
   const jsonPaths = await findDomainJsonFiles(canonical.path);
   const specs: ParsedSpec[] = [];
-  // STOR-03 (17-02): structural INVALID_DOMAIN_FILE rows collected here, merged
-  // into `diagnostics` in buildRows BEFORE the sort so they participate in the
-  // (code, source_file, line, req_id, detail) ordering.
-  const structuralDiagnostics: Omit<ParseDiagnostic, "id">[] = [];
+  const invalid: Diagnostic[] = [];
   for (const rel of jsonPaths) {
     const absPath = join(canonical.path, rel);
     const text = await Bun.file(absPath).text();
     const platformRelative = `${canonical.name}/${rel}`;
     const fallbackKey = basename(dirname(rel));
     const result = parseDomainJsonFile({ text, sourceFile: platformRelative, fallbackKey });
-    if (!result.ok) {
-      for (const d of result.diagnostics) {
-        structuralDiagnostics.push({
-          code: d.code, // always INVALID_DOMAIN_FILE from the reader (STOR-03)
-          source_file: d.source_file ?? platformRelative, // platform-relative, NEVER absolute (T-17-04)
-          line: d.line ?? 0, // storage boundary: Diagnostic.line (number|null) → ParseDiagnostic.line (number)
-          req_id: d.req_id,
-          detail: d.detail,
-          severity: d.severity,
-        });
-      }
-      continue;
-    }
-    specs.push(result.spec);
+    if (result.ok) specs.push(result.spec);
+    else
+      for (const d of result.diagnostics)
+        invalid.push({ ...d, source_file: d.source_file ?? platformRelative });
   }
-  return { specs, structuralDiagnostics };
+  if (invalid.length > 0) throw new InvalidDomainFilesError(invalid);
+  return specs;
 }
 
 // --- Stage 2: scan every member for @spec tags ---------------------------
@@ -295,7 +270,6 @@ interface BuildRowsInput {
   members: Repo[];
   specs: ParsedSpec[];
   tagHits: Omit<Tag, "id">[];
-  structuralDiagnostics: Omit<ParseDiagnostic, "id">[];
   /** Declared members without a pin: one NO_SPEC_CONFIG row each. */
   unpinned: NamedDir[];
   /** platform-map's diagnostics, already reduced to the ones `spec check` surfaces. */
@@ -304,21 +278,13 @@ interface BuildRowsInput {
 
 /**
  * Build the sorted row layer. Every `sortBy` composite key is BYTE-IDENTICAL to
- * the pre-refactor pipeline (structural + NO_SPEC_CONFIG diagnostics
+ * the pre-refactor pipeline (NO_SPEC_CONFIG diagnostics
  * are pushed BEFORE the sort). Also returns `flatRequirements` so `finalize` can
  * derive the known-id set without re-flattening.
  */
 function buildRows(input: BuildRowsInput): IndexRows {
-  const {
-    canonical,
-    platformVersion,
-    members,
-    specs,
-    tagHits,
-    structuralDiagnostics,
-    unpinned,
-    platformDiagnostics,
-  } = input;
+  const { canonical, platformVersion, members, specs, tagHits, unpinned, platformDiagnostics } =
+    input;
 
   // Repos: canonical (with platformVersion as pin) + every member.
   const sortedRepos: Repo[] = sortBy(
@@ -409,7 +375,6 @@ function buildRows(input: BuildRowsInput): IndexRows {
   // Every diagnostics row is pushed before the one sort, whose key matches
   // the build_id ORDER BY (code, source_file, line, req_id, detail).
   const diagnostics: Omit<ParseDiagnostic, "id">[] = validateStructure(specs);
-  for (const d of structuralDiagnostics) diagnostics.push(d);
   // @spec INIT-032
   for (const s of unpinned) {
     diagnostics.push({

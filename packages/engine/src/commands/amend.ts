@@ -7,11 +7,10 @@
 import { defineCommand, type ParsedArgs } from "citty";
 import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
-import { coldFreshTags } from "../operations/_index";
 import { type AmendFields, amend } from "../operations/amend";
 import { ID_RE } from "../parser/grammar";
 import { jsonArg, listFlag, livesArg, platformDirArg, resolvePlatformDir } from "./_args";
-import { exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
+import { cliFreshTags, exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
 
 const amendArgs = {
   id: {
@@ -61,7 +60,7 @@ export const amendCommand = defineCommand({
 
     const fields = fieldsFromArgs(args, rawArgs);
 
-    const result = await amend({ platformDir, id, fields }, coldFreshTags(platformDir));
+    const result = await amend({ platformDir, id, fields }, cliFreshTags(platformDir));
     if (!result.ok) exitOnFailure("spec amend", result);
     printWarnings("spec amend", result.warnings);
     if (args.json) {

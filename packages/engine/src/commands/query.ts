@@ -74,18 +74,21 @@ export const queryCommand = defineCommand({
       args: { noPrompt: args.noPrompt },
     });
 
-    await withReadStorage({ platformDir, dbPath, fresh: !!args.fresh }, (storage) => {
-      const result = query(storage, text, limit);
-      if (!result.ok) {
-        console.error(`spec query: ${result.detail}`);
-        process.exit(EXIT.USAGE);
-        return;
-      }
-      if (!args.json && result.platformEmpty) {
-        console.error(formatNoRequirementsIndexed(platformDir));
-        return;
-      }
-      console.log(renderQuery(result.hits, args.json ? "json" : "text"));
-    });
+    await withReadStorage(
+      { platformDir, dbPath, fresh: !!args.fresh, json: !!args.json },
+      (storage) => {
+        const result = query(storage, text, limit);
+        if (!result.ok) {
+          console.error(`spec query: ${result.detail}`);
+          process.exit(EXIT.USAGE);
+          return;
+        }
+        if (!args.json && result.platformEmpty) {
+          console.error(formatNoRequirementsIndexed(platformDir));
+          return;
+        }
+        console.log(renderQuery(result.hits, args.json ? "json" : "text"));
+      },
+    );
   },
 });

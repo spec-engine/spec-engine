@@ -14,7 +14,7 @@
 // cast over indexCommand.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { cloneFixture } from "../testing/cloneFixture";
@@ -22,6 +22,7 @@ import { TestPlatform } from "../testing/platform";
 import { indexCommand } from "./index";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "platform-fixture");
+const PLANTED = join(import.meta.dir, "..", "testing", "fixtures", "diagnostics");
 
 let tmp: string;
 let logs: string[];
@@ -162,5 +163,50 @@ describe("spec index (in-process, RED-14)", () => {
     const code = await runIndexCmd({ platformDir: tmp });
     expect(code).toBe(1);
     expect(errs.join("\n")).toContain("spec index FAILED:");
+  });
+});
+
+describe("spec index over an invalid SPEC.json", () => {
+  const plantNotJson = (clone: string) =>
+    cpSync(join(PLANTED, "not-json", "spec-engine"), join(clone, "spec-engine"), {
+      recursive: true,
+    });
+
+  // @spec INDX-017 unit
+  test("--json prints the IndexResult with zero counts and the refusal rows, exit 1", async () => {
+    const clone = cloneFixture(FIXTURE);
+    try {
+      plantNotJson(clone);
+      const code = await runIndexCmd({ platformDir: clone, json: true });
+      expect(code).toBe(1);
+      expect(logs.length).toBe(1);
+      const result = JSON.parse(logs[0] as string) as {
+        repos: number;
+        requirements: number;
+        diagnostics: Array<{ code: string; source_file: string }>;
+      };
+      expect(result.repos).toBe(0);
+      expect(result.requirements).toBe(0);
+      expect(result.diagnostics.map((d) => [d.code, d.source_file])).toEqual([
+        ["INVALID_DOMAIN_FILE", "spec-engine/BROKEN/SPEC.json"],
+      ]);
+    } finally {
+      rmSync(clone, { recursive: true, force: true });
+    }
+  });
+
+  // @spec INDX-017 unit
+  test("text mode prints only the refusal rows on stderr, exit 1", async () => {
+    const clone = cloneFixture(FIXTURE);
+    try {
+      plantNotJson(clone);
+      const code = await runIndexCmd({ platformDir: clone });
+      expect(code).toBe(1);
+      expect(logs).toEqual([]);
+      expect(errs.length).toBe(1);
+      expect(errs[0]).toStartWith("INVALID_DOMAIN_FILE\t\tspec-engine/BROKEN/SPEC.json");
+    } finally {
+      rmSync(clone, { recursive: true, force: true });
+    }
   });
 });
