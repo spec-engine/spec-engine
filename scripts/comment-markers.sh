@@ -6,12 +6,14 @@
 #     bash scripts/comment-markers.sh --update   # rewrite the ledger
 #
 # A marker is a token that names how the code came to be rather than what it
-# does: a work-round id, a plan or phase or wave number, a pitfall, a review
-# round. `@spec KEY-NNN` is the sanctioned way to point a line at its behavior
-# and is never matched here.
+# does: a work-round or plan-task id, a phase or wave number, a pitfall, a
+# review round, a research or plan document, the dogfood boilerplate. `@spec
+# KEY-NNN` is the sanctioned way to point a line at its behavior and is never
+# matched here; a fixture id such as BILLING-001 is three digits and is not
+# matched either.
 #
-# This is a ratchet, not a ban, because 52 files still carry markers. Co-located
-# tests and the helpers under src/testing/ are outside its scope. A file
+# Scope: every .ts/.tsx under packages/*/src, src/testing, and packages/*/test,
+# tests included, since a test name is a comment the runner prints. A file
 # absent from the ledger must carry zero. A listed file may not exceed its
 # recorded count, and may not sit under it either, so stripping a file moves
 # the ledger in the same commit and the number can only fall.
@@ -20,10 +22,10 @@ set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
 
 DEBT="scripts/comment-marker-debt.txt"
-MARKER='(WR-[0-9]+|Pitfall [0-9]+|Phase [0-9]+|[Ww]ave [0-9]+|[Pp]lan [0-9]{2}-[0-9]{2}|review-fix)'
+MARKER='(WR-[0-9]+|Pitfall [0-9]+|Phase [0-9]+|[Ww]ave [0-9]+|[Pp]lan [0-9]{2}-[0-9]{2}|review-fix|Task [0-9]+|T-[0-9]{2}-[0-9]{2}|-PLAN\.md|RESEARCH|Success Criteri|Dogfood \(spec self-consumes|Open Question|post-cutover|pre-refactor|this phase|\b(POC|STOR|PARS|RED|VAL|PWEB|CI|D|MA|OWN|DOM|CHCK|GATE|PROV|INIT|SCHM|QURY|MAP|REQ|TERM|TRK|SERV|DIST|INDX)-[0-9]{2}\b)'
 
 sources() {
-  git ls-files -- packages | grep -E '^packages/[^/]+/src/.*\.tsx?$' | grep -vE '\.test\.tsx?$|/src/testing/'
+  git ls-files -- packages | grep -E '^packages/[^/]+/(src|test)/.*\.tsx?$'
 }
 
 current() {
