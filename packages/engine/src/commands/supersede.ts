@@ -71,6 +71,8 @@ function inputFromArgs(
   if (typeof args.why === "string") input.why = args.why;
   const livesIn = listFlag(rawArgs, "lives", args.lives);
   if (livesIn !== undefined) input.livesIn = livesIn;
+  const relates = listFlag(rawArgs, "relates", args.relates);
+  if (relates !== undefined) input.relates = relates;
   if (typeof args.term === "string") input.term = args.term;
   if (typeof args.aliases === "string") input.aliases = splitAliases(args.aliases);
   const issue = (args.issue ?? "").trim();
@@ -98,6 +100,11 @@ const supersedeArgs = {
     type: "string",
     description:
       "Successor's Lives in: repeat or comma-separate; empty clears (default: copied from the old entry)",
+  },
+  relates: {
+    type: "string",
+    description:
+      "Successor's related ids: repeat or comma-separate; empty clears (default: copied from the old entry)",
   },
   term: {
     type: "string",

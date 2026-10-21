@@ -224,6 +224,12 @@ export function buildMcpServer(platformDir: string): McpServer {
           .array(z.string())
           .optional()
           .describe("Successor's livesIn paths (default: copied from the predecessor)"),
+        relates: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Successor's related ids, each comma-split; an empty list clears (default: copied from the predecessor)",
+          ),
         issue: z
           .string()
           .optional()
@@ -232,12 +238,12 @@ export function buildMcpServer(platformDir: string): McpServer {
           ),
       },
     },
-    async ({ req_id, statement, why, lives_in, issue }) => {
+    async ({ req_id, statement, why, lives_in, relates, issue }) => {
       if (!ID_RE.test(req_id)) {
         return errorResult(`req_id must be a requirement id (KEY-NNN); got ${req_id}`);
       }
       const r = await supersede(
-        { platformDir, id: req_id, statement, why, livesIn: lives_in, issue },
+        { platformDir, id: req_id, statement, why, livesIn: lives_in, relates, issue },
         coldFreshTags(platformDir),
       );
       if (!r.ok) return errorResult(r.detail);

@@ -16,7 +16,13 @@ import {
 } from "../authoring/grammar";
 import { deriveDomainVersion } from "../parser/domainJson";
 import type { ReqTagRow } from "../resolve/format";
-import { displayStatus, type LocatedEntry, locateEntry, successorEntry } from "./_envelope";
+import {
+  displayStatus,
+  type LocatedEntry,
+  locateEntry,
+  splitList,
+  successorEntry,
+} from "./_envelope";
 import type { FreshTags } from "./_index";
 import { fail, type OpFailure, type OpWarning } from "./_result";
 import { unresolvableRefWarnings } from "./mint";
@@ -30,8 +36,10 @@ export interface SupersedeInput {
   statement: string;
   /** Absent: copied from the predecessor. */
   why?: string | undefined;
-  /** Absent: the predecessor's first `livesIn` entry is carried forward. */
+  /** Absent: every predecessor `livesIn` entry is carried forward. */
   livesIn?: string[] | undefined;
+  /** Replaces the predecessor's `relates`; an empty list clears it. Absent: copied. */
+  relates?: string[] | undefined;
   /** TERM ids only. Absent: copied from the predecessor. */
   term?: string | undefined;
   aliases?: string[] | undefined;
@@ -80,29 +88,32 @@ export async function supersedeTarget(
   return located;
 }
 
-/** The successor's why and livesIn: the input's, else the predecessor's. */
+/**
+ * The successor's why, livesIn, and relates: the input's, else the predecessor's.
+ * @spec REQ-051
+ * @spec REQ-052
+ */
 function successorFields(
   input: SupersedeInput,
   req: SpecRequirement,
-): { why: string; livesIn: string[] } {
-  const predLives = (req.livesIn[0] ?? "").trim();
-  const why = (input.why ?? req.why ?? "").trim();
-  const livesIn = input.livesIn ?? (predLives === "" ? [] : [predLives]);
-  return { why, livesIn };
+): { why: string; livesIn: string[]; relates: string[] } {
+  return {
+    why: (input.why ?? req.why ?? "").trim(),
+    livesIn: input.livesIn ?? [...req.livesIn],
+    relates: input.relates === undefined ? [...req.relates] : splitList(input.relates),
+  };
 }
 
 /**
- * A TERM successor keeps its headword and synonyms: the input's, else the
- * predecessor's.
+ * The successor keeps the predecessor's headword and synonyms unless the
+ * input names them.
  * @spec REQ-033
  * @spec REQ-034
  */
-function successorTermFields(
-  input: SupersedeInput,
-  req: SpecRequirement,
-): { term: string | undefined; aliases: string[] } {
-  const term = (input.term ?? req.term)?.trim() || req.term;
-  return { term, aliases: input.aliases ?? req.aliases };
+function applyTermOverrides(successor: SpecRequirement, input: SupersedeInput): void {
+  const term = input.term?.trim();
+  if (term) successor.term = term;
+  if (input.aliases !== undefined) successor.aliases = input.aliases;
 }
 
 /** Flip the predecessor forward; the causing ticket rides along as provenance. */
@@ -164,18 +175,21 @@ export async function supersede(
     }
     warnings.push({ kind: "grammar", text: grammarWarningText("", verdict).slice(2) });
   }
-  const { why, livesIn } = successorFields(input, req);
+  const { why, livesIn, relates } = successorFields(input, req);
   warnings.push(...unresolvableRefWarnings(platformDir, [input.statement, why, ...livesIn]));
 
+  // @spec REQ-049
   const newId = await nextRequirementId(platformDir, key);
   const issue = input.issue?.trim() || undefined;
+  const successor = successorEntry(newId, req, {
+    statement: input.statement,
+    why,
+    livesIn,
+    relates,
+    issue,
+  });
+  applyTermOverrides(successor, input);
   flipPredecessor(req, newId, issue);
-  const successor = successorEntry(newId, { statement: input.statement, why, livesIn, issue });
-  if (key === "TERM") {
-    const termFields = successorTermFields(input, req);
-    if (termFields.term !== undefined) successor.term = termFields.term;
-    successor.aliases = termFields.aliases;
-  }
   requirements.push(successor);
   const specVersion = applyVersionStage(domain, req, successor, Boolean(input.noBump));
   domain.updated = localToday();

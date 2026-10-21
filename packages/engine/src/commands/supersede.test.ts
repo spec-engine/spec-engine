@@ -10,6 +10,7 @@
 // Tag lines composed via src/testing/specTag.ts (dogfood rule).
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { entryOf, plantEdit } from "../testing/plant";
 import { type DomainHandle, TestPlatform } from "../testing/platform";
 import { specTag } from "../testing/specTag";
 import { supersedeCommand } from "./supersede";
@@ -203,6 +204,66 @@ describe("spec supersede — happy path", () => {
     expect(out).toContain("api/src/renew.ts");
     expect(out).toContain("api/test/renew.test.ts");
     expect(errs.join("\n")).toContain("SUPERSEDED_REFERENCED");
+  });
+});
+
+describe("spec supersede — the successor keeps what nobody chose to drop", () => {
+  beforeEach(async () => {
+    await plantEdit(platform, "BILLING", (doc) => {
+      const entry = entryOf(doc, ACTIVE);
+      entry.relates = [HISTORY];
+      entry.livesIn = ["renew.ts", "price.ts"];
+      entry.cites = [{ term: "TERM-001", pinned: 1 }];
+      entry.section = "Charging";
+      entry.issues = [{ role: "created", id: "ENG-1" }];
+    });
+  });
+
+  // @spec REQ-052 unit
+  // @spec REQ-053 unit
+  test("relates, every livesIn entry, cites, and section copy; issues hold only the new created row", async () => {
+    await supersedeRun({
+      args: { id: ACTIVE, platformDir: platform, text: "charge at renewal", issue: "ENG-9" },
+      rawArgs: [],
+    });
+    const succ = (await billing.read()).requirements.find((r) => r.id === SUCCESSOR);
+    expect(succ?.relates).toEqual([HISTORY]);
+    expect(succ?.livesIn).toEqual(["renew.ts", "price.ts"]);
+    expect(succ?.cites).toEqual([{ term: "TERM-001", pinned: 1 }]);
+    expect(succ?.section).toBe("Charging");
+    expect(succ?.issues).toEqual([{ role: "created", id: "ENG-9" }]);
+  });
+
+  // @spec REQ-051 unit
+  test("--relates replaces the copied relates; an empty value clears it", async () => {
+    await supersedeRun({
+      args: { id: ACTIVE, platformDir: platform, text: "charge at renewal", relates: "" },
+      rawArgs: ["--relates", ""],
+    });
+    const succ = (await billing.read()).requirements.find((r) => r.id === SUCCESSOR);
+    expect(succ?.relates).toEqual([]);
+    expect(succ?.issues).toEqual([]);
+  });
+});
+
+describe("spec supersede — an id held outside its prefix's domain", () => {
+  // @spec REQ-048 unit
+  // @spec REQ-049 unit
+  test("supersede AUTHUI-01 held in AUTH mints the successor in AUTH", async () => {
+    const auth = await fx.domain("AUTH");
+    await auth.req({ statement: "The auth service shall expire idle sessions." });
+    await plantEdit(platform, "AUTH", (doc) => {
+      entryOf(doc, "AUTH-001").id = "AUTHUI-01";
+    });
+    await supersedeRun({
+      args: { id: "AUTHUI-01", platformDir: platform, text: "expire after 30 days", json: true },
+      rawArgs: [],
+    });
+    const out = JSON.parse(logs[0] ?? "");
+    expect(out.new_id).toMatch(/^AUTH-\d{3}$/);
+    expect(out.file).toBe("spec-engine/AUTH/SPEC.json");
+    const doc = await auth.read();
+    expect(doc.requirements.find((r) => r.id === "AUTHUI-01")?.supersededBy).toBe(out.new_id);
   });
 });
 

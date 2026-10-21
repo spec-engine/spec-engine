@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { entryOf, plantEdit } from "../testing/plant";
 import { TestPlatform } from "../testing/platform";
 import { locateEntry, readEnvelope } from "./_envelope";
 
@@ -77,5 +78,21 @@ describe("readEnvelope — every SPEC.json read goes through the shared schema",
     if (located.ok) throw new Error("expected a refusal");
     expect(located.reason).toBe("not_found");
     expect(located.detail).toBe("no entry BILLING-042 in spec-engine/BILLING/SPEC.json");
+  });
+
+  // @spec REQ-048 unit
+  test("locateEntry finds an id whose prefix names no domain by scanning every domain file", async () => {
+    const fx = TestPlatform.at(tmp);
+    await fx.domain("BILLING");
+    const auth = await fx.domain("AUTH");
+    await auth.req({ statement: "The auth service shall expire idle sessions." });
+    await plantEdit(tmp, "AUTH", (doc) => {
+      entryOf(doc, "AUTH-001").id = "AUTHUI-01";
+    });
+    const located = await locateEntry(tmp, "AUTHUI-01");
+    expect(located.ok).toBe(true);
+    if (!located.ok) throw new Error(located.detail);
+    expect(located.key).toBe("AUTH");
+    expect(located.req.id).toBe("AUTHUI-01");
   });
 });

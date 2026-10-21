@@ -6,6 +6,7 @@
 
 import { existsSync } from "node:fs";
 import { parseDomainText, type SpecDomain, type SpecRequirement } from "@spec-engine/shared";
+import { listDomainKeys } from "../authoring/domains";
 import { specPaths } from "../constants";
 import { fail, type OpFailure } from "./_result";
 
@@ -66,35 +67,87 @@ export interface LocatedEntry extends EnvelopeFile {
   req: SpecRequirement;
 }
 
-/** The domain file and the entry an id names, or `not_found` for either. */
+/** The first other domain file holding `id`, scanned in key order. */
+async function scanForEntry(
+  platformDir: string,
+  id: string,
+  skipKey: string,
+): Promise<LocatedEntry | null> {
+  for (const key of listDomainKeys(platformDir)) {
+    if (key === skipKey) continue;
+    const file = await readEnvelope(platformDir, key);
+    if (!file.ok) continue;
+    const req = file.requirements.find((r) => r.id === id);
+    if (req !== undefined) return { ...file, req };
+  }
+  return null;
+}
+
+/**
+ * The domain file and the entry an id names: the prefix's domain first, then
+ * every other domain file. `not_found` when no file holds the entry; an
+ * invalid prefix file still refuses as `invalid_domain_file`.
+ * @spec REQ-048
+ */
 export async function locateEntry(
   platformDir: string,
   id: string,
   missingDomainDetail?: string,
 ): Promise<LocatedEntry | OpFailure> {
-  const file = await readEnvelope(platformDir, domainKeyOf(id), missingDomainDetail);
-  if (!file.ok) return file;
-  const req = file.requirements.find((r) => r.id === id);
-  if (req === undefined) return fail("not_found", `no entry ${id} in ${file.relFile}`);
-  return { ...file, req };
+  const prefixKey = domainKeyOf(id);
+  const file = await readEnvelope(platformDir, prefixKey, missingDomainDetail);
+  if (!file.ok && file.reason !== "not_found") return file;
+  const req = file.ok ? file.requirements.find((r) => r.id === id) : undefined;
+  if (file.ok && req !== undefined) return { ...file, req };
+  const scanned = await scanForEntry(platformDir, id, prefixKey);
+  if (scanned !== null) return scanned;
+  return file.ok ? fail("not_found", `no entry ${id} in ${file.relFile}`) : file;
 }
 
-/** The successor entry both `supersede` and `move` append, in the envelope's field order. */
+/** Split each value on commas, trim, and drop empties. */
+// @spec REQ-050
+export function splitList(values: readonly string[]): string[] {
+  return values
+    .flatMap((v) => v.split(","))
+    .map((v) => v.trim())
+    .filter((v) => v !== "");
+}
+
+/** What a successor takes over from its predecessor unless the input names it. */
+export interface SuccessorFields {
+  statement: string;
+  why: string;
+  livesIn: string[];
+  relates: string[];
+  issue?: string | undefined;
+}
+
+/**
+ * The successor both `supersede` and `move` append: the given fields, the
+ * predecessor's cites, aliases, term, and section, and no issue but the
+ * `created` row.
+ * @spec REQ-052
+ * @spec REQ-053
+ */
 export function successorEntry(
   id: string,
-  fields: { statement: string; why: string; livesIn: string[]; issue?: string | undefined },
+  pred: SpecRequirement,
+  fields: SuccessorFields,
 ): SpecRequirement {
-  return {
+  const entry: SpecRequirement = {
     id,
     status: "active",
     statement: fields.statement,
     why: fields.why === "" ? null : fields.why,
     supersedes: null,
     supersededBy: null,
-    relates: [],
+    relates: fields.relates,
     livesIn: fields.livesIn,
     issues: fields.issue ? [{ role: "created", id: fields.issue }] : [],
-    aliases: [],
-    cites: [],
+    aliases: [...pred.aliases],
+    cites: pred.cites.map((c) => ({ ...c })),
   };
+  if (pred.term !== undefined) entry.term = pred.term;
+  if (pred.section !== undefined) entry.section = pred.section;
+  return entry;
 }

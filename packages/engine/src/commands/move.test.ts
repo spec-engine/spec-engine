@@ -9,6 +9,7 @@
 // Tag lines composed via src/testing/specTag.ts (dogfood rule).
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { entryOf, plantEdit } from "../testing/plant";
 import { type DomainHandle, TestPlatform } from "../testing/platform";
 import { specTag } from "../testing/specTag";
 import { moveCommand } from "./move";
@@ -163,6 +164,29 @@ describe("spec move — happy path", () => {
     });
     const succ = (await auth.read()).requirements.find((r) => r.id === "AUTH-002");
     expect(succ?.livesIn).toEqual(["a.ts", "b.ts"]);
+  });
+
+  // @spec REQ-052 unit
+  // @spec REQ-053 unit
+  test("the successor copies relates, every livesIn entry, cites, and section, and no issues", async () => {
+    await plantEdit(platform, "BILLING", (doc) => {
+      const entry = entryOf(doc, "BILLING-001");
+      entry.relates = ["BILLING-002"];
+      entry.livesIn = ["a.ts", "b.ts"];
+      entry.cites = [{ term: "TERM-001", pinned: 1 }];
+      entry.section = "Charging";
+      entry.issues = [{ role: "created", id: "ENG-1" }];
+    });
+    await moveRun({
+      args: { id: "BILLING-001", newDomain: "AUTH", platformDir: platform },
+      rawArgs: [],
+    });
+    const succ = (await auth.read()).requirements.find((r) => r.id === "AUTH-002");
+    expect(succ?.relates).toEqual(["BILLING-002"]);
+    expect(succ?.livesIn).toEqual(["a.ts", "b.ts"]);
+    expect(succ?.cites).toEqual([{ term: "TERM-001", pinned: 1 }]);
+    expect(succ?.section).toBe("Charging");
+    expect(succ?.issues).toEqual([]);
   });
 
   test("--no-bump is a no-op on requirement domains — versions stay DAG-derived", async () => {
