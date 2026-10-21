@@ -153,7 +153,8 @@ describe("listSemanticDiagnostics against canonical fixture (Q1..Q5, CHCK-02)", 
     // stays error-severity. Assert the contract per code rather than a
     // blanket 'always error' (which became false the moment a fixture
     // carries a Relates field).
-    const WARNING_CODES = new Set(["BROKEN_RELATES", "RELATES_SUPERSEDED"]);
+    // @spec CHCK-035 unit
+    const WARNING_CODES = new Set(["BROKEN_RELATES", "RELATES_SUPERSEDED", "UNVERIFIED_REQ"]);
     const s = openStorage(dbPath);
     try {
       await runIndex({ platformDir: FIXTURE, storage: s });

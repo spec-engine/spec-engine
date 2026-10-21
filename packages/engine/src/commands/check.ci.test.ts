@@ -209,6 +209,8 @@ describe("Inverted CI assertion (CHCK-04 / CI-03)", () => {
       // PROV-05 (Phase 12): malformed/unknown-role `**Issues:**` tokens are
       // advisory — surfaced and dropped, never stored. Warning severity.
       "UNKNOWN_ROLE",
+      // @spec CHCK-035 unit
+      "UNVERIFIED_REQ",
     ]);
     const cloned = cloneFixture(FIXTURE);
     clones.push(cloned);

@@ -65,9 +65,8 @@ WHERE r.status = 'Deprecated'
 ORDER BY t.repo, t.file, t.line
 `;
 
-// The Draft blind spot (drift audit, statement 6): code shipped against a
-// promise nobody approved yet. Warning — a review prompt, not a break.
-// @spec CHCK-009
+// @spec CHCK-033
+// @spec CHCK-034
 export const Q2D_DRAFT_REFERENCED_SQL = `
 SELECT
   'DRAFT_REFERENCED'                                          AS code,
@@ -75,9 +74,13 @@ SELECT
   t.file                                                      AS source_file,
   t.line                                                      AS line,
   t.req_id                                                    AS req_id,
-  ('Tag references Draft requirement ' || t.req_id ||
-    ' — code is bound to a promise nobody approved yet')      AS detail,
-  'warning'                                                   AS severity
+  CASE WHEN t.kind = 'verifies'
+    THEN ('Test verifies Draft requirement ' || t.req_id ||
+      ' — it asserts a promise nobody accepted yet')
+    ELSE ('Tag references Draft requirement ' || t.req_id ||
+      ' — code is bound to a promise nobody accepted yet')
+  END                                                         AS detail,
+  CASE WHEN t.kind = 'verifies' THEN 'error' ELSE 'warning' END AS severity
 FROM tags t
 JOIN requirements r ON r.id = t.req_id
 WHERE r.status = 'Draft'
@@ -127,6 +130,7 @@ ORDER BY r.key, r.seq
 //   code-derived kinds (implements/verifies) clear orphan status.
 
 // @spec CHCK-032
+// @spec CHCK-035
 export const Q5_UNVERIFIED_REQ_SQL = `
 SELECT
   'UNVERIFIED_REQ'                                            AS code,
@@ -136,7 +140,7 @@ SELECT
   r.id                                                        AS req_id,
   ('Requirement ' || r.id ||
     ' is implemented but has no verifies-kind tag')           AS detail,
-  'error'                                                     AS severity
+  'warning'                                                   AS severity
 FROM requirements r
 WHERE r.status = 'Active'
   -- never implemented/verified by code, so it must never fire UNVERIFIED_REQ.
