@@ -429,6 +429,21 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "GUARD-027",
+      "status": "active",
+      "statement": "If a git ref given to spec guard or spec check begins with a hyphen or contains a character other than a letter, a digit, a period, an underscore, a slash, or a hyphen, then the spec engine shall refuse the ref before spawning git.",
+      "why": "A ref that begins with a hyphen reaches git as an option such as --upload-pack=<cmd>, so untrusted CI input could run a command on the runner.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/base/gitBase.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
   ]
 }
