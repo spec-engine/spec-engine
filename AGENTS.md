@@ -34,10 +34,11 @@ Rules:
 - **The derived index owns nothing.** Never encode truth in `.spec-engine/`. It
   is rebuilt from `spec-engine/` plus `@spec` tags and must rebuild identically.
 - **Coverage is a SQL view**, never a materialized table.
-- **One engine, not two.** An operation is written once under
-  `packages/engine/src/operations/`. A surface (a command file, an API route,
-  an MCP tool) may only parse its input, call the operation, and render the
-  result. No forked logic between surfaces.
+- **An operation is written once**, under `packages/engine/src/operations/`.
+  A command file, an API route, an MCP tool, and the webapp parse their
+  input, call the operation, and render the result. An input the operation
+  accepts is exposed on every surface that calls it, and
+  `operations/parity.test.ts` proves the surfaces write the same envelope.
 - **Keep the planted defects in `fixtures/`.** They exist so `spec check` has
   something to catch.
 - **Exactly one `bun:sqlite` import**, in `packages/engine/src/storage/sqlite.ts`.

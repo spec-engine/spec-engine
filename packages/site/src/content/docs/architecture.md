@@ -74,8 +74,8 @@ An operation takes typed input and returns typed data or a typed refusal. It nev
 | `coverageReport` | storage | per-domain rollup | | `GET /api/report` | `spec_coverage_report` |
 | `check` | storage, platform dir, results file, base ref, flags | diagnostics, `build_id`, red or green | `spec check` | | `spec_check` |
 | `nextId` | platform dir, domain key or prefix | the resolved key and next unused id, or `usage` | `spec req` | | `spec_next_id` |
-| `mint` | platform dir, key, statement, why, lives-in, issue, status | the new id and file, or `not_found` / `usage` / `invalid_domain_file` | `spec req --text` | `POST /api/requirements` | |
-| `amend` | platform dir, id, fields, a fresh-tags callback | the changed fields, or `not_found` / `conflict` / `invalid_domain_file` | `spec amend` | `PUT /api/requirements/:id` | |
+| `mint` | platform dir, key, statement, why, lives-in, relates, issue, status | the new id and file, or `not_found` / `usage` / `invalid_domain_file` | `spec req --text` | `POST /api/requirements` | |
+| `amend` | platform dir, id, fields | the changed fields, or `not_found` / `conflict` / `invalid_domain_file` | `spec amend` | `PUT /api/requirements/:id` | |
 | `supersede` | platform dir, id, successor statement and fields, a fresh-tags callback | the successor id, the domain version, the retag worklist, or `not_found` / `conflict` / `usage` / `invalid_domain_file` | `spec supersede` | `POST /api/requirements/:id/supersede` | `spec_supersede` |
 | `move` | platform dir, id, target domain key, optional successor fields, a fresh-tags callback | both files, both versions, the retag worklist, or `usage` / `not_found` / `conflict` / `invalid_domain_file` | `spec move` | | |
 | `deprecate` | platform dir, id, reason, a fresh-tags callback | the file and the tags still bound, or `not_found` / `conflict` / `invalid_domain_file` | `spec deprecate` | `POST /api/requirements/:id/deprecate` | `spec_deprecate` |
