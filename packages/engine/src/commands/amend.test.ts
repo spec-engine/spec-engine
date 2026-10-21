@@ -1,12 +1,3 @@
-// packages/engine/src/commands/amend.test.ts
-//
-// `spec amend <KEY-NNN>`: same id, fields revised in place, envelope
-// `updated` bumped, the derived domain version untouched. Only Active and
-// Draft entries amend; superseded/retired entries are history. A released
-// entry's promise is superseded instead; its livesIn and relates still amend.
-//
-// Field mapping: --text→statement, --why→why, --lives→livesIn[], --relates→relates[].
-
 import { afterEach, beforeEach, describe, expect, setSystemTime, test } from "bun:test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";

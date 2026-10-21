@@ -1,9 +1,3 @@
-// packages/engine/src/commands/amend.ts
-//
-// `spec amend <KEY-NNN>`: revise an entry in place. The command parses flags
-// into the operation's field set and reports; every gate lives in
-// operations/amend.ts.
-
 import { defineCommand, type ParsedArgs } from "citty";
 import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";

@@ -2,8 +2,7 @@
 //
 // The small statement-5/6 drift fixes (DRIFT-PLAN.md task 12):
 //
-//   - DRAFT_REFERENCED: a tag on a Draft requirement, a warning on code and
-//     an error on a test.
+//   - DRAFT_REFERENCED, graded by tag kind.
 //   - GLOSSARY_DRIFT (warning): the committed GLOSSARY.md no longer matches
 //     what the TERM store generates — surfaced by spec check itself, not just
 //     this repo's CI fence.

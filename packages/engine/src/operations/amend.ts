@@ -1,12 +1,3 @@
-// packages/engine/src/operations/amend.ts
-//
-// Revise a requirement's fields in place: same id, no version change. Two
-// gates before any write. Status: only Active and Draft entries amend; a
-// superseded or deprecated entry is history. Release: an Active entry present
-// in its domain file at the newest `v*` tag merged into HEAD is a released
-// promise, so its promise fields are superseded, never edited; its location
-// and cross-references still amend in place.
-
 import { parseDomainText, type SpecRequirement, validateAndWrite } from "@spec-engine/shared";
 import { localToday } from "../authoring/edit";
 import {

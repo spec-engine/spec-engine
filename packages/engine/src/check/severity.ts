@@ -24,15 +24,22 @@ export function readCheckConfig(
   return parseCheckConfigText(readFileSync(path, "utf-8"), CHECK_CONFIG_REL);
 }
 
-/** 2 for an id match, 1 for a domain-key match, 0 for an unscoped rule, -1 when it does not apply. */
-function specificity(rule: SeverityRule, row: Diagnostic): number {
-  if (rule.code !== row.code) return -1;
-  if (rule.match === undefined) return 0;
+const Specificity = {
+  none: -1,
+  code: 0,
+  domain: 1,
+  id: 2,
+} as const;
+type Specificity = (typeof Specificity)[keyof typeof Specificity];
+
+function specificity(rule: SeverityRule, row: Diagnostic): Specificity {
+  if (rule.code !== row.code) return Specificity.none;
+  if (rule.match === undefined) return Specificity.code;
   const id = row.req_id;
-  if (id === null) return -1;
-  if (rule.match.includes(id)) return 2;
+  if (id === null) return Specificity.none;
+  if (rule.match.includes(id)) return Specificity.id;
   const key = id.slice(0, id.lastIndexOf("-"));
-  return rule.match.includes(key) ? 1 : -1;
+  return rule.match.includes(key) ? Specificity.domain : Specificity.none;
 }
 
 /** Grade each row by its most specific rule; `off` drops the row. Ties go to the later rule. */
@@ -46,10 +53,10 @@ export function applySeverity(
   const out: Diagnostic[] = [];
   for (const row of rows) {
     let best: SeverityRule | undefined;
-    let bestScore = -1;
+    let bestScore: Specificity = Specificity.none;
     for (const rule of rules) {
       const score = specificity(rule, row);
-      if (score >= 0 && score >= bestScore) {
+      if (score !== Specificity.none && score >= bestScore) {
         best = rule;
         bestScore = score;
       }
