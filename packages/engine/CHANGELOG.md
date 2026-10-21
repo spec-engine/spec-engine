@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.3](https://github.com/spec-engine/spec-engine/compare/v0.7.2...v0.7.3) (2026-10-21)
+
+
+### Bug Fixes
+
+* **deps:** update @modelcontextprotocol/sdk to 1.32.0 [security]; align zod to 4.4.3 ([#63](https://github.com/spec-engine/spec-engine/issues/63)) ([94b57fe](https://github.com/spec-engine/spec-engine/commit/94b57fe209e6bbcfe01de7d991f024542bad82bf))
+
 ## [0.7.2](https://github.com/spec-engine/spec-engine/compare/v0.7.1...v0.7.2) (2026-10-21)
 
 
