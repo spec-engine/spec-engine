@@ -6,10 +6,9 @@
 // from the ref, not the working tree, so a deleted domain file still surfaces
 // its removed ids.
 
-// Rejects whitespace, shell metacharacters, and `=` (so `--upload-pack=…`
-// cannot pass). A bare leading `-` is not rejected by this shape.
-function isSafeRef(ref: string): boolean {
-  return /^[A-Za-z0-9._/-]+$/.test(ref);
+// @spec GUARD-027
+export function isSafeRef(ref: string): boolean {
+  return /^[A-Za-z0-9._/][A-Za-z0-9._/-]*$/.test(ref);
 }
 
 /**
@@ -87,9 +86,12 @@ export interface DiffEntry {
  */
 export function gitDiffNameStatus(platformDir: string, ref: string): DiffEntry[] {
   if (!isSafeRef(ref)) return [];
-  const proc = Bun.spawnSync(["git", "diff", "--name-status", "--no-renames", "--relative", ref], {
-    cwd: platformDir,
-  });
+  const proc = Bun.spawnSync(
+    ["git", "diff", "--name-status", "--no-renames", "--relative", ref, "--"],
+    {
+      cwd: platformDir,
+    },
+  );
   if (proc.exitCode !== 0) return [];
   const rows: DiffEntry[] = [];
   for (const line of proc.stdout.toString().split("\n")) {

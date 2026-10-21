@@ -401,6 +401,9 @@ Exit: 0 clean / 1 any loss / 2 usage.
   comment.
 - A non-git tree, a repo with no `HEAD`, or an unknown ref prints
   `NOT_A_GIT_REPO` to stderr and exits 0.
+- A ref that begins with `-` or holds a character outside `A-Z a-z 0-9 . _ / -`
+  is refused before git runs: `guard` treats it as an unknown ref, and
+  `check --base` exits 2.
 - Text mode prints a `🛑 spec-guard:` block per requirement, written in the
   second person. Relay it verbatim to the user before proceeding.
 

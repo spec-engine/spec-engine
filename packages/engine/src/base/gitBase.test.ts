@@ -1,10 +1,17 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { commitAndTag } from "../testing/git";
 import { TestPlatform } from "../testing/platform";
-import { gitLsTree, gitRefResolves, gitShow, newestReleaseTag } from "./gitBase";
+import {
+  gitDiffNameStatus,
+  gitLsTree,
+  gitRefResolves,
+  gitShow,
+  isSafeRef,
+  newestReleaseTag,
+} from "./gitBase";
 
 // Deterministic git identity so commits succeed on a bare CI runner.
 const GIT_ENV = {
@@ -97,6 +104,38 @@ describe("gitBase — gitShow / gitLsTree (ref-validated argv-array git readers)
 
   test("a safe ref shape such as HEAD is accepted", () => {
     expect(gitShow(repo, "HEAD", REL)).not.toBeNull();
+  });
+});
+
+describe("isSafeRef — a ref that git could read as an option never reaches a spawn", () => {
+  // @spec GUARD-027 unit
+  test("accepts ordinary branch, tag, and remote refs", () => {
+    for (const ok of ["HEAD", "v0.7.0", "origin/main", "feature/x-1"]) {
+      expect(isSafeRef(ok)).toBe(true);
+    }
+  });
+
+  // @spec GUARD-027 unit
+  test("rejects a leading hyphen, =, whitespace, and ;", () => {
+    for (const bad of ["-foo", "--upload-pack=x", "-", "a=b", "a b", "HEAD;x", ""]) {
+      expect(isSafeRef(bad)).toBe(false);
+    }
+  });
+
+  // @spec GUARD-027 unit
+  test("every reader returns its empty value for a hyphen-led ref without spawning git", () => {
+    const spawn = spyOn(Bun, "spawnSync");
+    try {
+      for (const bad of ["-foo", "--upload-pack=x", "-"]) {
+        expect(gitRefResolves(".", bad)).toBe(false);
+        expect(gitShow(".", bad, "x")).toBeNull();
+        expect(gitLsTree(".", bad, "x")).toEqual([]);
+        expect(gitDiffNameStatus(".", bad)).toEqual([]);
+      }
+      expect(spawn).not.toHaveBeenCalled();
+    } finally {
+      spawn.mockRestore();
+    }
   });
 });
 
