@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.2](https://github.com/spec-engine/spec-engine/compare/v0.7.1...v0.7.2) (2026-10-21)
+
+
+### Bug Fixes
+
+* **deps:** update dependency hono to v4.13.11 [security] ([#56](https://github.com/spec-engine/spec-engine/issues/56)) ([b7b925c](https://github.com/spec-engine/spec-engine/commit/b7b925cf01585d01e72deaad14b17697ea4c697d))
+
 ## [0.7.1](https://github.com/spec-engine/spec-engine/compare/v0.7.0...v0.7.1) (2026-10-21)
 
 
