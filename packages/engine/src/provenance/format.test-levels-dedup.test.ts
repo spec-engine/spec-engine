@@ -1,23 +1,5 @@
-// packages/engine/src/provenance/format.test-levels-dedup.test.ts
-//
-// WR-01 / IN-03 (13-REVIEW review-fix) regression lock: the
-// `provenance_matrix` VIEW must NOT double-count a test level that appears in
-// more than one member repo for the same requirement.
-//
-// Root cause (pre-fix): the `coverage` VIEW aggregates `test_levels` per
-// (req_id, repo) into a single comma-joined string (api -> "unit,integration",
-// mobile -> "unit"). The `provenance_matrix` VIEW then did
-// GROUP_CONCAT(DISTINCT c.test_levels) over those WHOLE strings, so a level
-// present in two repos leaked through twice ("unit,integration,unit"). The fix
-// re-aggregates at the individual-level granularity via a correlated subquery
-// over `tags` (DISTINCT t2.level ... ORDER BY level).
-//
-// This test seeds a tmp file-DB directly with the canonical DDL (mirroring
-// storage.test.ts's `new Database(path)` seeding pattern) so it exercises the
-// REAL VIEW aggregation across multiple repos — the gap IN-03 calls out, where
-// the existing format/snapshot tests hand-build `test_levels` and never hit
-// the VIEW's cross-repo path. It also renders through the pure formatter so
-// the command-level surface (`src+test (unit)`) is asserted, not just the row.
+// The DB is seeded directly with the DDL so the real VIEW aggregates across
+// repos: hand-built `test_levels` rows never reach that path.
 
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
@@ -40,10 +22,6 @@ afterEach(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 
-/** Seed a minimal derived index: one Active requirement, two member repos,
- *  one provenance link, and `tags` whose `unit` level appears in BOTH repos
- *  (plus `integration` in only one). Pre-fix, the VIEW emitted
- *  "unit,integration,unit"; post-fix it must emit each level exactly once. */
 function seed(path: string): void {
   // Under `strict: true`, bun:sqlite expects bind-object keys WITHOUT the
   // leading `$` sigil (the `$name` placeholder matches the JS key `name`).
@@ -110,7 +88,7 @@ function seed(path: string): void {
   db.close();
 }
 
-describe("provenance_matrix test_levels — no cross-repo double-count (WR-01/IN-03)", () => {
+describe("provenance_matrix test_levels — no cross-repo double-count", () => {
   test("a unit level present in two repos renders exactly once in the VIEW row", () => {
     seed(dbPath);
     const s = openStorage(dbPath);
@@ -119,7 +97,6 @@ describe("provenance_matrix test_levels — no cross-repo double-count (WR-01/IN
       const row = rows.find((r) => r.req_id === "BILLING-050");
       expect(row).toBeDefined();
       const levels = (row?.test_levels ?? "").split(",").filter(Boolean);
-      // Each level appears exactly once — no "unit,integration,unit".
       expect(levels).toEqual(["integration", "unit"]); // ORDER BY level
       expect(levels.filter((l) => l === "unit").length).toBe(1);
     } finally {
@@ -133,9 +110,7 @@ describe("provenance_matrix test_levels — no cross-repo double-count (WR-01/IN
     try {
       const rows = s.provenanceMatrix();
       const text = renderProvenance(rows, "text");
-      // src+test because implements + verifies both present; levels deduped.
       expect(text).toContain("src+test (integration,unit)");
-      // Belt-and-suspenders: the pre-fix duplicate must NOT appear anywhere.
       expect(text).not.toContain("unit,integration,unit");
       expect(text).not.toMatch(/unit[^)]*unit/);
     } finally {

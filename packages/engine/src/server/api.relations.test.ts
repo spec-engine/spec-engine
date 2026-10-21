@@ -1,20 +1,3 @@
-// packages/engine/src/server/api.relations.test.ts
-//
-// RED-17: lock the `/api/relations` route at the Hono seam. Harness
-// mirrors server-api.test.ts (cloneFixture → openStorage → runIndex once
-// in beforeAll; fresh Hono app per test) but clones relates-fixture —
-// platform-fixture has no Relates fields, so content assertions live here.
-//
-// Contract:
-//   - GET /api/relations           → 200 JSON RelationRow[], deterministic
-//                                    (from, to) order, broken targets kept.
-//   - GET /api/relations?format=mermaid → 200 text/plain mermaid graph —
-//     the SAME formatter the CLI uses (one engine, no forked logic); this
-//     is the seam the webapp /relations page reads through, since the
-//     webapp import fence (D-09) forbids importing @spec-engine/spec-engine directly.
-//   - GET /api/relations?format=bogus → 400, never 500.
-//   - Cache-Control: no-store applies (derived-index staleness footgun).
-
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { rmSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -33,8 +16,8 @@ let storage: Storage;
 let priorFlags: string | undefined;
 
 beforeAll(async () => {
-  // D4a / SERV-006: the relations read API is feature-flagged; this suite
-  // tests the ON behavior (the OFF 404 is locked in feature-flags.test.ts).
+  // The relations read API is feature-flagged; this suite tests the ON
+  // behavior (the OFF 404 is locked in feature-flags.test.ts).
   priorFlags = process.env.SPEC_FLAGS;
   process.env.SPEC_FLAGS = "relations";
   clone = cloneFixture(FIXTURE);

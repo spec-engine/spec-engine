@@ -1,11 +1,3 @@
-// packages/engine/src/operations/parity.test.ts
-//
-// One operation, three surfaces. For each operation that has more than one
-// front-end, the CLI's in-process path, the HTTP API (in-process Hono
-// request), and the MCP server (InMemoryTransport) are driven over the same
-// platform and must return the same data, and a write through any of them must
-// leave the same envelope on disk.
-
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -262,10 +254,6 @@ async function runCli(cmd: unknown, args: Record<string, unknown>): Promise<void
 const specFile = (key: string) => join(platform, "spec-engine", key, "SPEC.json");
 const read = (key: string) => Bun.file(specFile(key)).text();
 
-/**
- * Run the same write through each surface from the same starting envelope
- * and return what each left on disk (one snapshot per key, per surface).
- */
 async function writeThrough(
   keys: string[],
   surfaces: Record<string, () => Promise<void>>,

@@ -1,5 +1,3 @@
-// packages/engine/test/architecture-fences.test.ts
-//
 // The architecture fences (pure source-grep invariants) live once in
 // scripts/arch-fences.sh and run here, inside `bun test`, so they execute on
 // every supported platform, on pre-push, and are debuggable locally. Each

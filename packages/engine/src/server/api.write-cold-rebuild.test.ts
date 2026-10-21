@@ -1,17 +1,3 @@
-// packages/engine/src/server/api.write-cold-rebuild.test.ts
-//
-// VAL-03 cold-build invariant (T-21-10 / GATE-04): the new write surface must
-// perturb `build_id` ONLY via the canonical JSON it writes — never via warm or
-// incremental DB state, and `--results` (absent here) is never hashed in. This
-// suite proves it: after a `POST /api/requirements` (which internally re-derives
-// via runIndex on the warm storage handle), the stored build_id equals a COLD
-// rebuild — delete the derived DB + WAL/SHM siblings and re-index from the
-// now-updated canonical JSON. Two byte-identical build_ids ⇒ the write path
-// cannot smuggle warm state into the hash.
-//
-// Modelled on json-cold-rebuild.test.ts (removeDbAndWalSiblings + build_id
-// byte-identity) and reusing server-write.test.ts's compose/clone setup.
-
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
@@ -37,7 +23,7 @@ let dbPath: string;
 let priorFlags: string | undefined;
 
 beforeEach(() => {
-  // The write plane ships behind the editor feature flag (D4a).
+  // The write plane ships behind the editor feature flag.
   priorFlags = process.env.SPEC_FLAGS;
   process.env.SPEC_FLAGS = "editor";
   platformDir = cloneFixture(CANONICAL_FIXTURE);
@@ -50,8 +36,7 @@ afterEach(() => {
   rmSync(platformDir, { recursive: true, force: true });
 });
 
-/** Remove a sqlite DB file along with its `-wal` and `-shm` siblings
- *  (Pitfall 8 — leftover WAL files contaminate cold-rebuild assertions). */
+/** Leftover WAL files contaminate cold-rebuild assertions. */
 function removeDbAndWalSiblings(path: string): void {
   for (const sfx of ["", "-wal", "-shm"]) {
     const p = path + sfx;
@@ -59,7 +44,7 @@ function removeDbAndWalSiblings(path: string): void {
   }
 }
 
-describe("VAL-03 cold-build invariant — build_id after write+reindex == cold rebuild", () => {
+describe("cold-build invariant — build_id after write+reindex == cold rebuild", () => {
   test("a POST create leaves a build_id byte-identical to a cold rebuild from the updated JSON", async () => {
     // Warm path: the route writes BILLING/SPEC.json and re-derives on `storage`.
     const storage: Storage = openStorage(dbPath);
@@ -75,7 +60,6 @@ describe("VAL-03 cold-build invariant — build_id after write+reindex == cold r
     });
     expect(res.status).toBe(201);
 
-    // The build_id the route committed (read straight off the warm projection).
     const warmBuildId = computeBuildId(storage);
     expect(warmBuildId).toMatch(/^[0-9a-f]{64}$/);
     storage.close();
@@ -88,7 +72,6 @@ describe("VAL-03 cold-build invariant — build_id after write+reindex == cold r
     const coldResult = await runIndex({ platformDir, storage: cold });
     cold.close();
 
-    // Byte-identity ⇒ the write path perturbed build_id ONLY via the JSON.
     expect(coldResult.build_id).toBe(warmBuildId);
   });
 });

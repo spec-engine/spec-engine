@@ -1,28 +1,3 @@
-// packages/engine/src/server/api.provenance.test.ts
-//
-// Phase 16 Plan 02 / Task 1 (PWEB-01) — lock the `/api/provenance` routes at
-// the Hono seam. Harness mirrors server-relations.test.ts (cloneFixture →
-// openStorage → runIndex once in beforeAll; fresh Hono app per test). The
-// platform-fixture carries `**Issues:**` provenance fields (BILLING-009 etc.),
-// so content assertions live here.
-//
-// Contract:
-//   - GET /api/provenance              → 200 JSON ProvenanceMatrixRow[],
-//                                         deep-equals storage.provenanceMatrix().
-//   - GET /api/provenance/by-issue?issue= → 200 JSON rows for that bound issue
-//                                         (issue is a bound param VALUE, never
-//                                         interpolated).
-//   - GET /api/provenance?resolve=1    → 200 text/plain decorated text. With no
-//                                         SPEC_TRACKER_TOKEN the text degrades to
-//                                         the bare ids + the "set SPEC_TRACKER_TOKEN"
-//                                         hint (deterministic, no network).
-//   - GET /api/provenance?resolve=bogus → 400, never 500 (mirrors format=mermaid).
-//   - Cache-Control: no-store applies (derived-index staleness footgun).
-//
-// The `?resolve=1` resolution happens ENGINE-SIDE (server/api.ts imports
-// resolveAndCache from provenance/resolve.ts — a surface-layer module). The
-// webapp never resolves; it reads this decorated-text seam.
-
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { rmSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -42,8 +17,8 @@ let storage: Storage;
 let priorFlags: string | undefined;
 
 beforeAll(async () => {
-  // D4a / SERV-006: the provenance read API is feature-flagged; this suite
-  // tests the ON behavior (the OFF 404 is locked in feature-flags.test.ts).
+  // The provenance read API is feature-flagged; this suite tests the ON
+  // behavior (the OFF 404 is locked in feature-flags.test.ts).
   priorFlags = process.env.SPEC_FLAGS;
   process.env.SPEC_FLAGS = "provenance";
   clone = cloneFixture(FIXTURE);
@@ -76,7 +51,6 @@ describe("/api/provenance", () => {
     expect(res.headers.get("content-type")).toContain("application/json");
     const rows = (await res.json()) as ProvenanceMatrixRow[];
     expect(rows).toEqual(storage.provenanceMatrix());
-    // Sanity: the fixture has provenance links to assert against.
     expect(rows.length).toBeGreaterThan(0);
   });
 
@@ -87,7 +61,6 @@ describe("/api/provenance", () => {
     const rows = (await res.json()) as ProvenanceMatrixRow[];
     expect(rows).toEqual(storage.provenanceByIssue("ENG-1432"));
     expect(rows.length).toBeGreaterThanOrEqual(1);
-    // Every returned row is linked to the requested opaque issue id.
     for (const row of rows) {
       expect(row.issue_id).toBe("ENG-1432");
     }
@@ -98,7 +71,6 @@ describe("/api/provenance", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/plain");
     const body = await res.text();
-    // Degraded path: bare opaque ids + the token hint on every link line.
     expect(body).toContain("ENG-1432");
     expect(body).toContain(TOKEN_HINT);
   });

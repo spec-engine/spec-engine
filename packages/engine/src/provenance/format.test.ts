@@ -1,25 +1,3 @@
-// packages/engine/src/provenance/format.test.ts
-//
-// PMAT-01 / PMAT-02: pure-formatter tests for the provenance matrix
-// (provenance/format.ts). Mirrors relations-format.test.ts's posture:
-// ProvenanceMatrixRow[] in, string out — no I/O, no Storage, no bun:sqlite
-// (D-08).
-//
-// Contract under test:
-//   - sortProvenance: deterministic ordering on the FULL composite key
-//     (req_id via domain-then-numeric-seq, then role, then issue_id, then
-//     source_file, then line) — BILLING-9 sorts before BILLING-10, and a
-//     synthetic amends-via row sorts deterministically among created /
-//     supersedes-via rows for the same requirement. Returns a NEW array,
-//     never mutates input. The key MUST match the Plan 01 storage ORDER BY
-//     so JSON is byte-stable across cold rebuilds (PMAT-02 / Pitfall 2).
-//   - renderProvenance(rows, "json") === JSON.stringify(sortProvenance(rows))
-//     — no indentation, no trailing newline.
-//   - renderProvenance(rows, "text"): a per-requirement human view carrying,
-//     per link, the req_id, the role label, the opaque issue_id, and the
-//     source_file:line git pointer.
-//   - Empty input → "[]" (json) / "" (text).
-
 import { describe, expect, test } from "bun:test";
 import type { ProvenanceMatrixRow } from "@spec-engine/shared";
 import { renderProvenance, sortProvenance } from "./format";
@@ -89,10 +67,8 @@ describe("renderProvenance — json mode", () => {
     ];
     const out = renderProvenance(rows, "json");
     expect(out).toBe(JSON.stringify(sortProvenance(rows)));
-    // No pretty-printing: no newline / no 2-space indentation artifacts.
     expect(out).not.toContain("\n");
     expect(out.startsWith("[")).toBe(true);
-    // Full row shape survives the JSON projection.
     const parsed = JSON.parse(out) as ProvenanceMatrixRow[];
     expect(parsed[0]?.test_levels).toBe("unit,integration");
   });
@@ -119,24 +95,19 @@ describe("renderProvenance — text mode", () => {
         source_file: "spec-engine/BILLING/SPEC.md",
         line: 13,
       }),
-      // Synthetic amends-via row — no fixture seeding (Pitfall 5(a)).
       prov("BILLING-9", "amends-via", "ENG-9999", {
         source_file: "spec-engine/BILLING/SPEC.md",
         line: 14,
       }),
     ];
     const out = renderProvenance(rows, "text");
-    // Requirement id present.
     expect(out).toContain("BILLING-9");
-    // Each role label present.
     expect(out).toContain("created");
     expect(out).toContain("supersedes-via");
     expect(out).toContain("amends-via");
-    // Opaque issue ids present (rendered verbatim — never resolved).
     expect(out).toContain("ENG-1432");
     expect(out).toContain("ENG-7");
     expect(out).toContain("ENG-9999");
-    // Git pointer rendered as source_file:line.
     expect(out).toContain("spec-engine/BILLING/SPEC.md:12");
     expect(out).toContain("spec-engine/BILLING/SPEC.md:14");
   });

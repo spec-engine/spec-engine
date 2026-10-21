@@ -1,11 +1,5 @@
-// packages/engine/test/npm-package.test.ts
-//
-// The npm distribution contract (RED-101): the published package must ship
-// only the built dist payload, its manifest must be installable by consumers
-// (no workspace: protocol in published dependencies), and the bin entry must
-// guard the Bun runtime BEFORE the bundle (with its static bun:sqlite
-// import) is loaded. These are source/manifest assertions — the tarball
-// rehearsal itself is `bun pm pack --dry-run` in the release loop.
+// These are source/manifest assertions: the tarball rehearsal itself is
+// `bun pm pack --dry-run` in the release loop.
 
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
