@@ -1,7 +1,7 @@
 {
   "key": "REQ",
   "owner": null,
-  "updated": "2026-09-24",
+  "updated": "2026-10-21",
   "scope": "Requirement lifecycle: spec req, spec supersede, spec amend, and @-refs. Belongs here: next-id allocation; non-interactive authoring; supersede, move, and amend; @path file-ref resolution. Does not belong here: scaffolding a domain (DOMAIN). Boundary case: minting a requirement id is REQ; scaffolding the domain that holds it is DOMAIN.",
   "grammar": "ears",
   "requirements": [
@@ -562,17 +562,18 @@
     },
     {
       "id": "REQ-035",
-      "status": "active",
+      "status": "superseded",
       "statement": "If spec amend targets a requirement with at least one bound @spec tag, then it shall refuse — amendment is permitted only for a Draft entry or an Active entry with zero bound tags.",
       "why": "amend rewrites in place with no version bump; amending a tagged requirement would silently mutate shipped truth out from under the @spec tags that verify it, with no supersede trail recording the change.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "REQ-044",
       "relates": [],
       "livesIn": [
         "packages/engine/src/commands/amend.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "supersededAtVersion": 18,
       "aliases": [],
       "cites": []
     },
@@ -720,6 +721,156 @@
           "id": "probooks Q-16"
         }
       ],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-044",
+      "status": "active",
+      "statement": "If spec amend changes the statement or why of a requirement present in its domain file at the newest v* tag merged into HEAD, then it shall refuse with exit 2.",
+      "why": "A released promise is what adopters pinned and tested; rewriting it in place leaves no supersede trail, while refusing before release churns ids for wording fixes.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/amend.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-045",
+      "status": "active",
+      "statement": "When spec amend refuses a released requirement, it shall name the release tag, spec supersede as the path for the promise, and --lives or --relates as the path for metadata.",
+      "why": "A refusal that names no exit sends adopters to a codemod outside the validated seam.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/amend.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-046",
+      "status": "active",
+      "statement": "When spec amend changes only livesIn or relates of a released requirement, it shall write the change in place.",
+      "why": "Location and cross-references are not the promise; a file move otherwise churns ids and rewrites every tag site.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/amend.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-047",
+      "status": "active",
+      "statement": "If no v* tag is merged into HEAD or the platform is not a git repository, then spec amend shall treat every requirement as unreleased.",
+      "why": "Nothing is pinned before the first release, so an in-place fix costs nothing and a forced supersede only churns ids.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/amend.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-048",
+      "status": "active",
+      "statement": "When a lifecycle command targets an id whose prefix names no domain file holding that entry, the spec CLI shall locate the entry by scanning every domain file.",
+      "why": "An id minted or moved under another key is otherwise unreachable by every command, forcing adopters to remint by codemod outside the validated seam.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/_envelope.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-049",
+      "status": "active",
+      "statement": "When spec supersede targets an entry held in a domain other than its prefix, it shall mint the successor in the holding domain.",
+      "why": "The successor belongs to the charter that holds the promise, not to a key that no longer exists.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/supersede.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-050",
+      "status": "active",
+      "statement": "When a requirement is authored or amended through the CLI, the HTTP API, or the MCP server with a relates list, the spec engine shall build relates from every entry, splitting each value on commas and trimming.",
+      "why": "Cross-references the engine accepts but no surface forwards can only be authored by scripts outside the validating seam.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/mint.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-051",
+      "status": "active",
+      "statement": "When a requirement is amended or superseded through the CLI, the HTTP API, or the MCP server with a relates list, the spec engine shall replace the target's relates with that list, and an empty list shall clear it.",
+      "why": "One idiom for both lists keeps livesIn and relates authoring interchangeable; a diverging rule is a surprise at the write seam.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/amend.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-052",
+      "status": "active",
+      "statement": "When spec supersede or spec move mints a successor, it shall copy the predecessor's relates, every livesIn entry, cites, aliases, term, and section unless a flag overrides the field.",
+      "why": "A successor that silently drops cross-references and all but the first location loses facts nobody chose to remove.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/_envelope.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-053",
+      "status": "active",
+      "statement": "When spec supersede or spec move mints a successor, it shall carry no issues except the created row from --issue.",
+      "why": "Issues are the predecessor's provenance; copying them attributes history to an entry that did not exist when it happened.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/_envelope.ts"
+      ],
+      "issues": [],
       "aliases": [],
       "cites": []
     }

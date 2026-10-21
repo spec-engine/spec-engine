@@ -1,7 +1,7 @@
 {
   "key": "SCHM",
   "owner": null,
-  "updated": "2026-09-05",
+  "updated": "2026-10-21",
   "scope": "The shared data model: the SPEC.json envelope, the DDL, the coverage view, and the promise that CLI, webapp, and MCP never disagree. Belongs here: the @spec-engine/shared schema every surface shares; the DDL; the coverage SQL view; one model, one storage seam. Does not belong here: the drift definition (PROP); cold-rebuild identity (INDX); loopback-only binding (SERV). Boundary case: one-model-one-seam is stated here; cold-rebuild identity stays INDX's and loopback-only stays SERV's.",
   "grammar": "ears",
   "requirements": [
@@ -219,16 +219,17 @@
     },
     {
       "id": "SCHM-014",
-      "status": "active",
+      "status": "superseded",
       "statement": "If a SPEC.json file is structurally invalid or carries an unknown status, then spec check shall report INVALID_DOMAIN_FILE or BAD_STATUS rather than crashing, and the file shall contribute zero requirements.",
       "why": "A crash or silent misparse loses requirements without a trace; a named diagnostic makes the broken file itself the finding.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INDX-016",
       "relates": [],
       "livesIn": [
         "packages/engine/src/parser/domainJson.ts"
       ],
       "issues": [],
+      "supersededAtVersion": 11,
       "aliases": [],
       "cites": []
     },
@@ -468,6 +469,66 @@
       "status": "active",
       "statement": "The spec engine shall parse a SPEC.json through the shared schema before reading any field from it, so no code path handles an unvalidated envelope.",
       "why": "A domain file read as loose JSON reaches every operation as a cast, so a malformed file is caught only at the write seam and each reader re-derives the envelope shape by hand.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/shared/src/domain.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-031",
+      "status": "active",
+      "statement": "When the validating write seam rewrites an existing SPEC.json, it shall leave every unchanged entry byte-identical.",
+      "why": "A one-field write that reserialises forty entries buries the change in a whole-file diff, and adopters trim by hand.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/shared/src/domain.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-032",
+      "status": "active",
+      "statement": "When the validating write seam changes an existing entry, it shall patch the entry in its existing key order and add a defaulted field only where the file already carries that key.",
+      "why": "A reordered or null-padded entry reads as a change where none happened.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/shared/src/domain.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-033",
+      "status": "active",
+      "statement": "When the validating write seam appends an entry to an existing SPEC.json, it shall give the entry the key order of the last existing entry.",
+      "why": "A new entry in a foreign shape breaks the file's uniformity on every mint.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/shared/src/domain.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-034",
+      "status": "active",
+      "statement": "If a shape-preserving write does not re-parse to the validated domain, then the write seam shall refuse the write.",
+      "why": "Byte preservation must never cost a requirement.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

@@ -1,7 +1,7 @@
 {
   "key": "CHCK",
   "owner": null,
-  "updated": "2026-09-24",
+  "updated": "2026-10-21",
   "scope": "spec check: the diagnostic codes, their severities, the --ci cold-rebuild gate, which severity exits 1, and the spec glossary round-trip that GLOSSARY_DRIFT enforces. Belongs here: diagnostic codes and severities; the --ci gate; the exit-1 contract. Does not belong here: member discovery (INIT). Boundary case: NO_SPEC_CONFIG is emitted by discovery, but its severity is CHCK's.",
   "grammar": "ears",
   "requirements": [
@@ -135,16 +135,17 @@
     },
     {
       "id": "CHCK-009",
-      "status": "active",
+      "status": "superseded",
       "statement": "If a code tag references a Draft requirement, then spec check shall report DRAFT_REFERENCED as a warning.",
       "why": "Code shipped against a promise nobody approved yet is invisible otherwise — the draft quietly becomes de-facto truth without ever being accepted.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHCK-033",
       "relates": [],
       "livesIn": [
         "packages/engine/src/storage/sqlite.ts"
       ],
       "issues": [],
+      "supersededAtVersion": 11,
       "aliases": [],
       "cites": []
     },
@@ -532,6 +533,111 @@
           "id": "probooks Q-11"
         }
       ],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-033",
+      "status": "active",
+      "statement": "If a verifying @spec tag references a Draft requirement, then spec check shall report DRAFT_REFERENCED at error severity.",
+      "why": "A test that claims an unaccepted promise asserts behaviour nobody agreed to.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/storage/sql/diagnostics.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-034",
+      "status": "active",
+      "statement": "If an implementing or documenting @spec tag references a Draft requirement, then spec check shall report DRAFT_REFERENCED at warning severity.",
+      "why": "Specifying behaviour that already ships is the ordinary retro-specification state; failing on it blocks every adopter doing it.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/storage/sql/diagnostics.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-035",
+      "status": "active",
+      "statement": "The spec check command shall report UNVERIFIED_REQ at warning severity by default.",
+      "why": "An implemented requirement with no test is incomplete, not broken; failing the gate on it makes adopters wrap check in a severity filter or stop running it.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/storage/sql/diagnostics.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-036",
+      "status": "active",
+      "statement": "When spec-engine/check.json declares a severity rule for a diagnostic code, spec check shall grade every row of that code to the rule's severity of error, warning, or off.",
+      "why": "Which diagnostic blocks a merge is adopter policy; a wrapper that re-grades check --json drifts from the engine.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/check.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-037",
+      "status": "active",
+      "statement": "When a severity rule carries a match list of domain keys or requirement ids, spec check shall apply it only to rows whose requirement is listed or carries a listed key, the most specific rule winning.",
+      "why": "A tests-required ledger is a set of ids and domains that a code-wide rule cannot express.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/check.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-038",
+      "status": "active",
+      "statement": "When a diagnostic row is graded off, spec check shall omit it from every output.",
+      "why": "A row the adopter declared irrelevant trains readers to ignore the report.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/check.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-039",
+      "status": "active",
+      "statement": "If spec-engine/check.json fails its schema, then spec check shall exit 2 naming the file and the failing path.",
+      "why": "A misspelled rule that is silently ignored looks like a rule in force.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/check.ts"
+      ],
+      "issues": [],
       "aliases": [],
       "cites": []
     }

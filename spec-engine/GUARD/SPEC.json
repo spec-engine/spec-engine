@@ -1,7 +1,7 @@
 {
   "key": "GUARD",
   "owner": "drea",
-  "updated": "2026-07-30",
+  "updated": "2026-10-21",
   "scope": "Loss detection: diffing the requirement derivation at a git ref against the working tree to block a change that would lose a requirement. Belongs here: REQUIREMENT_REMOVED, IMPL_LOST, VERIFY_LOST, SPEC_FILE_DELETED; the supersede and deprecate suppression paths; never-fail outside git. Does not belong here: who may approve a supersession (OWNER). Boundary case: the same REQUIREMENT_REMOVED concept is enforced twice, at pre-commit by spec guard and at CI by spec check --base, and both live here.",
   "grammar": "ears",
   "requirements": [
@@ -382,6 +382,51 @@
       ],
       "issues": [],
       "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GUARD-024",
+      "status": "active",
+      "statement": "When spec check runs with a resolvable base ref, --base when given and HEAD otherwise, it shall report every IMPL_LOST, VERIFY_LOST, and SPEC_FILE_DELETED loss spec guard would report against that ref.",
+      "why": "A loss only spec guard reports is invisible to CI that runs check alone, so a requirement's last implementation or test vanishes past the gate.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/check.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GUARD-025",
+      "status": "active",
+      "statement": "The spec check command shall report IMPL_LOST and SPEC_FILE_DELETED at error severity and VERIFY_LOST at warning severity.",
+      "why": "Losing the last test is the same incompleteness as never having one; losing the last implementation or a spec file is a regression.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/check.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GUARD-026",
+      "status": "active",
+      "statement": "When spec check reports losses, it shall omit guard's REQUIREMENT_REMOVED rows.",
+      "why": "The removal check already reports that id; two rows with different wording double-count one removal.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/check.ts"
+      ],
+      "issues": [],
       "aliases": [],
       "cites": []
     }
