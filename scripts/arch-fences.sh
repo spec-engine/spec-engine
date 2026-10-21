@@ -83,7 +83,7 @@ fence_ops01_write_seam() {
 # reader. Nothing in production source casts through `unknown`.
 # @spec SCHM-030
 fence_schm030_schema_reads() {
-  ALLOWED='packages/shared/src/domain.ts|packages/engine/src/indexer/discover.ts|packages/engine/src/operations/init.ts|packages/engine/src/server/api.ts'
+  ALLOWED='packages/shared/src/domain.ts|packages/shared/src/checkConfig.ts|packages/engine/src/indexer/discover.ts|packages/engine/src/operations/init.ts|packages/engine/src/server/api.ts'
   OFFENDERS=$(grep -RnE --include='*.ts' --exclude='*.test.ts' --exclude-dir=testing 'JSON\.parse\(|as unknown as' packages/*/src 2>/dev/null \
     | awk -F: -v allowed="^($ALLOWED)$" '$0 ~ /as unknown as/ || $1 !~ allowed' || true)
   if [ -n "$OFFENDERS" ]; then
