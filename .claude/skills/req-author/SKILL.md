@@ -44,6 +44,11 @@ loop consumes what it produces.
    what triggers the behavior or what observably happens — decide, or mark
    the draft as a question for the human.
 
+   One promise per statement: a result chaining two behaviors with `and` is
+   two drafts. Prefer `When`, `If … then`, and the bare `shall` form; `While`
+   and `Where` only when a state or feature gates the behavior. Rationale
+   belongs in the why, never in the statement.
+
 3. **Write a why that names what breaks.** The `why` answers "what goes wrong
    if this stops being true" — never a restatement of the statement in
    different words.

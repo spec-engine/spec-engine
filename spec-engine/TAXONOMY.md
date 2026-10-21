@@ -314,6 +314,12 @@ applies them. The statement-shape rule is also checked at write time and by
    fails the gate") when the consequence is itself observable. Rationale —
    *why the behavior exists* — still belongs in the why, never in the
    statement.
+
+   One promise per statement. A result that chains two behaviors with `and`,
+   or that sets two severities, is two requirements; a single test must be
+   able to prove the whole statement. Prefer `When`, `If … then`, and the
+   bare `shall` form; use `While` and `Where` only when a state or a feature
+   is what gates the behavior.
 3. **It must make sense on its own.** A reader seeing only this one statement —
    in search results, in a report — understands it. If it says "the
    normalization" or "that prefix" without naming the subject, it fails.

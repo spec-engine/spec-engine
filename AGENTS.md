@@ -731,8 +731,11 @@ command choreography:
 3. **Dedup.** `spec query "<phrase>" . --json` before minting. Overlap means
    `spec amend` or relate the existing requirement.
 4. **Draft to the standard.** Fixed EARS shape, checked at write time where the
-   domain declares it. The why names what breaks. Every draft quotes the phrase
-   of the brief it derives from.
+   domain declares it. One promise per statement: a result that chains two
+   behaviors with `and` is two requirements. Prefer `When`, `If … then`, and
+   the bare `shall` form; `While` and `Where` only when a state or feature
+   gates the behavior. The why names what breaks; rationale never enters the
+   statement. Every draft quotes the phrase of the brief it derives from.
 5. **Mint.** `spec req <domain> --text "<statement>" --why "<what breaks>"
    --lives "<file>" [--issue <ticket>]`.
 6. **Provenance, not identity.** The ticket goes in `--issue`, never in an id
