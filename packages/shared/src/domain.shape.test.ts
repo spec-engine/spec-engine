@@ -1,5 +1,3 @@
-// packages/shared/src/domain.shape.test.ts
-//
 // The hand-shaped input is written to a plain path, not a platform's
 // SPEC.json: it is seam input, not a platform fixture.
 

@@ -1,19 +1,4 @@
-// packages/engine/src/cli.docs-agents.test.ts
-//
-// RED-19: agent-facing documentation must exist alongside the human README
-// and stay COMPLETE as the CLI grows. The completeness contract is
-// mechanical, not aspirational: this test walks the public subcommand
-// registry in packages/engine/src/cli.ts and fails if any public
-// subcommand is missing from the root AGENTS.md — so adding a command without
-// documenting its agent-facing contract breaks CI, the same way the
-// coverage VIEW cannot drift from tags.
-//
-// Hidden CI smokes (names prefixed `__`) are exempt: they are not part of
-// the public surface and `spec --help` does not advertise them to agents.
-//
-// Doc-only changes are normally TDD-exempt (AGENTS.md), but RED-19's
-// acceptance criterion 4 makes completeness itself a tested behavior, so
-// the failing test came first.
+// Hidden smokes (`__` prefix) are exempt: `spec --help` does not advertise them.
 
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
@@ -25,21 +10,14 @@ const AGENT_DOC = join(REPO_ROOT, "AGENTS.md");
 const README = join(REPO_ROOT, "README.md");
 
 /**
- * Extract the subcommand names registered in cli.ts's `subCommands` block.
- * Matches both bare identifiers (`index: () => import(...)`) and quoted
- * names (`"__schema-smoke": () => import(...)`). Parsing the source (not
- * importing the command tree) keeps this test free of citty/runtime
- * coupling — the registry literal IS the public contract.
+ * The subcommand names in cli.ts's `subCommands` block. Parsing the source
+ * rather than importing the command tree keeps this test free of citty.
  */
 function publicSubcommands(): string[] {
   const src = readFileSync(CLI_TS, "utf8");
   const names: string[] = [];
-  // Self-review hardening: match any `name: () =>` lazy-subcommand key
-  // WITHOUT requiring the quote style or the `import("./commands/` call on
-  // the same line — a formatter that switches quotes or wraps the import
-  // would otherwise silently shrink the parsed surface and let new commands
-  // ship undocumented (the exact failure mode this test exists to prevent).
-  // The sanity test below guards this regex against rot.
+  // Any `name: () =>` key, whatever the quote style or where the import
+  // wraps, so a reformat cannot shrink the parsed surface.
   const re = /^\s+(?:"([^"]+)"|([A-Za-z][\w-]*)):\s*\(\)\s*=>/gm;
   for (const m of src.matchAll(re)) {
     const name = m[1] ?? m[2] ?? "";
@@ -48,12 +26,10 @@ function publicSubcommands(): string[] {
   return names;
 }
 
-describe("AGENTS.md (RED-19 agent-facing documentation)", () => {
+describe("AGENTS.md", () => {
   test("sanity: the registry parser finds the known public surface", () => {
     const names = publicSubcommands();
-    // Guard the parser itself: if the regex rots and returns [], every
-    // downstream assertion would vacuously pass. The known-core commands
-    // must all be present and the hidden smokes must not.
+    // If the regex rots and returns [], every assertion below passes vacuously.
     for (const core of ["index", "check", "map", "query", "resolve", "gate"]) {
       expect(names).toContain(core);
     }
@@ -67,10 +43,8 @@ describe("AGENTS.md (RED-19 agent-facing documentation)", () => {
 
   test("every public subcommand is documented in AGENTS.md", () => {
     const doc = readFileSync(AGENT_DOC, "utf8");
-    // Self-review hardening: require a word boundary after the name, not a
-    // bare substring — `includes("spec ser")` would be vacuously satisfied
-    // by the existing "spec serve" text if a future command were named as
-    // a prefix of an already-documented one.
+    // A word boundary after the name: a bare substring would pass for a new
+    // command named as a prefix of an already-documented one.
     const missing = publicSubcommands().filter(
       (name) => !new RegExp(`spec ${name}(?![\\w-])`).test(doc),
     );
@@ -79,9 +53,7 @@ describe("AGENTS.md (RED-19 agent-facing documentation)", () => {
 
   test("AGENTS.md covers the agent workflow loop and exit codes", () => {
     const doc = readFileSync(AGENT_DOC, "utf8");
-    // The route → tag → check loop is the doc's reason to exist (criterion
-    // 2); exit codes are the contract agents branch on. Headline strings,
-    // not prose style, are what's locked.
+    // Headline strings only; the prose around them is free to change.
     expect(doc).toContain("--json");
     expect(doc).toContain("Exit code");
     expect(doc).toContain("@spec");
@@ -95,30 +67,17 @@ describe("AGENTS.md (RED-19 agent-facing documentation)", () => {
   });
 });
 
-// ── Wave 0 RED bar for Phase 5 (authoring pipeline) ─────────────────────────
-// These are the VERIFYING tests for two doc-only requirements minted in later
-// waves (their verifying `@spec` tags — AUTHOR-001 unit / AUTHOR-002 unit — are
-// added atomically at mint in Wave 1; a tag here now, before the mint, would be
-// a DANGLING_TAG that fails `spec check . --ci`, so NONE is written yet). They are
-// authored RED-first: the AGENTS.md playbook section and the req-author SKILL.md
-// do not exist yet, so each assertion below is a clean CONTENT failure (a missing
-// SKILL.md degrades to an empty string, never an unhandled read throw — the
-// taxonomy.test.ts CHRT-001/002 precedent). Wave 1 turns them GREEN.
-
 const SKILL_MD = join(REPO_ROOT, ".claude", "skills", "req-author", "SKILL.md");
 
-/** Read a doc guarding a missing file so the RED failure lands as a
- * content-assertion failure, not an unhandled read throw. */
+/** A missing file reads as "", so the assertion fails on content instead of throwing. */
 function readOrEmpty(path: string): string {
   return existsSync(path) ? readFileSync(path, "utf8") : "";
 }
 
-describe("AGENTS.md authoring playbook (AUTHOR-001) + req-author skill (AUTHOR-002)", () => {
+describe("AGENTS.md authoring playbook and the req-author skill", () => {
   test("AGENTS.md carries the brief→mint authoring playbook section", () => {
     // @spec AUTHOR-010 unit
     const doc = readFileSync(AGENT_DOC, "utf8");
-    // The playbook section header — the mint front-half that feeds the existing
-    // route → tag → check loop.
     expect(doc).toContain("## Authoring requirements (brief → mint)");
   });
 
@@ -133,16 +92,11 @@ describe("AGENTS.md authoring playbook (AUTHOR-001) + req-author skill (AUTHOR-0
     // @spec AUTHOR-006 unit
     // @spec AUTHOR-007 unit
     const skill = readOrEmpty(SKILL_MD);
-    // YAML frontmatter keys (the Claude Code skill convention).
     expect(skill).toContain("name:");
     expect(skill).toContain("description:");
-    // Approval-before-write gate — the skill never mints without a human OK.
     expect(skill).toMatch(/approval|before writing/i);
-    // Teaches the EARS statement shapes and the quote-your-source rule —
-    // the two mechanics the skill owns (no ghost section references).
     expect(skill).toContain("shall");
     expect(skill).toMatch(/source quote|quotes its source/i);
-    // Dogfoods the REAL CLI — the skill drives `spec req`, never a reimpl.
     expect(skill).toContain("spec req");
   });
 });

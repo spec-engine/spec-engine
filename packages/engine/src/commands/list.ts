@@ -1,5 +1,3 @@
-// packages/engine/src/commands/list.ts
-//
 // `spec list [platformDir] [--domain KEY] [--status S]`: every requirement
 // record in (key, seq) order, history included. A `--status` value outside
 // active | draft | superseded | deprecated is exit 2.

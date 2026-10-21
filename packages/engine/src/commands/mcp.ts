@@ -1,17 +1,5 @@
-// packages/engine/src/commands/mcp.ts
-//
-// L4 (lifecycle pass) — `spec mcp [platformDir]`: serve the engine's read
-// surface as a Model Context Protocol server over stdio. Register it in an
-// agent harness (e.g. Claude Code `.mcp.json`) and the agent routes
-// through Spec Engine natively — query/resolve/reverse/report/check/propagation/
-// next-id — instead of shelling out to the CLI.
-//
-// STDOUT IS THE PROTOCOL CHANNEL. Every human-facing line (startup notice,
-// errors) goes to stderr; writing chrome to stdout would corrupt the
-// JSON-RPC stream.
-//
-// The process serves until stdin closes (the harness disconnecting), which
-// is the normal MCP lifecycle — no port, no daemon, loopback-free.
+// stdout is the JSON-RPC channel: every human-facing line goes to stderr, or
+// it corrupts the stream. The process serves until stdin closes.
 
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { defineCommand } from "citty";

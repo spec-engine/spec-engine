@@ -1,20 +1,10 @@
-// packages/webapp/src/server.ts
-//
-// The webapp scaffold. The createApp() factory returns a Hono app that
-// serves the placeholder page embedded at compile time via Bun's
-// `import ... with { type: "text" }` attribute.
-//
-// IMPORTANT: do NOT switch to Bun.file("./index.html.txt") — that resolves at
-// runtime and fails inside the `bun build --compile` binary.
-// IMPORTANT: this package may NOT import bun:sqlite, node:fs, fs, bun,
-// node:path, or anything from @spec-engine/spec-engine (enforced by D-09 lint).
+// Do not switch the embedded page to Bun.file(...): that resolves at runtime
+// and fails inside the `bun build --compile` binary.
 
 import { DEFAULT_BIND_HOST } from "@spec-engine/shared";
 import { Hono } from "hono";
 import { html as htmlTemplate } from "hono/html";
-// Bun inlines the file as a string when imported with the `text` attribute;
-// the `.txt` extension is what types the import as a string, and
-// `bun build --compile` embeds the raw file contents as UTF-8.
+// The `.txt` extension is what types the text import as a string.
 import html from "./index.html.txt" with { type: "text" };
 import { mountCoverage } from "./pages/coverage";
 import { registerErrorBoundary } from "./pages/data";
@@ -28,8 +18,7 @@ import { mountRelations } from "./pages/relations";
 import { mountRequirements } from "./pages/requirements";
 import { mountSetup } from "./pages/setup";
 
-/** The embedded HTML string — exported so the `serve --probe` smoke can
- *  assert the binary really inlined it (D-14). */
+/** Exported so the `serve --probe` smoke can assert the binary inlined it. */
 export const placeholderHtml = html;
 
 export function createApp(): Hono {
@@ -61,24 +50,9 @@ function labelPlatform(app: Hono, platformName: string): void {
 }
 
 /**
- * Mount the SSR pages onto an existing Hono app and return
- * the same app for chainability (RED-17 added /relations). Mirrors
- * `mountApi(app, storage)`'s "mutate-one-app" composition (RESEARCH Open
- * Q1) so `commands/serve.ts` can compose engine + webapp on
- * one Hono instance:
- *
- *   const app = new Hono();
- *   mountApi(app, storage);   // /api/*  (engine)
- *   mountWebapp(app);         // /, /requirements, /propagation/:id, /query, /relations, /provenance  (webapp)
- *
- * Each page handler closes over `app` so it can read its own `/api/*`
- * routes in-process via `app.request(path)` (never
- * `fetch("http://...")`).
- *
- * NOTE: `mountWebapp` registers `/` — do NOT call it on the app returned
- * by `createApp()` (the probe factory) because that one already
- * has `/` bound to the placeholder. The real-serve composer
- * builds a fresh `new Hono()` and calls both mount functions on it.
+ * Each page reads its own `/api/*` routes in-process via `app.request(path)`,
+ * so `mountApi` must be mounted on the same app. Registers `/`: never call it
+ * on the `createApp()` probe app, which already binds `/`.
  */
 export function mountWebapp(
   app: Hono,
@@ -86,10 +60,7 @@ export function mountWebapp(
   platformName?: string,
 ): Hono {
   if (platformName !== undefined) labelPlatform(app, platformName);
-  // Error boundary first: a page whose API read fails (e.g. the engine's
-  // storage layer is unavailable — sandboxed file locks, contention) renders
-  // a readable error page with the engine's hint instead of Hono's bare-text
-  // 500. See pages/data.ts.
+  // Before the pages: a failed API read renders the engine's hint, not Hono's bare 500.
   registerErrorBoundary(app);
   mountCoverage(app);
   mountRequirements(app);

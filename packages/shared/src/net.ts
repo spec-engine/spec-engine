@@ -1,5 +1,3 @@
-// packages/shared/src/net.ts
-//
 // Runtime-free network predicates shared by every write surface (engine
 // `/api/*` and webapp `/editor/*`). Kept in @spec-engine/shared so the two
 // packages enforce ONE contract — a rebinding hole patched in one surface but

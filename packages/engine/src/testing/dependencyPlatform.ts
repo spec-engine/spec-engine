@@ -1,5 +1,3 @@
-// packages/engine/src/testing/dependencyPlatform.ts
-
 import type { TestPlatform } from "./platform";
 
 /** The member names of `dependencyPlatform`, by name and by dependency depth. */

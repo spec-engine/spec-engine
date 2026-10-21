@@ -1,5 +1,3 @@
-// packages/engine/src/commands/get.test.ts
-//
 // The command over the canonical fixture, driven in-process: found, unknown,
 // malformed, and byte-stable JSON.
 

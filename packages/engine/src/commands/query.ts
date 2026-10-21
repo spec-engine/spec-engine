@@ -1,5 +1,3 @@
-// packages/engine/src/commands/query.ts
-//
 // @spec QURY-005
 // @spec QURY-006
 

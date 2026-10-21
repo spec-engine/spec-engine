@@ -1,5 +1,3 @@
-// packages/engine/src/commands/term.ts
-//
 // `spec term`: the glossary-term authoring surface over operations/term.ts.
 //
 //   spec term <name> --def <definition> [--aliases a,b] [--section s]  — author

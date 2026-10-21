@@ -1,30 +1,10 @@
-// packages/shared/src/ears.ts
-//
-// The EARS statement grammar — the fixed shape requirement statements are
-// written in (mental-model sentence 8: "when X happens, the system shall do
-// Y"). Five sentence shapes, each forcing a doer and an observable result:
-//
-//   Always true          The <system> shall <result>
-//   Triggered            When <trigger>, the <system> shall <result>
-//   Only in a state      While <state>, the <system> shall <result>
-//   Something went wrong If <failure>, then the <system> shall <result>
-//   Feature-dependent    Where <feature>, the <system> shall <result>
-//
-// The word "shall" is the mechanical marker splitting the doer from the
-// result; the leading keyword names the condition kind. A statement that fits
-// no shape has not decided what triggers the behavior or what observably
-// happens — which is the failure this validator exists to catch.
-//
-// Pure: no I/O, no engine imports, deterministic. LLM-free by design — this
-// checks the SCAFFOLD (clauses present, in order); judgment calls (is the
-// statement timeless, is the altitude right) stay with the human rubric.
+// "shall" splits the doer from the result; the leading keyword names the
+// condition kind. This checks the scaffold only: whether a statement is
+// timeless or at the right altitude stays with the human rubric.
 
-/** Which of the five EARS shapes a statement matched. */
 export type EarsPattern = "always" | "when" | "while" | "if" | "where";
 
-/** The statement decomposed into its clauses. `condition` is null for the
- *  always-true shape. `system` is the doer as written (a leading "the " is
- *  not required — "spec resolve shall …" names the system directly). */
+/** `system` is the doer as written: a leading "the " is not required. */
 export interface EarsClauses {
   pattern: EarsPattern;
   condition: string | null;
@@ -36,8 +16,7 @@ export type EarsResult =
   | { ok: true; clauses: EarsClauses }
   | { ok: false; problem: string; expected: string };
 
-/** The expected-shapes text every rejection carries — shows a filled-in
- *  example, never just a rule name. */
+/** Every rejection shows a filled-in example, never just a rule name. */
 export const EARS_EXPECTED = [
   'When <trigger>, the <system> shall <result> — e.g. "When an unknown id is passed, spec resolve shall print [] and exit 0."',
   "While <state>, the <system> shall <result>",
@@ -59,11 +38,6 @@ function reject(problem: string): EarsResult {
   return { ok: false, problem, expected: EARS_EXPECTED };
 }
 
-/**
- * Parse one requirement statement against the five EARS shapes. Returns the
- * decomposed clauses, or a rejection whose `problem` names what is missing in
- * plain words and whose `expected` lists the shapes with a filled example.
- */
 export function parseEarsStatement(raw: string): EarsResult {
   const statement = raw.trim();
   if (statement === "") return reject("the statement is empty");

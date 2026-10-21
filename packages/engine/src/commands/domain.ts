@@ -1,5 +1,3 @@
-// packages/engine/src/commands/domain.ts
-//
 // `spec domain new <KEY>` scaffolds a domain; `spec domain list` prints the
 // keys, or `{ key, scope }` rows under `--json`. The key is normalized and
 // grammar-checked here; the scaffold and the listing live in

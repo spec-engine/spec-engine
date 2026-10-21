@@ -1,5 +1,3 @@
-// packages/engine/src/commands/supersede.ts
-//
 // `spec supersede <KEY-NNN>`: flip a shipped requirement to superseded, mint
 // its successor, and print the retag worklist. The command resolves the
 // successor text (a flag, or a prompt on a TTY) and renders; every guard and

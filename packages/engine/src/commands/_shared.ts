@@ -1,5 +1,3 @@
-// packages/engine/src/commands/_shared.ts
-//
 // The CLI adapters over the operations layer's index helper: print what an
 // operation returns as warnings, and map the errors it lets propagate onto
 // the exit-code contract. Nothing below decides behavior.

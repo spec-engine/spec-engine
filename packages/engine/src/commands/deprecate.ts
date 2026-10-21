@@ -1,5 +1,3 @@
-// packages/engine/src/commands/deprecate.ts
-//
 // `spec deprecate <KEY-NNN> --reason "..."`: end a requirement with a recorded
 // reason and print the tags still bound to it. The command checks the input
 // shape and renders; the gates and the write live in operations/deprecate.ts.

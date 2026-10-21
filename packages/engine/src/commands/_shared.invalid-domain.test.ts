@@ -1,5 +1,3 @@
-// packages/engine/src/commands/_shared.invalid-domain.test.ts
-
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { cpSync } from "node:fs";
 import { join } from "node:path";

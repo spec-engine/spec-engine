@@ -1,15 +1,3 @@
-// packages/shared/src/report.test.ts
-//
-// Webapp coverage report (W1) — buildCoverageReport rolls the (req × repo)
-// coverage matrix up into one row per domain over ACTIVE requirements:
-//   active       — count of Active requirements in the domain
-//   implemented  — Active reqs with an implementing tag in ANY repo
-//   verified     — Active reqs with a verifying tag in ANY repo
-//   orphans      — Active reqs with no implementing tag anywhere
-//   unverified   — implemented but not verified
-// Pure function over CoverageRow[] (the /api/coverage shape) so the engine
-// API, the webapp, and any future CLI report command share one rollup.
-
 import { describe, expect, test } from "bun:test";
 import { buildCoverageReport } from "./report";
 import type { CoverageRow } from "./storage";
@@ -30,7 +18,7 @@ function row(over: Partial<CoverageRow>): CoverageRow {
   };
 }
 
-describe("buildCoverageReport (W1)", () => {
+describe("buildCoverageReport", () => {
   test("rolls up per domain: any-repo implemented/verified, orphans, unverified", () => {
     const rows: CoverageRow[] = [
       // A-001: implemented + verified in repo api; nothing in repo web.

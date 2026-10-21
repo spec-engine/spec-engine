@@ -1,5 +1,3 @@
-// packages/engine/src/commands/_args.ts
-//
 // The citty arg specs every command shares, declared once, plus the
 // platformDir resolution every command performs.
 

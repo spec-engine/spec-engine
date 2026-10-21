@@ -1,5 +1,3 @@
-// packages/tracker/src/index.ts — barrel export for the @spec-engine/tracker package.
-
 export type { TrackerAdapter } from "./adapter";
 export { noopAdapter } from "./adapter";
 export type { CacheEntry, SidecarCache } from "./cache";

@@ -1,5 +1,3 @@
-// packages/engine/src/commands/req.ts
-//
 // @spec REQ-022
 // @spec REQ-023
 // @spec REQ-024

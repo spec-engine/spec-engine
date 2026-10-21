@@ -1,5 +1,3 @@
-// packages/engine/src/commands/glossary.ts
-//
 // `spec glossary [platformDir]`: regenerate GLOSSARY.md from the TERM store;
 // `--migrate` parses an existing GLOSSARY.md into the store once; `--check`
 // exits 1 on drift between the committed file and the generated one. The

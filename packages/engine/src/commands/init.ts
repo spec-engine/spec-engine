@@ -1,5 +1,3 @@
-// packages/engine/src/commands/init.ts
-//
 // `spec init [repo]`: declare a member and write its `spec-engine.member.json`
 // pin. The command resolves the repo argument, validates the `--specs` shape,
 // and renders; placement, declaration, and the write live in

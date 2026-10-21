@@ -1,5 +1,3 @@
-// packages/engine/src/commands/relations.ts
-//
 // `spec relations [platformDir] [--out <path>] [--json] [--fresh]`: the
 // `relates` graph as mermaid `graph LR` source, or the sorted rows under
 // `--json`. Read-only; the same formatter serves `/api/relations?format=mermaid`.

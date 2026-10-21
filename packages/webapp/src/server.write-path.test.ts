@@ -1,29 +1,6 @@
-// packages/webapp/src/server.write-path.test.ts
-//
-// VAL-03 (21-04): the webapp gains a THIN SSR editor over the engine write
-// route from plan 21-01. `packages/webapp/src/pages/editor.ts` renders a
-// create form and an amend form and, on submit, forwards the fields to the
-// engine's `POST /api/requirements` / `PUT /api/requirements/:id` routes
-// IN-PROCESS via `app.request()` (Pitfall 6 — NEVER `fetch("http://…")`).
-// The webapp does NOT re-validate, does NOT touch the filesystem, and does
-// NOT fork any write logic — every property below is a boundary assertion
-// over the ONE engine seam:
-//
-//   (1) CREATE — POST the editor's create endpoint with form-encoded fields
-//       → the rendered result reports success and carries the new id, and a
-//       follow-up GET /api/requirements?key= shows the requirement with the
-//       submitted statement.
-//   (2) AMEND — POST the editor's amend endpoint for an existing id with a
-//       new statement → success; a re-GET reflects the new statement.
-//   (3) INVALID PARITY — submit an empty statement → the rendered page
-//       contains the engine's INVALID_DOMAIN_FILE diagnostic (surfaced
-//       unchanged) and the canonical SPEC.json is NOT mutated.
-//
-// Everything is driven in-process through `composeServeApp` + `app.request()`
-// (no port bind, no network fetch). TEST-ONLY engine imports are permitted —
-// the D-09 import fence scopes to `packages/webapp/src/**` only (see
-// import-fence.test.ts + biome.json). Harness mirrors
-// `packages/engine/test/server-write.test.ts`.
+// The editor forwards every write in-process via `app.request()`, never
+// `fetch`, and does not re-validate or touch the filesystem. Test-only engine
+// imports are allowed: see import-fence.test.ts and the webapp biome.json.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { readFileSync, rmSync } from "node:fs";
@@ -63,7 +40,7 @@ function billingSpecPath(): string {
   return join(platformDir, "spec-engine", "BILLING", "SPEC.json");
 }
 
-/** Post a form-encoded body to a webapp endpoint (mirrors a browser <form>). */
+/** Mirrors a browser <form> post. */
 async function postForm(path: string, fields: Record<string, string>): Promise<Response> {
   return app.request(path, {
     method: "POST",
@@ -72,11 +49,10 @@ async function postForm(path: string, fields: Record<string, string>): Promise<R
   });
 }
 
-describe("2.6 webapp editor — body cap enforced on actual bytes (bodyLimit)", () => {
+describe("webapp editor — body cap enforced on actual bytes (bodyLimit)", () => {
   test("an oversized streamed body (no honest Content-Length) is rejected 413", async () => {
-    // The header-only check the bodyLimit middleware replaces let a request with
-    // an absent/streamed Content-Length bypass the cap. A >64 KiB streamed body
-    // carries no Content-Length, so only actual-byte counting can reject it.
+    // A streamed body carries no Content-Length, so only actual-byte counting
+    // can reject it; a header-only check is bypassed.
     const huge = "x".repeat(70 * 1024);
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {
@@ -94,12 +70,11 @@ describe("2.6 webapp editor — body cap enforced on actual bytes (bodyLimit)", 
   });
 });
 
-describe("VAL-03 webapp editor — the create form forwards to POST /api/requirements", () => {
+describe("webapp editor — the create form forwards to POST /api/requirements", () => {
   test("GET /editor renders both a create and an amend form", async () => {
     const res = await app.request("/editor");
     expect(res.status).toBe(200);
     const bodyHtml = await res.text();
-    // Two forms that post to the editor's create + amend endpoints.
     expect(bodyHtml).toContain('action="/editor/create"');
     expect(bodyHtml).toContain('action="/editor/amend"');
     // The form must never expose a network base URL — the forward is in-process.
@@ -126,7 +101,7 @@ describe("VAL-03 webapp editor — the create form forwards to POST /api/require
   });
 });
 
-describe("VAL-03 webapp editor — the amend form forwards to PUT /api/requirements/:id", () => {
+describe("webapp editor — the amend form forwards to PUT /api/requirements/:id", () => {
   // AUTH-001 is the fixture's Active-but-unbound requirement — the only kind
   // the engine's amend gate lets through (a shipped or superseded entry is 409).
   test("an amend submit updates the statement and a re-GET reflects it", async () => {
@@ -157,7 +132,7 @@ describe("VAL-03 webapp editor — the amend form forwards to PUT /api/requireme
   });
 });
 
-describe("CR-01 webapp editor — the browser-facing routes reject a cross-site POST", () => {
+describe("webapp editor — the browser-facing routes reject a cross-site POST", () => {
   test("a cross-origin POST to /editor/create is rejected 403 and does NOT mutate the SPEC.json", async () => {
     const onDiskBefore = readFileSync(billingSpecPath(), "utf8");
     const res = await app.request("/editor/create", {
@@ -203,7 +178,7 @@ describe("CR-01 webapp editor — the browser-facing routes reject a cross-site 
     expect(res.status).toBe(200);
   });
 
-  test("1.1 a DNS-rebound POST (non-loopback Host, matching Origin) is rejected 403", async () => {
+  test("a DNS-rebound POST (non-loopback Host, matching Origin) is rejected 403", async () => {
     // The attacker page on evil.example resolves to 127.0.0.1, so its Origin
     // and Host agree — the same-origin check passes. The Host pin rejects it
     // because evil.example is not a loopback name.
@@ -221,7 +196,7 @@ describe("CR-01 webapp editor — the browser-facing routes reject a cross-site 
   });
 });
 
-describe("VAL-03 webapp editor — invalid input surfaces the engine diagnostic unchanged (VAL-02)", () => {
+describe("webapp editor — invalid input surfaces the engine diagnostic unchanged", () => {
   test("an empty statement renders INVALID_DOMAIN_FILE and does not mutate the SPEC.json", async () => {
     const onDiskBefore = readFileSync(billingSpecPath(), "utf8");
     const res = await postForm("/editor/create", {
@@ -229,8 +204,7 @@ describe("VAL-03 webapp editor — invalid input surfaces the engine diagnostic 
       statement: "",
     });
     const bodyHtml = await res.text();
-    // The engine's structured diagnostic is surfaced to the user unchanged
-    // (one engine — the webapp does not re-validate).
+    // Surfaced unchanged: the webapp does not re-validate.
     expect(bodyHtml).toContain("INVALID_DOMAIN_FILE");
     // The rejected write left the canonical JSON byte-identical.
     expect(readFileSync(billingSpecPath(), "utf8")).toBe(onDiskBefore);

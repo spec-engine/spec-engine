@@ -1,5 +1,3 @@
-// packages/engine/src/commands/gate.ts
-//
 // `spec gate <repo> <reqId> [platformDir]`: the approval gate. The command
 // validates the positionals, cold-resets the index, and renders the outcome;
 // the decision lives in operations/gate.ts. Exit 0 PASS, 1 any gate failure,

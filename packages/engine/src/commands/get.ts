@@ -1,5 +1,3 @@
-// packages/engine/src/commands/get.ts
-//
 // `spec get <KEY-NNN> [platformDir]`: one requirement's full record. An
 // unknown id is `[]` on stdout with guidance on stderr and exit 0; a malformed
 // id is exit 2.

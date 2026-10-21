@@ -1,39 +1,21 @@
-// packages/shared/src/storage.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec SCHM-012
-//
-// The Storage interface (D-07). Implemented exclusively by
-// packages/engine/src/storage/sqlite.ts. Webapp consumes read methods
-// over HTTP via spec serve; type-level: a single interface.
+// Implemented only by packages/engine/src/storage/sqlite.ts.
 
 import type { DiagnosticCode } from "./diagnostics";
 import type { PropagationRow } from "./propagation";
-
-// --- Row types -----------------------------------------------------------
 
 export interface Repo {
   name: string;
   path: string;
   pinned_spec_version: number;
-  /**
-   * The member's position in the platform map's dependsOn graph: 0 with no
-   * in-platform dependency, else one more than its deepest dependency.
-   * Propagation lists members by this, providers before consumers.
-   */
+  /** Providers before consumers: 0 with no in-platform dependency, else one more than its deepest. */
   dependency_depth: number;
   /**
-   * Discovery-time hint, never persisted: true when this Repo is a lone
-   * single repository registered as its own coverage column. The pipeline
-   * excludes the in-repo `spec-engine/` subfolder from that column's scan.
-   * Absent from the DDL and `upsertRepo`: the derived DB owns nothing.
+   * Discovery-time hint, never persisted: a lone repository that is its own
+   * coverage column, whose scan skips its in-repo `spec-engine/` folder.
    */
   selfMember?: boolean;
-  /**
-   * Discovery-time hint, never persisted: repo-relative directory prefixes
-   * from this member's `spec-engine.member.json` `ignore` field, appended to
-   * the scanner's ignore list for this repo's code and doc scans.
-   */
+  /** Discovery-time hint, never persisted: the member config's `ignore` prefixes. */
   ignore?: readonly string[];
 }
 
@@ -45,14 +27,7 @@ export interface Domain {
   source_repo: string;
 }
 
-/**
- * The requirement status vocabulary — the single runtime source of truth.
- * The `RequirementStatus` type is DERIVED from this array so the value set and
- * the type can never drift. Previously the four values were re-materialized by
- * hand in three places (server/api.ts STATUSES, indexer/diagnostics.ts
- * VALID_STATUSES, and the api.ts "one of Active|Superseded|…" error string);
- * all now derive from here.
- */
+/** The runtime source of `RequirementStatus`; the type derives from it so they cannot drift. */
 export const REQUIREMENT_STATUSES = ["Active", "Superseded", "Draft", "Deprecated"] as const;
 export type RequirementStatus = (typeof REQUIREMENT_STATUSES)[number];
 
@@ -66,28 +41,18 @@ export interface Requirement {
   why: string | null;
   source_file: string;
   line: number;
-  spec_version: number; // see schema.ts version-semantics comment
+  spec_version: number;
   changed_at_version: number;
-  // Envelope version this requirement was superseded/retired at, authored once
-  // by `spec supersede`/`spec move` and never recomputed. `null` for Active
-  // entries and for supersessions predating the field. See schema.ts.
+  // Authored once at supersession, never recomputed. null for Active entries
+  // and for supersessions that predate the field.
   superseded_at_version: number | null;
 }
 
 /**
- * `implements` / `verifies` are path-derived from code tags (src vs test).
- * `documents` (RED-15) marks an explicit doc binding — `<!-- @spec KEY-NNN -->`
- * in a member's `.md` file. Documents-kind tags participate in integrity
- * checks that mean "this reference is stale/broken" (DANGLING_TAG,
- * SUPERSEDED_REFERENCED, and DRIFT — a behind-pinned repo whose doc still
- * cites a since-changed requirement is genuinely stale documentation, the
- * same family of signal). They are excluded everywhere a tag would claim
- * code coverage: the coverage VIEW's implemented/verified cases, ORPHAN_REQ
- * suppression, and the propagation state machine. One deliberate nuance:
- * the propagation `drifted` overlay reads the (kind-agnostic) drift VIEW,
- * so a repo whose ONLY reference to a changed requirement is documentary
- * can report `state: NO_DOMAIN_REFERENCE` with `drifted: true` — "no code
- * engagement, but its docs are behind".
+ * `documents` tags count for staleness checks (DANGLING_TAG,
+ * SUPERSEDED_REFERENCED, DRIFT) but never as code coverage. The propagation
+ * `drifted` overlay reads the kind-agnostic drift VIEW, so a repo whose only
+ * reference is a doc can be `NO_DOMAIN_REFERENCE` with `drifted: true`.
  */
 export type TagKind = "implements" | "verifies" | "documents";
 export type TagLevel = "unit" | "integration" | "e2e" | null;
@@ -102,15 +67,7 @@ export interface Tag {
   level: TagLevel;
 }
 
-/**
- * RED-16: one row per `**Relates:** …` entry — `from_id` (the requirement
- * carrying the field) → `to_id` (the requirement it links to).
- * `source_file`/`line` locate the Relates field line itself so the
- * RELATES_SUPERSEDED / BROKEN_RELATES diagnostics point at the authored
- * text. Self-references and duplicates are dropped at parse time; broken
- * targets are deliberately ALLOWED to land (Invariant #4 — validate via
- * diagnostics, never DB constraints).
- */
+/** Broken targets land on purpose: they are diagnosed, never constrained in the DB. */
 export interface RelationRow {
   from_id: string;
   to_id: string;
@@ -118,27 +75,12 @@ export interface RelationRow {
   line: number;
 }
 
-/**
- * One row per glossary-term alias — `term_id` (the owning
- * TERM's id) → `name` (the synonym string). A minimal clone of `RelationRow`'s
- * derived-row posture: no FK/CHECK/UNIQUE at the DB (SCHM-07 / Invariant #4),
- * validated (if at all) via diagnostics, never a constraint. Present-and-empty
- * until Wave C flattens the requirement `aliases` field into rows.
- */
 export interface TermAliasRow {
   term_id: string;
   name: string;
 }
 
-/**
- * One row per pinned `cites` reference — `req_id` (the citing
- * requirement) → `term_id` (the cited TERM, NULLABLE: an unresolved citation
- * still lands so `spec check` can surface UNDEFINED_TERM). `cited_as` is the
- * authored surface form, `pinned_version` the TERM spec_version the citation was
- * pinned to (drift is TERM_DRIFT, not a structural reject — Invariant #4).
- * `source_file`/`line` locate the authored cite. A 1:1 clone of `RelationRow`'s
- * derived-row posture with the citation-specific columns.
- */
+/** `term_id` is nullable: an unresolved citation still lands so `spec check` reports UNDEFINED_TERM. */
 export interface TermCitationRow {
   req_id: string;
   term_id: string | null;
@@ -148,58 +90,26 @@ export interface TermCitationRow {
   line: number;
 }
 
-/**
- * PROV-02 / PROV-04: one row per `**Issues:** role:ID` entry — `req_id` (the
- * requirement carrying the field) → `issue_id` (the external tracker payload
- * it names), tagged with a closed-allow-list `role`
- * (created | supersedes-via | amends-via). A 1:1 clone of `RelationRow` with
- * `from_id`→`req_id`, `to_id`→`issue_id`, plus the `role` column.
- * `source_file`/`line` locate the authored `**Issues:**` field line. Unknown
- * roles are surfaced (UNKNOWN_ROLE) AND dropped at parse time — never stored;
- * well-formed rows land unconditionally (Invariant #4 — validate via
- * diagnostics, never DB constraints).
- */
+/** Unknown roles are reported (UNKNOWN_ROLE) and dropped at parse time, never stored. */
 export interface ProvenanceRow {
   req_id: string;
-  /**
-   * OPAQUE payload string — an external tracker id (e.g. `ENG-1432`, or even a
-   * deliberately `KEY-NNN`-shaped value). NEVER resolved/joined against
-   * `requirements`, never used as a PK/FK/UNIQUE/index/JOIN key (PROV-02/SC3).
-   * It is a plain stored value, nothing more.
-   */
+  /** Opaque tracker payload, even when KEY-NNN-shaped: never resolved against `requirements` or used as a key. */
   issue_id: string;
   role: string; // created | supersedes-via | amends-via
   source_file: string;
   line: number;
 }
 
-/**
- * PMAT-01 / PMAT-04: the row shape of the WIDENED `provenance_matrix` SQL VIEW
- * (defined in schema.ts VIEWS_DDL) — one row per provenance link, joined to its
- * requirement (req_status) and aggregated coverage (backing-test columns).
- * Consumed by the `spec provenance` surface. The VIEW is a
- * projection, never materialized (PMAT-04).
- */
 export interface ProvenanceMatrixRow {
   req_id: string;
   role: string; // created | supersedes-via | amends-via
-  /**
-   * OPAQUE payload — never an identity key (PROV-02/SC3). In the widened VIEW
-   * it is a purely projected column: the matrix joins ON req_id only, and
-   * `provenanceByIssue` binds it as a `$issue` filter VALUE, never a routing,
-   * coverage, JOIN, GROUP-BY, or index key.
-   */
+  /** Opaque: a projected column and a bound filter value, never a join, group, or index key. */
   issue_id: string;
   source_file: string;
-  line: number; // git pointer per PMAT-01
+  line: number;
   /**
-   * The requirement's lifecycle status, projected verbatim from
-   * `requirements.status` (a `TEXT NOT NULL` column with NO CHECK constraint,
-   * by design — SCHM-07 / Invariant #4). A planted BAD_STATUS fixture carries
-   * a value OUTSIDE the `RequirementStatus` union and flows through here (and
-   * into the rendered header) verbatim so `spec check` can diagnose it. The
-   * type is therefore widened to `RequirementStatus | string` so it does not
-   * misrepresent the unconstrained source.
+   * Widened past the union: `requirements.status` has no CHECK, so a planted
+   * BAD_STATUS flows through verbatim for `spec check` to diagnose.
    */
   req_status: RequirementStatus | string;
   implemented: 0 | 1;
@@ -212,11 +122,7 @@ export interface ParseDiagnostic {
   code: DiagnosticCode;
   source_file: string;
   line: number;
-  /** Requirement id implicated by the structural defect, when available.
-   *  Populated for BROKEN_SUPERSEDE and BAD_STATUS
-   *  (which are always defects on a specific `### KEY-NNN` requirement)
-   *  and for the SECOND-seen DUP_ID occurrence (which carries the
-   *  colliding id verbatim). null only when no specific id is implicated. */
+  /** Null only when no specific requirement is implicated; DUP_ID carries the second occurrence's id. */
   req_id: string | null;
   detail: string;
   severity: "error" | "warning";
@@ -238,13 +144,8 @@ export interface CoverageRow {
 export interface FtsHit {
   req_id: string;
   /**
-   * TERM-07: the requirement's domain key, projected verbatim from
-   * `requirements.key`. The discriminator the query formatter uses to split a
-   * Terms group (`key === 'TERM'` — reserved glossary domain) from the
-   * Requirements group. Terms ride the same `requirements_fts` index because
-   * they ARE requirement rows; this key is what tells a term hit apart from an
-   * ordinary requirement hit. NOT a coverage filter — the `key != 'TERM'`
-   * exclusion belongs on the coverage VIEW (schema.ts), never on FTS.
+   * Splits term hits (`TERM`) from requirement hits in the query output. Not a
+   * coverage filter: the TERM exclusion belongs on the coverage VIEW, never on FTS.
    */
   key: string;
   text: string;
@@ -254,13 +155,8 @@ export interface FtsHit {
   line: number;
 }
 
-// --- Drift + Semantic diagnostic row types --------------------------------
-//
-// `DriftRow` is the row shape of the `drift` SQL VIEW (defined alongside
-// `coverage` in schema.ts VIEWS_DDL). One row per (repo, req_id) where the
-// repo's pin is behind the requirement's `changed_at_version`. CHCK-03: this
-// VIEW is the single source of truth for drift — both `spec check`
-// and `spec propagation` read from it via `listDriftRows()`.
+// The `drift` VIEW is the one source of truth for drift; `spec check` and
+// `spec propagation` both read it through `listDriftRows()`.
 export interface DriftRow {
   repo: string;
   req_id: string;
@@ -271,16 +167,8 @@ export interface DriftRow {
   repo_pin: number;
 }
 
-// `SemanticDiagnostic` is the row shape returned by `listSemanticDiagnostics()`,
-// which UNIONs the five semantic diagnostic queries Q1..Q5 (DANGLING_TAG,
-// SUPERSEDED_REFERENCED, DRIFT, ORPHAN_REQ, UNVERIFIED_REQ).
-//
-// `repo` and `req_id` are nullable because ORPHAN_REQ + UNVERIFIED_REQ scope
-// to a requirement only (no specific repo), whereas DANGLING_TAG /
-// SUPERSEDED_REFERENCED / DRIFT carry both. `severity` was the literal
-// `"error"` until RED-16 — Q1..Q5 stay error-severity, but the Relates
-// diagnostics (Q6 BROKEN_RELATES / Q7 RELATES_SUPERSEDED) are warnings, so
-// the type now mirrors ParseDiagnostic's `"error" | "warning"`.
+// `repo` and `req_id` are null for the requirement-scoped codes (ORPHAN_REQ,
+// UNVERIFIED_REQ).
 export interface SemanticDiagnostic {
   code: DiagnosticCode;
   repo: string | null;
@@ -291,17 +179,11 @@ export interface SemanticDiagnostic {
   severity: "error" | "warning";
 }
 
-// --- Storage interface ---------------------------------------------------
-
 export interface Storage {
-  // --- Lifecycle / schema-version handling ---
-  /** Path the DB is bound to (for diagnostics / logging). */
   readonly path: string;
 
-  /** Close the DB; releases the file handle. */
   close(): void;
 
-  // --- Read operations (used by both CLI commands and webapp HTTP routes) ---
   listRepos(): Repo[];
   getRepo(name: string): Repo | null;
   listDomains(): Domain[];
@@ -313,84 +195,42 @@ export interface Storage {
   getRequirement(id: string): Requirement | null;
   listTags(opts?: { repo?: string; req_id?: string; file?: string }): Tag[];
   listDiagnostics(): ParseDiagnostic[];
-  /** Returns rows directly from the `drift` SQL VIEW. CHCK-03: this is the
-   *  single source of truth for drift — both `spec check` and
-   *  `spec propagation` consume it. No additional projection;
-   *  the VIEW already encodes the predicate `r.changed_at_version >
-   *  repos.pinned_spec_version AND tags(repo, req_id) exists`. */
+  /** No projection on top: the VIEW already encodes the drift predicate. */
   listDriftRows(): DriftRow[];
-  /** Returns the UNION of the semantic diagnostic queries Q1..Q7:
-   *  Q1..Q5 (DANGLING_TAG, SUPERSEDED_REFERENCED, DRIFT, ORPHAN_REQ,
-   *  UNVERIFIED_REQ — all error severity) plus the RED-16
-   *  Relates pair Q6/Q7 (BROKEN_RELATES, RELATES_SUPERSEDED — warning
-   *  severity). Mixed severities since RED-16; `spec check`'s exit code
-   *  keys on error-severity rows only. */
+  /** Mixed severities: `spec check`'s exit code keys on error rows only. */
   listSemanticDiagnostics(): SemanticDiagnostic[];
-  /** RED-16: every `**Relates:**` link in the index, ordered by the full
-   *  composite key (from_id, to_id, source_file, line) for deterministic
-   *  output. The read seam RED-17's relation diagrams consume. */
+  /** Ordered by (from_id, to_id, source_file, line). */
   listRelations(): RelationRow[];
-  /** TERM-01: every glossary-term alias in the index, ordered by the composite
-   *  key (term_id, name) — the SAME order the computeBuildId `term_aliases`
-   *  section hashes by. Present-and-empty until Wave C. */
+  /** Ordered by (term_id, name), the order computeBuildId hashes by. */
   listTermAliases(): TermAliasRow[];
-  /** TERM-01: every pinned `cites` citation in the index, ordered by the
-   *  composite key (req_id, term_id, cited_as, source_file, line) — the SAME
-   *  order the computeBuildId `term_citations` section hashes by. `term_id` is
-   *  returned verbatim (nullable — an unresolved cite still lists). */
+  /** Ordered by (req_id, term_id, cited_as, source_file, line), the order computeBuildId hashes by. */
   listTermCitations(): TermCitationRow[];
-  /** PROV-04: every `**Issues:**` provenance link in the index, ordered by the
-   *  full composite key (req_id, role, issue_id, source_file, line) for
-   *  deterministic output. `issue_id` is returned verbatim/opaque — never
-   *  resolved against requirements (PROV-02/SC3). The read seam the
-   *  `provenance_matrix` surface consumes. */
+  /** Ordered by (req_id, role, issue_id, source_file, line). */
   listProvenance(): ProvenanceRow[];
-  /** PMAT-01/04: the widened provenance × coverage projection, ordered by the
-   *  full composite key (req_id, role, issue_id, source_file, line). Reads the
-   *  `provenance_matrix` VIEW directly — issue_id rides as a projected column
-   *  only (PROV-02/SC3). */
+  /** Ordered by (req_id, role, issue_id, source_file, line). */
   provenanceMatrix(): ProvenanceMatrixRow[];
-  /** PMAT-03: the same matrix filtered to one opaque issue id, bound as a
-   *  `$issue` WHERE param — issue_id is a filter VALUE, never a routing/coverage
-   *  key (SC3). Never string-interpolated into the SQL. */
+  /** `issueId` is bound as a `$issue` parameter, never interpolated into the SQL. */
   provenanceByIssue(issueId: string): ProvenanceMatrixRow[];
   coverageMatrix(): CoverageRow[];
   searchFts(text: string, limit?: number): FtsHit[];
-  /** Returns per-repo propagation state for the given target requirement.
-   *  Each row carries `state: PropagationState` from the 5-state machine
-   *  (PROP-02). The drift overlay (`drifted: boolean`) is merged in TS from
-   *  a single `listDriftRows()` call — PROP-01 forbids redefining the drift
-   *  predicate anywhere else; the `drift` VIEW is the only source of
-   *  truth (CHCK-03). */
+  /** The `drifted` overlay is merged in TS from `listDriftRows()`; never redefine the drift predicate here. */
   propagationFor(reqId: string): PropagationRow[];
-  /** Returns the requirements tagged in any of the given files. */
   resolveByFiles(files: string[]): Requirement[];
 
-  // --- Write operations (used by `spec index`) ---
-  /** Begin a write transaction. All upsert* calls inside fn happen atomically;
-   *  throw → automatic rollback (per Bun's db.transaction wrapper). */
+  /** A throw inside `fn` rolls the whole transaction back. */
   withWriteTx<T>(fn: (w: WriteHandle) => T): T;
 }
 
 export interface WriteHandle {
-  clearAll(): void; // truncate everything before reindex
+  clearAll(): void;
   upsertRepo(r: Repo): void;
   upsertDomain(d: Domain): void;
   upsertRequirement(r: Requirement): void;
   upsertTag(t: Omit<Tag, "id">): void;
-  /** RED-16: insert one Relates link (pre-sorted by the pipeline). */
   upsertRelation(r: RelationRow): void;
-  /** TERM-01: insert one glossary-term alias (pre-sorted by the pipeline on the
-   *  composite key term_id, name). Present-and-empty until Wave C. */
   upsertTermAlias(a: TermAliasRow): void;
-  /** TERM-01: insert one pinned `cites` citation (pre-sorted by the pipeline on
-   *  the composite key req_id, term_id, cited_as, source_file, line). `term_id`
-   *  is bound verbatim (nullable — an unresolved cite still lands, diagnosed at
-   *  check time, never blocked at write time — Invariant #4). */
+  /** `term_id` may be null: an unresolved cite lands and is diagnosed at check time. */
   upsertTermCitation(c: TermCitationRow): void;
-  /** PROV-04: insert one `**Issues:**` provenance link (pre-sorted by the
-   *  pipeline on the composite key req_id, role, issue_id, source_file, line).
-   *  `issue_id` is bound as an opaque value — never a lookup/filter key. */
   upsertProvenance(p: ProvenanceRow): void;
   recordParseDiagnostic(d: Omit<ParseDiagnostic, "id">): void;
 }

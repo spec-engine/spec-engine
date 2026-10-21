@@ -1,5 +1,3 @@
-// packages/shared/src/index.ts — barrel export for the @spec-engine/shared package.
-
 export * from "./checkConfig";
 export * from "./config";
 export * from "./diagnostics";

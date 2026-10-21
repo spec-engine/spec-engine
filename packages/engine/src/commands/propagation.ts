@@ -1,5 +1,3 @@
-// packages/engine/src/commands/propagation.ts
-//
 // @spec PROP-005
 
 import { defineCommand } from "citty";

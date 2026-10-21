@@ -1,5 +1,3 @@
-// packages/shared/src/schema.ts
-//
 // @spec SCHM-011
 // @spec PROP-004
 //

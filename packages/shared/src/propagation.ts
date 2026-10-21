@@ -1,12 +1,4 @@
-// packages/shared/src/propagation.ts
-//
-// Propagation state machine for `spec propagation <KEY-NNN>` (PROP-02).
-// Classifies each member repo's relationship to a given target requirement
-// into one of five distinct states. `as const` object (not TS `enum`) so it
-// survives verbatimModuleSyntax: true.
-//
-// WORK-02: shared package is runtime-free — this file has zero runtime imports
-// (no `bun:sqlite`, no `node:*`). Types only.
+// An `as const` object, not a TS `enum`, so it survives verbatimModuleSyntax.
 
 export const PropagationState = {
   MIGRATED_VERIFIED: "MIGRATED_VERIFIED",

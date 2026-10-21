@@ -1,5 +1,3 @@
-// packages/engine/src/commands/provenance.ts
-//
 // `spec provenance [issueId] [platformDir] [--out <path>] [--json]
 // [--resolve-issues] [--fresh]`: the per-requirement provenance matrix, or
 // the rows one opaque issue id is linked to. The issue id is a display-only
