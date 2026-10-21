@@ -1,6 +1,6 @@
 // packages/engine/src/scanner/fs.languages.test.ts
 //
-// @spec INDX-014
+// @spec INDX-019 unit
 // @spec INDX-015
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
@@ -25,8 +25,8 @@ const lua = (id: string, level?: string): string =>
   `local x = 1 -- ${SPEC_TOKEN} ${id}${level ? ` ${level}` : ""}\n`;
 const slash = (id: string, level?: string): string => `${specTag(id, level)}\nfn main() {}\n`;
 
-describe("the scanner reads Lua, Luau, Go, and Rust files", () => {
-  test("DEFAULT_EXTS names the four languages", () => {
+describe("the scanner reads every listed source kind", () => {
+  test("DEFAULT_EXTS names every scanned extension", () => {
     expect([...DEFAULT_EXTS]).toEqual([
       "ts",
       "tsx",
@@ -38,10 +38,14 @@ describe("the scanner reads Lua, Luau, Go, and Rust files", () => {
       "luau",
       "go",
       "rs",
+      "tf",
+      "toml",
+      "sql",
+      "css",
     ]);
   });
 
-  test("findCodeFiles returns the new extensions and still skips the rest", async () => {
+  test("findCodeFiles returns the listed extensions and Dockerfiles, and skips the rest", async () => {
     const api = await fx.member("api", {
       files: {
         "src/a.lua": "",
@@ -50,14 +54,52 @@ describe("the scanner reads Lua, Luau, Go, and Rust files", () => {
         "src/d.rs": "",
         "src/e.py": "",
         "src/f.toml": "",
+        "infra/main.tf": "",
+        "db/001.sql": "",
+        "web/app.css": "",
+        Dockerfile: "",
+        "ops/Dockerfile.dev": "",
+        "ops/Dockerfile.": "",
+        "ops/Dockerfiles": "",
+        "ops.d/README": "",
       },
     });
     expect(await findCodeFiles(api.dir)).toEqual([
+      "Dockerfile",
+      "db/001.sql",
+      "infra/main.tf",
+      "ops/Dockerfile.dev",
       "src/a.lua",
       "src/b.luau",
       "src/c.go",
       "src/d.rs",
+      "src/f.toml",
+      "web/app.css",
     ]);
+  });
+
+  test("a hash, double-dash, or block-comment tag in the new kinds indexes as implements", async () => {
+    const billing = await fx.domain("BILLING");
+    const ids = (await billing.reqs(6)) as [string, string, string, string, string, string];
+    const [tf, toml, docker, dockerDev, sql, css] = ids;
+    await fx.member("api", {
+      files: {
+        "infra/main.tf": `resource "x" "y" {} # ${SPEC_TOKEN} ${tf}\n`,
+        "Cargo.toml": `[package] # ${SPEC_TOKEN} ${toml}\n`,
+        Dockerfile: `FROM scratch\n# ${SPEC_TOKEN} ${docker}\n`,
+        "ops/Dockerfile.dev": `# ${SPEC_TOKEN} ${dockerDev}\nFROM scratch\n`,
+        "db/001.sql": `-- ${SPEC_TOKEN} ${sql}\nSELECT 1;\n`,
+        "web/app.css": `/* ${SPEC_TOKEN} ${css} */\nbody {}\n`,
+      },
+    });
+    const s = openStorage(join(fx.dir, ".spec-engine", "index.sqlite"));
+    try {
+      await runIndex({ platformDir: fx.dir, storage: s });
+      const kinds = Object.fromEntries(s.listTags().map((t) => [t.req_id, t.kind]));
+      expect(kinds).toEqual(Object.fromEntries(ids.map((id) => [id, "implements"])));
+    } finally {
+      s.close();
+    }
   });
 
   test("tags in each language index with the kind its test convention decides", async () => {

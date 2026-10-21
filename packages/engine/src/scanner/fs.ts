@@ -22,11 +22,9 @@
 // descend branch nor the keep branch and is skipped — the same non-follow
 // behavior the previous `Bun.Glob.scan` default had.
 //
-// Ignore-list contract: a path is ignored when any ignore token appears at a
-// SEGMENT boundary (2.5 anchor fix). The tokens carry a trailing slash and the
-// match is `("/" + path).includes("/" + token)`, so `dist/` ignores
-// `src/dist/…` but NOT `src/mydist/…` — the previous bare-substring match
-// wrongly swallowed the latter. Tokens:
+// Ignore-list contract: a path is ignored when any built-in token appears at a
+// segment boundary at any depth, or when it starts with a caller-supplied
+// `extra` token. Built-in tokens:
 //   - node_modules/
 //   - .git/
 //   - .spec-engine/  (derived index dir — keep tag scans away from generated artifacts)
@@ -60,18 +58,19 @@ export const IGNORE_SUBSTR = Object.freeze([
 ]) as readonly string[];
 
 /**
- * True when `path` is ignored by any built-in or `extra` token, matched at a
- * SEGMENT boundary (2.5). `("/" + path)` prepends a leading separator so a
- * token like `dist/` matches a path that STARTS with `dist/` as well as one
- * that contains `/dist/`, while `src/mydist/foo` (where `dist/` is only a
- * substring, not a segment) is correctly NOT ignored. `extra` tokens are
- * normalized to a trailing slash so a bare `generated` and `generated/` behave
- * identically.
+ * True when `path` is ignored. A built-in token matches at a segment boundary
+ * at any depth (`("/" + path)` lets it match the first segment too), so
+ * `dist/` ignores `src/dist/…` but not `src/mydist/…`. An `extra` token
+ * matches only as a repo-relative prefix, a bare `generated` read as
+ * `generated/`, so it never hides a same-named directory deeper in the tree.
+ * @spec INDX-018
  */
 export function isPathIgnored(path: string, extra: readonly string[] = []): boolean {
   const anchored = `/${path}`;
-  const tokens = extra.length === 0 ? IGNORE_SUBSTR : [...IGNORE_SUBSTR, ...extra];
-  return tokens.some((t) => anchored.includes(`/${t.endsWith("/") ? t : `${t}/`}`));
+  return (
+    IGNORE_SUBSTR.some((t) => anchored.includes(`/${t}`)) ||
+    extra.some((t) => path.startsWith(t.endsWith("/") ? t : `${t}/`))
+  );
 }
 
 /**
@@ -126,11 +125,10 @@ async function walkFiles(
   return out;
 }
 
-/** Default code-file extensions: TypeScript and JavaScript, shell (the repo's
- *  architecture fences carry their tags in `scripts/*.sh`), Lua and Luau, Go,
- *  and Rust. The tag regex is comment-leader agnostic, so a language joins by
- *  its extension alone; its test-file convention joins `TEST_MATCH` in tags.ts.
- *  @spec INDX-014 */
+/** Default code-file extensions. The tag regex is comment-leader agnostic, so a
+ *  language joins by its extension alone; its test-file convention joins
+ *  `TEST_MATCH` in tags.ts. A Dockerfile has no extension: `isDockerfile`.
+ *  @spec INDX-019 */
 export const DEFAULT_EXTS = [
   "ts",
   "tsx",
@@ -142,7 +140,17 @@ export const DEFAULT_EXTS = [
   "luau",
   "go",
   "rs",
+  "tf",
+  "toml",
+  "sql",
+  "css",
 ] as const;
+
+/** `Dockerfile` or `Dockerfile.<suffix>`, judged on the basename.
+ *  @spec INDX-019 */
+function isDockerfile(name: string): boolean {
+  return name === "Dockerfile" || (name.startsWith("Dockerfile.") && name.length > 11);
+}
 
 /**
  * STOR-02 (17-02): walk `canonicalDir` for files named exactly `SPEC.json`.
@@ -161,8 +169,8 @@ export async function findDomainJsonFiles(canonicalDir: string): Promise<string[
  * caller-supplied `exts` list). Returns repo-relative paths, lexicographically
  * sorted, with ignored substrings filtered out.
  *
- * `extraIgnore` is appended to `IGNORE_SUBSTR` for THIS call only, using the
- * same substring-match semantics. It lets the self-member scan (RUNG1-01)
+ * `extraIgnore` applies on top of `IGNORE_SUBSTR` for THIS call only, matched
+ * as repo-relative prefixes. It lets the self-member scan (RUNG1-01)
  * exclude the in-repo `spec-engine/` subfolder so the canonical SPEC.md dir
  * (and any `.ts` beside it) is never double-counted as member code. The
  * default `[]` keeps every existing two-arg / three-arg-with-exts caller
@@ -179,8 +187,9 @@ export async function findCodeFiles(
   return walkFiles(
     repoDir,
     (rel) => {
-      const dot = rel.lastIndexOf(".");
-      return dot > 0 && extSet.has(rel.slice(dot + 1));
+      const name = rel.slice(rel.lastIndexOf("/") + 1);
+      const dot = name.lastIndexOf(".");
+      return isDockerfile(name) || (dot > 0 && extSet.has(name.slice(dot + 1)));
     },
     extraIgnore,
   );

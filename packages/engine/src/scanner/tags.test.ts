@@ -140,9 +140,16 @@ describe("findCodeFiles", () => {
     expect(isPathIgnored("src/mydist/out.ts")).toBe(false);
     expect(isPathIgnored("buildings/a.ts")).toBe(false);
     expect(isPathIgnored("src/renew.ts")).toBe(false);
-    // extra tokens normalize a bare name to a segment match.
-    expect(isPathIgnored("a/generated/x.ts", ["generated"])).toBe(true);
-    expect(isPathIgnored("a/generatedx/x.ts", ["generated"])).toBe(false);
+  });
+
+  // @spec INDX-018 unit
+  test("an extra token matches only as a repo-relative prefix", () => {
+    expect(isPathIgnored("generated/x.ts", ["generated"])).toBe(true);
+    expect(isPathIgnored("generated/x.ts", ["generated/"])).toBe(true);
+    expect(isPathIgnored("apps/web/x.ts", ["apps/web"])).toBe(true);
+    expect(isPathIgnored("a/generated/x.ts", ["generated"])).toBe(false);
+    expect(isPathIgnored("modules/billing/tree/apps/web/x.ts", ["apps/web"])).toBe(false);
+    expect(isPathIgnored("generatedx/x.ts", ["generated"])).toBe(false);
   });
 
   test("IGNORE_SUBSTR includes the standard denylist plus dot-dir cousins (WR-06)", () => {

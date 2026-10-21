@@ -118,3 +118,36 @@ describe("per-repo ignore config (T7)", () => {
     }
   });
 });
+
+describe("extra ignore entries match as repo-relative prefixes", () => {
+  let fx: TestPlatform;
+  beforeEach(() => {
+    fx = TestPlatform.temp("spec-ignore-prefix-");
+  });
+  afterEach(() => {
+    fx.remove();
+  });
+
+  // @spec INDX-018 unit
+  test("a package path or an ignore entry hides only the tree at the repo root", async () => {
+    const [id] = (await (await fx.domain("ORD")).reqs(1)) as [string];
+    const shop = await fx.member("shop", { ignore: ["vendor"] });
+    shop.workspace(["apps/web"]);
+    const tagged = `export const x = 1; ${specTag(id)}`;
+    shop.file("modules/billing/tree/apps/web/x.ts", tagged);
+    shop.file("src/vendor/x.ts", tagged);
+    shop.file("vendor/x.ts", tagged);
+    shop.file("apps/web/x.ts", tagged);
+    const s = openStorage(join(fx.dir, ".spec-engine", "index.sqlite"));
+    try {
+      await runIndex({ platformDir: fx.dir, storage: s });
+      expect(s.listTags().map((t) => `${t.repo} ${t.file}`)).toEqual([
+        "shop shop/modules/billing/tree/apps/web/x.ts",
+        "shop shop/src/vendor/x.ts",
+        "shop/apps/web shop/apps/web/x.ts",
+      ]);
+    } finally {
+      s.close();
+    }
+  });
+});
