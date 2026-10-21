@@ -317,7 +317,12 @@ applies them. The statement-shape rule is also checked at write time and by
 
    One promise per statement. A result that chains two behaviors with `and`,
    or that sets two severities, is two requirements; a single test must be
-   able to prove the whole statement. Prefer `When`, `If … then`, and the
+   able to prove the whole statement. The mechanical part of this rule is a
+   lint inside the same EARS check, run at write time and by `spec check`: a
+   `; ` after the first `shall`, a `, and <subject> shall` second clause, and
+   a rationale connective (`because`, `so that`, `in order to`) each fail it.
+   It is a regex, not a reading: a statement that passes can still chain two
+   behaviors, and the reviewer still owns that call. Prefer `When`, `If … then`, and the
    bare `shall` form; use `While` and `Where` only when a state or a feature
    is what gates the behavior.
 3. **It must make sense on its own.** A reader seeing only this one statement —

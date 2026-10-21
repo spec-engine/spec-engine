@@ -101,5 +101,6 @@
       "aliases": [],
       "cites": []
     }
-  ]
+  ],
+  "grammarSeverity": "error"
 }

@@ -136,7 +136,7 @@ describe("spec supersede — happy path", () => {
     expect(succ?.livesIn).toEqual(["checkout.ts"]);
   });
 
-  // @spec REQ-043 unit
+  // @spec REQ-055 unit
   test("repeated --lives sets the successor's whole livesIn list", async () => {
     await supersedeRun({
       args: { id: ACTIVE, platformDir: platform, text: "new truth", lives: "b.ts" },

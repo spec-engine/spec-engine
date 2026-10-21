@@ -183,5 +183,6 @@
       "cites": [],
       "deprecatedReason": "The source carries no process markers; the comment rule in AGENTS.md is the control, and no scanner or ledger remains to ratchet."
     }
-  ]
+  ],
+  "grammarSeverity": "error"
 }

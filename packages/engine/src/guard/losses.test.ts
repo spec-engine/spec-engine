@@ -5,7 +5,7 @@
 // @spec GUARD-018
 // @spec GUARD-020
 // @spec GUARD-021
-// @spec GUARD-022
+// @spec GUARD-028
 
 import { describe, expect, test } from "bun:test";
 import type { SpecRequirement } from "@spec-engine/shared";
@@ -107,7 +107,7 @@ describe("classifyLosses — loss taxonomy", () => {
     expect(losses[0]?.file).toBe("spec-engine/LEGAL/SPEC.json");
   });
 
-  // @spec GUARD-011 unit
+  // @spec GUARD-029 unit
   test("deleting a non-Active entry (Draft/Superseded) is a REQUIREMENT_REMOVED — history is never deleted", () => {
     const losses = classifyLosses(
       facts({ baseReqs: [req("BILLING-009", "draft"), req("BILLING-008", "superseded")] }),

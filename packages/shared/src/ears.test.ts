@@ -81,3 +81,45 @@ describe("parseEarsStatement — rejections say what is missing, in plain words"
     expect(parseEarsStatement("   ").ok).toBe(false);
   });
 });
+
+// @spec CHCK-040 unit
+// @spec CHCK-041 unit
+// @spec CHCK-042 unit
+describe("parseEarsStatement — one promise per statement", () => {
+  test('"; " after shall rejects with the one-promise hint', () => {
+    const r = parseEarsStatement(
+      "If the file is missing, then spec check shall exit 2; nothing is written.",
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.problem).toContain('"; "');
+      expect(r.expected).toContain("one promise per statement");
+    }
+  });
+
+  test("a semicolon in the condition is not a second clause", () => {
+    expect(parseEarsStatement("When a; b holds, spec check shall exit 1.").ok).toBe(true);
+  });
+
+  test('", and <subject> shall" rejects; ", and shall" with no new subject passes', () => {
+    const second = parseEarsStatement("spec check shall exit 1, and the log shall name the file.");
+    expect(second.ok).toBe(false);
+    if (!second.ok) expect(second.problem).toContain("own subject");
+    expect(parseEarsStatement("spec check shall exit 1, and shall name the file.").ok).toBe(true);
+  });
+
+  test("each rationale connective rejects, naming the connective", () => {
+    for (const word of ["because", "so that", "in order to"]) {
+      const r = parseEarsStatement(`spec check shall exit 1 ${word} CI stops.`);
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.problem).toContain(`"${word}"`);
+    }
+  });
+
+  test('a trailing ", so <consequence>" passes', () => {
+    const r = parseEarsStatement(
+      "spec check shall report it at warning severity, so a lone warning never fails the gate.",
+    );
+    expect(r.ok).toBe(true);
+  });
+});

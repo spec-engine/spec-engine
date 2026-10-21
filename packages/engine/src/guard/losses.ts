@@ -3,6 +3,7 @@
 // @spec GUARD-016
 // @spec GUARD-017
 // @spec GUARD-018
+// @spec GUARD-028
 //
 // Pure: no Storage, git, or filesystem. guard/collect.ts gathers the facts, so
 // the whole loss taxonomy is unit-testable without a git repo. There is
@@ -116,7 +117,7 @@ function specFileDeletedLoss(path: string): Loss {
  */
 function reqDeletedFor(base: SpecRequirement, f: GuardFacts): Loss | null {
   if (f.worktreeReqIds.has(base.id)) return null;
-  // @spec GUARD-011
+  // @spec GUARD-029
   if (!isActive(base.status)) return historyRemovedLoss(base, f);
   if (isSuperseded(base, f)) return null;
   return reqDeletedLoss(base, f);

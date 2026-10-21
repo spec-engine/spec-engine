@@ -200,6 +200,7 @@ describe("spec check — exit code wiring", () => {
 });
 
 describe("spec check — warning-severity exit-code branch", () => {
+  // @spec CHCK-044 unit
   test("warning-only diagnostics exit 0", async () => {
     makeWarningOnlyFixture(tmp);
     const code = await runCheck({ platformDir: tmp, ci: true, json: true });
@@ -212,6 +213,7 @@ describe("spec check — warning-severity exit-code branch", () => {
     expect(got[0]?.severity).toBe("warning");
   });
 
+  // @spec CHCK-043 unit
   test("mixed error+warning diagnostics exit 1 (error branch dominates)", async () => {
     await makeMixedFixture(tmp);
     const code = await runCheck({ platformDir: tmp, ci: true, json: true });

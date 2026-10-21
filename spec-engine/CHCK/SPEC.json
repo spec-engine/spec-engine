@@ -199,18 +199,19 @@
     },
     {
       "id": "CHCK-013",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec check finds at least one error-severity diagnostic, the command shall exit 1; warnings alone leave the exit at 0.",
       "why": "CI branches on the exit code, not the output text; without this contract a red finding sails through the gate unnoticed.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHCK-043",
       "relates": [],
       "livesIn": [
         "packages/engine/src/commands/check.ts"
       ],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 12
     },
     {
       "id": "CHCK-014",
@@ -640,6 +641,87 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "CHCK-040",
+      "status": "active",
+      "statement": "If a domain declares the ears grammar and the text after the first shall in an Active or Draft statement contains a semicolon followed by whitespace, then spec check shall report STATEMENT_GRAMMAR at the domain's declared severity.",
+      "why": "A semicolon after the result usually chains a second behavior, which no single test proves, so a requirement passes review while half of it goes untested.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/shared/src/ears.ts",
+        "packages/engine/src/check/grammar.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-041",
+      "status": "active",
+      "statement": "If a domain declares the ears grammar and an Active or Draft statement's result continues with a comma-and clause that names its own subject before another shall, then spec check shall report STATEMENT_GRAMMAR at the domain's declared severity.",
+      "why": "A second subject with its own shall is a second promise hiding in one id, so supersession and coverage track two behaviors as one.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/shared/src/ears.ts",
+        "packages/engine/src/check/grammar.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-042",
+      "status": "active",
+      "statement": "If a domain declares the ears grammar and an Active or Draft statement carries a rationale connective, then spec check shall report STATEMENT_GRAMMAR at the domain's declared severity.",
+      "why": "Rationale in the statement duplicates the why field and drifts from it, so a reader gets two reasons and the statement stops being a testable promise.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/shared/src/ears.ts",
+        "packages/engine/src/check/grammar.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-043",
+      "status": "active",
+      "statement": "When spec check finds at least one error-severity diagnostic, the command shall exit 1.",
+      "why": "CI branches on the exit code, not the output text; without this contract a red finding sails through the gate unnoticed.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/check.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-044",
+      "status": "active",
+      "statement": "When spec check finds only warning-severity diagnostics, the command shall exit 0.",
+      "why": "A warning is advisory; failing the exit on warnings alone turns every advisory into a CI failure and teaches teams to silence the check.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [
+        "CHCK-043"
+      ],
+      "livesIn": [
+        "packages/engine/src/operations/check.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
-  ]
+  ],
+  "grammarSeverity": "error"
 }

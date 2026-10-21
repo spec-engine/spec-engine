@@ -304,5 +304,6 @@
       "aliases": [],
       "cites": []
     }
-  ]
+  ],
+  "grammarSeverity": "error"
 }

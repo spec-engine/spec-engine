@@ -130,7 +130,7 @@ describe("spec amend", () => {
     expect(req?.statement).toBe("rough draft of the rule"); // untouched
   });
 
-  // @spec REQ-043 unit
+  // @spec REQ-055 unit
   test("repeated and comma-separated --lives replace livesIn with the whole list", async () => {
     await amendRun({
       args: { id: ACTIVE, platformDir: tmp, lives: "c.ts" },
@@ -140,7 +140,7 @@ describe("spec amend", () => {
     expect(req?.livesIn).toEqual(["a.ts", "b.ts", "c.ts"]);
   });
 
-  // @spec REQ-043 unit
+  // @spec REQ-055 unit
   test("an empty --lives clears livesIn", async () => {
     await amendRun({ args: { id: ACTIVE, platformDir: tmp, lives: "" }, rawArgs: ["--lives", ""] });
     const req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);

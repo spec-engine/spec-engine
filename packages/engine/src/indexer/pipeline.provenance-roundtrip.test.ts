@@ -61,6 +61,7 @@ describe("JSON issues[] provenance round-trip", () => {
     }
   });
 
+  // @spec PROV-005 unit
   test("AUTH-001's opaque issue_id is BILLING-001 verbatim — stored as provenance, never resolved or made a relation", async () => {
     const s = openStorage(dbPath);
     try {

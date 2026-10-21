@@ -406,18 +406,19 @@
     },
     {
       "id": "SCHM-026",
-      "status": "active",
+      "status": "superseded",
       "statement": "The spec engine shall write every SPEC.json, including one a test creates, through the single validating write seam; a planted-defect fixture is the only file written by hand.",
       "why": "A test that serializes an envelope by hand restates the shape from memory, so a schema change leaves the suite proving a file the engine would never write.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "SCHM-035",
       "relates": [],
       "livesIn": [
         "scripts/arch-fences.sh"
       ],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 12
     },
     {
       "id": "SCHM-027",
@@ -538,6 +539,22 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "SCHM-035",
+      "status": "active",
+      "statement": "The spec engine shall write every SPEC.json, including one a test creates, through the single validating write seam.",
+      "why": "A test that serializes an envelope by hand restates the shape from memory, so a schema change leaves the suite proving a file the engine would never write. A planted-defect fixture under src/testing/fixtures/ is data, not code, and is the only file written by hand.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "scripts/arch-fences.sh"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
-  ]
+  ],
+  "grammarSeverity": "error"
 }

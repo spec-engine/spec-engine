@@ -1,4 +1,5 @@
-// @spec RSLV-003
+// @spec RSLV-005
+// @spec RSLV-006
 
 import { statSync } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";

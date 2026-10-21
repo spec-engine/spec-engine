@@ -68,5 +68,6 @@
       "aliases": [],
       "cites": []
     }
-  ]
+  ],
+  "grammarSeverity": "error"
 }

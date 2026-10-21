@@ -325,18 +325,19 @@
     },
     {
       "id": "REQ-020",
-      "status": "active",
+      "status": "superseded",
       "statement": "When new statement text is authored into a domain that declares the ears grammar, the spec CLI shall judge it against the EARS shapes — warning and writing under warning severity, refusing the write under error severity.",
       "why": "Catching a malformed statement at write time costs one message; catching it after code binds to the id costs a supersede.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "REQ-054",
       "relates": [],
       "livesIn": [
         "packages/engine/src/authoring/grammar.ts"
       ],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 19
     },
     {
       "id": "REQ-021",
@@ -706,11 +707,11 @@
     },
     {
       "id": "REQ-043",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec amend or spec supersede or spec move receives --lives, the spec CLI shall replace the target's livesIn with that list, and an empty --lives value shall clear it.",
       "why": "One replace-or-clear idiom, the same as --aliases, so an author always knows what the stored list will be.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "REQ-055",
       "relates": [],
       "livesIn": [
         "packages/engine/src/commands/amend.ts"
@@ -722,7 +723,8 @@
         }
       ],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 20
     },
     {
       "id": "REQ-044",
@@ -832,7 +834,7 @@
     {
       "id": "REQ-051",
       "status": "active",
-      "statement": "When a requirement is amended or superseded through the CLI, the HTTP API, or the MCP server with a relates list, the spec engine shall replace the target's relates with that list, and an empty list shall clear it.",
+      "statement": "When a requirement is amended or superseded through the CLI, the HTTP API, or the MCP server with a relates list, the spec engine shall replace the target's relates with that list, an empty list clearing it.",
       "why": "One idiom for both lists keeps livesIn and relates authoring interchangeable; a diverging rule is a surprise at the write seam.",
       "supersedes": null,
       "supersededBy": null,
@@ -873,6 +875,37 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "REQ-054",
+      "status": "active",
+      "statement": "When new statement text is authored into a domain that declares the ears grammar, the spec CLI shall judge it with the same EARS shape and one-promise lint spec check runs, writing with a warning under warning severity and refusing the write under error severity.",
+      "why": "Catching a malformed statement at write time costs one message; catching it after code binds to the id costs a supersede.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/authoring/grammar.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-055",
+      "status": "active",
+      "statement": "When spec amend or spec supersede or spec move receives --lives, the spec CLI shall replace the target's livesIn with that list, an empty --lives value clearing it.",
+      "why": "One replace-or-clear idiom, the same as --aliases, so an author always knows what the stored list will be.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/amend.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
-  ]
+  ],
+  "grammarSeverity": "error"
 }

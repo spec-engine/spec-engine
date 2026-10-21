@@ -158,7 +158,8 @@ CREATE INDEX IF NOT EXISTS idx_term_citations_term ON term_citations(term_id);
 -- supersedes-via | amends-via), validated at parse time, never as a DB
 -- constraint. Exactly one index, on req_id; never on issue_id, which would
 -- treat the opaque payload as a lookup key.
--- @spec PROV-004
+-- @spec PROV-005
+-- @spec PROV-006
 CREATE TABLE IF NOT EXISTS provenance (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   req_id        TEXT NOT NULL,

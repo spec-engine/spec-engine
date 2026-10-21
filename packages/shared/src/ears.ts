@@ -16,7 +16,7 @@ export type EarsResult =
   | { ok: true; clauses: EarsClauses }
   | { ok: false; problem: string; expected: string };
 
-/** Every rejection shows a filled-in example, never just a rule name. */
+/** Every shape rejection shows a filled-in example, never just a rule name. */
 export const EARS_EXPECTED = [
   'When <trigger>, the <system> shall <result> — e.g. "When an unknown id is passed, spec resolve shall print [] and exit 0."',
   "While <state>, the <system> shall <result>",
@@ -34,8 +34,40 @@ const CONDITIONAL: Array<{ keyword: string; pattern: EarsPattern; re: RegExp }> 
 
 const ALWAYS_RE = /^(.+?)\s+shall\s+(.+)$/s;
 
-function reject(problem: string): EarsResult {
-  return { ok: false, problem, expected: EARS_EXPECTED };
+const SHAPE_EXPECTED = `Expected one of:\n  ${EARS_EXPECTED}`;
+
+const ONE_PROMISE_EXPECTED =
+  "Expected one promise per statement: a second behavior is its own requirement, and the reason goes in the why.";
+
+function reject(problem: string, expected = SHAPE_EXPECTED): EarsResult {
+  return { ok: false, problem, expected };
+}
+
+const RATIONALE_RE = /\b(because|so that|in order to)\b/i;
+
+/** The one-promise lint over a statement that already has an EARS shape; null when clean.
+ *  A trailing ", so <consequence>" is legal: it names an observable result, not a reason.
+ *  A bare ", and shall <more>" continues the same subject and is not flagged. */
+// @spec CHCK-040
+// @spec CHCK-041
+// @spec CHCK-042
+function onePromiseProblem(statement: string, response: string): string | null {
+  if (/;\s/.test(response)) {
+    return 'joins a second clause with "; " after "shall" — split it into its own requirement';
+  }
+  if (/,\s+and\s+(?!shall\b)\S[^,;]*?\s+shall\b/i.test(response)) {
+    return 'joins a second clause with its own subject (", and <subject> shall") — split it into its own requirement';
+  }
+  const rationale = statement.match(RATIONALE_RE);
+  if (rationale) {
+    return `carries a rationale ("${rationale[1]}") — the reason belongs in the why field`;
+  }
+  return null;
+}
+
+function lint(clauses: EarsClauses, statement: string): EarsResult {
+  const problem = onePromiseProblem(statement, clauses.response);
+  return problem === null ? { ok: true, clauses } : reject(problem, ONE_PROMISE_EXPECTED);
 }
 
 export function parseEarsStatement(raw: string): EarsResult {
@@ -53,15 +85,15 @@ export function parseEarsStatement(raw: string): EarsResult {
     const m = statement.match(re);
     if (m) {
       const [, condition = "", system = "", response = ""] = m;
-      return {
-        ok: true,
-        clauses: {
+      return lint(
+        {
           pattern,
           condition: condition.trim(),
           system: system.trim().replace(/^the\s+/i, ""),
           response: response.trim(),
         },
-      };
+        statement,
+      );
     }
     if (keyword === "If" && !/,\s*then\s/.test(statement)) {
       return reject(
@@ -81,15 +113,15 @@ export function parseEarsStatement(raw: string): EarsResult {
         'the clause before "shall" contains a comma but starts with no condition keyword (When/While/If/Where) — either drop the comma or lead with the condition',
       );
     }
-    return {
-      ok: true,
-      clauses: {
+    return lint(
+      {
         pattern: "always",
         condition: null,
         system: system.trim().replace(/^the\s+/i, ""),
         response: response.trim(),
       },
-    };
+      statement,
+    );
   }
 
   return reject('nothing follows "shall" — the observable result is missing');

@@ -1,7 +1,7 @@
 {
   "key": "TRK",
   "owner": null,
-  "updated": "2026-07-30",
+  "updated": "2026-10-21",
   "scope": "The @spec-engine/tracker package: the offline noop adapter and the optional read-only Linear integration that resolves an opaque issue_id to a title and URL. Belongs here: the adapter interface and noop default; the single read query; SPEC_TRACKER_TOKEN handling and the no-token short-circuit; the sidecar cache; the isolation boundary (engine internals never import the tracker, no network on the derivation path). Does not belong here: how a display surface labels expired-cache data (PROV); the provenance matrix and issue-id opacity (PROV); any write back to the tracker. Boundary case: resolving an issue id is TRK's; the opacity of that id inside the index is PROV's.",
   "grammar": "ears",
   "requirements": [
@@ -74,9 +74,43 @@
     },
     {
       "id": "TRK-005",
-      "status": "active",
+      "status": "superseded",
       "statement": "When the tracker adapter resolves an issue id, it shall send only read requests to the issue tracker; it shall never send a mutation or otherwise modify tracker state.",
       "why": "A mutation path would let the tool modify tracker state as a side effect of a read — turning a lookup into an unaudited write and violating the one-way boundary.",
+      "supersedes": null,
+      "supersededBy": "TRK-007",
+      "relates": [],
+      "livesIn": [
+        "packages/tracker/src/linear.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": [],
+      "supersededAtVersion": 5
+    },
+    {
+      "id": "TRK-006",
+      "status": "superseded",
+      "statement": "When the tracker adapter authenticates, it shall send the SPEC_TRACKER_TOKEN value only in the Authorization header of tracker requests; the token value shall never appear in stdout, stderr, or any log output.",
+      "why": "A token written to a log line would leak a live credential into CI output or a developer's terminal scrollback — a credential-exposure incident from a debug print.",
+      "supersedes": null,
+      "supersededBy": "TRK-008",
+      "relates": [],
+      "livesIn": [
+        "packages/tracker/src/linear.ts"
+      ],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": [],
+      "supersededAtVersion": 6
+    },
+    {
+      "id": "TRK-007",
+      "status": "active",
+      "statement": "When the tracker adapter resolves an issue id, it shall send only read requests to the issue tracker.",
+      "why": "A mutation path would let the tool modify tracker state as a side effect of a read — turning a lookup into an unaudited write and violating the one-way boundary. Never a mutation, never any other write to tracker state.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
@@ -84,15 +118,14 @@
         "packages/tracker/src/linear.ts"
       ],
       "issues": [],
-      "changedAtVersion": 1,
       "aliases": [],
       "cites": []
     },
     {
-      "id": "TRK-006",
+      "id": "TRK-008",
       "status": "active",
-      "statement": "When the tracker adapter authenticates, it shall send the SPEC_TRACKER_TOKEN value only in the Authorization header of tracker requests; the token value shall never appear in stdout, stderr, or any log output.",
-      "why": "A token written to a log line would leak a live credential into CI output or a developer's terminal scrollback — a credential-exposure incident from a debug print.",
+      "statement": "When the tracker adapter authenticates, it shall send the SPEC_TRACKER_TOKEN value only in the Authorization header of tracker requests.",
+      "why": "A token sent anywhere but the Authorization header (a query string, a request body) lands in proxy and tracker logs as a live credential.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
@@ -100,9 +133,26 @@
         "packages/tracker/src/linear.ts"
       ],
       "issues": [],
-      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "TRK-009",
+      "status": "active",
+      "statement": "The tracker adapter shall never write the SPEC_TRACKER_TOKEN value to stdout, stderr, or any log output.",
+      "why": "A token written to a log line would leak a live credential into CI output or a developer's terminal scrollback — a credential-exposure incident from a debug print.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [
+        "TRK-008"
+      ],
+      "livesIn": [
+        "scripts/arch-fences.sh"
+      ],
+      "issues": [],
       "aliases": [],
       "cites": []
     }
-  ]
+  ],
+  "grammarSeverity": "error"
 }

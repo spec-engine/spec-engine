@@ -89,7 +89,7 @@ An operation takes typed input and returns typed data or a typed refusal. It nev
 | `guard` | storage, platform dir, git ref | the losses a change is about to cause | `spec guard` | | |
 | `gate` | storage, platform dir, repo, requirement id | the gate outcome and `build_id`, or `usage` for an unknown repo | `spec gate` | | |
 | `resolveMemberPin`, `writeMemberConfig` | repo dir, pin override, force | the pin and its source; wrote or already configured, or `usage` / `conflict` | `spec init` | | |
-| `newDomain`, `listDomains` | platform dir, key | the scaffolded file, or `usage` / `conflict` / `invalid_domain_file`; the `{ key, scope }` rows | `spec domain` | | |
+| `newDomain`, `listDomains`, `setDomainGrammar` | platform dir, key | the scaffolded file, or `usage` / `conflict` / `invalid_domain_file`; the `{ key, scope }` rows; the written `grammar` / `grammarSeverity`, or `usage` / `not_found` / `invalid_domain_file` | `spec domain` | | |
 | `writeGlossary`, `migrateGlossary`, `checkGlossary` | platform dir | the generated count, the migrated count or a skip, clean or drift | `spec glossary` | | |
 
 Reads take an open `Storage` handle because the surface owns the handle's lifetime: the CLI and MCP open one per call through `withIndex`, the API keeps one for the life of the server. Writes take the platform directory because they edit `SPEC.json` files. A lifecycle write takes a fresh-tags callback for its worklist, so a one-shot surface cold-rebuilds a throwaway index while the API re-indexes into the handle it keeps. Every guard runs before the first byte is written (REQ-038 <!-- @spec REQ-038 -->), and `operations/parity.test.ts` proves each surface writes the same envelope.
@@ -101,7 +101,7 @@ Each of these exists exactly once, and a grep fence in `scripts/arch-fences.sh` 
 | Seam | What goes through it | Fence |
 | --- | --- | --- |
 | `runIndex` | Every index build. One transaction, one `build_id` | reviewed, not fenced |
-| `validateAndWrite` | Every write of a `SPEC.json` file, a test's fixture included; a planted defect under `src/testing/fixtures/` is the only file written by hand | `SCHM-026 every SPEC.json write goes through validateAndWrite` |
+| `validateAndWrite` | Every write of a `SPEC.json` file, a test's fixture included; a planted defect under `src/testing/fixtures/` is the only file written by hand | `SCHM-035 every SPEC.json write goes through validateAndWrite` |
 | `bun:sqlite` import | Only `storage/sqlite.ts` may import it | `SCHM-025 bun:sqlite outside storage/sqlite.ts`, `SCHM-025 bun:sqlite outside the engine` |
 | `Storage` interface | Every read the CLI, API, and MCP make | the webapp import fence in `packages/webapp/test/import-fence.test.ts` |
 | Operations | The write seam and the id allocator are reached only through `operations/`; no command, route, or tool imports them. A test's fixture builder (`src/testing/platform.ts`) is one more caller of the same operations | `SCHM-027 write seam under operations` |

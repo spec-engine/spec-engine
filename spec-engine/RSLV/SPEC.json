@@ -1,7 +1,7 @@
 {
   "key": "RSLV",
   "owner": null,
-  "updated": "2026-07-30",
+  "updated": "2026-10-21",
   "scope": "The spec resolve files-to-requirements command and its --req reverse query. Belongs here: file-to-requirement mapping; the --req reverse tag-site query; path-containment normalization. Does not belong here: full-text search (QURY). Boundary case: an absolute path resolving outside platformDir exits 2, never a silent empty result.",
   "grammar": "ears",
   "requirements": [
@@ -41,11 +41,11 @@
     },
     {
       "id": "RSLV-003",
-      "status": "active",
+      "status": "superseded",
       "statement": "When given one or more file paths, spec resolve shall list each requirement tagged in those files; a file with no tags contributes nothing, and an empty result exits 0.",
       "why": "Routing a task by file must load the requirements that govern it; without this mapping an agent edits governed code blind.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "RSLV-005",
       "relates": [],
       "livesIn": [
         "packages/engine/src/commands/resolve.ts"
@@ -53,7 +53,8 @@
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 4
     },
     {
       "id": "RSLV-004",
@@ -70,6 +71,39 @@
       "changedAtVersion": 1,
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "RSLV-005",
+      "status": "active",
+      "statement": "When given one or more file paths, spec resolve shall list each requirement tagged in those files.",
+      "why": "Routing a task by file must load the requirements that govern it; without this mapping an agent edits governed code blind.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/resolve.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "RSLV-006",
+      "status": "active",
+      "statement": "When none of the given files carries a @spec tag, spec resolve shall print an empty result and exit 0.",
+      "why": "An untagged file is a normal answer, not a failure; an error exit would make every agent routing by file treat ungoverned code as a broken tool.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [
+        "RSLV-005"
+      ],
+      "livesIn": [
+        "packages/engine/src/commands/resolve.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
-  ]
+  ],
+  "grammarSeverity": "error"
 }

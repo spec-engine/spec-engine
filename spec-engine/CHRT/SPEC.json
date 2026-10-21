@@ -219,5 +219,6 @@
       "aliases": [],
       "cites": []
     }
-  ]
+  ],
+  "grammarSeverity": "error"
 }

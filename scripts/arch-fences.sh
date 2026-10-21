@@ -139,15 +139,15 @@ fence_schm08_no_sql_files() {
   fi
 }
 
-# --- PROV-004: issue_id is never an identity construct ---------------------
-# @spec PROV-004
+# --- PROV-006: issue_id is never an identity construct ---------------------
+# @spec PROV-006
 fence_prov02_issue_id_opacity() {
   PAT='(PRIMARY KEY[^,]*issue_id|issue_id[^,]*PRIMARY KEY|FOREIGN KEY[^)]*issue_id|issue_id[^)]*FOREIGN KEY|UNIQUE\([^)]*issue_id|CREATE[[:space:]]+(UNIQUE[[:space:]]+)?INDEX[^;]*\([^)]*issue_id|JOIN[^;]*ON[^;]*issue_id|GROUP BY[^;]*issue_id)'
   OFFENDERS=$(cat packages/shared/src/schema.ts packages/engine/src/storage/sqlite.ts \
     | grep -vE '^[[:space:]]*(--|//)' \
     | grep -nE "$PAT" || true)
   if [ -n "$OFFENDERS" ]; then
-    echo "FORBIDDEN: issue_id appears in an identity construct (PROV-004)"
+    echo "FORBIDDEN: issue_id appears in an identity construct (PROV-006)"
     echo "$OFFENDERS"
     exit 1
   fi
@@ -282,15 +282,15 @@ fence_llmfree_engine() {
   echo "llm-free engine fence: OK (no model SDK/inference in packages/engine/src; self-tests tripped)"
 }
 
-# --- TRK-005: query only, never a GraphQL mutation --------------------------
-# @spec TRK-005
+# --- TRK-007: query only, never a GraphQL mutation --------------------------
+# @spec TRK-007
 fence_trk04_no_mutation() {
   MUT=$(find packages/tracker/src -name '*.ts' -type f -not -name '*.test.ts' -print0 \
     | xargs -0 cat 2>/dev/null \
     | grep -vE '^[[:space:]]*(//|\*|--)' \
     | grep -nwE 'mutation' || true)
   if [ -n "$MUT" ]; then
-    echo "FORBIDDEN: GraphQL mutation in @spec-engine/tracker (TRK-005 one-way truth — query only)"
+    echo "FORBIDDEN: GraphQL mutation in @spec-engine/tracker (TRK-007 one-way truth — query only)"
     echo "$MUT"
     exit 1
   fi
@@ -299,12 +299,12 @@ fence_trk04_no_mutation() {
   echo "tracker no-mutation fence: OK (read-only; self-test tripped)"
 }
 
-# --- TRK-006: SPEC_TRACKER_TOKEN never logged -------------------------------
-# @spec TRK-006
+# --- TRK-009: SPEC_TRACKER_TOKEN never logged -------------------------------
+# @spec TRK-009
 fence_trk06_no_token_log() {
   OFFENDERS=$(grep -REn --exclude='*.test.ts' 'console\.[a-z]+\([^)]*(SPEC_TRACKER_TOKEN|token)' packages/tracker/src 2>/dev/null || true)
   if [ -n "$OFFENDERS" ]; then
-    echo "FORBIDDEN: token referenced in a console.* call in @spec-engine/tracker (TRK-006)"
+    echo "FORBIDDEN: token referenced in a console.* call in @spec-engine/tracker (TRK-009)"
     echo "$OFFENDERS"
     exit 1
   fi
@@ -314,20 +314,20 @@ fence_trk06_no_token_log() {
   echo "no-token-log fence: OK (no token in console.*; self-test tripped)"
 }
 
-# --- SCHM-026: no direct domain-file write outside validateAndWrite --------
+# --- SCHM-035: no direct domain-file write outside validateAndWrite --------
 # Every source file in every package, the co-located tests and the helpers
 # under src/testing/ included. The only exemption is the planted trees under
 # src/testing/fixtures/, which are data, not code. A test authors its
 # platform through src/testing/platform.ts (the operations) or plants a state
 # the engine refuses through src/testing/plant.ts (still the seam).
-# @spec SCHM-026
+# @spec SCHM-035
 fence_val01_validate_and_write() {
   PAT='(Bun\.write|writeFile|writeFileSync)\([^;]*(SPEC\.json|[Ss]pecPath|[Ss]pecFile)'
   OFFENDERS=$(find packages/*/src -name '*.ts' -type f -not -path '*/src/testing/fixtures/*' -print0 \
     | xargs -0 grep -nHE "$PAT" 2>/dev/null \
     | grep -vE '^[^:]+:[0-9]+:[[:space:]]*(//|\*|--)' || true)
   if [ -n "$OFFENDERS" ]; then
-    echo "FORBIDDEN: domain spec file written outside validateAndWrite (SCHM-026)"
+    echo "FORBIDDEN: domain spec file written outside validateAndWrite (SCHM-035)"
     echo "$OFFENDERS"
     exit 1
   fi
@@ -335,21 +335,21 @@ fence_val01_validate_and_write() {
     | grep -vE '^[[:space:]]*(//|\*|--)' \
     | grep -nE "$PAT" || true)
   if [ -z "$SELFTEST" ]; then
-    echo "FAIL: SCHM-026 fence self-test did not trip — pattern misses variable-path domain writes"
+    echo "FAIL: SCHM-035 fence self-test did not trip — pattern misses variable-path domain writes"
     exit 1
   fi
   SELFTEST_TEST=$(printf '    writeFileSync(join(root, "spec-engine", key, "SPEC.json"), JSON.stringify(doc));\n' \
     | grep -vE '^[[:space:]]*(//|\*|--)' \
     | grep -nE "$PAT" || true)
   if [ -z "$SELFTEST_TEST" ]; then
-    echo "FAIL: SCHM-026 fence self-test did not trip — pattern misses a test's hand-written envelope"
+    echo "FAIL: SCHM-035 fence self-test did not trip — pattern misses a test's hand-written envelope"
     exit 1
   fi
   NEGTEST=$(printf '    await Bun.write(doctorPath, renderDoctorMd(x));\n    writeFileSync(join(clone, "results.xml"), xml);\n' \
     | grep -vE '^[[:space:]]*(//|\*|--)' \
     | grep -nE "$PAT" || true)
   if [ -n "$NEGTEST" ]; then
-    echo "FAIL: SCHM-026 fence over-broad — it flagged a sanctioned non-spec write"
+    echo "FAIL: SCHM-035 fence over-broad — it flagged a sanctioned non-spec write"
     exit 1
   fi
   echo "validateAndWrite seam fence: OK (fence green over every source and test; self-tests tripped; negative self-test clean)"
@@ -488,14 +488,14 @@ run "SCHM-025 bun:sqlite outside the engine"                  fence_d11_bun_sqli
 run "SCHM-025 bun:sqlite outside storage/sqlite.ts"           fence_d08_engine_internal
 run "SCHM-028 no CHECK, FK, or UNIQUE on domain fields"        fence_schm07_schema_constraint
 run "SCHM-029 DDL inline, no .sql files"                       fence_schm08_no_sql_files
-run "PROV-004 issue_id is never an identity"                   fence_prov02_issue_id_opacity
+run "PROV-006 issue_id is never an identity"                   fence_prov02_issue_id_opacity
 run "DIST-012 README names spec init and NO_SPEC_CONFIG"       fence_docs01_readme_tokens
 run "DIST-013 README and AGENTS.md name the JSON model and the proof gate" fence_ma4_v13_doc_reference
 run "DIST-014 no stale example config"                         fence_clean01_no_stale_example
 run "TRK-004 engine internals never import the tracker or reach the network" fence_trk02_tracker_import
-run "TRK-005 tracker sends queries only"                       fence_trk04_no_mutation
-run "TRK-006 token never logged"                               fence_trk06_no_token_log
-run "SCHM-026 every SPEC.json write goes through validateAndWrite" fence_val01_validate_and_write
+run "TRK-007 tracker sends queries only"                       fence_trk04_no_mutation
+run "TRK-009 token never logged"                               fence_trk06_no_token_log
+run "SCHM-035 every SPEC.json write goes through validateAndWrite" fence_val01_validate_and_write
 run "INDX-013 no SPEC.md parse path"                           fence_stor04_no_spec_md_parse
 run "AUTHOR-008 llm-free engine"                               fence_llmfree_engine
 run "CHCK-020 glossary round-trip"                             fence_glossary_roundtrip

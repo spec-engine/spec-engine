@@ -47,9 +47,9 @@ describe("architecture fences (scripts/arch-fences.sh)", () => {
     expect(stdout.match(/── fence: SCHM-025 /g)).toHaveLength(2);
   });
 
-  // @spec SCHM-026 unit
-  test("SCHM-026: every SPEC.json write, tests included, goes through validateAndWrite", () => {
-    fenceHeld("SCHM-026");
+  // @spec SCHM-035 unit
+  test("SCHM-035: every SPEC.json write, tests included, goes through validateAndWrite", () => {
+    fenceHeld("SCHM-035");
     expect(stdout).toContain("validateAndWrite seam fence: OK");
   });
 
@@ -68,9 +68,9 @@ describe("architecture fences (scripts/arch-fences.sh)", () => {
     fenceHeld("SCHM-029");
   });
 
-  // @spec PROV-004 unit
-  test("PROV-004: issue_id is never a key, index, join, or grouping column", () => {
-    fenceHeld("PROV-004");
+  // @spec PROV-006 unit
+  test("PROV-006: issue_id is never a key, index, join, or grouping column", () => {
+    fenceHeld("PROV-006");
     expect(stdout).toContain("issue_id-opacity gate: OK");
   });
 
@@ -95,14 +95,14 @@ describe("architecture fences (scripts/arch-fences.sh)", () => {
     expect(stdout).toContain("tracker import fence: OK");
   });
 
-  // @spec TRK-005 unit
-  test("TRK-005: the tracker package sends GraphQL queries only", () => {
-    fenceHeld("TRK-005");
+  // @spec TRK-007 unit
+  test("TRK-007: the tracker package sends GraphQL queries only", () => {
+    fenceHeld("TRK-007");
   });
 
-  // @spec TRK-006 unit
-  test("TRK-006: the tracker never logs the token", () => {
-    fenceHeld("TRK-006");
+  // @spec TRK-009 unit
+  test("TRK-009: the tracker never logs the token", () => {
+    fenceHeld("TRK-009");
   });
 
   // @spec INDX-013 unit

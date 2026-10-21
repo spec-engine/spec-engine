@@ -178,18 +178,19 @@
     },
     {
       "id": "GUARD-011",
-      "status": "active",
+      "status": "superseded",
       "statement": "If a requirement entry that is not Active at the git ref is absent from the working-tree spec, then spec guard shall report REQUIREMENT_REMOVED for it, and no supersede link shall excuse the removal.",
       "why": "A superseded entry's successor link always exists, so honoring it as an exemption makes pruning history silent — the record behind 'a requirement is never deleted' vanishes without a trace.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "GUARD-029",
       "relates": [],
       "livesIn": [
         "packages/engine/src/guard/losses.ts"
       ],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 13
     },
     {
       "id": "GUARD-012",
@@ -353,11 +354,11 @@
     },
     {
       "id": "GUARD-022",
-      "status": "active",
+      "status": "superseded",
       "statement": "The spec guard command shall accept no override comment; a reported loss is suppressed only by superseding or deprecating the requirement in the same change.",
       "why": "An override comment is a sanctioned deletion whose record lives in the code being deleted and vanishes with it.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "GUARD-028",
       "relates": [],
       "livesIn": [
         "packages/engine/src/guard/losses.ts"
@@ -365,7 +366,8 @@
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 12
     },
     {
       "id": "GUARD-023",
@@ -444,6 +446,39 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "GUARD-028",
+      "status": "active",
+      "statement": "The spec guard command shall report a loss even when the change carries an override comment.",
+      "why": "An override comment is a sanctioned deletion whose record lives in the code being deleted and vanishes with it. A loss is suppressed only by superseding or deprecating the requirement in the same change.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [
+        "GUARD-018"
+      ],
+      "livesIn": [
+        "packages/engine/src/guard/losses.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GUARD-029",
+      "status": "active",
+      "statement": "If a requirement entry that is not Active at the git ref is absent from the working-tree spec, then spec guard shall report REQUIREMENT_REMOVED for it.",
+      "why": "No supersede link excuses the removal. A superseded entry's successor link always exists, so honoring it as an exemption makes pruning history silent — the record behind 'a requirement is never deleted' vanishes without a trace.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/guard/losses.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
-  ]
+  ],
+  "grammarSeverity": "error"
 }
