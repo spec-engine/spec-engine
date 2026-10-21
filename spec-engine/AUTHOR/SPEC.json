@@ -1,7 +1,7 @@
 {
   "key": "AUTHOR",
   "owner": null,
-  "updated": "2026-09-05",
+  "updated": "2026-10-21",
   "scope": "How a brief or ticket becomes well-formed requirements: the AGENTS.md authoring playbook, the req-author skill, the MCP author_requirements prompt, and the rule that the engine runs no model. Belongs here: the authoring-workflow surfaces and the LLM-free engine fence. Does not belong here: the mint itself (REQ), the domain scaffold (DOMAIN), the charter doc (CHRT). Boundary case: the MCP prompt is engine code, but it owns only the template text; the write is REQ's promise.",
   "grammar": "ears",
   "requirements": [
@@ -169,7 +169,7 @@
     },
     {
       "id": "AUTHOR-011",
-      "status": "active",
+      "status": "deprecated",
       "statement": "The spec engine source shall record behavior in requirements and spec tags rather than in comments, so a source comment naming a plan, phase, wave, pitfall, or review round is debt whose per-file count may only fall.",
       "why": "A comment that narrates how the code arrived goes stale the moment the plan ends, and the behavior it describes is then recorded nowhere the engine can check.",
       "supersedes": null,
@@ -180,7 +180,8 @@
       ],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "The source carries no process markers; the comment rule in AGENTS.md is the control, and no scanner or ledger remains to ratchet."
     }
   ]
 }

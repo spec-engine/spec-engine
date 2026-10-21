@@ -54,7 +54,7 @@ describe("TAXONOMY.md — per-domain charter structure", () => {
   test("does NOT carry the retired shadow-id backlog", async () => {
     const doc = await loadTaxonomy();
     expect(doc).not.toContain("Shadow-id promotion backlog");
-    expect(doc).not.toContain(`${["QURY", "01"].join("-")}/`);
+    expect(doc).not.toContain("QURY-01/");
   });
 });
 

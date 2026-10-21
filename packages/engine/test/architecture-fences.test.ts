@@ -142,11 +142,6 @@ describe("architecture fences (scripts/arch-fences.sh)", () => {
     fenceHeld("CHRT-007");
   });
 
-  // @spec AUTHOR-011 unit
-  test("AUTHOR-011: the process-marker ledger only falls", () => {
-    fenceHeld("AUTHOR-011");
-  });
-
   test("every run label begins with a requirement id", async () => {
     const script = await Bun.file(FENCE_SCRIPT).text();
     const labels = [...script.matchAll(/^run "([^"]+)"/gm)].map((m) => m[1] ?? "");

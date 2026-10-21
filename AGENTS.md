@@ -108,8 +108,8 @@ Rules:
   (`architecture-fences`, `corpus-hygiene`, `taxonomy`, `npm-package`, the
   webapp import fence) lives in `packages/<pkg>/test/`. The tag scanner
   classifies a file as a test by the `.test.` substring, so a co-located tag
-  still verifies; the engine-internal fences and the marker ratchet skip
-  `*.test.ts` and `src/testing/`, the write-seam fence does not.
+  still verifies; the engine-internal fences skip `*.test.ts` and
+  `src/testing/`, the write-seam fence does not.
 - **A fence runs inside `bun test` under a 5-second budget**
   (`architecture-fences.test.ts` spawns the whole script). Keep each fence to
   one process.
@@ -120,9 +120,8 @@ Comments:
 - Before writing one, prefer a named function, a test, or an `@spec KEY-NNN` tag.
 - Never restate a requirement, name a plan, phase, wave, pitfall, or review
   round, or narrate how the code got here. Behavior lives in `SPEC.json`.
-- Enforced by `fence_comment_markers`, a ratchet over
-  `scripts/comment-marker-debt.txt`: a file absent from the ledger must carry
-  zero markers, and a listed file's count may only fall.
+- A test name is a comment the runner prints: it claims only what the body
+  exercises and carries no process token.
 
 ## Invocation
 

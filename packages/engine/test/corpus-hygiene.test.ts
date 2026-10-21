@@ -1,7 +1,7 @@
 // Locks retired citation tokens out of the named files so a future edit
 // cannot reintroduce a dead citation. Only named files are scanned: this file
 // carries the forbidden tokens in its own assertions, so it must never scan
-// itself, and it composes the one token the process-marker fence would flag.
+// itself.
 
 import { describe, expect, test } from "bun:test";
 import { join, resolve } from "node:path";
@@ -68,7 +68,7 @@ describe("corpus hygiene (citation retargeting)", () => {
   test("check/propagation-teeth.ts header comments name no retired PROP or GATE id", async () => {
     const abs = join(ENGINE_SRC, "check", "propagation-teeth.ts");
     await assertAbsent(abs, "check/propagation-teeth.ts", "PROP-01");
-    await assertAbsent(abs, "check/propagation-teeth.ts", ["GATE", "02"].join("-"));
+    await assertAbsent(abs, "check/propagation-teeth.ts", "GATE-02");
   });
 
   test("commands/check.ts cites no GOV-01, PROP-01, or dissolved GOV-03", async () => {
