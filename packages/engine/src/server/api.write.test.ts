@@ -4,14 +4,16 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { copyFileSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import type { Storage } from "@spec-engine/shared";
-import { validateDomainFile } from "@spec-engine/shared";
+import type { Diagnostic, Storage } from "@spec-engine/shared";
+import { DiagnosticCode, validateDomainFile } from "@spec-engine/shared";
 import { nextRequirementId } from "../authoring/domains";
 import { localToday } from "../authoring/edit";
+import { renderDiagnostics } from "../check/format";
 import { composeServeApp } from "../commands/serve";
 import { openStorage } from "../storage/sqlite";
 import { cloneFixture } from "../testing/cloneFixture";
 import { commitAndTag } from "../testing/git";
+import { TestPlatform } from "../testing/platform";
 
 const CANONICAL_FIXTURE = join(
   import.meta.dir,
@@ -356,5 +358,47 @@ describe("the Host pin on a --host bind accepts exactly the bound address", () =
   test("the same Host is a rebind when the server is bound to loopback", async () => {
     // @spec SERV-024 integration
     expect((await post(app)).status).toBe(403);
+  });
+});
+
+describe("a write whose reindex refuses on another invalid domain file", () => {
+  const MISSING_ID_SPEC = join(
+    import.meta.dir,
+    "..",
+    "testing",
+    "fixtures",
+    "diagnostics",
+    "missing-id",
+    "spec-engine",
+    "BILLING",
+    "SPEC.json",
+  );
+
+  // @spec SERV-027 unit
+  test("POST /api/requirements answers 422 invalid_domain_file with the check --json rows", async () => {
+    const fx = TestPlatform.temp("spec-api-422-");
+    const fxStorage = openStorage(join(fx.dir, ".spec-engine", "test-index.sqlite"));
+    try {
+      await fx.domain("ORDERS");
+      await fx.domain("BILLING");
+      copyFileSync(MISSING_ID_SPEC, join(fx.dir, "spec-engine", "BILLING", "SPEC.json"));
+      const res = await composeServeApp(fxStorage, fx.dir).request("/api/requirements", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key: "ORDERS", statement: "The system shall ship orders." }),
+      });
+      expect(res.status).toBe(422);
+      const body = (await res.json()) as { error: string; diagnostics: Diagnostic[] };
+      expect(body.error).toBe("invalid_domain_file");
+      expect(body.diagnostics.length).toBeGreaterThan(0);
+      for (const row of body.diagnostics) {
+        expect(row.code).toBe(DiagnosticCode.INVALID_DOMAIN_FILE);
+        expect(row.source_file).toBe("spec-engine/BILLING/SPEC.json");
+      }
+      expect(JSON.stringify(body.diagnostics)).toBe(renderDiagnostics(body.diagnostics, "json"));
+    } finally {
+      fxStorage.close();
+      fx.remove();
+    }
   });
 });

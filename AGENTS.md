@@ -729,6 +729,11 @@ drops it), else 401. A `Host` other than loopback or the bound address is
 `/api/provenance?resolve=1` answer 403. `--token` / `SPEC_SERVE_TOKEN` pin
 the token (≥ 16 of `A-Z a-z 0-9 _ -`); otherwise it is 256 random bits.
 
+When the reindex after a write refuses on an invalid `SPEC.json` elsewhere on
+the platform, the route answers 422
+`{ error: "invalid_domain_file", diagnostics: [...] }`, the rows in the
+`check --json` shape (the CLI exits 2 with the same rows).
+
 Always-on routes: `/`, `/requirements[/:id]`, `/propagation/:id`,
 `/api/coverage`, `/api/report`, `/api/repos`, `/api/platform`,
 `/api/requirements[/:id]`, `/api/propagation/:id`, `/api/resolve?files=…`.
