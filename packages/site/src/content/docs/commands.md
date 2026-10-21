@@ -115,6 +115,12 @@ Scaffold `spec-engine/<KEY>/SPEC.json` (input normalized to uppercase, whitespac
 
 **Exit codes:** 0 / 2
 
+### `spec domain grammar <KEY> [platformDir]`
+
+Set a domain's statement grammar (`--grammar ears|freeform`) and/or its severity (`--severity warning|error`) through the validating write seam; every other envelope field is written back as read. `--json` prints `{ key, grammar, grammar_severity, file }`. Under `grammar: "ears"`, a statement must fit one of the five EARS shapes and pass the one-promise lint: no `; ` after the first `shall`, no `, and <subject> shall` second clause, no rationale connective (`because`, `so that`, `in order to`). A trailing `, so <observable consequence>` stays legal. `spec check` reports a miss as `STATEMENT_GRAMMAR`, and `spec req` / `amend` / `supersede` / `move` warn or refuse at write time, both at the declared severity. The TERM domain is exempt.
+
+**Exit codes:** 0 / 2 (unknown domain, neither flag, or a value outside the enums)
+
 ### `spec migrate [platformDir]`
 
 One-time hard cutover: convert every legacy canonical `SPEC.md` to a schema-validated sibling `SPEC.json`, then delete the `SPEC.md`. Idempotent — skips already-migrated dirs.

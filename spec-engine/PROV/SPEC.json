@@ -1,7 +1,7 @@
 {
   "key": "PROV",
   "owner": null,
-  "updated": "2026-07-30",
+  "updated": "2026-10-21",
   "scope": "The spec provenance matrix and the issue-link model, with issue_id an opaque external payload. Belongs here: the matrix rows and their sort and render; the role:ID parse into (req_id, issue_id, role); issue_id is projected only, never a key. Does not belong here: resolving an issue id to a title (TRK); requirement identity or routing. Boundary case: an issue id shaped like KEY-NNN stays an opaque string and is never resolved against the requirements table.",
   "grammar": "ears",
   "requirements": [
@@ -54,11 +54,11 @@
     },
     {
       "id": "PROV-004",
-      "status": "active",
+      "status": "superseded",
       "statement": "The spec CLI shall store and display an issue id verbatim as an opaque string; an issue id shall never be resolved against the requirements table, shall never route provenance between requirements, and colliding issue ids shall coexist without merging.",
       "why": "If an issue id became a join or routing key, an issue-link collision would silently reroute a requirement's provenance to the wrong requirement — corrupting the audit trail the provenance matrix exists to preserve.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "PROV-005",
       "relates": [],
       "livesIn": [
         "packages/shared/src/schema.ts"
@@ -66,7 +66,41 @@
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
+      "cites": [],
+      "supersededAtVersion": 3
+    },
+    {
+      "id": "PROV-005",
+      "status": "active",
+      "statement": "The spec CLI shall store and display an issue id verbatim as an opaque string.",
+      "why": "An issue id rewritten on the way in or out no longer matches the tracker, so the provenance matrix stops pointing at the ticket that caused the change.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/shared/src/schema.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "PROV-006",
+      "status": "active",
+      "statement": "The spec engine shall never resolve an issue id against the requirements table or use it as a key that routes or merges provenance between requirements.",
+      "why": "If an issue id became a join or routing key, an issue-link collision would silently reroute a requirement's provenance to the wrong requirement — corrupting the audit trail the provenance matrix exists to preserve.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [
+        "PROV-005"
+      ],
+      "livesIn": [
+        "packages/shared/src/schema.ts"
+      ],
+      "issues": [],
+      "aliases": [],
       "cites": []
     }
-  ]
+  ],
+  "grammarSeverity": "error"
 }

@@ -1,5 +1,5 @@
 // @spec CHCK-008 integration
-// @spec REQ-020 integration
+// @spec REQ-054 integration
 // @spec SCHM-010 integration
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
@@ -173,5 +173,76 @@ describe("statement grammar — the write-time gate (spec req --text)", () => {
     expect(out.clauses?.pattern).toBe("when");
     expect(out.clauses?.system).toBe("system");
     expect(out.clauses?.condition).toBe("a session is idle for 30 days");
+  });
+});
+
+// @spec CHCK-040 integration
+// @spec CHCK-041 integration
+// @spec CHCK-042 integration
+describe("STATEMENT_GRAMMAR — the one-promise lint", () => {
+  async function flagged(statement: string): Promise<string[]> {
+    await declareGrammar("AUTH", "error");
+    await plantEdit(platformDir, "AUTH", (doc) => {
+      entryOf(doc, "AUTH-001").statement = statement;
+    });
+    const rows = await statementGrammarDiagnostics(platformDir);
+    expect(rows.every((r) => r.severity === "error")).toBe(true);
+    return rows.map((r) => r.detail);
+  }
+
+  test("a semicolon clause after shall is reported", async () => {
+    const details = await flagged(
+      "The system shall expire idle sessions; stale tokens are revoked.",
+    );
+    expect(details).toHaveLength(1);
+    expect(details[0]).toContain('"; "');
+  });
+
+  test('", and <subject> shall" is reported', async () => {
+    const details = await flagged(
+      "The system shall expire idle sessions, and the audit log shall record each expiry.",
+    );
+    expect(details).toHaveLength(1);
+    expect(details[0]).toContain("own subject");
+  });
+
+  test("a rationale connective is reported", async () => {
+    const details = await flagged("The system shall expire idle sessions because they leak.");
+    expect(details).toHaveLength(1);
+    expect(details[0]).toContain('"because"');
+  });
+
+  test('a trailing ", so <consequence>" and a same-subject ", and shall" are not reported', async () => {
+    const details = await flagged(
+      "When a session is idle for 30 days, the system shall expire it, and shall log the expiry, so the next request re-authenticates.",
+    );
+    expect(details).toEqual([]);
+  });
+});
+
+// @spec REQ-054 integration
+describe("statement grammar — the write-time gate applies the one-promise lint", () => {
+  test("error severity refuses a statement the lint flags (exit 2), nothing written", async () => {
+    await declareGrammar("AUTH", "error");
+    const before = readFileSync(join(platformDir, "spec-engine", "AUTH", "SPEC.json"), "utf8");
+    let exitCode: number | null = null;
+    try {
+      await reqRun({
+        args: {
+          domainPrefix: "AUTH",
+          platformDir,
+          text: "The system shall expire idle sessions in order to limit exposure.",
+        },
+        rawArgs: [],
+      });
+    } catch (e) {
+      if (e instanceof ExitError) exitCode = e.code;
+      else throw e;
+    }
+    expect(exitCode).toBe(2);
+    expect(errs.join("\n")).toContain('"in order to"');
+    expect(readFileSync(join(platformDir, "spec-engine", "AUTH", "SPEC.json"), "utf8")).toBe(
+      before,
+    );
   });
 });

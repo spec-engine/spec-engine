@@ -6,6 +6,7 @@ import { type SpecDomain, validateAndWrite } from "@spec-engine/shared";
 import { domainsWithScope, scaffoldDomainObject } from "../authoring/domains";
 import { localToday } from "../authoring/edit";
 import { specPaths } from "../constants";
+import { readEnvelope } from "./_envelope";
 import { fail, type OpFailure } from "./_result";
 
 export interface NewDomainResult {
@@ -72,7 +73,49 @@ export async function newDomain(
 }
 
 /** Every domain with its charter sentence (null when unset), sorted by key. */
-// @spec DOMAIN-017
+// @spec DOMAIN-023
+// @spec DOMAIN-024
 export async function listDomains(platformDir: string) {
   return { ok: true as const, domains: await domainsWithScope(platformDir) };
+}
+
+export interface DomainGrammarResult {
+  ok: true;
+  key: string;
+  grammar: SpecDomain["grammar"];
+  grammarSeverity: SpecDomain["grammarSeverity"];
+  /** Platform-relative, e.g. `spec-engine/BILLING/SPEC.json`. */
+  file: string;
+}
+
+/**
+ * Set an existing domain's `grammar` and/or `grammarSeverity`. Every other
+ * envelope field is written back as read.
+ * @spec DOMAIN-020
+ * @spec DOMAIN-021
+ */
+export async function setDomainGrammar(
+  platformDir: string,
+  key: string,
+  options: Pick<NewDomainOptions, "grammar" | "grammarSeverity">,
+): Promise<DomainGrammarResult | OpFailure> {
+  if (options.grammar === undefined && options.grammarSeverity === undefined) {
+    return fail("usage", "pass --grammar, --severity, or both");
+  }
+  const file = await readEnvelope(platformDir, key);
+  if (!file.ok) return file;
+  const domain = { ...file.domain, ...definedFields(options) };
+  const res = await validateAndWrite(file.specPath, domain, file.relFile);
+  if (!res.ok) {
+    return fail("invalid_domain_file", res.diagnostics.map((d) => d.detail).join("\n"), {
+      diagnostics: res.diagnostics,
+    });
+  }
+  return {
+    ok: true,
+    key,
+    grammar: domain.grammar,
+    grammarSeverity: domain.grammarSeverity,
+    file: file.relFile,
+  };
 }

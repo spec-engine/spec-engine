@@ -10,7 +10,7 @@ import { cliFreshTags, exitOnFailure, handleNotAPlatform, printWarnings } from "
 
 /**
  * Flags to the operation's input. An absent flag leaves the field to be copied from the source.
- * @spec REQ-043
+ * @spec REQ-055
  */
 function inputFromArgs(
   args: MoveArgs,

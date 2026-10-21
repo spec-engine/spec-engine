@@ -38,7 +38,7 @@ export type GrammarVerdict =
  * not behavior) are `ok`. A nonconforming statement carries the domain's
  * severity and a message without any command prefix, so each surface can
  * render it as a warning or a refusal.
- * @spec REQ-020
+ * @spec REQ-054
  */
 export async function judgeStatementGrammar(
   platformDir: string,
@@ -54,9 +54,7 @@ export async function judgeStatementGrammar(
     ok: false,
     severity: cfg.severity,
     key,
-    message:
-      `the statement does not match the domain's EARS shape — ${result.problem}.\n` +
-      `Expected one of:\n  ${result.expected}`,
+    message: `the statement does not match the domain's EARS shape — ${result.problem}.\n${result.expected}`,
   };
 }
 

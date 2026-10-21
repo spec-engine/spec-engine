@@ -1,7 +1,7 @@
 {
   "key": "DOMAIN",
   "owner": null,
-  "updated": "2026-07-30",
+  "updated": "2026-10-21",
   "scope": "Domain lifecycle: spec domain new, spec domain list, and charter editing. Belongs here: the born-valid scaffold; the domain list output; the scope field on the envelope. Does not belong here: requirement authoring (REQ). Boundary case: minting a requirement id is REQ; scaffolding the domain that holds it is DOMAIN.",
   "grammar": "ears",
   "requirements": [
@@ -273,11 +273,11 @@
     },
     {
       "id": "DOMAIN-017",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec domain list runs, it shall print the domain keys sorted lexicographically, one per line, and exit 0 — zero domains shall produce empty output and still exit 0.",
       "why": "Prefix resolution and scripted listings build on this output; an unstable order or an error exit on an empty platform would break both.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "DOMAIN-023",
       "relates": [],
       "livesIn": [
         "packages/engine/src/commands/domain.ts"
@@ -285,7 +285,8 @@
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 12
     },
     {
       "id": "DOMAIN-018",
@@ -318,6 +319,86 @@
       "changedAtVersion": 1,
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "DOMAIN-020",
+      "status": "active",
+      "statement": "When spec domain grammar <KEY> runs with --grammar or --severity, the command shall set those fields on spec-engine/<KEY>/SPEC.json and leave every other envelope field unchanged.",
+      "why": "Without a command an author flips the severity by editing SPEC.json by hand, which bypasses the validating write seam and can reorder or drop envelope fields.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/domain.ts",
+        "packages/engine/src/commands/domain.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DOMAIN-021",
+      "status": "active",
+      "statement": "If spec domain grammar names no existing domain, passes neither --grammar nor --severity, or passes a value outside ears|freeform or warning|error, then the command shall print an error to stderr and exit 2.",
+      "why": "A silent success on a typo leaves the domain at its old severity, so the author believes the gate is on while statements still slip through.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/domain.ts",
+        "packages/engine/src/commands/domain.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DOMAIN-022",
+      "status": "active",
+      "statement": "When spec domain grammar runs with --json, the command shall print one {key, grammar, grammar_severity, file} object for the envelope it wrote.",
+      "why": "An agent scripting the flip across every domain cannot confirm which file changed or what it now declares without parsing prose.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/domain.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DOMAIN-023",
+      "status": "active",
+      "statement": "When spec domain list runs, it shall print the domain keys sorted lexicographically, one per line, and exit 0.",
+      "why": "Prefix resolution and scripted listings build on this output; an unstable order or an error exit on an empty platform would break both.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/domain.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DOMAIN-024",
+      "status": "active",
+      "statement": "When spec domain list runs on a platform with zero domains, it shall print empty output and exit 0.",
+      "why": "An empty platform is a valid starting state; an error exit there would break scripted listings before the first domain exists.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [
+        "DOMAIN-023"
+      ],
+      "livesIn": [
+        "packages/engine/src/operations/domain.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
-  ]
+  ],
+  "grammarSeverity": "error"
 }

@@ -5,7 +5,7 @@
 // @spec DOMAIN-014
 // @spec DOMAIN-015
 // @spec DOMAIN-016
-// @spec DOMAIN-017
+// @spec DOMAIN-023
 // @spec DOMAIN-018
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
@@ -13,7 +13,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } fro
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { TestPlatform } from "../testing/platform";
-import { domainListCommand, domainNewCommand } from "./domain";
+import { domainGrammarCommand, domainListCommand, domainNewCommand } from "./domain";
 
 /** A planted SPEC.json that is not JSON at all. */
 const NOT_JSON = join(import.meta.dir, "..", "testing", "fixtures", "diagnostics", "not-json");
@@ -215,6 +215,7 @@ describe("spec domain list", () => {
     expect(logs).toEqual(["ALPHA", "MIKE", "ZULU"]);
   });
 
+  // @spec DOMAIN-024 unit
   test("empty spec-engine/ → exit 0, zero output lines", async () => {
     mkdirSync(join(tmp, "spec-engine"), { recursive: true });
     await runDomainList(tmp);
@@ -275,5 +276,82 @@ describe("spec domain list --json — machine mode", () => {
     mkdirSync(join(tmp, "spec-engine"), { recursive: true });
     await listRun({ args: { platformDir: tmp, json: true }, rawArgs: [] });
     expect(logs).toEqual(["[]"]);
+  });
+});
+
+const grammarRun = (domainGrammarCommand as unknown as { run: RunFn }).run;
+
+async function grammarExitCode(args: Record<string, unknown>): Promise<number | null> {
+  try {
+    await grammarRun({ args: { platformDir: tmp, ...args }, rawArgs: [] });
+    return null;
+  } catch (e) {
+    if (e instanceof ExitError) return e.code;
+    throw e;
+  }
+}
+
+// @spec DOMAIN-020 unit
+describe("spec domain grammar — sets the declaration", () => {
+  test("--severity error sets grammarSeverity and leaves every other envelope field as it was", async () => {
+    const handle = await TestPlatform.at(tmp).domain("AUTH", { scope: "auth", grammar: "ears" });
+    await handle.req({ statement: "The system shall expire idle sessions." });
+    const before = await handle.read();
+    expect(await grammarExitCode({ name: "AUTH", severity: "error" })).toBeNull();
+    const after = await handle.read();
+    expect(after.grammarSeverity).toBe("error");
+    expect({ ...after, grammarSeverity: undefined }).toEqual({
+      ...before,
+      grammarSeverity: undefined,
+    });
+  });
+
+  test("--grammar freeform sets grammar on a lowercase key", async () => {
+    const handle = await TestPlatform.at(tmp).domain("AUTH", { grammar: "ears" });
+    expect(await grammarExitCode({ name: "auth", grammar: "freeform" })).toBeNull();
+    expect((await handle.read()).grammar).toBe("freeform");
+  });
+});
+
+// @spec DOMAIN-021 unit
+describe("spec domain grammar — refusals exit 2", () => {
+  test("an unknown domain exits 2", async () => {
+    mkdirSync(join(tmp, "spec-engine"), { recursive: true });
+    expect(await grammarExitCode({ name: "NOPE", severity: "error" })).toBe(2);
+    expect(errs.join("\n")).toContain("NOPE");
+  });
+
+  test("neither flag exits 2 and writes nothing", async () => {
+    const handle = await TestPlatform.at(tmp).domain("AUTH");
+    const raw = await handle.raw();
+    expect(await grammarExitCode({ name: "AUTH" })).toBe(2);
+    expect(await handle.raw()).toBe(raw);
+  });
+
+  test("a value outside the enums exits 2 and writes nothing", async () => {
+    const handle = await TestPlatform.at(tmp).domain("AUTH");
+    const raw = await handle.raw();
+    expect(await grammarExitCode({ name: "AUTH", severity: "fatal" })).toBe(2);
+    expect(await grammarExitCode({ name: "AUTH", grammar: "prose" })).toBe(2);
+    expect(await handle.raw()).toBe(raw);
+  });
+});
+
+// @spec DOMAIN-022 unit
+describe("spec domain grammar --json", () => {
+  test("prints { key, grammar, grammar_severity, file } for the envelope written", async () => {
+    await TestPlatform.at(tmp).domain("AUTH", { grammar: "ears" });
+    await grammarRun({
+      args: { platformDir: tmp, name: "AUTH", severity: "error", json: true },
+      rawArgs: [],
+    });
+    expect(logs.map((l) => JSON.parse(l))).toEqual([
+      {
+        key: "AUTH",
+        grammar: "ears",
+        grammar_severity: "error",
+        file: "spec-engine/AUTH/SPEC.json",
+      },
+    ]);
   });
 });

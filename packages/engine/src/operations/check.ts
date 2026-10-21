@@ -223,7 +223,8 @@ async function lossDiagnostics(
  * resolve (a governance gate must never fail open). A JUnit parse failure
  * throws, which every surface reports as a crash rather than a diagnostic.
  * @spec CHCK-012
- * @spec CHCK-013
+ * @spec CHCK-043
+ * @spec CHCK-044
  * @spec CHCK-025
  */
 export async function check(input: CheckInput, storage: Storage): Promise<CheckResult | OpFailure> {

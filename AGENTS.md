@@ -59,7 +59,7 @@ Rules:
   after the fact) is planted with `plantEdit` in `src/testing/plant.ts`, which
   still writes through `validateAndWrite`. A schema-invalid file lives under
   `src/testing/fixtures/`. Nothing else writes a `SPEC.json` by hand: the
-  SCHM-026 fence scans every source file and every test. A rewrite of an
+  SCHM-035 fence scans every source file and every test. A rewrite of an
   existing file preserves its shape: unchanged entries stay byte-identical, a
   changed entry keeps its key order, and an appended entry takes the key order
   of the last one (SCHM-031..034).
@@ -208,7 +208,7 @@ Branch on exit codes, not on output text.
 | `spec propagation <KEY-NNN> [platformDir]` | Per-repo migrated/drifted state for a superseded requirement | yes (array) | 0 / 2 |
 | `spec gate <repo> <KEY-NNN> [platformDir]` | Approval gate: pass iff Active and the pin covers it | yes (object) | 0 / 1 / 2 |
 | `spec init [repo]` | Declare a member through platform-map and write its `spec-engine.member.json` pin | yes (object) | 0 / 2 |
-| `spec domain new <KEY>` / `spec domain list` | Scaffold / list `spec-engine/<KEY>/SPEC.json` | `list`: yes (array) | 0 / 2 |
+| `spec domain new <KEY>` / `spec domain list` / `spec domain grammar <KEY>` | Scaffold / list `spec-engine/<KEY>/SPEC.json` / set its statement grammar and severity | `list`: yes (array); `grammar`: yes (object) | 0 / 2 |
 | `spec migrate [platformDir]` | One-time cutover of every `SPEC.md` to `SPEC.json` (idempotent) | no | 0 / 2 |
 | `spec req <domain-prefix> [platformDir]` | Piped: next unused id. `--text`: author non-interactively | yes (object) | 0 / 2 |
 | `spec term …` | Author, list, revise, and confirm glossary terms | yes | 0 / 2 |
@@ -568,6 +568,17 @@ Exit: 0 wrote or already configured / 2. Branch on `action`, not the exit code.
 `{ key, scope }` (scope is the charter sentence or null), read from the
 filesystem.
 
+`spec domain grammar <KEY> [platformDir] [--grammar ears|freeform]
+[--severity warning|error]` sets the envelope's `grammar` and/or
+`grammarSeverity` through the validating write seam; every other field is
+written back as read. `--json` prints `{ key, grammar, grammar_severity,
+file }` (an unset field is null). An unknown domain, neither flag, or a value
+outside the enums exits 2. CLI only: no MCP tool or HTTP route.
+
+```
+spec domain grammar CHCK --severity error
+```
+
 Exit: 0 / 2.
 
 ### spec migrate
@@ -817,7 +828,8 @@ command choreography:
    before the PR.
 
 **Statement grammar.** A domain envelope may declare `grammar: "ears"` with
-`grammarSeverity: "warning" | "error"` (default warning).
+`grammarSeverity: "warning" | "error"` (default warning). Set both with
+`spec domain grammar <KEY>`, never by hand.
 
 | Shape | Form |
 | --- | --- |
@@ -827,8 +839,17 @@ command choreography:
 | Failure | `If <failure>, then the <system> shall <result>` |
 | Feature | `Where <feature>, the <system> shall <result>` |
 
+A statement that fits a shape still fails the one-promise lint when:
+
+| Rule | Fails | Passes |
+| --- | --- | --- |
+| Semicolon clause | `; ` anywhere after the first `shall` | `When a; b holds, X shall …` |
+| Second subject | `, and <subject> shall` after the first `shall` | `X shall A, and shall B` |
+| Rationale | `because`, `so that`, `in order to` anywhere | a trailing `, so <observable consequence>` |
+
 - `spec check` reports a nonconforming Active/Draft statement as
-  `STATEMENT_GRAMMAR` at the declared severity.
+  `STATEMENT_GRAMMAR` at the declared severity, one row per statement, the
+  detail naming the first failed shape or rule.
 - `spec req`, `amend`, `supersede`, and `move` judge new text at write time:
   warn and write under warning, refuse (exit 2) under error.
 - The TERM domain is exempt.

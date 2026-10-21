@@ -123,7 +123,8 @@ export function correlateTag(tag: Tag, results: readonly TestCaseResult[]): Verd
 
 // `verifyingTags` arrive pre-filtered to `kind === "verifies"`; the filter
 // below guards anyway, as does the status check for a direct unit call.
-// @spec PROOF-010
+// @spec PROOF-015
+// @spec PROOF-016
 export function provenDetermination(
   active: readonly Requirement[],
   verifyingTags: readonly Tag[],

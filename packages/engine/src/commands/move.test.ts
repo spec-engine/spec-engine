@@ -140,7 +140,7 @@ describe("spec move — happy path", () => {
     expect(succ?.why).toBe("an idle session must not stay authenticated forever");
   });
 
-  // @spec REQ-043 unit
+  // @spec REQ-055 unit
   test("comma-separated --lives sets the successor's whole livesIn list", async () => {
     await moveRun({
       args: { id: "BILLING-001", newDomain: "AUTH", platformDir: platform, lives: "a.ts,b.ts" },

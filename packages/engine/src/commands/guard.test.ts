@@ -6,7 +6,7 @@
 // @spec GUARD-018
 // @spec GUARD-019
 // @spec GUARD-020
-// @spec GUARD-022
+// @spec GUARD-028
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";

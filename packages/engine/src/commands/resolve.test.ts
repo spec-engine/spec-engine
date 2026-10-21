@@ -1,4 +1,4 @@
-// @spec RSLV-003
+// @spec RSLV-005
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -157,6 +157,7 @@ describe("spec resolve (in-process)", () => {
     expect(errs.join("\n")).toMatch(/file path must be inside platformDir/);
   });
 
+  // @spec RSLV-006 unit
   test("unknown file under platformDir returns empty JSON array (exit 0)", async () => {
     const code = await runResolve(
       { files: "api/src/no-such-file.ts", platformDir: clone, json: true },

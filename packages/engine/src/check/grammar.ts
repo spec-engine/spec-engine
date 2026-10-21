@@ -63,7 +63,7 @@ function rowsForDomain(key: string, domain: DeclaredDomain): Diagnostic[] {
       source_file: specPaths("", key).rel,
       line: found >= 0 ? found + 1 : 0,
       req_id: req.id,
-      detail: `${result.problem}. Expected one of:\n  ${result.expected}`,
+      detail: `${result.problem}. ${result.expected}`,
     });
   }
   return rows;

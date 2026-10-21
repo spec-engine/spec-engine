@@ -15,7 +15,7 @@ const DEFAULT_TIMEOUT_MS = 5000;
 
 /**
  * The id is bound as the `$id` variable, never interpolated into the query.
- * @spec TRK-005
+ * @spec TRK-007
  */
 const ISSUE_QUERY = "query($id:String!){ issue(id:$id){ title state{ name } url } }";
 
@@ -134,7 +134,7 @@ export function makeLinearAdapter(fetchImpl: typeof fetch = fetch): TrackerAdapt
     name: "linear",
     matches: (id) => ISSUE_RE.test(id),
     async resolveIssues(ids) {
-      // @spec TRK-006
+      // @spec TRK-008
       // A whitespace-only token (a stray newline from a shell or `.env`) is absent.
       const token = process.env.SPEC_TRACKER_TOKEN?.trim();
       const unique = [...new Set(ids)];
