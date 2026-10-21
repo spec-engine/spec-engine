@@ -401,6 +401,9 @@ Exit: 0 clean / 1 any loss / 2 usage.
   comment.
 - A non-git tree, a repo with no `HEAD`, or an unknown ref prints
   `NOT_A_GIT_REPO` to stderr and exits 0.
+- A ref that begins with `-` or holds a character outside `A-Z a-z 0-9 . _ / -`
+  is refused before git runs: `guard` treats it as an unknown ref, and
+  `check --base` exits 2.
 - Text mode prints a `🛑 spec-guard:` block per requirement, written in the
   second person. Relay it verbatim to the user before proceeding.
 
@@ -725,6 +728,11 @@ drops it), else 401. A `Host` other than loopback or the bound address is
 403. Read-only unless `--allow-writes`: non-GET requests, `/provenance`, and
 `/api/provenance?resolve=1` answer 403. `--token` / `SPEC_SERVE_TOKEN` pin
 the token (≥ 16 of `A-Z a-z 0-9 _ -`); otherwise it is 256 random bits.
+
+When the reindex after a write refuses on an invalid `SPEC.json` elsewhere on
+the platform, the route answers 422
+`{ error: "invalid_domain_file", diagnostics: [...] }`, the rows in the
+`check --json` shape (the CLI exits 2 with the same rows).
 
 Always-on routes: `/`, `/requirements[/:id]`, `/propagation/:id`,
 `/api/coverage`, `/api/report`, `/api/repos`, `/api/platform`,

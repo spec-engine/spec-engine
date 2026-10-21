@@ -16,6 +16,7 @@ import {
   featureDisabledMessage,
   featureEnabled,
   ID_RE,
+  InvalidDomainFilesError,
   isServedHostname,
   LIMIT_MAX,
   type PlatformInfo,
@@ -25,6 +26,7 @@ import {
 } from "@spec-engine/shared";
 import type { Context, Hono } from "hono";
 import { listDomainKeys, normalizeDomainKey } from "../authoring/domains";
+import { sortDiagnostics } from "../check/format";
 import { derivePlatformVersion, platformMode, platformName } from "../indexer/discover";
 import { runIndex } from "../indexer/pipeline";
 import { type OpFailure, STATUS_FOR_REASON } from "../operations/_result";
@@ -118,6 +120,13 @@ function guarded<C extends Context>(
     try {
       return await handler(c);
     } catch (err) {
+      // @spec SERV-027
+      if (err instanceof InvalidDomainFilesError) {
+        return c.json(
+          { error: "invalid_domain_file", diagnostics: sortDiagnostics(err.diagnostics) },
+          422,
+        );
+      }
       const info = describeStorageError(err);
       if (info === null) throw err;
       console.error(`spec serve: /api storage unavailable (${info.code}):`, err);

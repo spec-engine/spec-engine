@@ -1,7 +1,7 @@
 {
   "key": "SERV",
   "owner": null,
-  "updated": "2026-10-04",
+  "updated": "2026-10-21",
   "scope": "The spec serve local webapp and /api/* over the index. Belongs here: the server-rendered pages; the /api/* route contracts; loopback-only binding. Does not belong here: the one-model-one-seam promise (SCHM). Boundary case: loopback-only is SERV's promise even though the data model it serves is SCHM's.",
   "grammar": "ears",
   "requirements": [
@@ -417,6 +417,21 @@
       "relates": [],
       "livesIn": [
         "packages/engine/src/indexer/discover.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SERV-027",
+      "status": "active",
+      "statement": "If the reindex that follows an /api/* write refuses on an invalid domain file, then the spec serve command shall respond 422 with error invalid_domain_file and the INVALID_DOMAIN_FILE rows in the spec check --json row shape.",
+      "why": "Without the mapping the caller gets a bare 500 and cannot see which SPEC.json broke, while the CLI names the file and field for the same refusal.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/server/api.ts"
       ],
       "issues": [],
       "aliases": [],
