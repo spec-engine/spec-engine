@@ -34,6 +34,7 @@ import { accept } from "../operations/accept";
 import { type AmendFields, amend } from "../operations/amend";
 import { deprecate } from "../operations/deprecate";
 import { mint } from "../operations/mint";
+import { move } from "../operations/move";
 import {
   coverageMatrix,
   coverageReport,
@@ -491,6 +492,62 @@ export function mountApi(
             new_id: r.newId,
             file: r.file,
             spec_version: r.specVersion,
+            retag: r.retag,
+          },
+          201,
+        );
+      });
+    }),
+  );
+
+  // --- POST /api/requirements/:id/move ------------------------------------
+  // @spec SERV-031
+  app.post(
+    "/api/requirements/:id/move",
+    guarded(async function moveRequirement(c) {
+      if (!featureEnabled("editor")) {
+        return c.json({ error: featureDisabledMessage("editor") }, 404);
+      }
+      const originReject = rejectCrossOrigin(c, bindHost);
+      if (originReject) return originReject;
+      const headerReject = rejectBadWriteHeaders(c);
+      if (headerReject) return headerReject;
+      const parsed = await readJsonBody(c);
+      if (!parsed.ok) return parsed.res;
+      const body = parsed.body;
+
+      const id = c.req.param("id") ?? "";
+      if (!ID_RE.test(id)) return c.json({ error: "id must be a requirement id (KEY-NNN)" }, 400);
+      const targetKey = normalizeDomainKey(
+        typeof body.newDomain === "string" ? body.newDomain : "",
+      );
+      if (targetKey === "") return c.json({ error: "newDomain is required (a domain key)" }, 400);
+
+      return withWriteLock(async () => {
+        const r = await move(
+          {
+            platformDir,
+            id,
+            targetKey,
+            statement: typeof body.text === "string" ? body.text : undefined,
+            why: typeof body.why === "string" ? body.why : undefined,
+            livesIn: "lives" in body ? toStringList(body.lives) : undefined,
+          },
+          async (reqId) => {
+            await runIndex({ platformDir, storage });
+            return storage.listTags({ req_id: reqId });
+          },
+        );
+        if (!r.ok) return failureResponse(c, r);
+        return c.json(
+          {
+            ok: true,
+            old_id: r.oldId,
+            new_id: r.newId,
+            from_file: r.fromFile,
+            to_file: r.toFile,
+            source_spec_version: r.sourceSpecVersion,
+            target_spec_version: r.targetSpecVersion,
             retag: r.retag,
           },
           201,

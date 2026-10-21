@@ -74,10 +74,10 @@ An operation takes typed input and returns typed data or a typed refusal. It nev
 | `coverageReport` | storage | per-domain rollup | | `GET /api/report` | `spec_coverage_report` |
 | `check` | storage, platform dir, results file, base ref, flags | diagnostics, `build_id`, red or green | `spec check` | | `spec_check` |
 | `nextId` | platform dir, domain key or prefix | the resolved key and next unused id, or `usage` | `spec req` | | `spec_next_id` |
-| `mint` | platform dir, key, statement, why, lives-in, relates, issue, status | the new id and file, or `not_found` / `usage` / `invalid_domain_file` | `spec req --text` | `POST /api/requirements` | |
-| `amend` | platform dir, id, fields | the changed fields, or `not_found` / `conflict` / `invalid_domain_file` | `spec amend` | `PUT /api/requirements/:id` | |
+| `mint` | platform dir, key, statement, why, lives-in, relates, issue, status | the new id and file, or `not_found` / `usage` / `invalid_domain_file` | `spec req --text` | `POST /api/requirements` | `spec_req` |
+| `amend` | platform dir, id, fields | the changed fields, or `not_found` / `conflict` / `invalid_domain_file` | `spec amend` | `PUT /api/requirements/:id` | `spec_amend` |
 | `supersede` | platform dir, id, successor statement and fields, a fresh-tags callback | the successor id, the domain version, the retag worklist, or `not_found` / `conflict` / `usage` / `invalid_domain_file` | `spec supersede` | `POST /api/requirements/:id/supersede` | `spec_supersede` |
-| `move` | platform dir, id, target domain key, optional successor fields, a fresh-tags callback | both files, both versions, the retag worklist, or `usage` / `not_found` / `conflict` / `invalid_domain_file` | `spec move` | | |
+| `move` | platform dir, id, target domain key, optional successor fields, a fresh-tags callback | both files, both versions, the retag worklist, or `usage` / `not_found` / `conflict` / `invalid_domain_file` | `spec move` | `POST /api/requirements/:id/move` | `spec_move` |
 | `deprecate` | platform dir, id, reason, a fresh-tags callback | the file and the tags still bound, or `not_found` / `conflict` / `invalid_domain_file` | `spec deprecate` | `POST /api/requirements/:id/deprecate` | `spec_deprecate` |
 | `accept` | platform dir, id | the file, or `not_found` / `conflict` / `invalid_domain_file` | `spec accept` | `POST /api/requirements/:id/accept` | `spec_accept` |
 | `mintTerm`, `listTerms`, `reviseTerm`, `confirmTerm` | platform dir, term fields or ids | the term id, the store rows, the bumped version, or the re-pinned citation; `not_found` / `conflict` / `invalid_domain_file` | `spec term` | | |
@@ -92,7 +92,7 @@ An operation takes typed input and returns typed data or a typed refusal. It nev
 | `newDomain`, `listDomains` | platform dir, key | the scaffolded file, or `usage` / `conflict` / `invalid_domain_file`; the `{ key, scope }` rows | `spec domain` | | |
 | `writeGlossary`, `migrateGlossary`, `checkGlossary` | platform dir | the generated count, the migrated count or a skip, clean or drift | `spec glossary` | | |
 
-Reads take an open `Storage` handle because the surface owns the handle's lifetime: the CLI and MCP open one per call through `withIndex`, the API keeps one for the life of the server. Writes take the platform directory because they edit `SPEC.json` files. A lifecycle write takes a fresh-tags callback for its worklist, so a one-shot surface cold-rebuilds a throwaway index while the API re-indexes into the handle it keeps. Every guard runs before the first byte is written (REQ-038 <!-- @spec REQ-038 -->), and `operations-parity.test.ts` proves each surface writes the same envelope.
+Reads take an open `Storage` handle because the surface owns the handle's lifetime: the CLI and MCP open one per call through `withIndex`, the API keeps one for the life of the server. Writes take the platform directory because they edit `SPEC.json` files. A lifecycle write takes a fresh-tags callback for its worklist, so a one-shot surface cold-rebuilds a throwaway index while the API re-indexes into the handle it keeps. Every guard runs before the first byte is written (REQ-038 <!-- @spec REQ-038 -->), and `operations/parity.test.ts` proves each surface writes the same envelope.
 
 ## The single seams
 

@@ -9,8 +9,11 @@ import packageJson from "../../package.json" with { type: "json" };
 import { domainScope, listDomainKeys, normalizeDomainKey } from "../authoring/domains";
 import { coldFreshTags, withIndex } from "../operations/_index";
 import { accept } from "../operations/accept";
+import { type AmendFields, amend } from "../operations/amend";
 import { check } from "../operations/check";
 import { deprecate } from "../operations/deprecate";
+import { mint } from "../operations/mint";
+import { move } from "../operations/move";
 import { nextId } from "../operations/nextId";
 import { coverageReport, propagation, query, reqTags, resolveFiles } from "../operations/reads";
 import {
@@ -32,6 +35,23 @@ function jsonResult(value: unknown) {
 /** Tool error helper: an isError result, never a thrown crash. */
 function errorResult(message: string) {
   return { content: [{ type: "text" as const, text: message }], isError: true as const };
+}
+
+/** The spec_amend arguments that were passed, as amend fields; an empty why clears it. */
+function amendFieldsOf(args: {
+  text: string | undefined;
+  why: string | undefined;
+  lives: string[] | undefined;
+  relates: string[] | undefined;
+  issue: string | undefined;
+}): AmendFields {
+  const fields: AmendFields = {};
+  if (args.text !== undefined) fields.statement = args.text;
+  if (args.why !== undefined) fields.why = args.why || null;
+  if (args.lives !== undefined) fields.livesIn = args.lives;
+  if (args.relates !== undefined) fields.relates = args.relates;
+  if (args.issue) fields.issue = args.issue;
+  return fields;
 }
 
 /**
@@ -295,6 +315,119 @@ export function buildMcpServer(platformDir: string): McpServer {
       }
       const r = await accept({ platformDir, id: req_id });
       return r.ok ? jsonResult({ id: r.id, file: r.file }) : errorResult(r.detail);
+    },
+  );
+
+  // @spec SERV-028
+  server.registerTool(
+    "spec_req",
+    {
+      title: "Author a requirement",
+      description:
+        "Append a new requirement to a domain (Active, or Draft with draft: true). The same JSON as `spec req --text … --json`: { id, file }, plus clauses when the statement parses as EARS.",
+      inputSchema: {
+        domain: z.string().min(1).describe("Domain key or unique case-insensitive prefix"),
+        text: z.string().trim().min(1).describe("The requirement statement"),
+        why: z.string().trim().default("").describe("What breaks without it"),
+        lives: z.array(z.string()).default([]).describe("livesIn paths"),
+        relates: z
+          .array(z.string())
+          .default([])
+          .describe("Related requirement ids, each comma-split"),
+        issue: z.string().trim().optional().describe("Originating ticket, recorded as created"),
+        draft: z.boolean().default(false).describe("Author as Draft instead of Active"),
+      },
+    },
+    async ({ domain, text, why, lives, relates, issue, draft }) => {
+      const allocated = await nextId(platformDir, domain);
+      if (!allocated.ok) return errorResult(allocated.detail);
+      const r = await mint({
+        platformDir,
+        key: allocated.key,
+        statement: text,
+        why,
+        livesIn: lives,
+        relates,
+        issue: issue || undefined,
+        status: draft ? "draft" : "active",
+      });
+      if (!r.ok) return errorResult(r.detail);
+      for (const w of r.warnings) console.error(`spec_req: ${w.text}`);
+      return jsonResult(
+        r.clauses ? { id: r.id, file: r.file, clauses: r.clauses } : { id: r.id, file: r.file },
+      );
+    },
+  );
+
+  // @spec SERV-029
+  server.registerTool(
+    "spec_amend",
+    {
+      title: "Amend a requirement in place",
+      description:
+        "Revise an Active or Draft requirement's fields in place (same id, no version change); a shipped requirement's statement and why are superseded instead. The same JSON as `spec amend --json`.",
+      inputSchema: {
+        id: z.string().describe("The requirement id to amend (KEY-NNN)"),
+        text: z.string().trim().min(1).optional().describe("New statement"),
+        why: z.string().trim().optional().describe("New why; empty clears it"),
+        lives: z.array(z.string()).optional().describe("Replacement livesIn list; empty clears"),
+        relates: z
+          .array(z.string())
+          .optional()
+          .describe("Replacement related ids, each comma-split; empty clears"),
+        issue: z.string().trim().optional().describe("Ticket recorded as amends-via"),
+      },
+    },
+    async ({ id, text, why, lives, relates, issue }) => {
+      if (!ID_RE.test(id)) return errorResult(`id must be a requirement id (KEY-NNN); got ${id}`);
+      const fields = amendFieldsOf({ text, why, lives, relates, issue });
+      if (Object.keys(fields).length === 0) {
+        return errorResult("nothing to amend — pass at least one of text, why, lives, relates");
+      }
+      const r = await amend({ platformDir, id, fields });
+      if (!r.ok) return errorResult(r.detail);
+      for (const w of r.warnings) console.error(`spec_amend: ${w.text}`);
+      return jsonResult({ id, file: r.file, fields_changed: r.fieldsChanged });
+    },
+  );
+
+  // @spec SERV-030
+  server.registerTool(
+    "spec_move",
+    {
+      title: "Move a requirement to another domain",
+      description:
+        "Mint the successor in newDomain carrying the source's fields, mark the source superseded, and return the retag worklist. The same JSON as `spec move --json`.",
+      inputSchema: {
+        id: z.string().describe("The Active requirement id to move (KEY-NNN)"),
+        newDomain: z.string().min(1).describe("The existing target domain key"),
+        text: z.string().optional().describe("Successor statement (default: copied)"),
+        why: z.string().optional().describe("Successor why (default: copied)"),
+        lives: z
+          .array(z.string())
+          .optional()
+          .describe("Successor livesIn list; empty clears (default: copied)"),
+      },
+    },
+    async ({ id, newDomain, text, why, lives }) => {
+      if (!ID_RE.test(id)) return errorResult(`id must be a requirement id (KEY-NNN); got ${id}`);
+      const targetKey = normalizeDomainKey(newDomain);
+      if (targetKey === "") return errorResult(`newDomain must be a domain key; got ${newDomain}`);
+      const r = await move(
+        { platformDir, id, targetKey, statement: text, why, livesIn: lives },
+        coldFreshTags(platformDir),
+      );
+      if (!r.ok) return errorResult(r.detail);
+      for (const w of r.warnings) console.error(`spec_move: ${w.text}`);
+      return jsonResult({
+        old_id: r.oldId,
+        new_id: r.newId,
+        from_file: r.fromFile,
+        to_file: r.toFile,
+        source_spec_version: r.sourceSpecVersion,
+        target_spec_version: r.targetSpecVersion,
+        retag: r.retag,
+      });
     },
   );
 

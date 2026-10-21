@@ -74,6 +74,11 @@ async function mcpJson(name: string, args: Record<string, unknown>): Promise<unk
   return JSON.parse(res.content[0]?.text ?? "null");
 }
 
+async function mcpRefuses(name: string, args: Record<string, unknown>): Promise<void> {
+  const res = (await client.callTool({ name, arguments: args })) as { isError?: boolean };
+  expect(res.isError).toBe(true);
+}
+
 async function apiJson(
   path: string,
   init?: RequestInit,
@@ -230,12 +235,15 @@ const cliRun = (cmd: unknown) => (cmd as { run: RunFn }).run;
  * Run a command's `run` with stdout and stderr captured and `process.exit`
  * turned into a thrown error, so a refusal fails the test instead of the runner.
  */
-async function runCli(cmd: unknown, args: Record<string, unknown>): Promise<void> {
+async function runCli(cmd: unknown, args: Record<string, unknown>): Promise<string> {
   const log = console.log;
   const err = console.error;
   const exit = process.exit;
   const errs: string[] = [];
-  console.log = () => {};
+  const out: string[] = [];
+  console.log = (...a: unknown[]) => {
+    out.push(a.map(String).join(" "));
+  };
   console.error = (...a: unknown[]) => {
     errs.push(a.map(String).join(" "));
   };
@@ -244,6 +252,7 @@ async function runCli(cmd: unknown, args: Record<string, unknown>): Promise<void
   }) as typeof process.exit;
   try {
     await cliRun(cmd)({ args: { platformDir: platform, ...args }, rawArgs: [] });
+    return out.join("\n");
   } finally {
     console.log = log;
     console.error = err;
@@ -256,7 +265,7 @@ const read = (key: string) => Bun.file(specFile(key)).text();
 
 async function writeThrough(
   keys: string[],
-  surfaces: Record<string, () => Promise<void>>,
+  surfaces: Record<string, () => Promise<unknown>>,
 ): Promise<Record<string, string[]>> {
   const restore = fx.snapshotSpecs();
   const out: Record<string, string[]> = {};
@@ -282,51 +291,91 @@ describe("write operations leave the same envelope from every surface", () => {
   const apiHeaders = { "content-type": "application/json" };
   const fresh = () => coldFreshTags(platform);
 
-  test("mint: the operation and the HTTP POST write byte-identical entries", async () => {
-    const specPath = join(platform, "spec-engine", "BILLING", "SPEC.json");
-    const restore = fx.snapshotSpecs();
-
-    const direct = await mint({
-      platformDir: platform,
-      key: "BILLING",
-      statement,
-      why: "w",
-      livesIn: ["x.ts"],
+  // @spec SERV-028 unit
+  test("mint: operation, CLI, HTTP POST, and MCP write byte-identical entries", async () => {
+    const results: Record<string, unknown> = {};
+    const snapshots = await writeThrough(["BILLING"], {
+      operation: async () => {
+        const r = await mint({
+          platformDir: platform,
+          key: "BILLING",
+          statement,
+          why: "w",
+          livesIn: ["x.ts"],
+        });
+        expect(r.ok).toBe(true);
+        if (r.ok) results.operation = { id: r.id, file: r.file, clauses: r.clauses };
+      },
+      cli: async () => {
+        results.cli = JSON.parse(
+          await runCli(reqCommand, {
+            domainPrefix: "bil",
+            text: statement,
+            why: "w",
+            lives: "x.ts",
+            json: true,
+          }),
+        );
+      },
+      api: async () => {
+        const posted = await apiJson("/api/requirements", {
+          method: "POST",
+          headers: apiHeaders,
+          body: JSON.stringify({ key: "BILLING", statement, why: "w", livesIn: "x.ts" }),
+        });
+        expect(posted.status).toBe(201);
+        expect(posted.body).toEqual({ ok: true, id: "BILLING-004" });
+      },
+      mcp: async () => {
+        results.mcp = await mcpJson("spec_req", {
+          domain: "bil",
+          text: statement,
+          why: "w",
+          lives: ["x.ts"],
+        });
+      },
     });
-    expect(direct.ok).toBe(true);
-    const afterDirect = await Bun.file(specPath).text();
-
-    restore();
-    const posted = await apiJson("/api/requirements", {
-      method: "POST",
-      headers: apiHeaders,
-      body: JSON.stringify({ key: "BILLING", statement, why: "w", livesIn: "x.ts" }),
-    });
-    expect(posted.status).toBe(201);
-    expect(posted.body).toEqual({ ok: true, id: "BILLING-004" });
-    const afterPost = await Bun.file(specPath).text();
-
-    expect(afterPost).toBe(afterDirect);
+    expectAllEqual(snapshots);
+    expect((results.operation as { id: string }).id).toBe("BILLING-004");
+    expect(results.cli).toEqual(results.operation);
+    expect(results.mcp).toEqual(results.operation);
   });
 
-  test("amend: the operation and the HTTP PUT apply the same field semantics and gates", async () => {
-    const specPath = join(platform, "spec-engine", "BILLING", "SPEC.json");
-    const restore = fx.snapshotSpecs();
-
-    const direct = await amend({ platformDir: platform, id: "BILLING-003", fields: { why: null } });
-    expect(direct.ok).toBe(true);
-    const afterDirect = await Bun.file(specPath).text();
-
-    restore();
-    const put = await apiJson("/api/requirements/BILLING-003", {
-      method: "PUT",
-      headers: apiHeaders,
-      body: JSON.stringify({ why: null }),
+  // @spec SERV-029 unit
+  test("amend: operation, CLI, HTTP PUT, and MCP apply the same field semantics and gates", async () => {
+    const results: Record<string, unknown> = {};
+    const snapshots = await writeThrough(["BILLING"], {
+      operation: async () => {
+        const r = await amend({
+          platformDir: platform,
+          id: "BILLING-003",
+          fields: { why: null, livesIn: ["x.ts"] },
+        });
+        expect(r.ok).toBe(true);
+        if (r.ok) results.operation = { id: r.id, file: r.file, fields_changed: r.fieldsChanged };
+      },
+      cli: async () => {
+        results.cli = JSON.parse(
+          await runCli(amendCommand, { id: "BILLING-003", why: "", lives: "x.ts", json: true }),
+        );
+      },
+      api: async () => {
+        const put = await apiJson("/api/requirements/BILLING-003", {
+          method: "PUT",
+          headers: apiHeaders,
+          body: JSON.stringify({ why: null, livesIn: ["x.ts"] }),
+        });
+        expect(put.status).toBe(200);
+      },
+      mcp: async () => {
+        results.mcp = await mcpJson("spec_amend", { id: "BILLING-003", why: "", lives: ["x.ts"] });
+      },
     });
-    expect(put.status).toBe(200);
-    expect(await Bun.file(specPath).text()).toBe(afterDirect);
+    expectAllEqual(snapshots);
+    expect(results.cli).toEqual(results.operation);
+    expect(results.mcp).toEqual(results.operation);
 
-    // The release gate refuses on both surfaces with the same reason.
+    // The release gate refuses on every surface.
     commitAndTag(platform, "v1.0.0");
     const released = await amend({
       platformDir: platform,
@@ -341,6 +390,7 @@ describe("write operations leave the same envelope from every surface", () => {
       body: JSON.stringify({ why: "x" }),
     });
     expect(putReleased.status).toBe(409);
+    await mcpRefuses("spec_amend", { id: "BILLING-002", why: "x" });
   });
 
   // @spec REQ-038 integration
@@ -514,23 +564,79 @@ describe("write operations leave the same envelope from every surface", () => {
     expect(await read("BILLING")).toBe(before);
   });
 
-  test("move: the operation and the CLI write the same two envelopes", async () => {
+  // @spec SERV-030 unit
+  // @spec SERV-031 unit
+  test("move: operation, CLI, HTTP POST, and MCP write the same two envelopes and worklist", async () => {
+    const results: Record<string, unknown> = {};
     const snapshots = await writeThrough(["BILLING", "AUTH"], {
       operation: async () => {
         const r = await move(
-          { platformDir: platform, id: "BILLING-003", targetKey: "AUTH" },
+          { platformDir: platform, id: "BILLING-002", targetKey: "AUTH" },
           fresh(),
         );
         expect(r.ok).toBe(true);
         if (r.ok) {
-          expect(r.newId).toBe("AUTH-001");
-          expect(r.sourceSpecVersion).toBe(3);
-          expect(r.targetSpecVersion).toBe(1);
+          results.operation = {
+            old_id: r.oldId,
+            new_id: r.newId,
+            from_file: r.fromFile,
+            to_file: r.toFile,
+            source_spec_version: r.sourceSpecVersion,
+            target_spec_version: r.targetSpecVersion,
+            retag: r.retag,
+          };
         }
       },
-      cli: () => runCli(moveCommand, { id: "BILLING-003", newDomain: "auth" }),
+      cli: async () => {
+        results.cli = JSON.parse(
+          await runCli(moveCommand, { id: "BILLING-002", newDomain: "auth", json: true }),
+        );
+      },
+      api: async () => {
+        const res = await apiJson("/api/requirements/BILLING-002/move", {
+          method: "POST",
+          headers: apiHeaders,
+          body: JSON.stringify({ newDomain: "auth" }),
+        });
+        expect(res.status).toBe(201);
+        const { ok, ...rest } = res.body as Record<string, unknown>;
+        expect(ok).toBe(true);
+        results.api = rest;
+      },
+      mcp: async () => {
+        results.mcp = await mcpJson("spec_move", { id: "BILLING-002", newDomain: "auth" });
+      },
     });
     expectAllEqual(snapshots);
+    expect(results.operation).toMatchObject({
+      new_id: "AUTH-001",
+      source_spec_version: 3,
+      target_spec_version: 1,
+    });
+    expect((results.operation as { retag: unknown[] }).retag).toHaveLength(2);
+    expect(results.cli).toEqual(results.operation);
+    expect(results.api).toEqual(results.operation);
+    expect(results.mcp).toEqual(results.operation);
+
+    // The source is superseded now: every surface refuses before any write.
+    const before = await Promise.all(["BILLING", "AUTH"].map(read));
+    const apiRefused = await apiJson("/api/requirements/BILLING-002/move", {
+      method: "POST",
+      headers: apiHeaders,
+      body: JSON.stringify({ newDomain: "auth" }),
+    });
+    expect(apiRefused.status).toBe(409);
+    await mcpRefuses("spec_move", { id: "BILLING-002", newDomain: "auth" });
+    expect(await Promise.all(["BILLING", "AUTH"].map(read))).toEqual(before);
+
+    process.env.SPEC_FLAGS = "";
+    const gated = await apiJson("/api/requirements/BILLING-003/move", {
+      method: "POST",
+      headers: apiHeaders,
+      body: JSON.stringify({ newDomain: "auth" }),
+    });
+    expect(gated.status).toBe(404);
+    expect(await Promise.all(["BILLING", "AUTH"].map(read))).toEqual(before);
   });
 
   test("term: mint, revise, and confirm write the same envelopes from the operation and the CLI", async () => {
@@ -610,7 +716,7 @@ function expectOk(r: { ok: boolean }): void {
 }
 
 /** Each write operation that takes `relates`: every surface exposing it, one input each. */
-const RELATES_TABLE: Record<string, Record<string, () => Promise<void>>> = {
+const RELATES_TABLE: Record<string, Record<string, () => Promise<unknown>>> = {
   mint: {
     operation: async () =>
       expectOk(
@@ -637,6 +743,14 @@ const RELATES_TABLE: Record<string, Record<string, () => Promise<void>>> = {
         { key: "BILLING", statement: REFUND, why: "w", relates: ["BILLING-001", " BILLING-003"] },
         201,
       ),
+    mcp: async () => {
+      await mcpJson("spec_req", {
+        domain: "BILLING",
+        text: REFUND,
+        why: "w",
+        relates: ["BILLING-001,BILLING-003"],
+      });
+    },
   },
   amend: {
     operation: async () =>
@@ -650,6 +764,9 @@ const RELATES_TABLE: Record<string, Record<string, () => Promise<void>>> = {
     cli: () => runCli(amendCommand, { id: "BILLING-003", relates: "BILLING-001, BILLING-002" }),
     api: () =>
       send("/api/requirements/BILLING-003", "PUT", { relates: "BILLING-001,BILLING-002" }, 200),
+    mcp: async () => {
+      await mcpJson("spec_amend", { id: "BILLING-003", relates: ["BILLING-001", "BILLING-002"] });
+    },
   },
   supersede: {
     operation: async () =>
