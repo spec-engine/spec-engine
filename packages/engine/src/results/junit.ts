@@ -1,34 +1,15 @@
-// packages/engine/src/results/junit.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec PROOF-014
 // @spec PROOF-009
 //
-// GATE-01: the ONE hand-rolled JUnit XML reader. Turns an untrusted
-// `--results` file's bytes into a typed `TestCaseResult[]` — one reader, no
-// per-runner adapter zoo (bun-nested vs jest/pytest-flat variance is absorbed
-// by fixed attribute-precedence, not a per-runner switch).
-//
-// Analog: scanner/tags.ts — frozen constant tables at top, ONE pure exported
-// `(text) => Row[]` function, a hand-rolled char walker, NO I/O. The caller
-// (commands/check.ts) reads the file with Bun.file(...).text() and
-// passes the text in; this module never touches the filesystem.
-//
-// SECURITY — XXE-immune by construction (T-19-01 / T-19-02, CLAUDE.md forbids
-// native XML deps; RESEARCH § Package Legitimacy flags fast-xml-parser@5 [SUS]):
-//   - `<!DOCTYPE ...>`, `<!ENTITY ...>`, DTD internal subsets, comments, and
-//     processing instructions are IGNORED wholesale — the scanner never sees,
-//     let alone resolves, a user-defined or external entity. `&xxe;` is left as
-//     an inert literal token, never expanded to file contents.
-//   - ONLY the 5 predefined XML entities decode (`&amp; &lt; &gt; &quot;
-//     &apos;`). No numeric character references, no recursive expansion →
-//     billion-laughs is structurally impossible.
-//   - Malformed / unbalanced XML throws a typed `JUnitParseError` so the
-//     upstream check-command catch maps it to exit 2 (crash), distinct from
-//     exit 1 (diagnostic) — T-19-03.
-//
-// D-08 grep-fence: this file imports NO SQLite runtime, no Storage, no DB —
-// pure text in, rows out.
+// Hand-rolled on purpose: no XML dependency. Runner variance (bun's nested
+// suites, jest/pytest flat) is absorbed by fixed attribute precedence, not a
+// per-runner switch. The `--results` file is untrusted, so the reader is
+// XXE-immune by construction:
+//   - DOCTYPE, ENTITY, DTD internal subsets, comments, and processing
+//     instructions are skipped wholesale; `&xxe;` stays an inert literal.
+//   - Only the 5 predefined XML entities decode. No numeric references, no
+//     recursive expansion, so billion-laughs cannot happen.
+// The caller reads the file; this module does no I/O.
 
 /** One test case extracted from a JUnit XML results file.
  *
@@ -130,22 +111,12 @@ function findTagEnd(text: string, start: number): number {
   return -1;
 }
 
-/** Skip a `<! … >` declaration (DOCTYPE, ENTITY, etc.) starting at `start`,
- *  honoring a `[ … ]` internal subset so the whole DTD — including any
- *  `<!ENTITY>` declarations nested inside it — is consumed and ignored.
- *  Quote state is tracked (like `findTagEnd`) so a quoted `>` inside a
- *  `SYSTEM "…/x>y"` literal does not end the skip early. NOTE: CDATA is handled
- *  by its own branch in the main walker BEFORE this is reached — a `<![CDATA[`
- *  section must never route here (its `]]` terminator collides with the
- *  bracket-depth logic). Returns the index just past the closing `>`. */
-/** Per-character scan state for `skipDeclaration`: `quote` is the open quote
- *  char ("" when unquoted), `depth` the `[ … ]` internal-subset nesting. */
+/** `quote` is the open quote char ("" when unquoted), `depth` the `[ … ]`
+ *  internal-subset nesting. */
 type DeclScan = { depth: number; quote: string };
 
-/** Advance the `<! … >` declaration scanner by one char, mutating quote/bracket
- *  state. Returns true iff `c` is the closing `>` at bracket depth 0 (the
- *  declaration ends here). A quoted `>` (inside a `SYSTEM "…/x>y"` literal) or a
- *  `>` still inside a `[ … ]` internal subset does NOT terminate. */
+/** A quoted `>` (inside a `SYSTEM "…/x>y"` literal) or a `>` still inside a
+ *  `[ … ]` internal subset does not end the declaration. */
 function stepDeclaration(scan: DeclScan, c: string): boolean {
   if (scan.quote !== "") {
     if (c === scan.quote) scan.quote = "";
@@ -158,6 +129,8 @@ function stepDeclaration(scan: DeclScan, c: string): boolean {
   return false;
 }
 
+/** A `<![CDATA[` section must never route here: its `]]` collides with the
+ *  bracket-depth logic. `skipNonElementMarkup` handles it first. */
 function skipDeclaration(text: string, start: number): number {
   const scan: DeclScan = { depth: 0, quote: "" };
   let j = start + 2;
@@ -168,19 +141,10 @@ function skipDeclaration(text: string, start: number): number {
   throw new JUnitParseError("unterminated <!…> declaration");
 }
 
-/** A `<testsuite>` frame on the nesting stack — carries the attributes needed
- *  to resolve a descendant testcase's `file` by precedence. */
 type SuiteFrame = { file: string | null; name: string | null };
 
-/** Mutable walker state threaded through the module-scope tag handlers (lifted
- *  out of `parseJUnit`'s closures so each stays under the complexity ceiling):
- *   - `results`      — the accumulating flat list of test-case rows.
- *   - `elementStack` — name stack for balance checking (catches unbalanced /
- *                      mismatched tags).
- *   - `suiteStack`   — suite frames for `file` inheritance (subset of
- *                      `elementStack`, testsuites only).
- *   - `current`      — the testcase currently open (null between testcases;
- *                      they never nest). */
+/** `elementStack` checks tag balance; `suiteStack` holds only testsuites, for
+ *  `file` inheritance. `current` is null between testcases (they never nest). */
 type ParserState = {
   results: TestCaseResult[];
   elementStack: string[];
@@ -208,17 +172,8 @@ function nearestPathLikeSuiteName(suiteStack: readonly SuiteFrame[]): string {
   return "";
 }
 
-/** Resolve a testcase's `file` by fixed precedence (no per-runner branching):
- *   1. `testcase@file`
- *   2. nearest ancestor `testsuite@file`
- *   3. nearest ancestor `testsuite@name` when it looks like a path
- *   4. `testcase@classname`
- *   5. "" (empty) if none of the above resolve
- *
- *  An explicit empty `file=""` is treated the same as absent (mirrors
- *  the classname guard below and the truthy suite-file check) so it falls
- *  through to the suite/classname fallbacks instead of returning "" (which
- *  never suffix-matches → a silently dropped case). */
+/** An explicit empty `file=""` counts as absent and falls through: returning ""
+ *  would never suffix-match, silently dropping the case. */
 function resolveFile(suiteStack: readonly SuiteFrame[], attrs: Attrs): string {
   if (attrs.file !== undefined && attrs.file !== "") return attrs.file;
   const suiteFile = nearestSuiteFile(suiteStack);
@@ -270,8 +225,6 @@ function markSkip(state: ParserState): void {
   }
 }
 
-/** Dispatch an open (or self-closing) tag to its status/frame handler. Any tag
- *  outside the JUnit vocabulary is ignored. */
 function onOpen(state: ParserState, name: string, attrs: Attrs, selfClosing: boolean): void {
   switch (name) {
     case "testsuite":
@@ -292,7 +245,6 @@ function onOpen(state: ParserState, name: string, attrs: Attrs, selfClosing: boo
   }
 }
 
-/** Handle a close tag: push the completed testcase / pop the suite frame. */
 function onClose(state: ParserState, name: string): void {
   if (name === "testcase" && state.current !== null) {
     state.results.push(state.current.result);
@@ -320,15 +272,10 @@ function skipNonElementMarkup(text: string, i: number): number {
     return end + 2;
   }
   if (text.startsWith("<![CDATA[", i)) {
-    // CDATA content is RAW TEXT with a FIXED, unambiguous `]]>`
-    // terminator — it must NOT route through `skipDeclaration` (whose
-    // bracket-depth logic terminates early when CDATA content contains `]]`
-    // followed later by `>`, e.g. an assertion diff `a]] b > c` or an
-    // `arr[0] > n` snippet, which would then re-parse leftover text as bogus
-    // markup → spurious JUnitParseError or a corrupted testcase set). CDATA
-    // bodies only ever appear inside <failure>/<skipped>/<system-out> text,
-    // never as markup the correlator needs, so we scan to the literal `]]>`
-    // and ignore the content wholesale.
+    // Must precede the `<!` branch: `skipDeclaration`'s bracket depth ends
+    // early on content like `a]] b > c` or `arr[0] > n`, re-parsing the rest
+    // as bogus markup. CDATA only carries failure/output text, so it is
+    // skipped to the literal `]]>`.
     const end = text.indexOf("]]>", i + 9);
     if (end === -1) throw new JUnitParseError("unterminated CDATA section");
     return end + 3;
@@ -377,16 +324,8 @@ function consumeTag(state: ParserState, text: string, i: number): number {
 }
 
 /**
- * Parse one JUnit XML document into a flat list of test-case results.
+ * Rows come back in document order, unsorted: the caller owns ordering.
  *
- * Pure: text in, rows out — no I/O, no Storage, no sort (the caller owns any
- * downstream ordering). Recurses nested `<testsuite>` blocks (bun's describe
- * shape) and tolerates the flat jest/pytest shape via fixed attribute
- * precedence (see `resolveFile`). The walker skips non-element markup via
- * `skipNonElementMarkup` (XXE-immune declaration handling) and consumes element
- * tags via `consumeTag`.
- *
- * @param text  Full text of a JUnit XML results file (attacker-influenceable).
  * @throws {JUnitParseError} on malformed / unbalanced / truncated input.
  */
 export function parseJUnit(text: string): TestCaseResult[] {

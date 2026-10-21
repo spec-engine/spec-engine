@@ -1,5 +1,3 @@
-// packages/engine/src/commands/_args.test.ts
-//
 // @spec REQ-042 unit
 
 import { describe, expect, test } from "bun:test";

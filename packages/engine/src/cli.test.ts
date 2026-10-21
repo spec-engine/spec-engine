@@ -1,14 +1,3 @@
-// packages/engine/src/cli.test.ts
-//
-// RED-10: bare `spec` (zero args) must print the full help/usage text and
-// exit 0 — discovered via citty's built-in showUsage renderer, locked here
-// by byte-parity with `--help`. A third test locks the rawArgs guard:
-// citty fires the root run() after subcommand dispatch too, so an unguarded
-// showUsage would append usage text to every subcommand's output.
-//
-// Subprocess pattern follows schema-version.test.ts: spawn the real
-// entrypoint with the running bun binary (process.execPath).
-
 import { afterAll, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -35,7 +24,7 @@ afterAll(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 
-test("RED-10: bare `spec` prints full usage and exits 0", () => {
+test("bare `spec` prints full usage and exits 0", () => {
   const { exitCode, stdout } = runCli();
   expect(exitCode).toBe(0);
   // Meta description proves the usage header rendered.
@@ -47,7 +36,7 @@ test("RED-10: bare `spec` prints full usage and exits 0", () => {
   expect(stdout).toContain("gate");
 });
 
-test("RED-10: bare invocation output is byte-identical to `spec --help`", () => {
+test("bare invocation output is byte-identical to `spec --help`", () => {
   const bare = runCli();
   const help = runCli("--help");
   expect(help.exitCode).toBe(0);
@@ -55,11 +44,8 @@ test("RED-10: bare invocation output is byte-identical to `spec --help`", () => 
   expect(bare.stdout).toBe(help.stdout);
 });
 
-test("RED-10 guard: subcommands do NOT get usage text appended (rawArgs guard)", () => {
-  // `spec domain new FOO <tmpdir>` is DB-free (no .spec-engine/ artifact) and its
-  // only side effect is contained in the per-suite tmp dir: it scaffolds
-  // <tmpdir>/spec-engine/FOO/SPEC.json (17-04 JSON write format), prints the
-  // created path, exits 0.
+test("subcommands do NOT get usage text appended (rawArgs guard)", () => {
+  // DB-free; its only side effect is the scaffolded SPEC.json in the suite tmp dir.
   const { exitCode, stdout } = runCli("domain", "new", "FOO", tmp);
   expect(exitCode).toBe(0);
   expect(stdout.trim()).toBe("created spec-engine/FOO/SPEC.json");

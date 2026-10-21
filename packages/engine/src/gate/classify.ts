@@ -1,53 +1,17 @@
-// packages/engine/src/gate/classify.ts
-//
-// Pure decision function for `spec gate <repo> <KEY-NNN>` (GATE-01 /
-// GATE-02). Given an already-resolved `(req | null, repo, names)` shape,
-// returns a fully-populated GateOutcome. No I/O, no Storage, no SQL —
-// the storage seam (plan 06-01's `getRepo`, the existing `getRequirement`)
-// hands the classifier already-typed rows; this file is the pure decision
-// engine the CLI command (plan 06-03) composes around.
-//
-// DECISION-ORDER CONTRACT (LOCKED BY TEST 6 in gate-classify.test.ts):
-//   NOT_FOUND → DRAFT → SUPERSEDED → VERSION_PIN → PASS
-//
-// The order matters: a Superseded requirement that is ALSO behind the
-// member's pin (changed_at_version exceeds pinned_spec_version) MUST
-// surface SUPERSEDED, never VERSION_PIN. Superseded is the structural
-// defect (the requirement was retired); the version skew is a
-// downstream symptom. Reordering these branches breaks ROADMAP
-// Success Criterion #1 and Pitfall 3.
-//
-// VERSION_PIN PREDICATE — STRICT GREATER-THAN ONLY (see line ~111):
-// Equality (changed_at_version === pinned_spec_version) is PASS. This
-// mirrors `packages/shared/src/schema.ts:188` byte-identically — the
-// drift VIEW WHERE clause is the canonical comparison and the
-// classifier MUST agree at the boundary (Pitfall 5 / T-06-02-01).
-//
-// DEFENSIVE NULL-REPO THROW:
-//   If `repo === null` we throw, never return — the CLI in plan 06-03
-//   MUST screen unknown repos to exit 2 BEFORE calling classifyGate.
-//   This is the contract Test 8 enforces.
-//
-// D-08 grep-fence: this file does NOT import `bun:sqlite`. DB access
-// goes exclusively through the Storage interface from @spec-engine/shared.
+// The branch order is load-bearing: a Superseded or Deprecated requirement
+// that is also behind the member's pin must report its status, never
+// VERSION_PIN. The retirement is the defect; the version skew is a symptom.
 
 import type { ClassifyInput, GateOutcome } from "@spec-engine/shared";
 
 /**
- * Classify a single `spec gate <repo> <req_id>` request. Returns a
- * fully-populated GateOutcome with every field set (no `undefined`,
- * explicit `null` for the NOT_FOUND case).
- *
- * Throws if `input.repo` is null — the caller MUST screen unknown
- * repos to exit 2 BEFORE invoking. See Test 8 / Pitfall 8.
+ * Throws if `input.repo` is null: the caller screens unknown repos to exit 2
+ * first, and a throw turns a skipped screen into a crash rather than a
+ * silently wrong PASS.
  */
 export function classifyGate(input: ClassifyInput): GateOutcome {
   const { req, repo, requestedReqId, requestedRepoName } = input;
 
-  // Defensive null-repo guard. Caller in plan 06-03 screens this case
-  // (unknown repo → exit 2 with a "no such repo" diagnostic) BEFORE
-  // calling classifyGate. Throwing here turns "skipped that check"
-  // into a loud crash rather than a silently wrong PASS.
   if (repo === null || repo === undefined) {
     throw new Error(
       `classifyGate: repo is null for requestedRepoName=${requestedRepoName}, ` +
@@ -58,7 +22,6 @@ export function classifyGate(input: ClassifyInput): GateOutcome {
 
   const pin = repo.pinned_spec_version;
 
-  // --- Branch 1: NOT_FOUND ------------------------------------------------
   if (req === null) {
     return {
       pass: false,
@@ -72,7 +35,6 @@ export function classifyGate(input: ClassifyInput): GateOutcome {
     };
   }
 
-  // --- Branch 2: DRAFT ----------------------------------------------------
   if (req.status === "Draft") {
     return {
       pass: false,
@@ -86,10 +48,6 @@ export function classifyGate(input: ClassifyInput): GateOutcome {
     };
   }
 
-  // --- Branch 3: SUPERSEDED -----------------------------------------------
-  // MUST come BEFORE VERSION_PIN. Test 6 locks this ordering: a
-  // Superseded req that ALSO has changed_at_version exceeding the pin
-  // still reports SUPERSEDED, never VERSION_PIN.
   if (req.status === "Superseded") {
     const supBy = req.superseded_by ?? "?";
     return {
@@ -104,11 +62,6 @@ export function classifyGate(input: ClassifyInput): GateOutcome {
     };
   }
 
-  // --- Branch 3b: DEPRECATED ----------------------------------------------
-  // A deprecated requirement is end-of-life with no successor — building new
-  // work against it must fail the gate exactly like Superseded does. Before
-  // this branch existed, a deprecated (then "Retired") requirement fell
-  // through to the version comparison and could PASS.
   // @spec GATE-009
   if (req.status === "Deprecated") {
     return {
@@ -123,9 +76,9 @@ export function classifyGate(input: ClassifyInput): GateOutcome {
     };
   }
 
-  // --- Branch 4: VERSION_PIN ---------------------------------------------
-  // Strict greater-than, mirror schema.ts:188 byte-identically.
-  // Equality is PASS — Pitfall 5 / T-06-02-01.
+  // Strict greater-than, so pin equality passes: the drift view in
+  // packages/shared/src/schema.ts is the canonical comparison and this must
+  // agree with it at the boundary.
   if (req.changed_at_version > pin) {
     return {
       pass: false,
@@ -141,8 +94,6 @@ export function classifyGate(input: ClassifyInput): GateOutcome {
     };
   }
 
-  // --- Branch 5: PASS -----------------------------------------------------
-  // Active + req.changed_at_version <= pin. Boundary equality lands here.
   return {
     pass: true,
     reason: "PASS",

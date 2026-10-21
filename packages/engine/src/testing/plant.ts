@@ -1,11 +1,6 @@
-// packages/engine/src/testing/plant.ts
-//
-// Plant a state the engine refuses to author: an entry removed from the
-// working tree, a status flipped without approval, a forward pointer at a
-// missing id, a grammar declared after the fact. The edit runs on the parsed
-// envelope and is written back through the validating seam, so a planted
-// state is always schema-valid; a schema-invalid file belongs under
-// ./fixtures/ instead.
+// The edit runs on the parsed envelope and is written back through the
+// validating seam, so a planted state is always schema-valid; a
+// schema-invalid file belongs under ./fixtures/ instead.
 
 import { type SpecDomain, validateAndWrite, validateDomainFile } from "@spec-engine/shared";
 import { specPaths } from "../constants";

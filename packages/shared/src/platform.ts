@@ -1,5 +1,3 @@
-// packages/shared/src/platform.ts
-//
 // The platform's shape as platform-map reports it. The engine reads the mode
 // from `@spec-engine/platform-map`; the webapp reads it from `/api/platform`,
 // so the vocabulary is stated once here for both sides of that route.

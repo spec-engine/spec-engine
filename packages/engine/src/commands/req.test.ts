@@ -1,6 +1,3 @@
-// packages/engine/src/commands/req.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec REQ-022
 // @spec REQ-023
 // @spec REQ-024
@@ -15,32 +12,6 @@
 // @spec REQ-032
 // @spec REQ-037
 // @spec REQ-039
-//
-// `spec req <domain-prefix> [platformDir]` resolves a case-insensitive
-// domain prefix against the filesystem domain listing. On a TTY it authors a new
-// requirement interactively; piped it prints the next unused requirement id
-// (the composable id query).
-//
-// Behaviors asserted:
-//   - case-insensitive prefix resolution (`bil` → BILLING); an exact match
-//     wins over a longer-prefix ambiguity; an ambiguous prefix or no match
-//     exits 2 with the candidates on stderr.
-//   - next id is max(seq)+1, padded to 3 digits, over the working tree AND
-//     the file at HEAD.
-//   - `spec new` / `spec id` are GONE from the CLI surface.
-//   - TTY gate: interactive per-field prompts (readline stubbed via
-//     mock.module with a FIFO answer queue).
-//   - non-TTY fallback prints the next id, zero mutation (in-process AND
-//     subprocess layers).
-//   - an empty Requirement aborts at exit 0, the file byte-unchanged.
-//   - an append round-trips, advances nextRequirementId, bumps the envelope
-//     `updated` to the LOCAL date.
-//   - an unresolvable @-ref warns to stderr, the entry still saves.
-//
-// In-process tests drive `reqCommand.run` directly with the ExitError
-// sentinel pattern; the subprocess tests spawn the real entrypoint with
-// the running bun binary. process.stdin.isTTY is saved/restored per test;
-// mock.restore() in afterEach resets mock.module state.
 
 import { afterEach, beforeEach, describe, expect, mock, setSystemTime, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -240,10 +211,6 @@ describe("spec req — platform guard", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Interactive authoring
-// ---------------------------------------------------------------------------
-
 describe("spec req — interactive authoring", () => {
   test("TTY append: three answers → the entry saves, updated: bumped, id round-trips", async () => {
     await seed(tmp, "BILLING", 9, { updated: "2020-01-01" });
@@ -261,17 +228,13 @@ describe("spec req — interactive authoring", () => {
     await runReq("bil", tmp);
 
     const domain = JSON.parse(readSpec(tmp, "BILLING"));
-    // The appended requirement is a JSON object with status "active".
     const added = domain.requirements.find((r: { id: string }) => r.id === "BILLING-010");
     expect(added).toBeDefined();
     expect(added.status).toBe("active");
     expect(added.statement).toBe("Charge renewals at current price");
     expect(added.why).toBe("Revenue correctness");
-    // `lives` flows to livesIn[].
     expect(added.livesIn).toEqual(["@api/src/renew.ts"]);
-    // …envelope updated: bumped to today's LOCAL date…
     expect(domain.updated).toBe(localToday());
-    // …and nextRequirementId advances past the appended entry.
     expect(await nextRequirementId(tmp, "BILLING")).toBe("BILLING-011");
 
     // stdout carries EXACTLY the confirmation — prompts went to stderr.
@@ -329,11 +292,6 @@ describe("spec req — interactive authoring", () => {
     expect(readSpec(tmp, "BILLING")).toBe(before);
   });
 });
-
-// ---------------------------------------------------------------------------
-// Old commands gone — subprocess layer against the real cli.ts: spawn the
-// running bun binary.
-// ---------------------------------------------------------------------------
 
 const CLI = join(import.meta.dir, "..", "cli.ts");
 
@@ -406,11 +364,6 @@ describe("spec new / spec id removed", () => {
   });
 });
 
-// ----------------------------------------------------------------------------
-// SPEC.json is the ONLY spec format. `spec req` against a domain that owns no
-// SPEC.json is a clean typed error + exit 2, never an ENOENT crash.
-// ----------------------------------------------------------------------------
-
 describe("spec req — domain with no SPEC.json", () => {
   test("no SPEC.json → a typed not_found refusal, not an ENOENT crash", async () => {
     // A domain dir that lists but has no spec file: the mint operation refuses
@@ -439,12 +392,6 @@ describe("nextRequirementId — missing SPEC.json", () => {
   });
 });
 
-// ----------------------------------------------------------------------------
-// `--json` machine mode for the agent write-path: the next-id query emits a
-// parseable object and NEVER prompts, even on a TTY (an agent that asked for
-// JSON never wants readline).
-// ----------------------------------------------------------------------------
-
 describe("spec req --json — machine mode", () => {
   beforeEach(async () => {
     await seed(tmp, "BILLING", 9);
@@ -470,12 +417,6 @@ describe("spec req --json — machine mode", () => {
     expect(readSpec(tmp, "BILLING")).toBe(before);
   });
 });
-
-// ----------------------------------------------------------------------------
-// Non-interactive authoring via field flags. With `--text`, the entry appends
-// WITHOUT prompting (even non-TTY); --why / --lives fill the remaining fields
-// (default empty). This is the agent write-path: one invocation, zero readline.
-// ----------------------------------------------------------------------------
 
 describe("spec req — field-flag authoring", () => {
   beforeEach(async () => {
@@ -504,9 +445,7 @@ describe("spec req — field-flag authoring", () => {
     expect(entry.status).toBe("active");
     expect(entry.statement).toBe("Charge renewals at the current plan price");
     expect(entry.why).toBe("revenue path");
-    // `lives` → livesIn[].
     expect(entry.livesIn).toEqual(["lib-billing/renew.ts"]);
-    // The append round-trips and advances the allocator.
     expect(await nextRequirementId(tmp, "BILLING")).toBe("BILLING-011");
     expect(logs.join("\n")).toContain("BILLING-010");
   });
@@ -602,14 +541,7 @@ describe("spec req — field-flag authoring", () => {
   });
 });
 
-// ----------------------------------------------------------------------------
-// `spec req` echoes the resolved domain's charter (scope) to STDERR at
-// authoring time. The piped bare-id (stdout) and --json payload (stdout) must
-// stay BYTE-IDENTICAL — charter chrome never leaks onto the machine channel.
-// A null/absent charter degrades gracefully to a single "no charter set" notice.
 // @spec CHRT-012 unit
-// ----------------------------------------------------------------------------
-
 describe("spec req — charter at authoring", () => {
   /** Scaffold `key` carrying a charter `scope` plus one active KEY-001 (so next id is KEY-002). */
   function writeScopedDomain(key: string, scope: string): Promise<DomainHandle> {
@@ -636,7 +568,7 @@ describe("spec req — charter at authoring", () => {
 
     await runReq("guard", tmp);
 
-    // The bare next id — EXACTLY as before charter existed (the machine contract).
+    // The bare next id is the machine contract.
     expect(logs).toEqual(["GUARD-002"]);
     // No charter chrome at all on the id-query path (not even stderr).
     expect(errs.some((l) => l.includes("guard the loss gate"))).toBe(false);

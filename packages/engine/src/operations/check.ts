@@ -1,9 +1,5 @@
-// packages/engine/src/operations/check.ts
-//
-// The integrity check: build the index into the caller's handle, then run
-// every diagnostic pass. Everything that reads files or git runs AFTER
-// runIndex, so `build_id` is fixed the instant the index is built and no
-// flag can perturb the cold-rebuild identity.
+// Everything that reads files or git runs after runIndex, so no flag can
+// perturb `build_id` and the cold-rebuild identity.
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -21,16 +17,19 @@ import { statementGrammarDiagnostics } from "../check/grammar";
 import { changedRules, partialPropagation } from "../check/propagation-teeth";
 import { provenDetermination } from "../check/proven";
 import { requirementRemoved } from "../check/removed";
+import { applySeverity, readCheckConfig } from "../check/severity";
 import { collectDiagnostics } from "../check/sqlDiagnostics";
 import { unapprovedStatusFlip } from "../check/statusflip";
 import { supersedesPointerDiagnostics } from "../check/supersedes";
 import { unsourcedChanges } from "../check/unsourced";
 import { CANONICAL_SPECS_DIR, SPEC_FILENAME } from "../constants";
+import type { Loss } from "../guard/losses";
 import { runIndex } from "../indexer/pipeline";
 import { parseJUnit, type TestCaseResult } from "../results/junit";
 import { findDomainJsonFiles, isPathIgnored } from "../scanner/fs";
 import { fail, type OpFailure } from "./_result";
 import { glossaryDriftDiagnostic } from "./glossary";
+import { guard } from "./guard";
 
 export interface CheckInput {
   platformDir: string;
@@ -184,6 +183,41 @@ async function governanceGate(
   }
 }
 
+// @spec GUARD-025
+const LOSS_SEVERITY: Record<
+  Exclude<Loss["kind"], "REQUIREMENT_REMOVED">,
+  Diagnostic["severity"]
+> = {
+  IMPL_LOST: "error",
+  SPEC_FILE_DELETED: "error",
+  VERIFY_LOST: "warning",
+};
+
+/** Guard's losses against `ref` as check rows. The removal check owns REQUIREMENT_REMOVED. */
+// @spec GUARD-024
+// @spec GUARD-026
+async function lossDiagnostics(
+  storage: Storage,
+  platformDir: string,
+  ref: string,
+): Promise<Diagnostic[]> {
+  const { losses } = await guard(storage, platformDir, ref);
+  const rows: Diagnostic[] = [];
+  for (const loss of losses) {
+    if (loss.kind === "REQUIREMENT_REMOVED") continue;
+    rows.push({
+      code: loss.kind,
+      severity: LOSS_SEVERITY[loss.kind],
+      repo: null,
+      source_file: loss.file === "" ? null : loss.file,
+      line: loss.line,
+      req_id: loss.req_id,
+      detail: loss.detail,
+    });
+  }
+  return rows;
+}
+
 /**
  * Run the full check into `storage`. Fails `usage` when `base` does not
  * resolve (a governance gate must never fail open). A JUnit parse failure
@@ -203,6 +237,9 @@ export async function check(input: CheckInput, storage: Storage): Promise<CheckR
   }
 
   const result = await runIndex({ platformDir, storage });
+  // @spec CHCK-039
+  const checkConfig = readCheckConfig(platformDir);
+  if (!checkConfig.ok) return fail("usage", checkConfig.detail);
   const diagnostics = collectDiagnostics(storage);
 
   if (input.unsourcedChange) {
@@ -222,6 +259,7 @@ export async function check(input: CheckInput, storage: Storage): Promise<CheckR
 
   if (input.base) {
     await governanceGate(input, input.base, diagnostics, results);
+    diagnostics.push(...(await lossDiagnostics(storage, platformDir, input.base)));
   } else if (gitRefResolves(platformDir, "HEAD")) {
     // @spec CHCK-023
     const change = await collectChangeReqs(join(platformDir, CANONICAL_SPECS_DIR));
@@ -230,13 +268,15 @@ export async function check(input: CheckInput, storage: Storage): Promise<CheckR
     diagnostics.push(
       ...requirementRemoved(base.reqs, change.reqs, (id) => base.relPathById.get(id) ?? null),
     );
+    diagnostics.push(...(await lossDiagnostics(storage, platformDir, "HEAD")));
   }
 
+  const graded = applySeverity(diagnostics, checkConfig.config.severity);
   return {
     ok: true,
-    diagnostics,
+    diagnostics: graded,
     buildId: result.build_id,
-    failing: diagnostics.some((d) => d.severity === "error"),
+    failing: graded.some((d) => d.severity === "error"),
     proofsUnconfirmed: !input.resultsPath,
   };
 }

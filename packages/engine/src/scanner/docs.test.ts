@@ -1,16 +1,3 @@
-// packages/engine/src/scanner/docs.test.ts
-//
-// RED-15 unit tests for the documentation-binding scanner
-// (src/scanner/docs.ts). Markdown is NOT code: only the explicit
-// HTML-comment form `<!-- @spec KEY-NNN -->` binds a doc line to a
-// requirement (kind `documents`). Prose mentions and code-block examples
-// must never mint tags — a README full of `// @spec` examples (this
-// repo's own README, for one) would otherwise index as phantom claims.
-//
-// Mention candidates (requirement-id-shaped tokens on lines WITHOUT a
-// binding for that same id) are returned for the pipeline to filter
-// against the known-requirement set and route into doctor.md triage.
-
 import { describe, expect, test } from "bun:test";
 import { SPEC_TOKEN } from "../testing/specTag";
 import { scanDocFile } from "./docs";
@@ -18,13 +5,11 @@ import { scanDocFile } from "./docs";
 const REPO = "web";
 const FILE = "web/docs/guide.md";
 
-// DOGFOOD: compose every binding string at runtime from SPEC_TOKEN — a
-// literal token+id pair in this .ts source would be scooped up by the CODE
-// scanner during the repo's self-index and minted as a dangling tag (the
-// exact reason src/testing/specTag.ts exists).
+// Binding strings are composed from SPEC_TOKEN at runtime: a literal token+id
+// pair in this source would be indexed by the code scanner as a dangling tag.
 const bind = (id: string) => `<!-- ${SPEC_TOKEN} ${id} -->`;
 
-describe("scanDocFile (RED-15 doc bindings)", () => {
+describe("scanDocFile doc bindings", () => {
   test("HTML-comment form binds: one documents-kind tag with file + line", () => {
     const { tags } = scanDocFile(REPO, FILE, `intro\nrenders at build ${bind("DOCS-001")}\n`);
     expect(tags).toEqual([

@@ -1,19 +1,6 @@
-// packages/engine/src/check/grammar.ts
-//
-// The STATEMENT_GRAMMAR check pass. For every domain whose envelope declares
-// `grammar: "ears"`, each Active/Draft statement is parsed against the five
-// EARS shapes (shared/ears.ts); a nonconforming statement emits one
-// diagnostic row at the domain's `grammarSeverity` (default warning).
-//
-// Reads the SPEC.json files straight from the filesystem — the grammar
-// declaration is envelope config, not indexed state (no column, no
-// SCHEMA_VERSION bump), and the check must reflect the tree as it is.
-// Terminal-status entries (superseded/deprecated) are history and are never
-// re-judged; the reserved TERM domain holds definitions, not behavior
-// statements, and is exempt.
-//
-// Pure aside from reads: no writes, no process.exit, deterministic ordering
-// by (source_file, line, req_id).
+// Reads SPEC.json directly: the grammar declaration is envelope config, not
+// indexed state. Superseded and deprecated entries are never re-judged, and
+// the TERM domain holds definitions, not behavior statements, so it is exempt.
 
 import {
   type Diagnostic,

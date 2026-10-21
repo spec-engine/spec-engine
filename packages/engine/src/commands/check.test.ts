@@ -1,18 +1,4 @@
-// packages/engine/src/commands/check.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec CHCK-025
-//
-// Unit tests for `spec check` (commands/check.ts). In-process invocation
-// of the citty command with process.exit stubbed to throw ExitError so
-// the test runner can assert on the exit code without terminating.
-//
-// Scope: COMMAND-level behavior — path-containment guard, --ci no-op on
-// empty dir, --json parseability, exit code wiring. The full inverted-CI
-// exact-match assertion is plan 03-05's job (check-ci.test.ts).
-//
-// Mirrors the pattern from cli-new.test.ts (ExitError, beforeEach stub
-// block, RunFn cast).
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
@@ -23,8 +9,7 @@ import { TestPlatform } from "../testing/platform";
 import { specTag } from "../testing/specTag";
 import { checkCommand } from "./check";
 
-// Canonical platform fixture (read-only across the suite — all mutating
-// runs operate on a cloneFixture() copy). Mirrors check-ci.test.ts.
+// Read-only across the suite: every mutating run works on a cloneFixture() copy.
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "platform-fixture");
 
 let tmp: string;
@@ -76,16 +61,14 @@ const checkRun = (checkCommand as unknown as { run: RunFn }).run;
 async function runCheck(args: Record<string, unknown>): Promise<number> {
   try {
     await checkRun({ args, rawArgs: [] });
-    return -1; // unreachable — run() always calls process.exit
+    return -1;
   } catch (e) {
     if (e instanceof ExitError) return e.code;
     throw e;
   }
 }
 
-/** Minimal canonical-only fixture: one repo (spec-engine) with one Active
- *  requirement. No members, no tags. Should produce ORPHAN_REQ (and nothing
- *  else) — so exit code is 1, JSON output parseable. */
+/** One Active requirement, no members, no tags: exactly one ORPHAN_REQ. */
 async function makeOrphanFixture(root: string): Promise<void> {
   const domain = await TestPlatform.at(root).domain("TEST", { owner: "drea" });
   await domain.req({
@@ -94,8 +77,6 @@ async function makeOrphanFixture(root: string): Promise<void> {
   });
 }
 
-/** Clean fixture: one Active requirement tagged by a member's src AND test, so
- *  neither ORPHAN_REQ nor UNVERIFIED_REQ fires: 0 diagnostics. */
 async function makeCleanFixture(root: string): Promise<void> {
   const fx = TestPlatform.at(root);
   const domain = await fx.domain("TEST", { owner: "drea" });
@@ -111,25 +92,18 @@ async function makeCleanFixture(root: string): Promise<void> {
   });
 }
 
-/** Warning-only fixture: canonical spec-engine/ + one declared member
- *  WITHOUT spec-engine.member.json, which emits one NO_SPEC_CONFIG warning;
- *  no error-severity rows fire (no requirements means no ORPHAN_REQ either).
- *  Exercises the `severity === "error"` branch with a warning-only set. */
+/** One NO_SPEC_CONFIG warning and nothing else: no requirements, no ORPHAN_REQ. */
 function makeWarningOnlyFixture(root: string): void {
   TestPlatform.at(root).unpinned("strangers");
 }
 
-/** Mixed fixture: orphan-requirement error (ORPHAN_REQ from makeOrphanFixture)
- *  + a sibling-without-config (NO_SPEC_CONFIG warning). Proves the
- *  `severity === "error"` exit-code branch dominates when both rows are present. */
 async function makeMixedFixture(root: string): Promise<void> {
   await makeOrphanFixture(root);
   makeWarningOnlyFixture(root);
 }
 
-describe("spec check — path-containment guard (V12)", () => {
+describe("spec check — path-containment guard", () => {
   test("--out resolving outside platformDir rejects with exit 2", async () => {
-    // tmp is `/tmp/spec-cli-check-XXX`. outside is a sibling.
     const outside = mkdtempSync(join(tmpdir(), "spec-cli-check-outside-"));
     try {
       const code = await runCheck({ platformDir: tmp, out: join(outside, "evil.sqlite") });
@@ -148,7 +122,6 @@ describe("spec check — path-containment guard (V12)", () => {
       ci: true,
       json: true,
     });
-    // Orphan fixture → exit 1.
     expect(code).toBe(1);
   });
 });
@@ -156,11 +129,8 @@ describe("spec check — path-containment guard (V12)", () => {
 describe("spec check — --ci force-rebuild semantics", () => {
   test("--ci on a directory with no prior DB does not throw", async () => {
     await makeOrphanFixture(tmp);
-    // First run: no DB exists yet. --ci's existsSync guards each rmSync,
-    // so this should succeed and produce an ORPHAN_REQ → exit 1.
     const code = await runCheck({ platformDir: tmp, ci: true, json: true });
     expect(code).toBe(1);
-    // stderr contains the "cold-reset prior index" log.
     expect(errs.some((m) => m.includes("cold-reset prior index state"))).toBe(true);
   });
 });
@@ -170,12 +140,8 @@ describe("spec check — JSON output is parseable", () => {
     await makeOrphanFixture(tmp);
     const code = await runCheck({ platformDir: tmp, ci: true, json: true });
     expect(code).toBe(1);
-    // The JSON output is the only stdout line in --json mode (build_id
-    // is skipped) — but scan for it explicitly rather than trusting
-    // logs[0]. If a stray console.log lands ahead of the JSON, the old
-    // `JSON.parse(logs[0])` shape failed with a confusing SyntaxError;
-    // this filter fails with a clear `expect(jsonLine).toBeDefined()`
-    // instead, pointing at the real defect.
+    // Scanned rather than read from logs[0], so a stray console.log ahead of
+    // the JSON fails on toBeDefined, not with a confusing SyntaxError.
     const jsonLine = logs.find((l) => l.startsWith("[") || l.startsWith("{"));
     expect(jsonLine).toBeDefined();
     const parsed = JSON.parse(jsonLine as string);
@@ -187,7 +153,6 @@ describe("spec check — JSON output is parseable", () => {
       repo: null,
       severity: "error",
     });
-    // build_id chrome is suppressed in --json mode.
     expect(logs.every((l) => !l.startsWith("build_id:"))).toBe(true);
   });
 });
@@ -202,51 +167,29 @@ describe("spec check — exit code wiring", () => {
   test("exit 0 when 0 diagnostics (clean fixture: implements + verifies tags)", async () => {
     await makeCleanFixture(tmp);
     const code = await runCheck({ platformDir: tmp, ci: true, json: true });
-    // 0 diagnostics → exit 0. JSON output is `[]`. Scan for the JSON
-    // line explicitly so a stray debug log ahead of it produces a clear
-    // "jsonLine is undefined" failure rather than a misleading parse
-    // mismatch (WR-02 review-fix).
     expect(code).toBe(0);
     const jsonLine = logs.find((l) => l.startsWith("[") || l.startsWith("{"));
     expect(jsonLine).toBe("[]");
   });
 
-  // WR-05 regression: a crash inside the pipeline (anywhere between
-  // openStorage and renderDiagnostics) MUST exit 2, not citty's default
-  // exit 1. Distinguishing crash from "expected error-severity
-  // diagnostics" is what the inverted CI assertion relies on — if a
-  // crash happens to also exit 1, the gate silently false-greens.
-  //
-  // The no-spec-engine/ input now throws NotASpecPlatformError, which the
-  // command boundary catches → friendly message (no "crashed:" / no stack
-  // trace) + exit 2. The exit-2 invariant the inverted CI assertion relies
-  // on is preserved; only the message shape changed (260605-g84 B.2).
+  // A crash must exit 2, never 1: the inverted CI assertion tells a crash
+  // from error-severity diagnostics by exit code, and a crash that exits 1
+  // would false-green the gate.
   test("exit 2 with friendly message when platformDir is not a Spec Engine platform (no spec-engine/)", async () => {
-    // tmp exists but is empty — no spec-engine/ → NotASpecPlatformError.
     const code = await runCheck({ platformDir: tmp, ci: true, json: true });
     expect(code).toBe(2);
-    // Friendly, actionable message — NOT a raw crash/stack trace.
     expect(errs.some((m) => m.includes("is not a Spec Engine platform yet"))).toBe(true);
     expect(errs.some((m) => m.includes("spec map fixtures/platform-fixture"))).toBe(true);
-    // No leaked internals: neither the "crashed:" prefix nor the old
-    // discoverRepos: string nor stack frames.
     expect(errs.some((m) => m.includes("spec check: crashed:"))).toBe(false);
     expect(errs.some((m) => m.includes("discoverRepos:"))).toBe(false);
   });
 
-  // Follow-up fix (260605-g84): assertSpecPlatform runs BEFORE
-  // mkdirSync(.spec-engine)/--ci rm/openStorage, so a non-platform dir throws
-  // → exit 2 and leaves NO .spec-engine/ artifact. Idempotent across runs.
   test("non-platform dir leaves NO .spec-engine/ artifact and is idempotent (1st === 2nd run)", async () => {
-    // 1st run (no --ci): exit 2 + friendly message + NO artifact.
     const first = await runCheck({ platformDir: tmp });
     expect(first).toBe(2);
     expect(errs.some((m) => m.includes("is not a Spec Engine platform yet"))).toBe(true);
     expect(existsSync(join(tmp, ".spec-engine"))).toBe(false);
 
-    // 2nd run against the SAME dir: identical exit 2 + identical message,
-    // still NO artifact (no stale empty index can have been written to
-    // poison this run). 1st === 2nd.
     errs.length = 0;
     logs.length = 0;
     const second = await runCheck({ platformDir: tmp });
@@ -256,13 +199,11 @@ describe("spec check — exit code wiring", () => {
   });
 });
 
-describe("spec check — warning-severity exit-code branch (DIAG-02)", () => {
-  test("warning-only diagnostics exit 0 (first ever exercise of severity==='warning' branch)", async () => {
+describe("spec check — warning-severity exit-code branch", () => {
+  test("warning-only diagnostics exit 0", async () => {
     makeWarningOnlyFixture(tmp);
     const code = await runCheck({ platformDir: tmp, ci: true, json: true });
     expect(code).toBe(0);
-    // JSON output is a single-row array with the NO_SPEC_CONFIG warning.
-    // Scan for the JSON line (WR-02 review-fix) rather than trusting logs[0].
     const jsonLine = logs.find((l) => l.startsWith("[") || l.startsWith("{"));
     expect(jsonLine).toBeDefined();
     const got = JSON.parse(jsonLine as string) as Array<{ code: string; severity: string }>;
@@ -275,7 +216,6 @@ describe("spec check — warning-severity exit-code branch (DIAG-02)", () => {
     await makeMixedFixture(tmp);
     const code = await runCheck({ platformDir: tmp, ci: true, json: true });
     expect(code).toBe(1);
-    // Scan for the JSON line (WR-02 review-fix) rather than trusting logs[0].
     const jsonLine = logs.find((l) => l.startsWith("[") || l.startsWith("{"));
     expect(jsonLine).toBeDefined();
     const got = JSON.parse(jsonLine as string) as Array<{ code: string; severity: string }>;
@@ -285,17 +225,11 @@ describe("spec check — warning-severity exit-code branch (DIAG-02)", () => {
   });
 });
 
-// ----------------------------------------------------------------------------
-// RED-14 dead-end audit: the generic crash branch (catch-all → "spec check:
-// crashed:" + exit 2) existed without a covering test.
-// ----------------------------------------------------------------------------
-
-describe("spec check — generic crash branch (RED-14)", () => {
+describe("spec check — generic crash branch", () => {
   test("openStorage failure (--out points at an existing directory) → exit 2 'crashed'", async () => {
     await makeOrphanFixture(tmp);
-    // A DIRECTORY at the db path: passes the containment guard (inside
-    // platformDir) but openStorage cannot open a directory as SQLite —
-    // the throw must land in the catch-all, NOT citty's default handling.
+    // A directory at the db path passes the containment guard but cannot be
+    // opened as SQLite.
     mkdirSync(join(tmp, "dbdir"), { recursive: true });
     const code = await runCheck({ platformDir: tmp, out: "dbdir" });
     expect(code).toBe(2);
@@ -303,23 +237,8 @@ describe("spec check — generic crash branch (RED-14)", () => {
   });
 });
 
-// ----------------------------------------------------------------------------
-// --unsourced-change (USRC-01..04): the two-layer off-by-default guarantee.
-//
-// Layer 1 (citty): the flag has NO `default:` key, so its absence yields
-// `undefined`. Layer 2 (run body): the emission is gated behind an explicit
-// `if (args.unsourcedChange)` enabled-check. These cases lock BOTH the
-// flag-off (zero rows) and flag-on (exactly one row for BILLING-001) paths,
-// the warning severity, and that the warning never flips the exit code.
-//
-// All runs operate against a cloneFixture() of the canonical fixture so the
-// command's `.spec-engine/` artifact lands in the clone's tree, never in
-// fixtures/platform-fixture/ (D-08-adjacent read-only invariant).
-// ----------------------------------------------------------------------------
-
-/** Scan the captured stdout for the JSON diagnostic array (the only `[`/`{`
- *  line in --json mode — build_id chrome is suppressed). Parses + returns the
- *  rows. Mirrors the scan idiom used throughout this file. */
+// --unsourced-change is off by default twice over: the citty flag has no
+// `default:` key, and the run body gates the emission on an explicit check.
 function parseDiagnostics(): Array<{
   code: string;
   repo: string | null;
@@ -331,20 +250,18 @@ function parseDiagnostics(): Array<{
   return JSON.parse(jsonLine as string);
 }
 
-describe("spec check — --unsourced-change (USRC-01..04)", () => {
+describe("spec check — --unsourced-change", () => {
   test("flag OFF (omitted) → ZERO UNSOURCED_CHANGE rows against the canonical fixture", async () => {
     const cloned = cloneFixture(FIXTURE);
     clones.push(cloned);
-    // No `unsourcedChange` key at all — citty boolean-without-default reads
-    // as undefined; the run-body guard treats it as off (layer 1 + layer 2).
     const code = await runCheck({ platformDir: cloned, ci: true, json: true });
-    expect(code).toBe(1); // the planted error-severity rows still fire.
+    expect(code).toBe(1);
     const got = parseDiagnostics();
     const unsourced = got.filter((d) => d.code === "UNSOURCED_CHANGE");
     expect(unsourced).toHaveLength(0);
   });
 
-  test("flag explicitly false → ZERO UNSOURCED_CHANGE rows (layer-2 guard treats false === off)", async () => {
+  test("flag explicitly false → ZERO UNSOURCED_CHANGE rows", async () => {
     const cloned = cloneFixture(FIXTURE);
     clones.push(cloned);
     const code = await runCheck({
@@ -358,28 +275,20 @@ describe("spec check — --unsourced-change (USRC-01..04)", () => {
     expect(got.filter((d) => d.code === "UNSOURCED_CHANGE")).toHaveLength(0);
   });
 
-  test("NON-CI flag OFF (no --ci, no flag) → ZERO UNSOURCED_CHANGE rows (USRC-02 plain `spec check`)", async () => {
-    // USRC-02 names BOTH surfaces: `spec check` AND `spec check --ci` must
-    // emit zero rows without the flag. The other off-by-default cases all run
-    // with ci:true; this locks the plain (non-CI) `spec check` path too. The
-    // --ci flag only governs the pre-index cold-rebuild rm — it does not gate
-    // the unsourced emission — so off-by-default must hold identically here.
+  test("NON-CI flag OFF (no --ci, no flag) → ZERO UNSOURCED_CHANGE rows on plain `spec check`", async () => {
     const cloned = cloneFixture(FIXTURE);
     clones.push(cloned);
     const code = await runCheck({ platformDir: cloned, json: true });
-    expect(code).toBe(1); // planted error-severity rows still fire.
+    expect(code).toBe(1);
     const got = parseDiagnostics();
     expect(got.filter((d) => d.code === "UNSOURCED_CHANGE")).toHaveLength(0);
   });
 
-  test("NON-CI flag ON (no --ci, --unsourced-change) → exactly ONE BILLING-001 warning (USRC-01/02 plain `spec check`)", async () => {
-    // The opt-in must behave identically on the plain `spec check` surface:
-    // exactly one warning-severity UNSOURCED_CHANGE row for the BILLING-001
-    // supersession that lacks a supersedes-via issue, without --ci.
+  test("NON-CI flag ON (no --ci, --unsourced-change) → exactly ONE BILLING-001 warning on plain `spec check`", async () => {
     const cloned = cloneFixture(FIXTURE);
     clones.push(cloned);
     const code = await runCheck({ platformDir: cloned, json: true, unsourcedChange: true });
-    expect(code).toBe(1); // warning never flips the exit; planted errors drive it.
+    expect(code).toBe(1);
     const got = parseDiagnostics();
     const unsourced = got.filter((d) => d.code === "UNSOURCED_CHANGE");
     expect(unsourced).toHaveLength(1);
@@ -388,7 +297,7 @@ describe("spec check — --unsourced-change (USRC-01..04)", () => {
     expect(unsourced[0]?.severity).toBe("warning");
   });
 
-  test("flag ON → exactly ONE UNSOURCED_CHANGE row {repo:null, BILLING-001} (locks A3 / OQ1)", async () => {
+  test("flag ON → exactly ONE UNSOURCED_CHANGE row {repo:null, BILLING-001}", async () => {
     const cloned = cloneFixture(FIXTURE);
     clones.push(cloned);
     const code = await runCheck({
@@ -397,15 +306,13 @@ describe("spec check — --unsourced-change (USRC-01..04)", () => {
       json: true,
       unsourcedChange: true,
     });
-    // Warning-only addition does not change the exit code — the pre-existing
-    // error-severity rows still drive exit 1 (USRC-03).
     expect(code).toBe(1);
     const got = parseDiagnostics();
     const unsourced = got
       .filter((d) => d.code === "UNSOURCED_CHANGE")
       .map((d) => ({ code: d.code, repo: d.repo, req_id: d.req_id }));
-    // EXACT set/count — not `> 0`. The canonical fixture's BILLING-001 is the
-    // only Superseded requirement lacking a supersedes-via issue.
+    // BILLING-001 is the fixture's only Superseded requirement lacking a
+    // supersedes-via issue.
     expect(unsourced).toEqual([{ code: "UNSOURCED_CHANGE", repo: null, req_id: "BILLING-001" }]);
   });
 
@@ -420,7 +327,6 @@ describe("spec check — --unsourced-change (USRC-01..04)", () => {
   });
 
   test("flag ON adds exactly the 1 UNSOURCED_CHANGE row on top of the baseline set", async () => {
-    // flag-off run captures the baseline count.
     const offClone = cloneFixture(FIXTURE);
     clones.push(offClone);
     await runCheck({ platformDir: offClone, ci: true, json: true });
@@ -429,7 +335,6 @@ describe("spec check — --unsourced-change (USRC-01..04)", () => {
     logs.length = 0;
     errs.length = 0;
 
-    // flag-on run: same fixture content, +1 UNSOURCED_CHANGE row.
     const onClone = cloneFixture(FIXTURE);
     clones.push(onClone);
     await runCheck({ platformDir: onClone, ci: true, json: true, unsourcedChange: true });
@@ -438,7 +343,7 @@ describe("spec check — --unsourced-change (USRC-01..04)", () => {
     expect(onRows.filter((d) => d.code === "UNSOURCED_CHANGE")).toHaveLength(1);
   });
 
-  test("warning row does NOT flip the exit code — flag-on / flag-off exit codes are equal (USRC-03)", async () => {
+  test("warning row does NOT flip the exit code — flag-on / flag-off exit codes are equal", async () => {
     const offClone = cloneFixture(FIXTURE);
     clones.push(offClone);
     const offCode = await runCheck({ platformDir: offClone, ci: true, json: true });
@@ -454,8 +359,6 @@ describe("spec check — --unsourced-change (USRC-01..04)", () => {
       json: true,
       unsourcedChange: true,
     });
-    // The warning row composes with the unchanged `severity === "error"`
-    // predicate — it never changes the exit code.
     expect(onCode).toBe(offCode);
   });
 });

@@ -1,8 +1,3 @@
-// packages/engine/src/commands/accept.ts
-//
-// `spec accept <KEY-NNN>`: promote a Draft requirement to Active. The gate and
-// the write live in operations/accept.ts.
-
 import { defineCommand } from "citty";
 import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";

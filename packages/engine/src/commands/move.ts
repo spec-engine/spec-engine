@@ -1,19 +1,12 @@
-// packages/engine/src/commands/move.ts
-//
-// `spec move <KEY-NNN> <NEW-DOMAIN>`: the cross-domain supersede. The command
-// normalizes the target key and renders; the guards, both writes, and the
-// retag worklist live in operations/move.ts.
-
 import { defineCommand, type ParsedArgs } from "citty";
 import { normalizeDomainKey } from "../authoring/domains";
 import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
-import { coldFreshTags } from "../operations/_index";
 import { type MoveInput, move } from "../operations/move";
 import { ID_RE } from "../parser/grammar";
 import { renderReqTags } from "../resolve/format";
 import { listFlag, platformDirArg, resolvePlatformDir } from "./_args";
-import { exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
+import { cliFreshTags, exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
 
 /**
  * Flags to the operation's input. An absent flag leaves the field to be copied from the source.
@@ -103,7 +96,7 @@ export const moveCommand = defineCommand({
 
     const result = await move(
       inputFromArgs(args, rawArgs, platformDir, id, targetKey),
-      coldFreshTags(platformDir),
+      cliFreshTags(platformDir),
     );
     if (!result.ok) exitOnFailure("spec move", result);
     printWarnings("spec move", result.warnings);

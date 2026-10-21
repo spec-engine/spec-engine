@@ -1,5 +1,3 @@
-// packages/engine/src/commands/list.test.ts
-//
 // The command over the canonical fixture, driven in-process: full listing,
 // the two filters, the bad-status refusal, and byte-stable JSON.
 

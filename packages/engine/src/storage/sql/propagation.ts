@@ -1,12 +1,6 @@
-// packages/engine/src/storage/sql/propagation.ts
-//
-// The propagation classifier: a recursive CTE walks the predecessor chain
-// backwards from the target (depth-capped as a cycle guard) and classifies
-// every member repo except the canonical one. The drift predicate is NOT here:
-// the `drift` VIEW in @spec-engine/shared is its single home, and the storage
-// layer overlays it onto these rows.
-//
-// Rows come out in dependency order, providers before consumers, ties by name.
+// The predecessor-chain CTE is depth-capped as a cycle guard. The drift
+// predicate lives only in the `drift` VIEW in @spec-engine/shared; storage
+// overlays it onto these rows.
 // @spec PROP-006
 
 export const PROP_REPO_STATES_SQL = `

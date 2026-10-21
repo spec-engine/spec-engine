@@ -1,21 +1,7 @@
-// packages/engine/test/corpus-hygiene.test.ts
-//
-// Plan 04-02 / STND-02 — the mechanical citation-retargeting regression.
-// After the Phase 2 taxonomy reorg the six invariant reqs, their cross-ref
-// PROOF-004, and three IN-01 header-comment sites still cited pre-reorg ids
-// (or a circular `(Invariant #N)` self-reference). This test locks the
-// DECIDED in-scope retargets so a future edit cannot silently reintroduce a
-// dead citation.
-//
-// Grep-assertion pattern mirrored from packages/webapp/test/import-fence.test.ts:
-// read each NAMED file, assert a forbidden regex does NOT match, surface the
-// offending file/line on failure.
-//
-// SCOPE (LOCKED — 04-CONTEXT lines 70-72): this test scans ONLY the named
-// files. The 63 ordinary code-comment `(Invariant #N)` sites and the deferred
-// GOV-02 / GATE-01 / GATE-05 / CR-01 shorthand clusters are P3 work and are
-// intentionally NOT asserted here. This file itself carries the forbidden id
-// tokens inside its own regexes, so it must NEVER scan itself.
+// Locks retired citation tokens out of the named files so a future edit
+// cannot reintroduce a dead citation. Only named files are scanned: this file
+// carries the forbidden tokens in its own assertions, so it must never scan
+// itself.
 
 import { describe, expect, test } from "bun:test";
 import { join, resolve } from "node:path";
@@ -53,7 +39,7 @@ async function assertAbsent(absPath: string, label: string, token: string | RegE
   expect(hits.length).toBe(0);
 }
 
-describe("corpus hygiene (STND-02 — citation retargeting)", () => {
+describe("corpus hygiene (citation retargeting)", () => {
   test("the 6 self-referential active whys carry no (Invariant #N) parenthetical", async () => {
     const selfRefs: Array<[string, string]> = [
       ["INDX", "INDX-001"],
@@ -79,7 +65,7 @@ describe("corpus hygiene (STND-02 — citation retargeting)", () => {
     await assertAbsent(join(ENGINE_SRC, "check", "removed.ts"), "check/removed.ts", "GOV-01");
   });
 
-  test("check/propagation-teeth.ts header comments name no PROP-01 or GATE-02", async () => {
+  test("check/propagation-teeth.ts header comments name no retired PROP or GATE id", async () => {
     const abs = join(ENGINE_SRC, "check", "propagation-teeth.ts");
     await assertAbsent(abs, "check/propagation-teeth.ts", "PROP-01");
     await assertAbsent(abs, "check/propagation-teeth.ts", "GATE-02");
@@ -101,7 +87,7 @@ describe("corpus hygiene (STND-02 — citation retargeting)", () => {
   });
 });
 
-// The import-count rule is a dev convention (AGENTS.md + the D-08 fence), not
+// The import-count rule is a dev convention (AGENTS.md + an architecture fence), not
 // a requirement. This locks its eviction: the AUTHC domain is gone, no binding
 // @spec tag survives, and no citation site carries the id.
 //
@@ -129,7 +115,7 @@ describe("corpus hygiene (AUTHC-017 eviction)", () => {
     }
   });
 
-  test("authoring/domains.ts carries no binding AUTHC-017 @spec tag and no approve tombstone (the override comment is removed — GUARD-012)", async () => {
+  test("authoring/domains.ts carries no binding AUTHC-017 @spec tag and no approve tombstone", async () => {
     await assertAbsent(DOMAINS_TS, "authoring/domains.ts", BINDING_TAG_RE);
     const src = await Bun.file(DOMAINS_TS).text();
     expect(src).not.toContain("@spec approve");

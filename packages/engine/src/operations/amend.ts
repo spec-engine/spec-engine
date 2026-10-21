@@ -1,26 +1,14 @@
-// packages/engine/src/operations/amend.ts
-//
-// Revise an unshipped requirement's fields in place: same id, no version
-// change. Two gates before any write. Status: only Active and Draft entries
-// amend; a superseded or deprecated entry is history. Bound tags: an Active
-// entry that any code implements or verifies is shipped, and shipped truth is
-// superseded, never edited under the tags that prove it. The bound-tag gate
-// asks the caller for the requirement's tags from a freshly derived index, so
-// a draft amend never touches the index at all.
-
-import { type SpecRequirement, validateAndWrite } from "@spec-engine/shared";
+import { parseDomainText, type SpecRequirement, validateAndWrite } from "@spec-engine/shared";
 import { localToday } from "../authoring/edit";
 import {
   grammarRefusalText,
   grammarWarningText,
   judgeStatementGrammar,
 } from "../authoring/grammar";
-import { displayStatus, domainKeyOf, locateEntry } from "./_envelope";
-import type { FreshTags } from "./_index";
+import { gitShow, newestReleaseTag } from "../base/gitBase";
+import { displayStatus, locateEntry, splitList } from "./_envelope";
 import { fail, type OpFailure, type OpWarning } from "./_result";
 import { unresolvableRefWarnings } from "./mint";
-
-export type { FreshTags } from "./_index";
 
 /** The fields an amend may change. An absent key leaves the field byte-identical. */
 export interface AmendFields {
@@ -28,6 +16,8 @@ export interface AmendFields {
   /** `null` clears the field. */
   why?: string | null | undefined;
   livesIn?: string[] | undefined;
+  /** Replaces the whole list; an empty list clears it. */
+  relates?: string[] | undefined;
   /** Appended as `amends-via` provenance. */
   issue?: string | undefined;
   /** TERM ids only. */
@@ -45,17 +35,42 @@ export interface AmendResult {
   ok: true;
   id: string;
   file: string;
-  /** Sorted names of the fields that changed: requirement, why, lives, term, issue, aliases. */
+  /** Sorted names of the fields that changed: requirement, why, lives, relates, term, issue, aliases. */
   fieldsChanged: string[];
   warnings: OpWarning[];
 }
 
-/** Status gate, then the bound-tag gate for an Active entry. Null when the amend may proceed. */
-async function gateRejection(
-  id: string,
+/**
+ * The newest release tag whose copy of `relFile` holds `id`, or null when the
+ * id is unreleased.
+ * @spec REQ-044
+ * @spec REQ-047
+ */
+function releaseHolding(platformDir: string, relFile: string, id: string): string | null {
+  const tag = newestReleaseTag(platformDir);
+  if (tag === null) return null;
+  const text = gitShow(platformDir, tag, relFile);
+  if (text === null) return null;
+  const parsed = parseDomainText(text, relFile);
+  return parsed.ok && parsed.data.requirements.some((r) => r.id === id) ? tag : null;
+}
+
+const PROMISE_FIELDS = ["statement", "why", "term", "aliases"] as const;
+
+/**
+ * Status gate, then the release gate for an Active entry's promise fields.
+ * Null when the amend may proceed.
+ * @spec REQ-044
+ * @spec REQ-045
+ * @spec REQ-046
+ */
+function gateRejection(
+  platformDir: string,
+  relFile: string,
   req: SpecRequirement,
-  freshTags: FreshTags,
-): Promise<OpFailure | null> {
+  fields: AmendFields,
+): OpFailure | null {
+  const { id } = req;
   const statusLc = req.status.toLowerCase();
   if (statusLc !== "active" && statusLc !== "draft") {
     return fail(
@@ -64,15 +79,14 @@ async function gateRejection(
     );
   }
   if (statusLc !== "active") return null;
-  const bound = (await freshTags(id)).filter(
-    (t) => t.kind === "implements" || t.kind === "verifies",
-  );
-  const site = bound[0];
-  if (site === undefined) return null;
+  if (!PROMISE_FIELDS.some((f) => fields[f] !== undefined)) return null;
+  const tag = releaseHolding(platformDir, relFile, id);
+  if (tag === null) return null;
   return fail(
     "conflict",
-    `${id} is shipped — ${bound.length} code tag(s) bind it (e.g. ${site.file}:${site.line}). ` +
-      "A bound requirement is immutable; supersede it with a successor instead of amending in place.",
+    `${id} is released in ${tag} — its promise is immutable. ` +
+      `Run \`spec supersede ${id}\` to change the statement or why; ` +
+      "pass only --lives or --relates to amend its metadata in place.",
   );
 }
 
@@ -98,6 +112,12 @@ function applyFields(
     fieldsChanged.push("lives");
     refValues.push(...fields.livesIn);
   }
+  // @spec REQ-050
+  // @spec REQ-051
+  if (fields.relates !== undefined) {
+    req.relates = splitList(fields.relates);
+    fieldsChanged.push("relates");
+  }
   // @spec REQ-033
   // @spec REQ-034
   if (fields.term !== undefined) {
@@ -118,27 +138,21 @@ function applyFields(
 }
 
 /**
- * @param freshTags how this surface derives current tags for the bound-tag
- *   gate: the CLI cold-rebuilds a throwaway index, the API re-indexes into
- *   its long-lived handle.
- * @spec REQ-035
+ * @spec REQ-044
+ * @spec REQ-048
  * @spec SCHM-024
  */
-export async function amend(
-  input: AmendInput,
-  freshTags: FreshTags,
-): Promise<AmendResult | OpFailure> {
+export async function amend(input: AmendInput): Promise<AmendResult | OpFailure> {
   const { platformDir, id, fields } = input;
   const located = await locateEntry(platformDir, id);
   if (!located.ok) return located;
-  const { specPath, relFile, domain, req } = located;
+  const { key, specPath, relFile, domain, req } = located;
 
-  const rejection = await gateRejection(id, req, freshTags);
+  const rejection = gateRejection(platformDir, relFile, req, fields);
   if (rejection !== null) return rejection;
 
   const warnings: OpWarning[] = [];
   if (fields.statement !== undefined) {
-    const key = domainKeyOf(id);
     const verdict = await judgeStatementGrammar(platformDir, key, fields.statement);
     if (!verdict.ok) {
       if (verdict.severity === "error") {

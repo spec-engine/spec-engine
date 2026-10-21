@@ -1,8 +1,4 @@
-// packages/webapp/src/pages/propagation.ts
-//
-// `GET /propagation/:id`: the per-member propagation state of one requirement,
-// rendered in the order `/api/propagation/:id` returns it (dependency depth,
-// then name). The page imports only `@spec-engine/shared` types and `hono`.
+// The page imports only `@spec-engine/shared` types and `hono`.
 // @spec PROP-006
 
 import type { PropagationRow } from "@spec-engine/shared";

@@ -1,16 +1,4 @@
-// packages/engine/src/storage/sqlite.drift-view.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec PROP-004
-//
-// Plan 03-02 / Task 1 (RED → GREEN in Task 2): assert the `drift` SQL VIEW
-// behavior against the canonical platform-fixture. CHCK-03 requires DRIFT to
-// live in a single SQL VIEW; CHCK-05 requires that the negative-case
-// (mobile/src/tax.ts → BILLING-007 unchanged since v1, mobile pinned @1) does
-// NOT fire DRIFT. Both invariants are locked here at the SQL layer.
-//
-// Pattern mirrors cold-rebuild.test.ts: mkdtempSync tmp dir, openStorage,
-// runIndex to populate, then read via storage.listDriftRows() and assert.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -33,7 +21,7 @@ afterEach(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 
-describe("drift VIEW behavior (CHCK-03, CHCK-05)", () => {
+describe("drift VIEW behavior", () => {
   test("positive case: mobile/src/billing.ts → BILLING-001 fires DRIFT", async () => {
     const s = openStorage(dbPath);
     try {
@@ -54,7 +42,7 @@ describe("drift VIEW behavior (CHCK-03, CHCK-05)", () => {
     }
   });
 
-  test("CHCK-05 negative case: mobile/src/tax.ts → BILLING-007 does NOT fire", async () => {
+  test("negative case: mobile/src/tax.ts → BILLING-007 does NOT fire", async () => {
     const s = openStorage(dbPath);
     try {
       await runIndex({ platformDir: FIXTURE, storage: s });

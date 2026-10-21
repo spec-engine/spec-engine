@@ -1,8 +1,5 @@
-// packages/engine/src/onboarding/prompt.ts
-//
-// The interactive onboarding prompt every index-building command runs first.
-// It is rendered on stderr so stdout stays machine-parseable, and it passes
-// only `{ repo }` to `spec init`, never the outer command's flags.
+// Rendered on stderr so stdout stays machine-parseable; only `{ repo }` is
+// passed to `spec init`, never the outer command's flags.
 
 import { createInterface } from "node:readline";
 import { runInit } from "../commands/init";

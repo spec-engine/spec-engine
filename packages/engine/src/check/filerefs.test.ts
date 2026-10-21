@@ -1,11 +1,3 @@
-// packages/engine/src/check/filerefs.test.ts
-//
-// The BROKEN_FILE_REF check pass (check/filerefs.ts). An Active or Draft
-// requirement's `livesIn` entries must resolve to files under the platform
-// root; terminal-status entries are exempt, and free field text is never
-// scanned.
-//
-// Verifies:
 // @spec CHCK-026 unit
 // @spec CHCK-027 unit
 // @spec CHCK-028 unit
@@ -84,7 +76,6 @@ describe("BROKEN_FILE_REF", () => {
       livesIn: ["src/gone.ts"],
     });
     const rows = await brokenFileRefDiagnostics(platformDir);
-    // Only the Draft entry is judged.
     expect(rows.map((r) => r.req_id)).toEqual([draft.id]);
   });
 

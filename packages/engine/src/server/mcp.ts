@@ -1,12 +1,6 @@
-// packages/engine/src/server/mcp.ts
-//
-// The MCP front-end: the engine's operations as Model Context Protocol tools
-// so an agent harness calls them natively instead of shelling out. Every tool
-// call reindexes fresh, because the server is long-lived and the agent edits
-// specs and tags between calls; at this scale a rebuild is milliseconds and a
-// stale answer is a wrong answer. Results are the same JSON the CLI's --json
-// modes emit. Domain errors are MCP tool errors, never crashes. stdout is the
-// protocol channel; all chrome goes to stderr.
+// Every tool call reindexes fresh: the server is long-lived and the agent
+// edits specs and tags between calls. stdout is the protocol channel; all
+// chrome goes to stderr.
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { DEFAULT_QUERY_LIMIT, LIMIT_MAX } from "@spec-engine/shared";
@@ -224,6 +218,12 @@ export function buildMcpServer(platformDir: string): McpServer {
           .array(z.string())
           .optional()
           .describe("Successor's livesIn paths (default: copied from the predecessor)"),
+        relates: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Successor's related ids, each comma-split; an empty list clears (default: copied from the predecessor)",
+          ),
         issue: z
           .string()
           .optional()
@@ -232,12 +232,12 @@ export function buildMcpServer(platformDir: string): McpServer {
           ),
       },
     },
-    async ({ req_id, statement, why, lives_in, issue }) => {
+    async ({ req_id, statement, why, lives_in, relates, issue }) => {
       if (!ID_RE.test(req_id)) {
         return errorResult(`req_id must be a requirement id (KEY-NNN); got ${req_id}`);
       }
       const r = await supersede(
-        { platformDir, id: req_id, statement, why, livesIn: lives_in, issue },
+        { platformDir, id: req_id, statement, why, livesIn: lives_in, relates, issue },
         coldFreshTags(platformDir),
       );
       if (!r.ok) return errorResult(r.detail);

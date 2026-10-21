@@ -1,8 +1,3 @@
-// packages/engine/src/operations/accept.ts
-//
-// Promote a Draft requirement to Active: same id, same fields, no version
-// change. Rewording a draft is `amend`; ending one is `deprecate`.
-
 import { validateAndWrite } from "@spec-engine/shared";
 import { localToday } from "../authoring/edit";
 import { displayStatus, locateEntry } from "./_envelope";

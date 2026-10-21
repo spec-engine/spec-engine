@@ -1,54 +1,26 @@
-// packages/webapp/test/import-fence.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec SCHM-012
 //
-// Plan 05-04 / Task 2 — defense-in-depth grep alongside Biome's
-// `noRestrictedImports` rule on `packages/webapp/biome.json`. Locks
-// D-09 / WORK-04 / Invariant #5: webapp source MUST NOT import
-// bun:sqlite, node:fs, fs, bun, node:path, or `@spec-engine/spec-engine` (any
-// subpath). If a future change disables the Biome rule, deletes the
-// override, or sneaks an import past it via a non-AST shape this lint
-// doesn't cover, this grep test fails before the build merges.
-//
-// Defense-in-depth pattern from 05-RESEARCH § Import-Guard Mechanics
-// (lines 736-744). Co-located tests (`src/**/*.test.ts`) and the helpers under
-// `src/testing/` are skipped: they may import the engine for harness use, and the
-// biome.json scopes OUT of the noRestrictedImports rule (override applies
-// to `src/**/*.ts` only); tests can import @spec-engine/spec-engine for harness use.
+// A second fence behind Biome's `noRestrictedImports` in
+// `packages/webapp/biome.json`: it still fails if the rule is disabled, the
+// override deleted, or an import slips past it in a shape the lint does not
+// parse. Co-located tests and `src/testing/` are skipped: they import the
+// engine for harness use, and the Biome override does not cover them either.
 
 import { describe, expect, test } from "bun:test";
 import { join, resolve } from "node:path";
 
 const WEBAPP_ROOT = resolve(import.meta.dir, "..");
 
-// Forbidden import targets enforced by the regex below:
-//   bun:sqlite, node:fs, fs, bun, node:path, @spec-engine/spec-engine (any subpath).
-// Allowed: @spec-engine/shared (types) + hono (runtime).
-
-/** Single combined regex: matches `from "x"` or `from 'x'` where x is any
- *  forbidden module path, OR any `@spec-engine/spec-engine` subpath. Capture group 1
- *  gives the offending module for failure messages.
- *
- *  Per CR-02: the `node:<mod>` alternatives MUST allow an optional `/...`
- *  subpath so that `node:fs/promises`, `node:path/posix`, etc., are caught
- *  alongside the bare module specifier. Adding `node:os`, `node:crypto`,
- *  `node:child_process`, `node:net`, and `node:http` to the deny list to
- *  cover the rest of the hermetic-webapp surface. */
+/** Each `node:<mod>` alternative must allow a `/...` subpath, or
+ *  `node:fs/promises` and `node:path/posix` slip through. */
 const FORBIDDEN_RE =
   /from\s+["'](bun:sqlite|node:fs(?:\/[^"']*)?|fs(?:\/[^"']*)?|bun|node:path(?:\/[^"']*)?|node:os(?:\/[^"']*)?|node:crypto(?:\/[^"']*)?|node:child_process(?:\/[^"']*)?|node:net(?:\/[^"']*)?|node:http(?:\/[^"']*)?|@spec-engine\/spec-engine(?:\/[^"']*)?|@spec-engine\/tracker(?:\/[^"']*)?)["']/;
 
-/** Same shape for dynamic `import("…")` calls (defense against an
- *  AST-level bypass of Biome's static-import detection).
- *
- *  Per Phase 16 / D-09 tightening (PWEB-02 / T-16-D09): `@spec-engine/tracker`
- *  (+ subpaths) is now FORBIDDEN in the webapp — tracker resolution is
- *  ENGINE-SIDE behind `/api/provenance?resolve=1`; the webapp renders the
- *  decorated TEXT only and must never resolve issues itself. */
+/** Biome's static-import rule does not see dynamic `import("…")` calls. */
 const DYNAMIC_IMPORT_RE =
   /import\s*\(\s*["'](bun:sqlite|node:fs(?:\/[^"']*)?|fs(?:\/[^"']*)?|bun|node:path(?:\/[^"']*)?|node:os(?:\/[^"']*)?|node:crypto(?:\/[^"']*)?|node:child_process(?:\/[^"']*)?|node:net(?:\/[^"']*)?|node:http(?:\/[^"']*)?|@spec-engine\/spec-engine(?:\/[^"']*)?|@spec-engine\/tracker(?:\/[^"']*)?)["']\s*\)/;
 
-describe("webapp import fence (D-09 / WORK-04 / Invariant #5)", () => {
+describe("webapp import fence", () => {
   test("packages/webapp/src/**/*.ts contains no forbidden imports", async () => {
     const glob = new Bun.Glob("src/**/*.ts");
     const offenders: Array<{ file: string; line: number; match: string }> = [];
@@ -68,23 +40,18 @@ describe("webapp import fence (D-09 / WORK-04 / Invariant #5)", () => {
     if (offenders.length > 0) {
       const detail = offenders.map((o) => `  ${o.file}:${o.line} — ${o.match}`).join("\n");
       throw new Error(
-        `Webapp source imports a forbidden module (D-09 / WORK-04 / Invariant #5):\n${detail}\n` +
+        `Webapp source imports a forbidden module:\n${detail}\n` +
           "Allowed: @spec-engine/shared (types) + hono (runtime). Move runtime/file-access " +
           "code to the engine package and consume it via /api/* over Hono app.request.",
       );
     }
 
-    // Positive sanity: ensure the scan actually found at least one file
-    // (otherwise the test could silently pass on an empty src/).
     expect(offenders.length).toBe(0);
   });
 
-  test("1.4 self-test: the fence regexes actually match the current package names", () => {
-    // A stale regex (e.g. the pre-rename `@spec/engine`) passes VACUOUSLY —
-    // it matches nothing, so the fence silently stops guarding. Assert the
-    // regexes trip on synthetic offending lines built from the CURRENT package
-    // names, so a future package rename breaks this test loudly instead of
-    // neutering the fence.
+  test("the fence regexes match the current package names", () => {
+    // A regex naming a stale package matches nothing and passes vacuously, so
+    // a package rename must break this test instead of neutering the fence.
     const offendingStatic = [
       'import { runIndex } from "@spec-engine/spec-engine";',
       "import { openStorage } from '@spec-engine/spec-engine/storage';",
@@ -104,7 +71,6 @@ describe("webapp import fence (D-09 / WORK-04 / Invariant #5)", () => {
       expect(line).toMatch(DYNAMIC_IMPORT_RE);
     }
 
-    // The two ALLOWED imports must NOT trip either regex.
     for (const allowed of [
       'import { validateAndWrite } from "@spec-engine/shared";',
       'import { html } from "hono/html";',
@@ -114,10 +80,8 @@ describe("webapp import fence (D-09 / WORK-04 / Invariant #5)", () => {
     }
   });
 
-  test("scan reaches the SSR page modules + server.ts (incl. provenance.ts)", async () => {
-    // Defends against a tooling regression where the Glob silently
-    // matches nothing — the grep test above would still pass on an empty
-    // set. Assert the expected files are actually scanned.
+  test("scan reaches the SSR page modules and server.ts", async () => {
+    // A glob that silently matches nothing would let the fence above pass.
     const glob = new Bun.Glob("src/**/*.ts");
     const found = new Set<string>();
     for await (const rel of glob.scan({ cwd: WEBAPP_ROOT })) {

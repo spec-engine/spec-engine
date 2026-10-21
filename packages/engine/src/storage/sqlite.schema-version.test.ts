@@ -16,22 +16,16 @@ afterEach(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 
-test("schema-version mismatch silently rebuilds the DB (SCHM-09, D-12)", () => {
+test("schema-version mismatch silently rebuilds the DB", () => {
   const path = join(tmp, "x.sqlite");
-  // 1) Open fresh, get a working DB at the current SCHEMA_VERSION.
   openStorage(path).close();
-  // 2) Poison the on-disk schema version. RED-14: route through the
-  //    poisonSchemaVersion helper (the same one the __schema-mismatch-smoke
-  //    CI command uses) instead of a duplicate hand-rolled UPDATE — the
-  //    helper is the contract under test.
+  // The same helper the __schema-mismatch-smoke CI command uses, not a
+  // hand-rolled UPDATE: the helper is part of the contract under test.
   poisonSchemaVersion(path, 999);
-  // 3) Re-open. The engine must silently rebuild.
   openStorage(path).close();
-  // 4) Confirm the on-disk version is now back to current SCHEMA_VERSION.
   const db2 = new Database(path);
   const row = db2.query("SELECT version FROM _schema_version").get() as { version: number };
   expect(row.version).toBe(SCHEMA_VERSION);
-  // 5) Confirm a known table from DDL is present after the rebuild.
   const repoTbl = db2
     .query("SELECT name FROM sqlite_master WHERE name='repos' AND type='table'")
     .get();
@@ -39,7 +33,7 @@ test("schema-version mismatch silently rebuilds the DB (SCHM-09, D-12)", () => {
   db2.close();
 });
 
-test("rebuild logs a single stderr note (D-12 stderr contract)", () => {
+test("rebuild logs a stderr note", () => {
   const path = join(tmp, "y.sqlite");
   openStorage(path).close();
   // Poison via a subprocess to capture stderr cleanly.

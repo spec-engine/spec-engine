@@ -1,20 +1,4 @@
-// packages/engine/src/commands/serve.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec SERV-019
-//
-// Three test families:
-//   1. SOURCE-GREP tests over `packages/engine/src/commands/serve.ts`.
-//   2. REAL-SERVE in-process smoke: `composeServeApp(storage)` returns a
-//      Hono that, bound on Bun.serve port 0 / 127.0.0.1, answers
-//      `/api/coverage` with 200 (proves engine + webapp are composed).
-//   3. CITTY ARGV validation: invoking the citty `run` handler with bad
-//      --port and bad --out exits 2.
-//
-// The citty harness mirrors the ExitError pattern from
-// cli-query-unit.test.ts so the test can assert exit codes without
-// terminating the runner. Per-test cleanup uses `rmSync` against the
-// per-test clone — never against `fixtures/platform-fixture/` (WR-06).
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
@@ -31,8 +15,6 @@ import { composeServeApp, resolveBind, serveCommand } from "./serve";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "platform-fixture");
 const SERVE_SRC = resolve(import.meta.dir, "serve.ts");
-
-// ---------- ExitError harness (mirrors cli-query-unit.test.ts) ----------
 
 class ExitError extends Error {
   constructor(public code: number) {
@@ -85,9 +67,7 @@ async function runServe(args: Record<string, unknown>): Promise<number> {
   }
 }
 
-// ---------- 1. Source-grep tests (T-5-05-01 defense-in-depth) ----------
-
-describe("serve.ts source invariants (T-5-05-01 single-address bind)", () => {
+describe("serve.ts source invariants (single-address bind)", () => {
   test("the probe binds hardcoded loopback; the real serve binds only the validated host", async () => {
     const src = await Bun.file(SERVE_SRC).text();
     const hostnames = [...src.matchAll(/hostname:\s*([^,\n]+)/g)].map((m) => m[1]);
@@ -102,8 +82,6 @@ describe("serve.ts source invariants (T-5-05-01 single-address bind)", () => {
   });
 });
 
-// ---------- 2. composeServeApp real-serve smoke ----------
-
 // @spec SERV-011
 describe("composeServeApp (real serve mode composition)", () => {
   test("composeServeApp(storage) returns a Hono that answers /api/coverage on 127.0.0.1", async () => {
@@ -111,10 +89,9 @@ describe("composeServeApp (real serve mode composition)", () => {
     const storage = openStorage(dbPath);
     await runIndex({ platformDir: clone, storage });
 
-    // Phase 16 (PWEB-01): pass platformDir so the /api/provenance?resolve=1
-    // seam writes its tracker sidecar under the clone, not the runner's cwd.
+    // platformDir keeps the /api/provenance?resolve=1 tracker sidecar under
+    // the clone, not the runner's cwd.
     const app = composeServeApp(storage, clone);
-    // Bind ephemeral port 0 on loopback; assert the URL is 127.0.0.1:N.
     const server = Bun.serve({ port: 0, hostname: "127.0.0.1", fetch: app.fetch });
     try {
       expect(server.port).toBeGreaterThan(0);
@@ -122,7 +99,6 @@ describe("composeServeApp (real serve mode composition)", () => {
       expect(res.status).toBe(200);
       const rows = await res.json();
       expect(Array.isArray(rows)).toBe(true);
-      // Smoke: the page that the SSR side renders for / also works.
       const indexRes = await fetch(`http://127.0.0.1:${server.port}/`);
       expect(indexRes.status).toBe(200);
       const indexBody = await indexRes.text();
@@ -172,26 +148,24 @@ describe("platform identity", () => {
   });
 });
 
-// ---------- 3. Citty argv validation (T-5-05-02, T-5-05-03) ----------
-
 describe("serveCommand argv validation", () => {
-  test("--port abc → stderr + exit 2 (T-5-05-03 non-integer)", async () => {
+  test("--port abc → stderr + exit 2 (non-integer)", async () => {
     const code = await runServe({ probe: false, port: "abc", platformDir: clone });
     expect(code).toBe(2);
     expect(errs.join("\n")).toContain("--port");
   });
 
-  test("--port -1 → exit 2 (T-5-05-03 negative)", async () => {
+  test("--port -1 → exit 2 (negative)", async () => {
     const code = await runServe({ probe: false, port: "-1", platformDir: clone });
     expect(code).toBe(2);
   });
 
-  test("--port 65536 → exit 2 (T-5-05-03 above range)", async () => {
+  test("--port 65536 → exit 2 (above range)", async () => {
     const code = await runServe({ probe: false, port: "65536", platformDir: clone });
     expect(code).toBe(2);
   });
 
-  test("--out outside platformDir → exit 2 (T-5-05-02 path containment)", async () => {
+  test("--out outside platformDir → exit 2 (path containment)", async () => {
     const code = await runServe({
       probe: false,
       port: "0",
@@ -202,8 +176,6 @@ describe("serveCommand argv validation", () => {
     expect(errs.join("\n")).toContain("--out");
   });
 });
-
-// ---------- RED-11: pre-index / pre-spec guidance ----------
 
 describe("serveCommand --host / --token", () => {
   test.each(["0.0.0.0", "::", "spec.example", "8.8.8.8"])("--host %s → exit 2", async (host) => {
@@ -257,16 +229,14 @@ describe("serveCommand --host / --token", () => {
   });
 });
 
-describe("spec serve — pre-index guidance (RED-11)", () => {
+describe("spec serve — pre-index guidance", () => {
   test("non-platform dir: friendly message + exit 2 (not 'failed to start'), no .spec-engine artifact", async () => {
     const bare = mkdtempSync(join(tmpdir(), "spec-serve-red11-"));
     try {
       const code = await runServe({ platformDir: bare, port: "0" });
       expect(code).toBe(2);
       expect(errs.some((m) => m.includes("is not a Spec Engine platform yet"))).toBe(true);
-      // Directs the user toward their first completed spec.
       expect(errs.some((m) => m.includes("spec domain new"))).toBe(true);
-      // The old path wrapped the error in a generic exit-1 message.
       expect(errs.some((m) => m.includes("failed to start"))).toBe(false);
       // Guard runs BEFORE mkdirSync/openStorage: nothing written.
       expect(existsSync(join(bare, ".spec-engine"))).toBe(false);
@@ -276,13 +246,9 @@ describe("spec serve — pre-index guidance (RED-11)", () => {
   });
 });
 
-// ---------- RED-14 dead-end audit ----------
-
-describe("spec serve — probe branch + bind-failure branch (RED-14)", () => {
+describe("spec serve — probe branch + bind-failure branch", () => {
   // @spec SERV-012 unit
-  test("--probe binds loopback:0, self-fetches the placeholder, exits 0 (D-14)", async () => {
-    // Until now the probe branch was only exercised by CI smoke 5 against
-    // the compiled binary — never by `bun test`.
+  test("--probe binds loopback:0, self-fetches the placeholder, exits 0", async () => {
     const code = await runServe({ probe: true });
     expect(code).toBe(0);
     expect(logs.join("\n")).toContain("serve --probe OK");
@@ -301,7 +267,7 @@ describe("spec serve — probe branch + bind-failure branch (RED-14)", () => {
     }
   });
 
-  test("--probe FAILED when / answers 200 without the placeholder string → exit 1 (D-14)", async () => {
+  test("--probe FAILED when / answers 200 without the placeholder string → exit 1", async () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = (async () =>
       new Response("<html>wrong body</html>", { status: 200 })) as unknown as typeof fetch;
@@ -329,10 +295,8 @@ describe("spec serve — probe branch + bind-failure branch (RED-14)", () => {
   });
 
   test("Bun.serve bind failure (port already taken) → storage closed, exit 1 'failed to start'", async () => {
-    // Occupy a concrete loopback port so the real-serve branch's Bun.serve
-    // throws EADDRINUSE inside the WR-01 try — the catch must close storage
-    // and exit 1 (NOT the exit-2 crash convention: bind failure is an
-    // environment problem, not a command crash).
+    // A bind failure is an environment problem, so exit 1, not the exit-2
+    // crash convention.
     const blocker = Bun.serve({
       port: 0,
       hostname: "127.0.0.1",

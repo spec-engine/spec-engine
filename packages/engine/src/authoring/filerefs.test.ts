@@ -1,20 +1,4 @@
-// packages/engine/src/authoring/filerefs.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec REQ-031 unit
-//
-// Quick task 260605-tqz / Task 1 (D-03): @file-ref substrate.
-//
-// Q4 (Phase 18): the index-time raw-walk field extractor and its
-// broken-file-ref emission are RETIRED with the Markdown parse path. Only the
-// authoring-time surface survives, so this file covers exactly two layers:
-//   1. extractRefsFromText — the @<relative/path> grammar over one plain
-//      string: at-least-one-slash rule excludes emails, `spec-engine@1`
-//      version pins, and `@spec` tags; trailing sentence punctuation is
-//      stripped; multiple refs per line all extracted.
-//   2. resolveFileRef — containment FIRST (AUTHC-006 posture): a traversal
-//      ref resolving outside the platform root is broken EVEN IF the target
-//      file exists; then existsSync.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -33,11 +17,7 @@ afterEach(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 
-// ---------------------------------------------------------------------------
-// 1. extractRefsFromText — grammar (AUTHC-023)
-// ---------------------------------------------------------------------------
-
-describe("extractRefsFromText — @-ref grammar (AUTHC-023)", () => {
+describe("extractRefsFromText — @-ref grammar", () => {
   test("plain ref in prose extracts the relative path", () => {
     expect(extractRefsFromText("see @api/src/renew.ts for the seam")).toEqual(["api/src/renew.ts"]);
   });
@@ -65,10 +45,6 @@ describe("extractRefsFromText — @-ref grammar (AUTHC-023)", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// 2. resolveFileRef — containment FIRST, then existence
-// ---------------------------------------------------------------------------
-
 describe("resolveFileRef — platform-root containment + existence", () => {
   test("existing file under platformDir resolves", () => {
     const platform = join(tmp, "platform");
@@ -86,7 +62,6 @@ describe("resolveFileRef — platform-root containment + existence", () => {
   test("traversal ref outside the platform root is broken EVEN IF the file exists", () => {
     const platform = join(tmp, "platform");
     mkdirSync(platform, { recursive: true });
-    // The escape target EXISTS — containment must dominate existence.
     writeFileSync(join(tmp, "escape.ts"), "// outside\n");
     expect(resolveFileRef(platform, "../escape.ts")).toBe(false);
   });

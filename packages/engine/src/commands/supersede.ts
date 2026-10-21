@@ -1,19 +1,11 @@
-// packages/engine/src/commands/supersede.ts
-//
-// `spec supersede <KEY-NNN>`: flip a shipped requirement to superseded, mint
-// its successor, and print the retag worklist. The command resolves the
-// successor text (a flag, or a prompt on a TTY) and renders; every guard and
-// the write live in operations/supersede.ts.
-
 import { defineCommand, type ParsedArgs } from "citty";
 import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
-import { coldFreshTags } from "../operations/_index";
 import { type SupersedeInput, supersede, supersedeTarget } from "../operations/supersede";
 import { ID_RE } from "../parser/grammar";
 import { renderReqTags } from "../resolve/format";
 import { listFlag, platformDirArg, resolvePlatformDir } from "./_args";
-import { exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
+import { cliFreshTags, exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
 import { askLine } from "./req";
 
 /**
@@ -72,6 +64,8 @@ function inputFromArgs(
   if (typeof args.why === "string") input.why = args.why;
   const livesIn = listFlag(rawArgs, "lives", args.lives);
   if (livesIn !== undefined) input.livesIn = livesIn;
+  const relates = listFlag(rawArgs, "relates", args.relates);
+  if (relates !== undefined) input.relates = relates;
   if (typeof args.term === "string") input.term = args.term;
   if (typeof args.aliases === "string") input.aliases = splitAliases(args.aliases);
   const issue = (args.issue ?? "").trim();
@@ -99,6 +93,11 @@ const supersedeArgs = {
     type: "string",
     description:
       "Successor's Lives in: repeat or comma-separate; empty clears (default: copied from the old entry)",
+  },
+  relates: {
+    type: "string",
+    description:
+      "Successor's related ids: repeat or comma-separate; empty clears (default: copied from the old entry)",
   },
   term: {
     type: "string",
@@ -150,7 +149,7 @@ export const supersedeCommand = defineCommand({
     const statement = await resolveSuccessorText(args, platformDir, id);
     const result = await supersede(
       inputFromArgs(args, rawArgs, platformDir, id, statement),
-      coldFreshTags(platformDir),
+      cliFreshTags(platformDir),
     );
     if (!result.ok) exitOnFailure("spec supersede", result);
     printWarnings("spec supersede", result.warnings);

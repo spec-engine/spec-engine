@@ -1,11 +1,4 @@
-// packages/engine/src/operations/init.ts
-//
-// Member onboarding. `resolveMemberPin` places the target against platform-map
-// (a declared member, an undeclared repository in the platform folder, a
-// workspace package, or a loose directory), refuses a platform dir or a
-// spec-engine/ tree, and decides where the pin comes from. `initMember` then
-// declares an undeclared repository through platform-map and writes the pin.
-// Every refusal is worded without a command prefix; the surface adds its own.
+// Refusals are worded without a command prefix; the surface adds its own.
 
 import { existsSync, realpathSync, statSync } from "node:fs";
 import { basename, join, relative, resolve, sep } from "node:path";

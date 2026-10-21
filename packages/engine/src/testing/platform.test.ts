@@ -1,13 +1,4 @@
-// packages/engine/src/testing/platform.test.ts
-//
-// The platform builder every test authors its fixture through. It writes each
-// SPEC.json by calling the operations, so the file on disk is what a user's
-// `spec` command would have produced; it serializes no envelope of its own,
-// and it refuses to write a spec file by hand.
-//
-// Verifies:
 // @spec SCHM-026 unit
-
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";

@@ -1,10 +1,3 @@
-// packages/engine/src/commands/gate.ts
-//
-// `spec gate <repo> <reqId> [platformDir]`: the approval gate. The command
-// validates the positionals, cold-resets the index, and renders the outcome;
-// the decision lives in operations/gate.ts. Exit 0 PASS, 1 any gate failure,
-// 2 bad args, unknown repo, path-containment violation, or a crash.
-//
 // Bun's `process.exit` skips pending `finally` blocks, so every exit here
 // happens after `withIndex` has closed the storage handle.
 
@@ -18,7 +11,7 @@ import { maybePromptForOnboarding } from "../onboarding/prompt";
 import { withIndex } from "../operations/_index";
 import { type GateResult, gate } from "../operations/gate";
 import { platformDirArg, resolvePlatformDir } from "./_args";
-import { assertContainedPath } from "./_shared";
+import { assertContainedPath, handleInvalidDomainFiles } from "./_shared";
 
 /** A closed read end on a pipe (`spec gate … | head -1`) is the consumer's choice, not a crash. */
 function isEpipe(e: unknown): boolean {
@@ -120,6 +113,7 @@ export const gateCommand = defineCommand({
         if (!args.json) writeStdoutTolerant(`build_id: ${gated.buildId}`);
       }
     } catch (e) {
+      handleInvalidDomainFiles(e, Boolean(args.json));
       const msg = e instanceof Error ? e.message : String(e);
       console.error(`spec gate: crashed: ${msg}`);
       process.exit(EXIT.USAGE);

@@ -1,20 +1,9 @@
-// packages/engine/src/cli.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec INIT-035
 // @spec REQ-019
-//
-// citty entrypoint for the compiled `spec` binary (WORK-07 / CI-01).
-// `bun build --compile --target=bun-darwin-arm64 packages/engine/src/cli.ts
-//  --outfile=dist/spec` reads from this file. Lazy-import every subcommand
-// so cold start stays tight under --compile.
+// Every subcommand is lazy-imported so the compiled binary starts fast.
 
 import { defineCommand, runMain, showUsage } from "citty";
 import packageJson from "../package.json" with { type: "json" };
-
-// Plan 06-03 removed the last `notImplemented` stub (gate). All Phase 1
-// subcommand slots are now real implementations; the helper is gone with
-// its final caller.
 
 const main = defineCommand({
   meta: {
@@ -23,8 +12,6 @@ const main = defineCommand({
     description: "Cross-repo spec engine",
   },
   subCommands: {
-    // Future-phase stubs declared up front so `spec --help` documents the
-    // full CLI surface from Phase 1 (Open Question Q3 auto-mode resolution).
     index: () => import("./commands/index").then((m) => m.indexCommand),
     init: () => import("./commands/init").then((m) => m.initCommand),
     check: () => import("./commands/check").then((m) => m.checkCommand),
@@ -48,8 +35,6 @@ const main = defineCommand({
     resolve: () => import("./commands/resolve").then((m) => m.resolveCommand),
     gate: () => import("./commands/gate").then((m) => m.gateCommand),
     guard: () => import("./commands/guard").then((m) => m.guardCommand),
-    // Phase 1's only real subcommand surface: serve --probe (D-14) and
-    // the two hidden CI smokes (D-15).
     serve: () => import("./commands/serve").then((m) => m.serveCommand),
     docs: () => import("./commands/docs").then((m) => m.docsCommand),
     "__schema-smoke": () => import("./commands/__smoke").then((m) => m.schemaSmokeCommand),
@@ -57,10 +42,8 @@ const main = defineCommand({
       import("./commands/__smoke").then((m) => m.schemaMismatchSmokeCommand),
   },
   async run({ rawArgs }) {
-    // RED-10: bare `spec` prints the full usage block (same renderer as
-    // `--help`) and exits 0. The rawArgs guard is mandatory: citty invokes
-    // this root run() even AFTER a subcommand dispatch, so an unguarded
-    // showUsage would append the help block to every subcommand's output.
+    // citty runs this root run() after a subcommand dispatch too; without the
+    // empty-args guard every subcommand would print the help block.
     if (rawArgs.length === 0) {
       await showUsage(main);
     }

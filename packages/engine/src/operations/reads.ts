@@ -1,10 +1,5 @@
-// packages/engine/src/operations/reads.ts
-//
-// The read operations. Each takes an open Storage handle (the surface owns the
-// handle: the CLI and MCP open one per call through withIndex, the HTTP API
-// keeps one for its lifetime) and returns plain data. Input shape validation
-// belongs to the surface that parsed the input; an operation only fails for
-// reasons the engine determines.
+// Input shape validation belongs to the surface that parsed the input; an
+// operation only fails for reasons the engine determines.
 
 import { buildCoverageReport, type FtsHit, type Storage } from "@spec-engine/shared";
 import type { ReqTagRow } from "../resolve/format";

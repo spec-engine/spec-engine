@@ -1,18 +1,3 @@
-// packages/engine/src/commands/serve.feature-flags.test.ts
-//
-// The shared feature-flag system (shared/flags.ts, D4a decided 2026-07-30).
-// Every coming-soon feature sits behind one flag map; all default OFF. The
-// rule with teeth: off means the ROUTES are off, not just the nav link —
-// before this system the Editor was "coming soon" in the nav while its write
-// endpoints were live.
-//
-//   - SPEC_FLAGS is the local override (comma-separated keys; unknown keys
-//     ignored).
-//   - Off: nav shows "coming soon", the page serves the coming-soon document,
-//     write endpoints answer 404 with a message naming the flag.
-//   - On: nav links, page serves, endpoints work.
-//
-// Verifies:
 // @spec SERV-006 integration
 // @spec SERV-007 integration
 

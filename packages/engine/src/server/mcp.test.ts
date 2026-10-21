@@ -1,17 +1,3 @@
-// packages/engine/src/server/mcp.test.ts
-//
-// L4 (lifecycle pass) — the MCP front-end. buildMcpServer exposes the
-// engine's read surface as MCP tools over the SAME storage seam the CLI
-// and webapp use (one engine, three thin front-ends). Tested in-process
-// via InMemoryTransport.createLinkedPair() + Client — no stdio spawn.
-//
-// Correctness contract: every tool call reindexes FRESH (rm + rebuild)
-// before reading — an MCP server is long-lived and the agent on the other
-// end edits specs and tags between calls; a warm index would serve stale
-// truth. Locked by the "sees an edit made after the previous call" test.
-//
-// Tag lines composed via src/testing/specTag.ts (dogfood rule).
-
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
@@ -26,7 +12,7 @@ let billing: DomainHandle;
 let client: Client;
 let cleanup: (() => Promise<void>) | null = null;
 
-// A distinctive scope so the AUTHOR-003 charter-injection prompt test can
+// A distinctive scope so the charter-injection prompt test can
 // assert the exact substring the prompt template injects for domain=BILLING.
 const BILLING_SCOPE = "billing lifecycle: renewals, refunds, and invoice pricing";
 
@@ -65,7 +51,6 @@ afterEach(async () => {
   fx.remove();
 });
 
-/** Call a tool and parse its single text content block as JSON. */
 async function call(name: string, args: Record<string, unknown> = {}): Promise<unknown> {
   const res = (await client.callTool({ name, arguments: args })) as {
     isError?: boolean;
@@ -76,7 +61,7 @@ async function call(name: string, args: Record<string, unknown> = {}): Promise<u
   return JSON.parse(res.content[0]?.text ?? "null");
 }
 
-describe("spec mcp — tool surface (L4)", () => {
+describe("spec mcp — tool surface", () => {
   test("reports the published package version as its server version", () => {
     expect(client.getServerVersion()?.version).toBe(packageJson.version);
   });
@@ -139,8 +124,6 @@ describe("spec mcp — tool surface (L4)", () => {
   });
 
   test("spec_propagation classifies member repos for a superseded req", async () => {
-    // Supersede BILLING-001 — then the api repo (still tagged BILLING-001)
-    // classifies ON_PREDECESSOR.
     const { newId } = await billing.supersede("BILLING-001", {
       statement: "successor",
       why: "w",
@@ -184,20 +167,9 @@ describe("spec mcp — tool surface (L4)", () => {
   });
 });
 
-// ── Wave 0 RED bar: the author_requirements MCP prompt (AUTHOR-003) ──────────
-// These are the VERIFYING tests for AUTHOR-003, minted in Wave 2 (its verifying
-// `@spec` tags — AUTHOR-003 unit — are added atomically at that mint; none is
-// written here, a tag before its mint is a DANGLING_TAG that fails
-// `spec check . --ci`). Authored RED-first: no `author_requirements` prompt is
-// registered on the McpServer yet, so `prompts/list` omits it and `prompts/get`
-// rejects it — each assertion fails as a clean protocol/content failure. Wave 2
-// registers the prompt (a static template, engine stays LLM-free) and greens
-// them. Prompts are NOT tools — the "lists the twelve tools" assertion above
-// is deliberately left untouched.
 // @spec AUTHOR-008 unit
 // @spec AUTHOR-009 unit
-describe("spec mcp — author_requirements prompt (AUTHOR-003)", () => {
-  /** Read the single text message body of a prompts/get result. */
+describe("spec mcp — author_requirements prompt", () => {
   function promptText(res: { messages: Array<{ content: unknown }> }): string {
     return (res.messages[0]?.content as { type: "text"; text: string }).text;
   }
@@ -215,7 +187,6 @@ describe("spec mcp — author_requirements prompt (AUTHOR-003)", () => {
       arguments: { brief: "let users export invoices as PDF" },
     });
     const text = promptText(res);
-    // The brief is echoed verbatim inside the static template.
     expect(text).toContain("let users export invoices as PDF");
     // A stable playbook-body token.
     expect(text).toContain("One requirement per behavior");
@@ -235,7 +206,7 @@ describe("spec mcp — author_requirements prompt (AUTHOR-003)", () => {
   });
 
   test("prompts/get path-containment: a traversal-laden domain injects no charter", async () => {
-    // CR-01: a `../`-laden domain arg must never escape platformDir into an
+    // A `../`-laden domain arg must never escape platformDir into an
     // arbitrary SPEC.json — the callback normalizes THEN membership-checks
     // before any domainScope read, so an out-of-tree domain degrades to a
     // null charter (the "check placement" branch), never a reflected file.

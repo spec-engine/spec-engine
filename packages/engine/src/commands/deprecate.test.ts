@@ -1,11 +1,3 @@
-// packages/engine/src/commands/deprecate.test.ts
-//
-// `spec deprecate <KEY-NNN> --reason "..."` (D1) — the end-of-life command.
-// A requirement is never deleted; this flips it to deprecated and records
-// WHY on the entry itself (a comment was the wrong record: it lives in the
-// code being deleted). Emits the cleanup worklist of tags still on the id.
-//
-// Verifies:
 // @spec REQ-021 unit
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";

@@ -1,17 +1,3 @@
-// packages/engine/src/commands/guard.test.ts
-//
-// End-to-end coverage for `spec guard` (commands/guard.ts) against a REAL temp
-// git repo — the steamroll scenario the build brief asks for: an Active
-// requirement committed with its @spec tags and tests, then gutted in the
-// working tree, is caught by diffing HEAD's derivation against the worktree.
-//
-// The repo is a single-repo self-member (spec-engine/ + a manifest + code in
-// src/ + test/ subdirs, no sibling members — mirrors single-repo-fixture) so
-// its own code tags are indexed. The command is invoked IN PROCESS with
-// process.exit stubbed to throw (the cli-check-unit.test.ts pattern), so the
-// runner can assert on the exit code.
-//
-// Verifies:
 // @spec GUARD-013
 // @spec GUARD-023
 // @spec GUARD-015
@@ -33,7 +19,7 @@ import { guardCommand } from "./guard";
 
 // Build tag/approve tokens at RUNTIME so no literal `@spec <ID>` appears in this
 // test's source — the self-member scanner would otherwise index these fixture
-// strings as real (dangling) tags of THIS repo (see fixtures/specTag.ts).
+// strings as real (dangling) tags of THIS repo (see src/testing/specTag.ts).
 const tag = (id: string, level?: string): string =>
   `${SPEC_TOKEN} ${id}${level ? ` ${level}` : ""}`;
 const approve = (id: string, reason: string): string => `${SPEC_TOKEN} approve ${id} ${reason}`;
@@ -74,8 +60,6 @@ const TEST_LEGAL = `it("terms", () => {}); // ${tag("LEGAL-001", "unit")}\n`;
 
 let repo: string;
 
-/** Author the baseline tree: BILLING-001/002 + LEGAL-001, all Active, each
- *  with an implementing and a verifying tag. No git. */
 async function writeBaseline(root: string): Promise<void> {
   const fx = TestPlatform.at(root);
   const billing = await fx.domain("BILLING", { owner: "drea" });
@@ -88,7 +72,6 @@ async function writeBaseline(root: string): Promise<void> {
   fx.file("test/legal.test.ts", TEST_LEGAL);
 }
 
-/** Author + commit the baseline as its own repository. */
 async function buildBaseline(root: string): Promise<void> {
   await writeBaseline(root);
   writeFileSync(join(root, ".gitignore"), ".spec-engine/\n");
@@ -96,8 +79,6 @@ async function buildBaseline(root: string): Promise<void> {
   git(root, "add", "-A");
   git(root, "commit", "-q", "-m", "baseline");
 }
-
-// --- in-process command harness (process.exit stubbed to throw) --------------
 
 class ExitError extends Error {
   constructor(public code: number) {
@@ -293,12 +274,9 @@ describe("spec guard — deterministic --json (GUARD-009)", () => {
   });
 });
 
-describe("spec guard — platform nested below the git root (1.2)", () => {
-  // Regression for the fail-open bug: when the platform lives in a subdirectory
-  // of a larger repo, git returns repo-root-relative paths. Before the fix the
-  // `spec-engine/` filter matched nothing, the guard saw zero changes, and a
-  // deleted requirement passed silently. The git seam now translates through the
-  // repo prefix so the nested platform classifies its changes correctly.
+describe("spec guard — platform nested below the git root", () => {
+  // git returns repo-root-relative paths for a nested platform; untranslated,
+  // the `spec-engine/` filter matches nothing and a deletion fails open.
   let parent: string;
   let platform: string;
 
@@ -327,7 +305,7 @@ describe("spec guard — platform nested below the git root (1.2)", () => {
     expect(JSON.parse(r.stdout)).toEqual([]);
   });
 
-  test("REQUIREMENT_REMOVED is detected when the platform is nested (no longer fails open)", async () => {
+  test("REQUIREMENT_REMOVED is detected when the platform is nested (does not fail open)", async () => {
     await removeBilling(platform, "BILLING-001");
     const r = await runGuard({ platformDir: platform, json: true });
     expect(r.code).toBe(1);

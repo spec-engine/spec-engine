@@ -1,8 +1,5 @@
-// packages/engine/src/operations/gate.ts
-//
-// The approval gate: pass iff the requirement is Active and the member's pin
-// covers its changed-at version. The gate never trusts a warm index, so the
-// operation runs the index into the handle it is given before it decides.
+// The gate never trusts a warm index, so it runs the index into the handle it
+// is given before it decides.
 
 import type { GateOutcome, Storage } from "@spec-engine/shared";
 import { classifyGate } from "../gate/classify";

@@ -1,5 +1,3 @@
-// packages/engine/src/commands/accept.test.ts
-//
 // @spec REQ-040 unit
 // @spec REQ-041 unit
 

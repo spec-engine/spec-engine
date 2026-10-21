@@ -1,15 +1,4 @@
-// packages/engine/src/check/codeowners.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec OWNER-002 unit
-//
-// GOV-02 unit cases for the pure CODEOWNERS grammar (parseCodeowners +
-// ownersForPath + matchesGlob). Drives the functions directly with authored
-// CODEOWNERS text — no git, no I/O. ownersForPath is LAST-match-wins (GitHub
-// semantics, Pitfall 4), NOT most-specific and NOT first. matchesGlob is a
-// linear segment walker — NEVER a RegExp built from pattern text (T-20-03 /
-// ReDoS): a pathological pattern must still return promptly.
-
 import { describe, expect, test } from "bun:test";
 import { matchesGlob, ownersForPath, parseCodeowners } from "./codeowners";
 
@@ -71,14 +60,14 @@ describe("matchesGlob()", () => {
     expect(matchesGlob("spec-engine/*.json", "spec-engine/BILLING/manifest.json")).toBe(false);
   });
 
-  test("WR-04: a bare * (and **) is a global-owner rule matching any nested path", () => {
+  test("a bare * (and **) is a global-owner rule matching any nested path", () => {
     expect(matchesGlob("*", "spec-engine/BILLING/SPEC.json")).toBe(true);
     expect(matchesGlob("*", "a.txt")).toBe(true);
     expect(matchesGlob("**", "deep/nested/x.json")).toBe(true);
     expect(matchesGlob("**/", "deep/nested/x.json")).toBe(true);
   });
 
-  test("WR-04: ownersForPath resolves a bare-* fallback owner for a nested file", () => {
+  test("ownersForPath resolves a bare-* fallback owner for a nested file", () => {
     const rules = [{ pattern: "*", owners: ["@fallback"] }];
     expect(ownersForPath(rules, "spec-engine/BILLING/SPEC.json")).toEqual(["@fallback"]);
   });
@@ -86,7 +75,6 @@ describe("matchesGlob()", () => {
   test("a ReDoS-shaped pattern of many * segments returns promptly", () => {
     const pattern = `${"*/".repeat(40)}x`;
     const path = `${"a/".repeat(40)}b`;
-    // No RegExp backtracking blow-up — a linear walker returns a boolean fast.
     expect(matchesGlob(pattern, path)).toBe(false);
   });
 });

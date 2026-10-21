@@ -1,54 +1,27 @@
-// packages/engine/src/authoring/domains.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec DOMAIN-011
 // @spec DOMAIN-016
 // @spec REQ-026
 //
-// Shared substrate for the noun-verb authoring surface:
-// `spec domain new`, `spec domain list`,
-// and `spec req` all consume these helpers so the normalization rule,
-// the KEY grammar, and the next-id computation live in exactly one place.
-//
-// AUTHC-001: normalization is uppercase + strip ALL whitespace — NEVER
-// dash-substitution. `-` is reserved as the key/seq separator in a
-// requirement id (`<KEY>-<NNN>`), so a dashed key (`USER-AUTH`) would
-// collide with that grammar.
-//
-// AUTHC-007: domains are enumerated from the FILESYSTEM (canonical truth
-// per CLAUDE.md) — never the derived index, never a cache file.
-//
-// D-08: NO bun:sqlite import here (system-wide count stays at 1 —
-// storage/sqlite.ts:7). Dependencies are node:fs, node:path only.
+// Domains are enumerated from the filesystem, never the derived index: the
+// index owns nothing, and this module stays free of bun:sqlite.
 
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { parseDomainText, type SpecDomain, type SpecRequirement } from "@spec-engine/shared";
 import { specPaths } from "../constants";
 
-// Canonical domain-key grammar (`KEY`): CANONICALLY defined in
-// @spec-engine/shared (P3 consolidation) and re-exported here so the existing
-// `../authoring/domains` importers (commands/domain.ts) are unchanged.
 export { KEY_RE } from "@spec-engine/shared";
 
 /**
- * AUTHC-001: canonicalize a user-supplied domain name. Uppercase and strip
- * ALL whitespace ("user auth" → "USERAUTH", "aUtH" → "AUTH"). Spaces are
- * NEVER converted to dashes — see the HEAD_RE rationale in the file header.
+ * Spaces are stripped, never converted to dashes: `-` separates key from seq
+ * in a requirement id (`<KEY>-<NNN>`), so a dashed key (`USER-AUTH`) would
+ * collide with that grammar.
  */
 export function normalizeDomainKey(raw: string): string {
   return raw.toUpperCase().replace(/\s+/g, "");
 }
 
-/**
- * AUTHC-007/008: enumerate domain keys from `<platformDir>/spec-engine/`.
- * A domain is a child DIRECTORY that contains a SPEC.json, the only spec
- * format, so the listing (used by `domain list` and `spec req` prefix
- * resolution) recognizes SPEC.json only. Returns the names sorted
- * lexicographically. The caller is
- * responsible for the platform guard (assertSpecPlatform) — this helper
- * assumes spec-engine/ exists.
- */
+/** Assumes spec-engine/ exists: the caller runs assertSpecPlatform first. */
 export function listDomainKeys(platformDir: string): string[] {
   const specsDir = join(platformDir, "spec-engine");
   return readdirSync(specsDir, { withFileTypes: true })
@@ -58,16 +31,9 @@ export function listDomainKeys(platformDir: string): string[] {
 }
 
 /**
- * CHRT-004: read a domain's charter `scope` straight from the FILESYSTEM
- * (`<platformDir>/spec-engine/<key>/SPEC.json`), never the derived index — the
- * D-08 no-`bun:sqlite` fence stays green (the read idiom mirrors
- * `nextRequirementId`). Returns the `scope` string when the envelope carries a
- * non-blank string one, else `null` — a missing file, unparseable JSON, or an
- * absent/non-string/whitespace-only `scope` all degrade to `null` (no throw),
- * so `domain list` and `spec req` never crash on a malformed domain dir and
- * agree on whether a charter is set. (A structurally-invalid-but-parseable
- * envelope may still surface its `scope` here — full structural validation is
- * `spec check`'s job, not the listing's.)
+ * Any read or parse failure degrades to `null` rather than throwing, so
+ * `domain list` and `spec req` never crash on a malformed domain dir.
+ * Structural validation is `spec check`'s job, not the listing's.
  */
 export async function domainScope(platformDir: string, key: string): Promise<string | null> {
   const { abs: jsonPath, rel: relFile } = specPaths(platformDir, key);
@@ -87,12 +53,6 @@ export async function domainScope(platformDir: string, key: string): Promise<str
   return scope === undefined || scope === null || scope.trim() === "" ? null : scope;
 }
 
-/**
- * CHRT-004: the sorted `{ key, scope }` listing `domain list --json` emits —
- * `listDomainKeys` (already sorted) composed with a filesystem `domainScope`
- * read per key. Kept here so the FS-read idiom lives in exactly one place and
- * the command file stays index-free (D-08).
- */
 export async function domainsWithScope(
   platformDir: string,
 ): Promise<Array<{ key: string; scope: string | null }>> {
@@ -102,23 +62,12 @@ export async function domainsWithScope(
   );
 }
 
-/**
- * AUTHC-004: the fresh-domain envelope OBJECT for `key` (STOR-02 shape). The
- * plain object is handed to `validateAndWrite` (17-01), which validates it
- * through the same `validateDomainFile` the index uses and serializes it with
- * a fixed key order + single trailing newline — so there is no bespoke
- * Markdown/JSON text write here. `owner` is explicit `null` (byte-stable),
- * `requirements` empty, and NO authored `specVersion` for a requirement domain
- * (DOMAIN-010 / SCHM-008) — only the reserved TERM domain is seeded with
- * `specVersion` 1.
- */
 export function scaffoldDomainObject(key: string, today: string): SpecDomain {
-  // @spec DOMAIN-019 — a requirement (non-TERM) domain is born WITHOUT an
-  // authored specVersion: its version is the DAG-derived projection (SCHM-007)
-  // and the schema rejects an authored counter on a non-TERM domain (SCHM-008).
-  // Only the reserved TERM domain is seeded with specVersion 1 — that authored
-  // counter is the term-drift pin (a revise adds no supersede edge to derive).
-  // Key order here is immaterial: validateAndWrite → orderDomain rebuilds it.
+  // @spec DOMAIN-019
+  // A requirement domain's version is derived from its supersede graph and the
+  // schema rejects an authored one. Only TERM is seeded with specVersion 1:
+  // that counter is the term-drift pin, since a revise adds no supersede edge.
+  // Key order here is immaterial: validateAndWrite rebuilds it.
   return {
     key,
     owner: null,
@@ -145,8 +94,7 @@ function requirementsOf(text: string, sourceFile: string): readonly SpecRequirem
 /**
  * Max sequence number in the domain file as committed at HEAD, so an id whose
  * entry was deleted from the working tree cannot be re-minted for different
- * behavior (ids are permanent). Never-fail-non-git (the GUARD-008 posture):
- * outside a git repo, with no HEAD, or on any git/parse failure this returns 0
+ * behavior (ids are permanent). Outside a git repo, with no HEAD, or on any git/parse failure this returns 0
  * and minting falls back to the working-tree max alone.
  */
 async function headMaxSeq(platformDir: string, key: string): Promise<number> {
@@ -167,12 +115,9 @@ async function headMaxSeq(platformDir: string, key: string): Promise<number> {
 }
 
 /**
- * AUTHC-014: next unused requirement id for `key`. Reads the domain's
- * `SPEC.json` and computes `max(seq)+1` across `requirements[].id`
- * (seq = `Number(id.split("-")[1])`), padded to 3 digits — where the max is
- * taken over BOTH the working-tree file and the file at HEAD, so deleting an
- * entry never frees its id. Defensive `<KEY>-001` when no `SPEC.json` exists
- * (e.g. the dir vanished between the caller's listing and this read).
+ * The max is taken over both the working tree and HEAD, so deleting an entry
+ * never frees its id. A missing SPEC.json (the dir vanished between the
+ * caller's listing and this read) yields `<KEY>-001`.
  */
 export async function nextRequirementId(platformDir: string, key: string): Promise<string> {
   const { abs: jsonPath, rel: relFile } = specPaths(platformDir, key);

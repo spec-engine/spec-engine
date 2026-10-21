@@ -1,8 +1,5 @@
-// packages/engine/src/propagation/format.ts
-//
-// Pure formatter for `spec propagation <KEY-NNN>`: PropagationRow[] in, string
-// out, in the order the rows arrive. The drift overlay and the row order are
-// storage's; this file recomputes neither.
+// The drift overlay and the row order are storage's; this file recomputes
+// neither.
 
 import type { PropagationRow } from "@spec-engine/shared";
 import type { RenderMode } from "../constants";

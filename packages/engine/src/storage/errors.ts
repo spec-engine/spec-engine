@@ -1,25 +1,13 @@
-// packages/engine/src/storage/errors.ts
+// Only operational failures (locks denied, contention, corruption, disk full)
+// are classified. A bug in our own SQL must stay a loud raw throw so it gets
+// fixed rather than retried. A sandboxed agent cannot take the file locks WAL
+// mode needs, so every query throws SQLITE_IOERR_VNODE; naming that cause is
+// what lets the agent fix it in one turn.
 //
-// Classifier for OPERATIONAL SQLite failures — the "environment broke the
-// database" family (locks denied, contention, corruption, disk full), as
-// opposed to programming errors in our own SQL, which must stay loud 500s /
-// raw throws so they get fixed rather than retried.
-//
-// Motivation (webapp hardening follow-up): a sandboxed agent process (e.g.
-// Claude Code's default seatbelt profile on macOS) cannot take the file locks
-// WAL-mode SQLite needs, so every query throws SQLITE_IOERR_VNODE. Before
-// this seam existed the failure surfaced as a raw stack trace from a 500 —
-// or worse, as the webapp's downstream "SyntaxError: Failed to parse JSON" —
-// and nothing pointed at the sandbox. Agents act on stderr and error bodies;
-// a named cause with a fix gets self-corrected in one turn.
-//
-// This module deliberately does NOT import bun:sqlite (D-08 — storage/
-// sqlite.ts is the only importer). SQLiteError is detected structurally via
-// its `code` string, which also keeps the classifier usable on errors that
-// crossed a serialization boundary.
+// SQLiteError is detected structurally by its `code` string, not imported:
+// storage/sqlite.ts is the only bun:sqlite importer, and a structural check
+// also works on errors that crossed a serialization boundary.
 
-/** A classified operational storage failure: the SQLite result code plus an
- *  actionable, user/agent-facing hint. */
 export interface StorageErrorInfo {
   code: string;
   hint: string;
@@ -42,19 +30,8 @@ const CORRUPT_HINT =
 
 const FULL_HINT = "the disk holding the .spec-engine/ index directory is full.";
 
-/**
- * Map an unknown thrown value to a {@link StorageErrorInfo} when it is an
- * OPERATIONAL SQLite failure, or `null` when it is not (not SQLite at all,
- * or a SQLite code like plain SQLITE_ERROR that indicates a bug in our SQL
- * and must keep propagating unchanged).
- *
- * Families and their hints:
- *   - SQLITE_IOERR* / SQLITE_CANTOPEN* / SQLITE_PERM / SQLITE_READONLY* /
- *     SQLITE_AUTH → lock/permission problem, most often a sandbox (LOCK_HINT)
- *   - SQLITE_BUSY* / SQLITE_LOCKED* → cross-process contention (BUSY_HINT)
- *   - SQLITE_CORRUPT* / SQLITE_NOTADB → rebuildable cache damage (CORRUPT_HINT)
- *   - SQLITE_FULL → disk full (FULL_HINT)
- */
+/** `null` for plain SQLITE_ERROR: that is a bug in our SQL and must keep
+ *  propagating unchanged. */
 export function describeStorageError(err: unknown): StorageErrorInfo | null {
   const code = (err as { code?: unknown } | null)?.code;
   if (typeof code !== "string" || !code.startsWith("SQLITE_")) return null;
@@ -79,11 +56,6 @@ export function describeStorageError(err: unknown): StorageErrorInfo | null {
   return null;
 }
 
-/**
- * One-line stderr rendering for the CLI layer: names the database path, the
- * SQLite code, and the actionable hint. Callers print this and exit
- * EXIT.FAILURE (see commands/_shared.ts handleStorageUnavailable).
- */
 export function formatStorageUnavailable(info: StorageErrorInfo, dbPath: string): string {
   return `spec: cannot access the index database at ${dbPath} (${info.code}) — ${info.hint}`;
 }

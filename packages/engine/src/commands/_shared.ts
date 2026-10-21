@@ -1,14 +1,9 @@
-// packages/engine/src/commands/_shared.ts
-//
-// The CLI adapters over the operations layer's index helper: print what an
-// operation returns as warnings, and map the errors it lets propagate onto
-// the exit-code contract. Nothing below decides behavior.
-
 import type { Storage } from "@spec-engine/shared";
-import { NotASpecPlatformError } from "@spec-engine/shared";
+import { InvalidDomainFilesError, NotASpecPlatformError } from "@spec-engine/shared";
+import { renderDiagnostics } from "../check/format";
 import { EXIT, isContainedPath } from "../constants";
 import { formatNotASpecPlatform } from "../indexer/discover";
-import { withIndex } from "../operations/_index";
+import { coldFreshTags, type FreshTags, withIndex } from "../operations/_index";
 import type { OpFailure, OpWarning } from "../operations/_result";
 import { describeStorageError, formatStorageUnavailable } from "../storage/errors";
 
@@ -32,6 +27,36 @@ export function handleNotAPlatform(e: unknown): never {
     process.exit(EXIT.USAGE);
   }
   throw e;
+}
+
+/**
+ * A refused index build prints its INVALID_DOMAIN_FILE rows and nothing else
+ * (the `check --json` rows on stdout under `json`, text rows on stderr
+ * otherwise) and exits `code`; anything else falls through.
+ * @spec INDX-017
+ */
+export function handleInvalidDomainFiles(
+  e: unknown,
+  json: boolean,
+  code: number = EXIT.FAILURE,
+): void {
+  if (!(e instanceof InvalidDomainFilesError)) return;
+  if (json) console.log(renderDiagnostics(e.diagnostics, "json"));
+  else console.error(renderDiagnostics(e.diagnostics, "text"));
+  process.exit(code);
+}
+
+/** `coldFreshTags` for a lifecycle command, whose exits are 0 or 2: a refused build exits 2. */
+export function cliFreshTags(platformDir: string): FreshTags {
+  const fresh = coldFreshTags(platformDir);
+  return async (reqId) => {
+    try {
+      return await fresh(reqId);
+    } catch (e) {
+      handleInvalidDomainFiles(e, false, EXIT.USAGE);
+      throw e;
+    }
+  };
 }
 
 /** An operational SQLite failure becomes its actionable one-liner and exit 1; anything else falls through. */
@@ -66,19 +91,20 @@ export interface ReadStorageOptions {
   platformDir: string;
   dbPath: string;
   fresh?: boolean;
+  json?: boolean;
 }
 
 /**
  * The read-command scaffold: open the index (building it when missing, or
  * cold when `fresh`), print the staleness notice, run `fn`, close. A
  * non-platform directory exits 2 with the friendly message; a sandboxed or
- * locked database exits 1 with its hint.
+ * locked database or a refused build exits 1.
  */
 export async function withReadStorage(
   opts: ReadStorageOptions,
   fn: (storage: Storage) => void | Promise<void>,
 ): Promise<void> {
-  const { platformDir, dbPath, fresh } = opts;
+  const { platformDir, dbPath, fresh, json = false } = opts;
   try {
     await withIndex({ platformDir, dbPath, build: fresh ? "fresh" : "missing" }, async (h) => {
       for (const w of h.warnings) console.error(w);
@@ -86,6 +112,7 @@ export async function withReadStorage(
     });
   } catch (e) {
     handleStorageUnavailable(e, dbPath);
+    handleInvalidDomainFiles(e, json);
     handleNotAPlatform(e);
   }
 }

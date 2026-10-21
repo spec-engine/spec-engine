@@ -1,15 +1,4 @@
-// packages/engine/src/check/proven.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec PROOF-010 unit
-//
-// GATE-02 unit cases for the pure `provenDetermination()` detector +
-// `proofsUnconfirmedWarning()`. Drives the functions directly with synthetic
-// Requirement[] + Tag[] + TestCaseResult[] — no Storage, no bun:sqlite, no
-// fixtures. PROVEN is a check-time projection: ≥1 verifying tag whose test
-// PASSED → PROVEN → no diagnostic; otherwise ONE error-severity UNPROVEN_REQ.
-// A req with NO verifying tag is Q4/Q5's business (no double-diagnosis).
-
 import { describe, expect, test } from "bun:test";
 import type { Requirement, RequirementStatus, Tag } from "@spec-engine/shared";
 import type { TestCaseResult } from "../results/junit";
@@ -56,7 +45,7 @@ function mkResult(over: Partial<TestCaseResult>): TestCaseResult {
   };
 }
 
-describe("provenDetermination() (GATE-02)", () => {
+describe("provenDetermination()", () => {
   test("empty inputs → empty array", () => {
     expect(provenDetermination([], [], [])).toEqual([]);
   });
@@ -113,9 +102,8 @@ describe("provenDetermination() (GATE-02)", () => {
     expect(provenDetermination(reqs, tags, results)).toEqual([]);
   });
 
-  test("req with NO verifying tag → NO UNPROVEN_REQ (Q4/Q5 own it, no double-diagnosis)", () => {
+  test("req with NO verifying tag → NO UNPROVEN_REQ (no double-diagnosis)", () => {
     const reqs = [mkReq({ id: "BILLING-009" })];
-    // tags belong to a DIFFERENT req → the req under test has zero verifying tags
     const tags = [mkTag({ req_id: "OTHER-001" })];
     const results = [mkResult({ status: "fail" })];
     expect(provenDetermination(reqs, tags, results)).toEqual([]);
@@ -123,8 +111,6 @@ describe("provenDetermination() (GATE-02)", () => {
 
   test("a tag whose kind is not 'verifies' does not count as a verifying tag", () => {
     const reqs = [mkReq({})];
-    // an 'implements' tag for the same req is NOT a verifying tag → zero
-    // verifying tags → no UNPROVEN_REQ (Q4/Q5 own it).
     const tags = [mkTag({ kind: "implements" })];
     const results = [mkResult({ status: "fail" })];
     expect(provenDetermination(reqs, tags, results)).toEqual([]);
@@ -154,7 +140,6 @@ describe("provenDetermination() (GATE-02)", () => {
       mkTag({ req_id: "BILLING-009", file: "api/test/a.test.ts" }),
       mkTag({ req_id: "BILLING-010", file: "api/test/b.test.ts" }),
     ];
-    // a green, b failing → only BILLING-010 flags
     const results = [
       mkResult({ file: "api/test/a.test.ts", status: "pass" }),
       mkResult({ file: "api/test/b.test.ts", status: "fail" }),
@@ -192,7 +177,7 @@ describe("provenDetermination() (GATE-02)", () => {
   });
 });
 
-describe("proofsUnconfirmedWarning() (GATE-05)", () => {
+describe("proofsUnconfirmedWarning()", () => {
   test("returns exactly one warning-severity PROOFS_UNCONFIRMED with null locators", () => {
     const d = proofsUnconfirmedWarning();
     expect(d.code).toBe("PROOFS_UNCONFIRMED");

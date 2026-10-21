@@ -1,5 +1,3 @@
-// packages/engine/src/commands/req.ts
-//
 // @spec REQ-022
 // @spec REQ-023
 // @spec REQ-024
@@ -13,9 +11,7 @@
 // @spec REQ-037
 // @spec REQ-039
 //
-// `spec req <domain-prefix> [platformDir]`: piped, the next unused id; with
-// `--text`, a non-interactive mint; on a TTY, the per-field prompt flow. The
-// prompts render to stderr so stdout stays machine-parseable.
+// Prompts render to stderr so stdout stays machine-parseable.
 
 import { createInterface } from "node:readline";
 import { defineCommand, type ParsedArgs } from "citty";
@@ -24,7 +20,14 @@ import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
 import { mint } from "../operations/mint";
 import { nextId } from "../operations/nextId";
-import { jsonArg, listFlag, livesArg, platformDirArg, resolvePlatformDir } from "./_args";
+import {
+  jsonArg,
+  listFlag,
+  livesArg,
+  platformDirArg,
+  relatesArg,
+  resolvePlatformDir,
+} from "./_args";
 import { exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
 
 const reqArgs = {
@@ -42,6 +45,7 @@ const reqArgs = {
   },
   why: { type: "string", description: "Why it matters field (only with --text)" },
   lives: livesArg,
+  relates: relatesArg,
   issue: {
     type: "string",
     description:
@@ -83,10 +87,11 @@ export const reqCommand = defineCommand({
     const hasFieldFlags =
       typeof args.why === "string" ||
       typeof args.lives === "string" ||
+      typeof args.relates === "string" ||
       typeof args.issue === "string";
     if (hasFieldFlags) {
       console.error(
-        "spec req: --why/--lives/--issue require --text (the Requirement field is mandatory)",
+        "spec req: --why/--lives/--relates/--issue require --text (the Requirement field is mandatory)",
       );
       process.exit(EXIT.USAGE);
       return;
@@ -126,6 +131,7 @@ async function mintFromFlags(
     statement,
     why: (args.why ?? "").trim(),
     livesIn: listFlag(rawArgs, "lives", args.lives) ?? [],
+    relates: listFlag(rawArgs, "relates", args.relates) ?? [],
     issue: (args.issue ?? "").trim() || undefined,
     status: statusOf(args),
     json: Boolean(args.json),
@@ -171,6 +177,7 @@ async function mintAndReport(
     statement: string;
     why: string;
     livesIn: string[];
+    relates?: string[] | undefined;
     issue?: string | undefined;
     status: "active" | "draft";
     json: boolean;

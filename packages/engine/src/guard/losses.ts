@@ -1,55 +1,27 @@
-// packages/engine/src/guard/losses.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec GUARD-023
 // @spec GUARD-015
 // @spec GUARD-016
 // @spec GUARD-017
 // @spec GUARD-018
 //
-// The pure loss classifier at the heart of `spec guard`. Given
-// the requirement derivation at a git ref (the "base") and a set of already-
-// computed working-tree facts, it returns the requirements about to be lost.
-//
-// Mirrors the pure-detector pattern of check/removed.ts and check/statusflip.ts:
-// data in, `Loss[]` out — no Storage, no git, no filesystem, no bun:sqlite
-// (D-08 fence). All git/DB/FS gathering lives in guard/collect.ts; this module
-// only decides. Keeping it pure is what makes the whole loss taxonomy unit-
-// testable without a git repo.
-//
-// The four loss classes:
-//   REQUIREMENT_REMOVED       — a req Active at the ref is absent from the working-tree
-//                       spec and not superseded (GUARD-002).
-//   IMPL_LOST         — the LAST implementing tag for a surviving Active req is
-//                       gone from the whole working tree (GUARD-003).
-//   VERIFY_LOST       — the LAST verifying tag for a surviving Active req is
-//                       gone from the whole working tree (GUARD-004).
-//   SPEC_FILE_DELETED — a canonical spec file present at the ref is gone
-//                       (GUARD-005).
-//
-// Two suppressions (a loss is NOT a loss when):
-//   - the requirement was properly superseded in the same change — in either
-//     direction (GUARD-006), OR
-//   - (there is no override comment: a loss is suppressed only by superseding
-//     or deprecating the requirement in the same change — GUARD-012.
-//     guard/directives.ts).
+// Pure: no Storage, git, or filesystem. guard/collect.ts gathers the facts, so
+// the whole loss taxonomy is unit-testable without a git repo. There is
+// deliberately no override comment: a loss is suppressed only by superseding
+// or deprecating the requirement in the same change.
 
 import type { SpecRequirement } from "@spec-engine/shared";
 
 export type LossKind = "REQUIREMENT_REMOVED" | "IMPL_LOST" | "VERIFY_LOST" | "SPEC_FILE_DELETED";
 
-/** A tag site at the base ref: the platform-relative file and 1-based line the
- *  now-removed `@spec` tag sat on. Feeds the block message's "(src/x.ts:12)". */
+/** Platform-relative file and 1-based line of a tag at the base ref. */
 export interface TagSite {
   file: string;
   line: number;
 }
 
-/** One requirement about to be lost. `req_id` is null only for
- *  SPEC_FILE_DELETED (a file-level, not requirement-level, loss). `line` is 0
- *  when the loss has no meaningful source line (REQUIREMENT_REMOVED / SPEC_FILE_DELETED).
- *  `detail` is the chrome-free machine sentence the --json row carries; the
- *  human product-surface block message is composed separately in format.ts. */
+/** `req_id` is null only for SPEC_FILE_DELETED. `line` is 0 when the loss has
+ *  no source line. `detail` is the --json sentence; the human block message is
+ *  composed separately in format.ts. */
 export interface Loss {
   kind: LossKind;
   req_id: string | null;
@@ -58,48 +30,28 @@ export interface Loss {
   detail: string;
 }
 
-/**
- * The already-computed facts the classifier decides over. Every field is plain
- * data (Maps/Sets/arrays), deliberately NOT git/Storage handles, so this stays
- * pure and unit-testable. guard/collect.ts builds this from the base ref (git)
- * and the working tree (parser + the derived index via the Storage seam).
- */
+/** Plain data, never git or Storage handles, so the classifier stays pure. */
 export interface GuardFacts {
-  /** Requirements present at the ref, sourced from the SPEC.json files in the
-   *  change scope. Only Active-at-ref reqs are guarded. */
+  /** Only the SPEC.json files in the change scope. */
   baseReqs: readonly SpecRequirement[];
-  /** id → platform-relative base spec path (for the REQUIREMENT_REMOVED row's file). */
   baseReqPath: ReadonlyMap<string, string>;
-  /** id → a base implementing-tag site among changed files (first site wins).
-   *  Presence of a key means "had ≥1 implementing tag at the ref". */
+  /** Base tag sites among changed files only; the first site per id wins. */
   baseImplSite: ReadonlyMap<string, TagSite>;
-  /** id → a base verifying-tag site among changed files (first site wins). */
   baseVerifySite: ReadonlyMap<string, TagSite>;
-  /** Every requirement id present in the working-tree spec. */
   worktreeReqIds: ReadonlySet<string>;
-  /** Working-tree requirement ids whose status is Active. */
   worktreeActiveIds: ReadonlySet<string>;
-  /** Ids some surviving working-tree requirement declares `supersedes` on. */
   worktreeSupersedesTargets: ReadonlySet<string>;
-  /** id → count of implementing tags across the WHOLE working tree (the
-   *  derived index). Zero (absent key) means "no implementation survives". */
+  /** Counts across the whole working tree, not just the change scope. */
   worktreeImplCount: ReadonlyMap<string, number>;
-  /** id → count of verifying tags across the WHOLE working tree. */
   worktreeVerifyCount: ReadonlyMap<string, number>;
-  /** Canonical spec files present at the ref but absent from the working tree
-   *  (git status `D` under spec-engine) — one SPEC_FILE_DELETED each. */
   deletedSpecFiles: readonly string[];
 }
 
-/** A status string (raw lowercase authored JSON) is Active. */
 function isActive(status: string): boolean {
   return status.toLowerCase() === "active";
 }
 
-/** GUARD-006: a base req absent from the change is exempt when the sanctioned
- *  supersede path was followed — in EITHER direction: the base req points
- *  forward to a successor that survives, OR a surviving req points back at it
- *  via `supersedes`. Mirrors check/removed.ts's exemption exactly. */
+/** Either direction counts. Must stay in step with check/removed.ts's exemption. */
 function isSuperseded(base: SpecRequirement, f: GuardFacts): boolean {
   const forward = base.supersededBy != null && f.worktreeReqIds.has(base.supersededBy);
   return forward || f.worktreeSupersedesTargets.has(base.id);
@@ -157,15 +109,10 @@ function specFileDeletedLoss(path: string): Loss {
 }
 
 /**
- * REQUIREMENT_REMOVED for one base requirement (from a changed spec file), or null.
- * An ACTIVE requirement is lost when it is absent from the working tree and was
- * not properly superseded in either direction (GUARD-006). A NON-Active requirement (superseded/retired/draft) absent from
- * the working tree is ALWAYS a loss: it is history, and the
- * supersede exemption never applies to it — a superseded entry's successor edge
- * existed before the change, so honoring it here would make pruning history
- * silent (the very hole this closes). A requirement that SURVIVES in the working
- * tree is not a REQUIREMENT_REMOVED — any tag loss it suffers is caught by the
- * tag-driven pass.
+ * A non-Active requirement absent from the working tree is always a loss: the
+ * supersede exemption never applies to history, because a superseded entry's
+ * successor edge existed before the change and honoring it would make pruning
+ * history silent.
  */
 function reqDeletedFor(base: SpecRequirement, f: GuardFacts): Loss | null {
   if (f.worktreeReqIds.has(base.id)) return null;
@@ -175,31 +122,17 @@ function reqDeletedFor(base: SpecRequirement, f: GuardFacts): Loss | null {
   return reqDeletedLoss(base, f);
 }
 
-/** True iff `id` — which had a base tag of the relevant kind in a changed code
- *  file — has lost its LAST tag of that kind. Gated on the working tree: only a
- *  surviving, still-Active requirement is guarded. A req that was
- *  deleted (REQUIREMENT_REMOVED owns it), superseded (status flipped OUT of Active — the
- *  expected retag worklist, GUARD-006) is excluded by the same
- *  `worktreeActiveIds` gate. `count === 0` means no tag of
- *  that kind survives anywhere in the working tree (the derived index). */
+/** Only a surviving, still-Active requirement is guarded: a deleted one is
+ *  REQUIREMENT_REMOVED's, and a superseded one's lost tags are the expected
+ *  retag worklist. */
 function lastTagGone(id: string, count: number, f: GuardFacts): boolean {
   return f.worktreeActiveIds.has(id) && count === 0;
 }
 
 /**
- * Classify every requirement loss the change is about to commit. Pure: never
- * mutates its input, does no I/O, and does NOT sort — format.ts owns the
- * deterministic ordering (mirroring the check/format.ts split).
- *
- * Two independent drivers, because a loss can originate on either side of the
- * change:
- *   - the SPEC side (changed SPEC.json → `baseReqs`) drives REQUIREMENT_REMOVED
- *     (GUARD-002), and
- *   - the CODE side (changed source → `baseImplSite` / `baseVerifySite`) drives
- *     IMPL_LOST / VERIFY_LOST (GUARD-003/004) — these fire on a code-only change
- *     that never touches the spec, which is exactly the silent gutting the guard
- *     exists to catch.
- * Then one SPEC_FILE_DELETED per deleted canonical spec file (GUARD-005).
+ * Does not sort: format.ts owns the ordering. The tag losses are driven from
+ * the code side, not the spec side, so they fire on a code-only change that
+ * never touches a SPEC.json.
  */
 export function classifyLosses(f: GuardFacts): Loss[] {
   const out: Loss[] = [];

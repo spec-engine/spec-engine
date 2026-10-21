@@ -1,12 +1,3 @@
-// packages/engine/src/guard/losses.test.ts
-//
-// Pure-function coverage for the guard package: the classifier
-// (guard/losses.ts) and the formatter (guard/format.ts). These
-// parser (guard/directives.ts). These need no git repo — they exercise the loss
-// taxonomy, both suppressions, the exact product-surface block copy, and the
-// byte-stable --json contract directly against hand-built facts.
-//
-// Verifies:
 // @spec GUARD-023
 // @spec GUARD-015
 // @spec GUARD-016
@@ -21,7 +12,6 @@ import type { SpecRequirement } from "@spec-engine/shared";
 import { renderGuard, sortLosses } from "./format";
 import { classifyLosses, type GuardFacts, type Loss } from "./losses";
 
-/** Minimal SpecRequirement builder — fills the schema-defaulted array fields. */
 function req(id: string, status: string, extra: Partial<SpecRequirement> = {}): SpecRequirement {
   return {
     id,
@@ -30,15 +20,12 @@ function req(id: string, status: string, extra: Partial<SpecRequirement> = {}): 
     relates: [],
     livesIn: [],
     issues: [],
-    // TERM-01 (Phase 6): aliases/cites carry a schema `.default([])`, so the
-    // z.infer output type requires them present (term/section stay optional).
     aliases: [],
     cites: [],
     ...extra,
   };
 }
 
-/** A GuardFacts bag with empty defaults; override just the fields under test. */
 function facts(over: Partial<GuardFacts> = {}): GuardFacts {
   return {
     baseReqs: [],
@@ -55,8 +42,8 @@ function facts(over: Partial<GuardFacts> = {}): GuardFacts {
   };
 }
 
-describe("classifyLosses — loss taxonomy (GUARD-002..006)", () => {
-  test("REQUIREMENT_REMOVED: Active base req absent from worktree, not superseded (GUARD-002)", () => {
+describe("classifyLosses — loss taxonomy", () => {
+  test("REQUIREMENT_REMOVED: Active base req absent from worktree, not superseded", () => {
     const losses = classifyLosses(
       facts({
         baseReqs: [req("BILLING-001", "active")],
@@ -70,7 +57,7 @@ describe("classifyLosses — loss taxonomy (GUARD-002..006)", () => {
     expect(losses[0]?.file).toBe("spec-engine/BILLING/SPEC.json");
   });
 
-  test("IMPL_LOST: last implementing tag removed for a surviving Active req (GUARD-003)", () => {
+  test("IMPL_LOST: last implementing tag removed for a surviving Active req", () => {
     const losses = classifyLosses(
       facts({
         baseReqs: [req("BILLING-001", "active")],
@@ -99,7 +86,7 @@ describe("classifyLosses — loss taxonomy (GUARD-002..006)", () => {
     expect(losses).toHaveLength(0);
   });
 
-  test("VERIFY_LOST: last verifying tag removed for a surviving Active req (GUARD-004)", () => {
+  test("VERIFY_LOST: last verifying tag removed for a surviving Active req", () => {
     const losses = classifyLosses(
       facts({
         baseReqs: [req("BILLING-001", "active")],
@@ -112,7 +99,7 @@ describe("classifyLosses — loss taxonomy (GUARD-002..006)", () => {
     expect(losses[0]?.kind).toBe("VERIFY_LOST");
   });
 
-  test("SPEC_FILE_DELETED: a canonical spec file is gone (GUARD-005)", () => {
+  test("SPEC_FILE_DELETED: a canonical spec file is gone", () => {
     const losses = classifyLosses(facts({ deletedSpecFiles: ["spec-engine/LEGAL/SPEC.json"] }));
     expect(losses).toHaveLength(1);
     expect(losses[0]?.kind).toBe("SPEC_FILE_DELETED");
@@ -132,8 +119,6 @@ describe("classifyLosses — loss taxonomy (GUARD-002..006)", () => {
   });
 
   test("the supersede exemption does NOT excuse deleting an already-superseded entry", () => {
-    // BILLING-008's successor BILLING-009 survives — before the fix that
-    // satisfied isSuperseded and made pruning history silent.
     const losses = classifyLosses(
       facts({
         baseReqs: [req("BILLING-008", "superseded", { supersededBy: "BILLING-009" })],
@@ -146,14 +131,14 @@ describe("classifyLosses — loss taxonomy (GUARD-002..006)", () => {
     expect(losses[0]?.req_id).toBe("BILLING-008");
   });
 
-  test("no override exists: a history removal is a loss even when 'acknowledged' in the change (GUARD-012)", () => {
+  test("removing a superseded entry is a loss", () => {
     const losses = classifyLosses(facts({ baseReqs: [req("BILLING-008", "superseded")] }));
     expect(losses).toHaveLength(1);
     expect(losses[0]?.kind).toBe("REQUIREMENT_REMOVED");
   });
 });
 
-describe("classifyLosses — suppressions (GUARD-006/007)", () => {
+describe("classifyLosses — suppressions", () => {
   test("forward supersede suppresses REQUIREMENT_REMOVED (base points at surviving successor)", () => {
     const losses = classifyLosses(
       facts({
@@ -189,9 +174,7 @@ describe("classifyLosses — suppressions (GUARD-006/007)", () => {
     expect(losses).toHaveLength(0);
   });
 
-  test("deprecating in the same change suppresses tag losses — the status flip is the legal path (GUARD-012)", () => {
-    // BILLING-001 survives but is no longer Active (deprecated in this change):
-    // its removed implementation is the expected cleanup, not a loss.
+  test("deprecating in the same change suppresses tag losses", () => {
     const losses = classifyLosses(
       facts({
         baseReqs: [req("BILLING-001", "active")],
@@ -204,7 +187,7 @@ describe("classifyLosses — suppressions (GUARD-006/007)", () => {
   });
 });
 
-describe("renderGuard — product surface + byte-stable JSON (GUARD-009)", () => {
+describe("renderGuard — product surface + byte-stable JSON", () => {
   const implVerify: Loss[] = [
     {
       kind: "IMPL_LOST",
@@ -272,7 +255,6 @@ describe("renderGuard — product surface + byte-stable JSON (GUARD-009)", () =>
     const a = renderGuard([implVerify[1] as Loss, implVerify[0] as Loss], "json", "HEAD");
     const b = renderGuard([implVerify[0] as Loss, implVerify[1] as Loss], "json", "HEAD");
     expect(a).toBe(b);
-    // IMPL_LOST sorts before VERIFY_LOST (kind ASC) under the same req id.
     const rows = JSON.parse(a) as Loss[];
     expect(rows.map((r) => r.kind)).toEqual(["IMPL_LOST", "VERIFY_LOST"]);
   });
@@ -285,6 +267,6 @@ describe("renderGuard — product surface + byte-stable JSON (GUARD-009)", () =>
     const snapshot = [...input];
     const sorted = sortLosses(input);
     expect(sorted.map((l) => l.req_id)).toEqual(["B-1", "B-2"]);
-    expect(input).toEqual(snapshot); // input untouched
+    expect(input).toEqual(snapshot);
   });
 });

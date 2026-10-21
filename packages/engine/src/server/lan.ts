@@ -1,5 +1,3 @@
-// packages/engine/src/server/lan.ts
-//
 // The gate wraps Bun.serve's fetch, not the Hono app: the webapp's in-process
 // `app.request` reads of its own /api/* must not need the token.
 

@@ -1,9 +1,3 @@
-// packages/engine/src/commands/relations.ts
-//
-// `spec relations [platformDir] [--out <path>] [--json] [--fresh]`: the
-// `relates` graph as mermaid `graph LR` source, or the sorted rows under
-// `--json`. Read-only; the same formatter serves `/api/relations?format=mermaid`.
-
 import { defineCommand } from "citty";
 import { OUT_HELP, resolveDbPath } from "../constants";
 import { maybePromptForOnboarding } from "../onboarding/prompt";
@@ -60,14 +54,17 @@ export const relationsCommand = defineCommand({
       },
     });
 
-    await withReadStorage({ platformDir, dbPath, fresh: !!args.fresh }, (storage) => {
-      const { rows } = relations(storage);
-      if (!args.json && rows.length === 0) {
-        console.error(formatNoRelations(platformDir));
-        return;
-      }
-      const output = renderRelations(rows, args.json ? "json" : "mermaid");
-      console.log(output);
-    });
+    await withReadStorage(
+      { platformDir, dbPath, fresh: !!args.fresh, json: !!args.json },
+      (storage) => {
+        const { rows } = relations(storage);
+        if (!args.json && rows.length === 0) {
+          console.error(formatNoRelations(platformDir));
+          return;
+        }
+        const output = renderRelations(rows, args.json ? "json" : "mermaid");
+        console.log(output);
+      },
+    );
   },
 });

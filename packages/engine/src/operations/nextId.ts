@@ -1,8 +1,3 @@
-// packages/engine/src/operations/nextId.ts
-//
-// Resolve a domain from a key or unique case-insensitive prefix, and preview
-// the next unused requirement id in it. Nothing is written.
-
 import { listDomainKeys, nextRequirementId, normalizeDomainKey } from "../authoring/domains";
 import { fail, type OpFailure } from "./_result";
 

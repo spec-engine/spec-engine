@@ -1,9 +1,3 @@
-// packages/engine/src/commands/get.ts
-//
-// `spec get <KEY-NNN> [platformDir]`: one requirement's full record. An
-// unknown id is `[]` on stdout with guidance on stderr and exit 0; a malformed
-// id is exit 2.
-
 import { defineCommand } from "citty";
 import { EXIT, resolveDbPath } from "../constants";
 import { formatNoRequirementsIndexed } from "../indexer/discover";
@@ -57,18 +51,21 @@ export const getCommand = defineCommand({
       args: { noPrompt: args.noPrompt },
     });
 
-    await withReadStorage({ platformDir, dbPath, fresh: !!args.fresh }, (storage) => {
-      const result = getRecord(storage, reqId);
-      if (result.row === null) {
-        console.error(
-          result.platformEmpty
-            ? formatNoRequirementsIndexed(platformDir)
-            : `spec get: no requirement ${reqId} in the index under ${platformDir} (check the id, or re-run with --fresh after editing specs)`,
-        );
-        console.log("[]");
-        return;
-      }
-      console.log(args.json ? JSON.stringify(result.row) : renderRecords([result.row], "text"));
-    });
+    await withReadStorage(
+      { platformDir, dbPath, fresh: !!args.fresh, json: !!args.json },
+      (storage) => {
+        const result = getRecord(storage, reqId);
+        if (result.row === null) {
+          console.error(
+            result.platformEmpty
+              ? formatNoRequirementsIndexed(platformDir)
+              : `spec get: no requirement ${reqId} in the index under ${platformDir} (check the id, or re-run with --fresh after editing specs)`,
+          );
+          console.log("[]");
+          return;
+        }
+        console.log(args.json ? JSON.stringify(result.row) : renderRecords([result.row], "text"));
+      },
+    );
   },
 });

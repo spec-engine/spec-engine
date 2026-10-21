@@ -25,6 +25,10 @@ export const DiagnosticCode = {
   UNPROVEN_REQ: "UNPROVEN_REQ",
   PROOFS_UNCONFIRMED: "PROOFS_UNCONFIRMED",
   REQUIREMENT_REMOVED: "REQUIREMENT_REMOVED",
+  // @spec GUARD-024
+  IMPL_LOST: "IMPL_LOST",
+  VERIFY_LOST: "VERIFY_LOST",
+  SPEC_FILE_DELETED: "SPEC_FILE_DELETED",
   UNAPPROVED_STATUS_FLIP: "UNAPPROVED_STATUS_FLIP",
   PARTIAL_PROPAGATION: "PARTIAL_PROPAGATION",
   // @spec CHCK-031
@@ -72,5 +76,21 @@ export class NotASpecPlatformError extends Error {
     this.platformDir = platformDir;
     // Preserve the prototype chain so `instanceof` survives transpilation.
     Object.setPrototypeOf(this, NotASpecPlatformError.prototype);
+  }
+}
+
+/**
+ * Thrown by the index build when any `SPEC.json` is not JSON or fails the
+ * shared schema. Carries one `INVALID_DOMAIN_FILE` row per failure across every
+ * file, so a surface can print them all and nothing else.
+ */
+export class InvalidDomainFilesError extends Error {
+  public readonly diagnostics: Diagnostic[];
+
+  constructor(diagnostics: Diagnostic[]) {
+    super(diagnostics.map((d) => `${d.source_file ?? ""}: ${d.detail}`).join("\n"));
+    this.name = "InvalidDomainFilesError";
+    this.diagnostics = diagnostics;
+    Object.setPrototypeOf(this, InvalidDomainFilesError.prototype);
   }
 }

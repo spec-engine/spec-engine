@@ -1,15 +1,5 @@
-// packages/engine/src/results/junit.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec PROOF-014 unit
 // @spec PROOF-009 unit
-//
-// Unit coverage for the ONE hand-rolled JUnit reader (`results/junit.ts`).
-// Feeds checked-in fixture XML (readFileSync of fixtures/junit/*.xml) plus a
-// few inline adversarial strings and asserts the returned TestCaseResult[].
-// Covers the eight plan behaviors: nested-suite recursion, failure/error/skip
-// status mapping, predefined-entity decode, absolute/relative file passthrough,
-// jest-flat attribute precedence, XXE immunity, and malformed-input throw.
 
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
@@ -24,11 +14,6 @@ const byName = (rows: readonly TestCaseResult[], name: string): TestCaseResult =
   if (row === undefined) throw new Error(`no testcase named ${name}`);
   return row;
 };
-
-// ---------------------------------------------------------------------------
-// Test 1 — bun-green.xml: every testcase passes; nested <testsuite> recursion
-// resolves each testcase's file from the nearest ancestor carrying `file`.
-// ---------------------------------------------------------------------------
 
 describe("parseJUnit — bun-green (nested suites, all passing)", () => {
   const rows = parseJUnit(readFixture("bun-green.xml"));
@@ -50,11 +35,6 @@ describe("parseJUnit — bun-green (nested suites, all passing)", () => {
     expect(byName(rows, "applies proration").line).toBe(6);
   });
 });
-
-// ---------------------------------------------------------------------------
-// Test 2 + Test 3 — bun-with-failure.xml: <failure>/<error> → fail,
-// <skipped> (incl. TODO) → skip, else pass.
-// ---------------------------------------------------------------------------
 
 describe("parseJUnit — bun-with-failure (status mapping)", () => {
   const rows = parseJUnit(readFixture("bun-with-failure.xml"));
@@ -80,10 +60,6 @@ describe("parseJUnit — bun-with-failure (status mapping)", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Test 4 — entities: only the 5 predefined XML entities decode.
-// ---------------------------------------------------------------------------
-
 describe("parseJUnit — predefined entity decode", () => {
   const rows = parseJUnit(readFixture("bun-green.xml"));
 
@@ -93,10 +69,6 @@ describe("parseJUnit — predefined entity decode", () => {
     expect(rows.some((r) => r.name === decoded)).toBe(true);
   });
 });
-
-// ---------------------------------------------------------------------------
-// Test 5 — absolute vs relative file passthrough (reader does NOT normalize).
-// ---------------------------------------------------------------------------
 
 describe("parseJUnit — file passthrough (no normalization in the reader)", () => {
   test("absolute testcase@file returned verbatim", () => {
@@ -113,12 +85,6 @@ describe("parseJUnit — file passthrough (no normalization in the reader)", () 
     expect(rows[0]?.file).toBe(rel);
   });
 });
-
-// ---------------------------------------------------------------------------
-// Test 6 — jest-sample.xml: flat suite, testcases have NO file/line attr —
-// inherit file from <testsuite file=...> or path-like <testsuite name=...>;
-// line is null when absent.
-// ---------------------------------------------------------------------------
 
 describe("parseJUnit — jest-flat attribute precedence", () => {
   const rows = parseJUnit(readFixture("jest-sample.xml"));
@@ -141,12 +107,7 @@ describe("parseJUnit — jest-flat attribute precedence", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Test 6b — WR-03: an explicit empty file="" must fall through to the
-// suite/classname fallbacks instead of short-circuiting to "".
-// ---------------------------------------------------------------------------
-
-describe('parseJUnit — empty file="" falls through (WR-03)', () => {
+describe('parseJUnit — empty file="" falls through', () => {
   test('testcase with file="" resolves to classname, not ""', () => {
     const xml =
       '<testsuites><testsuite name="s">' +
@@ -167,11 +128,6 @@ describe('parseJUnit — empty file="" falls through (WR-03)', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Test 7 — XXE immunity: a DOCTYPE/ENTITY prolog referencing an external
-// SYSTEM entity is NOT expanded; the reader never reads the filesystem.
-// ---------------------------------------------------------------------------
-
 describe("parseJUnit — XXE immunity", () => {
   const xxe = [
     '<?xml version="1.0"?>',
@@ -186,26 +142,14 @@ describe("parseJUnit — XXE immunity", () => {
   test("external SYSTEM entity is left inert — not expanded to file contents", () => {
     const rows = parseJUnit(xxe);
     expect(rows.length).toBe(1);
-    // The DOCTYPE/ENTITY is ignored; `&xxe;` is not one of the 5 predefined
-    // entities so it is left undecoded (inert token), never file contents.
     expect(rows[0]?.name).toBe("&xxe;");
     expect(rows[0]?.name.includes("root:")).toBe(false);
     expect(rows[0]?.name.includes("/etc/passwd")).toBe(false);
   });
 });
 
-// ---------------------------------------------------------------------------
-// Test 8b — WR-01: CDATA in a <failure> body whose content contains `]]` and a
-// later `>` must parse via the literal `]]>` terminator (not bracket-depth),
-// yielding the correct fail status without crashing.
-// ---------------------------------------------------------------------------
-
-describe("parseJUnit — CDATA failure body with ']]' and '>' (WR-01)", () => {
+describe("parseJUnit — CDATA failure body with ']]' and '>'", () => {
   test("CDATA content 'a]] b > c' parses to a single 'fail' testcase, no crash", () => {
-    // The `]]` after `a` followed later by `>` is exactly the shape that drove
-    // the old skipDeclaration bracket-depth to 0 before the real `]]>`
-    // terminator, leaving `c]]>` to be re-parsed as markup → JUnitParseError on
-    // a perfectly valid JUnit file.
     const xml = [
       "<testsuites>",
       '  <testsuite name="s" file="a/b.test.ts">',
@@ -239,10 +183,6 @@ describe("parseJUnit — CDATA failure body with ']]' and '>' (WR-01)", () => {
     expect(() => parseJUnit(bad)).toThrow(JUnitParseError);
   });
 });
-
-// ---------------------------------------------------------------------------
-// Test 8 — malformed/unbalanced XML throws a typed JUnitParseError.
-// ---------------------------------------------------------------------------
 
 describe("parseJUnit — malformed input", () => {
   test("unbalanced tags throw", () => {

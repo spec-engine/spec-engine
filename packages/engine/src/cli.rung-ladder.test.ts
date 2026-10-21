@@ -1,31 +1,5 @@
-// packages/engine/src/cli.rung-ladder.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
-// Per-rung verifying tags live on each rung's block below (INIT-010/011/012).
-//
-// RED-14: one acceptance test per adoption-ladder rung (README § Adoption),
-// each driven through the real CLI command layer against the shipped
-// fixtures. Rungs 1 and 3 have dedicated deep suites already
-// (single-repo.test.ts / discover.test.ts for rung 1; gate-rung3.test.ts +
-// cli-gate-unit.test.ts for rung 3) — this file is the ladder-level lock
-// that all three rungs stay demonstrable end-to-end, and it closes the
-// rung-2 gap: nothing previously proved that `spec check --ci` GATES a
-// single repo (exits 1 on the planted mess, exits 0 once tags satisfy the
-// spec).
-//
-//   Rung 1 — "Stop re-explaining": one repo, specs inline, zero config.
-//            `spec map` renders coverage with the repo's own basename
-//            as the lone member column.
-//   Rung 2 — "Prove it": @spec tags bind tests to requirements and
-//            `spec check --ci` gates. Red on the planted ORPHAN_REQ /
-//            UNVERIFIED_REQ; green once every Active requirement is
-//            implemented AND verified.
-//   Rung 3 — "Coordinate it": dedicated spec-engine repo + version-pinned
-//            members; `spec gate` passes an approved requirement and
-//            blocks a superseded one.
-//
-// WR-06 discipline: every test clones its fixture; the canonical trees
-// under fixtures/ are NEVER mutated (the planted mess stays planted).
+// Every test clones its fixture: the canonical trees under fixtures/ must
+// never be mutated, or the planted defects stop being planted.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { appendFileSync, rmSync } from "node:fs";
@@ -94,7 +68,7 @@ async function run(command: unknown, args: Record<string, unknown>): Promise<num
   }
 }
 
-describe("adoption ladder (RED-14)", () => {
+describe("adoption ladder", () => {
   // ----- Rung 1: one repo, specs inline, zero ceremony ----------------------
   // @spec INIT-035 e2e
   test("rung 1: spec map self-consumes the lone repo — basename column, no config", async () => {

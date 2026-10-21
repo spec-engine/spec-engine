@@ -1,21 +1,3 @@
-// packages/webapp/src/pages/query.ts
-//
-// Plan 05-04 / Task 1 — SSR FTS search page (`GET /query?q=...`).
-//
-// D-09 / WORK-04 / Invariant #5: webapp source imports ONLY from
-// `@spec-engine/shared` (types) and `hono` (runtime). NO `bun:sqlite`, no
-// `node:fs`, no `fs`, no `bun`, no `node:path`, no `@spec-engine/spec-engine`.
-//
-// Rendering shape — single self-contained `<!doctype html>` document via
-// ONE `hono/html` tagged template (Pitfall 7 auto-escape). The `raw`
-// helper is used ONLY for the static styles.css asset.
-//
-// Data fetch (Pitfall 6) — `app.request("/api/query?q=" + encodeURIComponent(q))`
-// in-process. The `/api/query` route already translates FTS5 grammar
-// errors (typed `searchFts: FTS5 query syntax error` prefix) to a
-// sanitized 400 body in plan 05-03; this page re-renders that 400 inline
-// without leaking SQLite internals (T-5-03-03).
-
 import { type FtsHit, featureEnabled } from "@spec-engine/shared";
 import type { Hono } from "hono";
 import { html, raw } from "hono/html";
@@ -25,12 +7,6 @@ import { navBar } from "./nav";
 import styleSheet from "./styles.css" with { type: "text" };
 
 const styleTag = raw(`<style>${styleSheet}</style>`);
-
-/**
- * Feature flag: the FTS search UI ships behind the shared `query` flag
- * (shared/flags.ts) — off serves the coming-soon page, SPEC_FLAGS=query
- * enables the implementation below verbatim.
- */
 
 export function mountQuery(app: Hono): void {
   app.get("/query", async (c) => {
@@ -48,7 +24,6 @@ export function mountQuery(app: Hono): void {
       </form>
     `;
 
-    // Empty form path — no q provided.
     if (q === "") {
       const body = html`
         ${navBar("query")}
@@ -73,18 +48,13 @@ export function mountQuery(app: Hono): void {
 
     const res = await app.request(`/api/query?q=${encodeURIComponent(q)}`);
 
-    // Anything not-ok other than the sanitized 400 (storage unavailable,
-    // internal error) routes to the app error boundary with the engine's
-    // structured hint instead of mis-parsing the error body as hits.
+    // A 400 is the route's sanitized FTS5 grammar error, rendered inline; any
+    // other failure goes to the error boundary rather than parsing as hits.
     if (!res.ok && res.status !== 400) {
       throw await toApiError(res, "/api/query");
     }
 
     if (res.status === 400) {
-      // Sanitized error body from /api/query (plan 05-03 Pitfall 8). The
-      // error string is server-authored ("FTS5 grammar error; wrap
-      // phrases in double quotes"), not user-controlled — still goes
-      // through auto-escape via the tagged template for defense-in-depth.
       const errBody = (await res.json()) as { error: string };
       const body = html`
         ${navBar("query")}

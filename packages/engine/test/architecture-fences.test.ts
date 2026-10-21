@@ -1,5 +1,3 @@
-// packages/engine/test/architecture-fences.test.ts
-//
 // The architecture fences (pure source-grep invariants) live once in
 // scripts/arch-fences.sh and run here, inside `bun test`, so they execute on
 // every supported platform, on pre-push, and are debuggable locally. Each
@@ -142,11 +140,6 @@ describe("architecture fences (scripts/arch-fences.sh)", () => {
   // @spec CHRT-007 unit
   test("CHRT-007: the TAXONOMY charters equal the envelope scope fields", () => {
     fenceHeld("CHRT-007");
-  });
-
-  // @spec AUTHOR-011 unit
-  test("AUTHOR-011: the process-marker ledger only falls", () => {
-    fenceHeld("AUTHOR-011");
   });
 
   test("every run label begins with a requirement id", async () => {

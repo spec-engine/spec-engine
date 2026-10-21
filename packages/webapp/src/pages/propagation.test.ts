@@ -1,5 +1,3 @@
-// packages/webapp/src/pages/propagation.test.ts
-
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { join } from "node:path";
 import type { Storage } from "@spec-engine/shared";

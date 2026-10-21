@@ -1,12 +1,3 @@
-// packages/engine/src/operations/term.ts
-//
-// The glossary operations. A term is a requirement row in the reserved TERM
-// domain: the definition in `statement`, the headword in `term`, synonyms in
-// `aliases`, and each citing requirement pins the term version it read. Four
-// operations: mint a term, list the store, revise a definition in place with
-// the version bump citations drift against, and confirm a citation onto the
-// term's current version or its successor.
-
 import { type Diagnostic, type SpecRequirement, validateAndWrite } from "@spec-engine/shared";
 import { nextRequirementId } from "../authoring/domains";
 import { localToday } from "../authoring/edit";

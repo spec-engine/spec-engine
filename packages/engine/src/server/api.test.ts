@@ -1,21 +1,3 @@
-// packages/engine/src/server/api.test.ts
-//
-// Plan 05-03 / Task 2 — lock SERV-01 + SERV-03 at the Hono `/api/*` seam.
-// `mountApi(app, storage)` (server/api.ts) is the single HTTP surface the
-// webapp reads through; if a future refactor breaks route shapes, error
-// translation, FTS5 grammar catching, the V12 path-shape guard, or the
-// Cache-Control header, this file fails before any rendered output churns.
-//
-// Pattern: Pattern 6 from 05-RESEARCH — `app.request(path)` is the canonical
-// in-process Hono testing API; no Bun.serve, no port binding, no async
-// cleanup beyond storage.close + tmpdir rm.
-//
-// Harness mirrors storage-resolve.test.ts: one cloneFixture+runIndex'd
-// storage shared by every test via beforeAll/afterAll. Each test
-// constructs a fresh Hono app and calls mountApi(app, storage) — the same
-// storage instance is safe to share because every `/api/*` route is
-// read-only (Pitfall noted: no concurrent writes here).
-
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -35,8 +17,8 @@ let storage: Storage;
 let priorFlags: string | undefined;
 
 beforeAll(async () => {
-  // D4a / SERV-006: /api/query and /api/relations are feature-flagged; this
-  // suite tests the ON behavior (the OFF 404 is locked in feature-flags.test.ts).
+  // /api/query and /api/relations are feature-flagged; this suite tests the ON
+  // behavior (the OFF 404 is locked in feature-flags.test.ts).
   priorFlags = process.env.SPEC_FLAGS;
   process.env.SPEC_FLAGS = "query,relations,provenance";
   clone = cloneFixture(FIXTURE);
@@ -51,7 +33,6 @@ afterAll(() => {
   rmSync(clone, { recursive: true, force: true });
 });
 
-/** Build a fresh Hono app with `/api/*` mounted against the shared fixture storage. */
 function buildApp(): Hono {
   const app = new Hono();
   mountApi(app, storage);
@@ -71,11 +52,10 @@ describe("mountApi (/api/* Hono surface)", () => {
     expect(Array.isArray(body)).toBe(true);
     const reqIds = new Set(body.map((r) => r.req_id));
     expect(reqIds.has("AUTH-001")).toBe(true);
-    // At least one BILLING-* row must surface (covering all member repos).
     expect([...reqIds].some((id) => id.startsWith("BILLING-"))).toBe(true);
   });
 
-  test("GET /api/coverage headers include Cache-Control: no-store (RESEARCH Open Q5)", async () => {
+  test("GET /api/coverage headers include Cache-Control: no-store", async () => {
     const app = buildApp();
     const res = await app.request("/api/coverage");
     expect(res.headers.get("Cache-Control")).toBe("no-store");
@@ -94,7 +74,6 @@ describe("mountApi (/api/* Hono surface)", () => {
     }>;
     expect(Array.isArray(body)).toBe(true);
     expect(body.length).toBeGreaterThan(0);
-    // Every row carries the fields the Setup page renders.
     for (const r of body) {
       expect(typeof r.name).toBe("string");
       expect(typeof r.path).toBe("string");
@@ -104,7 +83,7 @@ describe("mountApi (/api/* Hono surface)", () => {
 
   // --- /api/platform --------------------------------------------------------
 
-  test("GET /api/platform → 200 with the derived platform version (RED-85)", async () => {
+  test("GET /api/platform → 200 with the derived platform version", async () => {
     const app = buildApp();
     const res = await app.request("/api/platform");
     expect(res.status).toBe(200);
@@ -113,7 +92,7 @@ describe("mountApi (/api/* Hono surface)", () => {
       source: string;
     };
     // Derived at request time: max domain version across the fixture's
-    // SPEC.json files — the retired manifest contributes nothing.
+    // SPEC.json files.
     expect(body.source).toBe("derived");
     expect(typeof body.version).toBe("number");
     expect(body.version).toBeGreaterThan(0);
@@ -224,17 +203,14 @@ describe("mountApi (/api/* Hono surface)", () => {
     expect(body.error).toContain("limit");
   });
 
-  test("GET /api/query?q=AND%20OR → 400 with FTS5 syntax error message (Pitfall 8; canonical input from fts.test.ts)", async () => {
-    // `"AND OR"` is the canonical known-bad FTS5 grammar input locked by
-    // Phase 4 plan 04-03 test 5 (packages/engine/test/fts.test.ts:104-115).
-    // Reuse verbatim — do NOT invent a new bad input.
+  test("GET /api/query?q=AND%20OR → 400 with FTS5 syntax error message", async () => {
+    // `"AND OR"` is the known-bad FTS5 grammar input the storage FTS tests
+    // also use; keep the two in step.
     const app = buildApp();
     const res = await app.request("/api/query?q=AND%20OR");
     expect(res.status).toBe(400);
     const body = (await res.json()) as { error: string };
-    // Contract: the error body identifies this as an FTS5 grammar error so
-    // a future webapp client can surface a useful hint. The substring is
-    // the typed prefix raised by storage.searchFts (sqlite.ts:457).
+    // The substring is the typed prefix raised by storage.searchFts.
     expect(body.error).toContain("FTS5");
   });
 
@@ -246,7 +222,6 @@ describe("mountApi (/api/* Hono surface)", () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as Array<{ id: string }>;
     expect(body.length).toBe(2);
-    // Storage already sorts by (key, seq): BILLING-002 (seq=2) before BILLING-009 (seq=9).
     expect(body.map((r) => r.id)).toEqual(["BILLING-002", "BILLING-009"]);
   });
 
@@ -258,7 +233,7 @@ describe("mountApi (/api/* Hono surface)", () => {
     expect(body.error).toContain("files");
   });
 
-  test("GET /api/resolve?files=../etc/passwd → 400 with 'platform-relative' message (V12 shape guard)", async () => {
+  test("GET /api/resolve?files=../etc/passwd → 400 with 'platform-relative' message", async () => {
     const app = buildApp();
     const res = await app.request("/api/resolve?files=..%2Fetc%2Fpasswd");
     expect(res.status).toBe(400);
@@ -274,7 +249,7 @@ describe("mountApi (/api/* Hono surface)", () => {
     expect(body.error).toContain("platform-relative");
   });
 
-  // --- /api/resolve?req= (reverse, mirrors CLI `spec resolve --req`) --------
+  // --- /api/resolve?req= -----------------------------------------------------
 
   test("GET /api/resolve?req=BILLING-009 → 200, tag sites for that requirement", async () => {
     const app = buildApp();
@@ -288,15 +263,12 @@ describe("mountApi (/api/* Hono surface)", () => {
       kind: string;
     }>;
     expect(body.length).toBeGreaterThan(0);
-    // Every row belongs to the queried requirement; rows are the ReqTagRow
-    // shape (no AUTOINCREMENT id leaked).
     for (const row of body) {
       expect(row.req_id).toBe("BILLING-009");
       expect(typeof row.file).toBe("string");
       expect(typeof row.line).toBe("number");
       expect(row).not.toHaveProperty("id");
     }
-    // Sorted by (repo, file, line) — byte-stable, same as the CLI.
     const keys = body.map((r) => `${r.repo} ${r.file} ${r.line}`);
     expect(keys).toEqual([...keys].sort());
   });
@@ -324,9 +296,7 @@ describe("mountApi (/api/* Hono surface)", () => {
     expect(body.error).toContain("not both");
   });
 
-  // --- RED-14 dead-end audit -----------------------------------------------
-
-  test("GET /api/resolve with > FILES_MAX files → 400 with cap message (RED-14)", async () => {
+  test("GET /api/resolve with > FILES_MAX files → 400 with cap message", async () => {
     const app = buildApp();
     const qs = Array.from({ length: FILES_MAX + 1 }, (_, i) => `files=f${i}.ts`).join("&");
     const res = await app.request(`/api/resolve?${qs}`);
@@ -335,13 +305,9 @@ describe("mountApi (/api/* Hono surface)", () => {
     expect(body.error).toContain(`max ${FILES_MAX}`);
   });
 
-  // --- RED-18: /api/resolve in self-member (rung-1) mode ------------------
-
-  test("GET /api/resolve?files=src/orders.ts against a rung-1 index → 200 with ORDERS-001 + ORDERS-002 (RED-18)", async () => {
-    // Same behavior as the CLI (acceptance criterion 3): the natural
-    // platform-relative path must resolve even though rung-1 tags are
-    // stored with the repo-basename prefix. The route shares the storage
-    // seam with the CLI, so this locks the HTTP surface explicitly.
+  test("GET /api/resolve?files=src/orders.ts against a rung-1 index → 200 with ORDERS-001 + ORDERS-002", async () => {
+    // Rung-1 tags are stored with the repo-basename prefix, yet the natural
+    // platform-relative path must resolve, as it does in the CLI.
     const fixture = resolve(
       import.meta.dir,
       "..",
@@ -367,7 +333,7 @@ describe("mountApi (/api/* Hono surface)", () => {
     }
   });
 
-  test("non-FTS storage error in /api/query rethrows → 500, NOT a sanitized 400 (RED-14)", async () => {
+  test("non-FTS storage error in /api/query rethrows → 500, NOT a sanitized 400", async () => {
     // Only the typed FTS5-syntax error translates to 400; any other storage
     // failure must escape the catch so Hono surfaces a 500 — a closed DB
     // handle is the cheapest deterministic non-FTS failure.
@@ -380,13 +346,7 @@ describe("mountApi (/api/* Hono surface)", () => {
   });
 });
 
-// ----------------------------------------------------------------------------
-// W1 (webapp coverage report) — /api/report: per-domain rollup over Active
-// requirements, served from the shared buildCoverageReport over the same
-// coverage VIEW /api/coverage reads (one engine, one rollup).
-// ----------------------------------------------------------------------------
-
-describe("GET /api/report (W1)", () => {
+describe("GET /api/report", () => {
   test("returns one sorted row per domain with the fixture's known counts", async () => {
     const app = new Hono();
     mountApi(app, storage);

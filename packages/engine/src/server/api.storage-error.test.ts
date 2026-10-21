@@ -1,21 +1,5 @@
-// packages/engine/src/server/api.storage-error.test.ts
-//
-// Webapp hardening follow-up — lock the operational-storage-failure seam end
-// to end. Motivating incident: `spec serve` run inside a coding-agent sandbox
-// (macOS seatbelt) cannot take the WAL file locks, so every storage call
-// throws SQLITE_IOERR_VNODE; the failure used to surface as Hono's bare-text
-// 500 and then the SSR pages' "SyntaxError: Failed to parse JSON" — two
-// layers of noise burying the actual cause. Now:
-//
-//   1. storage/errors.ts classifies operational SQLite failures (and ONLY
-//      those — our own SQL bugs keep propagating).
-//   2. The /api/* middleware translates them to a structured 503
-//      `{error: "storage_unavailable", code, hint}`.
-//   3. The webapp error boundary renders the hint as a readable error page.
-//
-// Storage stub: a Proxy whose every method throws a SQLiteError-shaped
-// error (structural `code` — the classifier deliberately does not
-// instanceof bun:sqlite's class, see D-08 note in storage/errors.ts).
+// The storage stub's errors carry only a structural `code`: the classifier
+// deliberately does not instanceof bun:sqlite's class (see storage/errors.ts).
 
 import { describe, expect, test } from "bun:test";
 import type { Storage } from "@spec-engine/shared";
@@ -87,7 +71,7 @@ describe("/api/* storage backstop (server/api.ts middleware)", () => {
     expect(body.hint).toContain("sandbox");
   });
 
-  test("503 still carries Cache-Control: no-store (WR-06 header-before-next)", async () => {
+  test("503 still carries Cache-Control: no-store", async () => {
     const app = new Hono();
     mountApi(app, throwingStorage(sqliteErr("SQLITE_BUSY")));
     const res = await app.request("/api/requirements");
@@ -110,10 +94,8 @@ describe("SSR error boundary (composed serve app)", () => {
     const res = await app.request("/");
     expect(res.status).toBe(503);
     const body = await res.text();
-    // The page surfaces the engine's structured cause + hint...
     expect(body).toContain("storage_unavailable");
     expect(body).toContain("sandbox");
-    // ...instead of the old downstream JSON-parse crash.
     expect(body).not.toContain("Failed to parse JSON");
   });
 
@@ -130,7 +112,7 @@ describe("SSR error boundary (composed serve app)", () => {
     expect(res.status).toBe(500);
     const body = await res.text();
     // The /api boundary collapses the unknown error to "internal error"; the
-    // page renders that — and NEVER the thrown message itself (T-5-03-03).
+    // page renders that, never the thrown message itself.
     expect(body).toContain("internal error");
     expect(body).not.toContain("secret internal detail");
   });

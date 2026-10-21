@@ -1,17 +1,5 @@
-// packages/engine/src/commands/map.drift-smalls.test.ts
-//
-// The small statement-5/6 drift fixes (DRIFT-PLAN.md task 12):
-//
-//   - DRAFT_REFERENCED (warning): a code tag on a Draft requirement — code
-//     shipped against a promise nobody approved yet.
-//   - GLOSSARY_DRIFT (warning): the committed GLOSSARY.md no longer matches
-//     what the TERM store generates — surfaced by spec check itself, not just
-//     this repo's CI fence.
-//   - Warm-index staleness warning: a read command serving an index older
-//     than a changed SPEC.json says so on stderr and names --fresh.
-//
-// Verifies:
-// @spec CHCK-009 integration
+// @spec CHCK-033 integration
+// @spec CHCK-034 integration
 // @spec CHCK-024 integration
 // @spec INDX-006 integration
 
@@ -24,6 +12,7 @@ import { openStorage } from "../storage/sqlite";
 import { cloneFixture } from "../testing/cloneFixture";
 import { entryOf, plantEdit } from "../testing/plant";
 import { TestPlatform } from "../testing/platform";
+import { specTag } from "../testing/specTag";
 import { mapCommand } from "./map";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "platform-fixture");
@@ -76,7 +65,26 @@ describe("DRAFT_REFERENCED — code bound to an unapproved promise", () => {
     expect(hit).toBeDefined();
     expect(hit?.severity).toBe("warning");
     expect(hit?.repo).toBe("api");
-    expect(hit?.detail).toContain("nobody approved yet");
+    expect(hit?.detail).toContain("code is bound to a promise nobody accepted yet");
+  });
+
+  test("a verifying tag on a Draft requirement is an error", async () => {
+    await plantEdit(platformDir, "BILLING", (doc) => {
+      entryOf(doc, "BILLING-002").status = "draft";
+    });
+    writeFileSync(
+      join(platformDir, "api", "test", "draft.test.ts"),
+      specTag("BILLING-002", "unit"),
+    );
+
+    const rows = (await diagnose()).filter(
+      (d) => d.code === "DRAFT_REFERENCED" && d.req_id === "BILLING-002",
+    );
+    expect(rows.map((d) => [d.source_file?.endsWith("draft.test.ts"), d.severity]).sort()).toEqual([
+      [false, "warning"],
+      [true, "error"],
+    ]);
+    expect(rows.find((d) => d.severity === "error")?.detail).toContain("asserts a promise");
   });
 
   test("the canonical fixture fires none (no Draft is tagged)", async () => {
@@ -99,7 +107,6 @@ describe("GLOSSARY_DRIFT — spec check surfaces the round-trip break itself", (
     expect(drifted?.severity).toBe("warning");
     expect(drifted?.detail).toContain("spec glossary");
 
-    // Regenerate byte-identically → clean.
     writeFileSync(
       join(platformDir, "GLOSSARY.md"),
       generateGlossary([
@@ -120,7 +127,6 @@ describe("staleness warning — a warm index older than a spec edit says so", ()
   const mapRun = (mapCommand as unknown as { run: RunFn }).run;
 
   test("spec map on a warm index warns after a SPEC.json changes, and --fresh silences it", async () => {
-    // Warm the index.
     await mapRun({ args: { platformDir, noPrompt: true }, rawArgs: [] });
     expect(errs.join("\n")).not.toContain("may be stale");
 

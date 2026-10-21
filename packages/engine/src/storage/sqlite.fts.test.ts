@@ -1,22 +1,3 @@
-// packages/engine/src/storage/sqlite.fts.test.ts
-//
-// Plan 04-03 / Task 2 — lock QURY-01 + QURY-02 at the storage seam. The
-// `searchFts` method (storage/sqlite.ts) is the single SQL+TS surface every
-// higher-level member (plan 04-05's `spec query` command, the webapp in
-// Phase 5) reads through. If a future refactor breaks bm25 ranking, drops the
-// porter tokenizer, or starts silently swallowing FTS5 grammar errors, this
-// file fails before any rendered output churns.
-//
-// The headline test is the empirical proof of the porter stemming claim
-// (04-RESEARCH Assumptions A1): `searchFts("renewal charge")` returns
-// BILLING-009 even though the fixture text contains `renews`, not `renewal`.
-// That's the moment Plan 04-01's SCHEMA_VERSION bump and tokenizer change
-// earn their keep.
-//
-// Pattern mirrors check-drift-view.test.ts and propagation.test.ts: a tmp
-// dbPath per test, openStorage + runIndex against the canonical fixture,
-// then read via storage.searchFts(...).
-
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -46,11 +27,9 @@ async function buildFixtureStorage(): Promise<Storage> {
 }
 
 describe("storage.searchFts against canonical platform-fixture", () => {
-  test("QURY-02 happy path: 'renewal charge' returns BILLING-009 as top hit (porter stemming claim A1)", async () => {
-    // Empirically validates 04-RESEARCH Assumptions A1: porter reduces both
-    // `renewal` (in the query) and `renews` (in BILLING-009.text) to the
-    // shared stem `renew`. Without the tokenizer change in plan 04-01 this
-    // query returned zero rows; with it, BILLING-009 ranks first.
+  test("'renewal charge' returns BILLING-009 as top hit (porter stemming)", async () => {
+    // The fixture text says `renews`, never `renewal`: only the shared porter
+    // stem `renew` connects them.
     const storage = await buildFixtureStorage();
     try {
       const hits = storage.searchFts("renewal charge");
@@ -63,9 +42,6 @@ describe("storage.searchFts against canonical platform-fixture", () => {
 
   // @spec QURY-006 unit
   test("superseded requirements never surface: BILLING-001 shares BILLING-009's text but is excluded", async () => {
-    // BILLING-001 (superseded) and BILLING-009 (its active successor) carry
-    // near-identical statements in the fixture — a query matching both must
-    // return only the live one.
     const storage = await buildFixtureStorage();
     try {
       const hits = storage.searchFts("renewal charge");
@@ -78,9 +54,6 @@ describe("storage.searchFts against canonical platform-fixture", () => {
   });
 
   test("porter sanity: 'renews charge' also returns BILLING-009 as top hit", async () => {
-    // Sanity check that porter does not LOSE matches it would have had under
-    // the default unicode61 tokenizer — both the stemmed and un-stemmed
-    // forms must surface BILLING-009.
     const storage = await buildFixtureStorage();
     try {
       const hits = storage.searchFts("renews charge");
@@ -95,8 +68,7 @@ describe("storage.searchFts against canonical platform-fixture", () => {
     const storage = await buildFixtureStorage();
     try {
       const hits = storage.searchFts("subscription");
-      // Don't pin position — other reqs may share the token. Just assert
-      // BILLING-009 is somewhere in the hit set (baseline FTS5 wiring proof).
+      // Position is not pinned: other reqs may share the token.
       expect(hits.some((h) => h.req_id === "BILLING-009")).toBe(true);
     } finally {
       storage.close();
@@ -104,10 +76,8 @@ describe("storage.searchFts against canonical platform-fixture", () => {
   });
 
   test("non-matching query returns empty array, not an exception", async () => {
-    // Use a plain alphanumeric token: FTS5 treats `-` as a NOT operator and
-    // `:` as a column-filter, so "nonexistent-token-zzzzz" would parse as
-    // grammar and throw. The intent of this test is the empty-result path,
-    // not the syntax-error path (that's covered separately below).
+    // A plain alphanumeric token: FTS5 reads `-` as NOT and `:` as a column
+    // filter, so a hyphenated probe would take the syntax-error path instead.
     const storage = await buildFixtureStorage();
     try {
       const hits = storage.searchFts("nonexistenttokenzzzzz");
@@ -117,10 +87,7 @@ describe("storage.searchFts against canonical platform-fixture", () => {
     }
   });
 
-  test("FTS5 syntax error surfaces as typed Error (Pitfall 8)", async () => {
-    // FTS5 parses bare `AND OR` as grammar operators with no operands → it
-    // throws a syntax error. The storage seam must surface that as a typed
-    // throw (with the documented prefix), never silently return [].
+  test("FTS5 syntax error surfaces as typed Error", async () => {
     const storage = await buildFixtureStorage();
     try {
       expect(() => storage.searchFts("AND OR")).toThrow(/^searchFts: FTS5 query syntax error/);
@@ -162,7 +129,6 @@ describe("storage.searchFts against canonical platform-fixture", () => {
       const hits: FtsHit[] = storage.searchFts("subscription");
       if (hits.length >= 2) {
         for (let i = 1; i < hits.length; i++) {
-          // Lower rank = better; assert monotonic non-decreasing order.
           const prev = hits[i - 1];
           const cur = hits[i];
           if (prev === undefined || cur === undefined) throw new Error("hit out of range");

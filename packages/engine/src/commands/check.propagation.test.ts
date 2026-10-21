@@ -1,19 +1,7 @@
-// packages/engine/src/commands/check.propagation.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec PROOF-013 integration
 //
-// PROP-01 end-to-end over BILLING-007 (the cart-vs-invoice scenario): a CHANGED
-// active rule with two verifying sites — api/test/tax.test.ts and
-// admin/test/reports.int.test.ts — where one bound site re-proved green and the
-// other did not fires ONE error PARTIAL_PROPAGATION (exit 1) WITHOUT
-// double-diagnosing UNPROVEN_REQ (one verifying tag passed). An all-pass results
-// file is silent; the same partial results WITHOUT --base is inert (PROP-01
-// needs the base diff to know the rule changed).
-//
-// The base ref is the UNMUTATED clone; each test changes only the WORKING TREE
-// copy of BILLING-007's statement so `changedRules` fires. The canonical fixture
-// is never touched (rmSync in afterEach + git-status assertion).
+// The base ref is the unmutated clone; each test changes only the working
+// tree copy of BILLING-007's statement so `changedRules` fires.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { rmSync, writeFileSync } from "node:fs";
@@ -116,7 +104,7 @@ async function runCheck(opts: {
   return { logs: logs.slice(), exitCode };
 }
 
-/** Write `xml` into the clone; return the platformDir-relative path (V12 guard). */
+/** Platform-relative, so the `--results` containment guard passes. */
 function writeResults(xml: string): string {
   const rel = "results.xml";
   writeFileSync(join(clone, rel), xml);
@@ -127,7 +115,6 @@ function parseDiags(captured: string[]): Diagnostic[] {
   return JSON.parse(captured[0] ?? "[]") as Diagnostic[];
 }
 
-/** Change BILLING-007's statement in the working tree so `changedRules` fires. */
 function changeBilling007Statement(): Promise<void> {
   return plantEdit(clone, "BILLING", (dom) => {
     const r = entryOf(dom, "BILLING-007");
@@ -135,7 +122,6 @@ function changeBilling007Statement(): Promise<void> {
   });
 }
 
-/** JUnit with the two BILLING-007 verifying sites at the given pass/fail states. */
 function junit(taxPass: boolean, reportsPass: boolean): string {
   const tc = (file: string, pass: boolean) =>
     pass
@@ -151,7 +137,7 @@ function fixtureClean(): boolean {
   return proc.stdout.toString().trim() === "";
 }
 
-describe("propagation integration (PROP-01) — changed BILLING-007, partial re-prove", () => {
+describe("propagation integration — changed BILLING-007, partial re-prove", () => {
   test("Scenario 1: one site passes, one fails → PARTIAL_PROPAGATION + exit 1, no UNPROVEN_REQ", async () => {
     await changeBilling007Statement();
     const results = writeResults(junit(/* tax */ true, /* reports */ false));
@@ -176,7 +162,7 @@ describe("propagation integration (PROP-01) — changed BILLING-007, partial re-
     );
   });
 
-  test("Scenario 3: same partial results WITHOUT --base → inert (PROP-01 needs the base diff)", async () => {
+  test("Scenario 3: same partial results WITHOUT --base → inert (propagation needs the base diff)", async () => {
     await changeBilling007Statement();
     const results = writeResults(junit(true, false));
     const { logs: out } = await runCheck({ ci: true, json: true, results });

@@ -1,13 +1,4 @@
-// packages/engine/src/commands/guard.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec GUARD-019
-//
-// `spec guard [platformDir] [--against <ref>] [--json]`: the pre-commit loss
-// gate. A ref that does not resolve (no git repo, no HEAD, an unknown ref)
-// prints NOT_A_GIT_REPO and exits 0 before any index is built; otherwise the
-// working-tree index is rebuilt cold and operations/guard.ts names the losses.
-// Exit 0 clean, 1 any loss, 2 not a platform.
 
 import { defineCommand } from "citty";
 import { gitRefResolves } from "../base/gitBase";
@@ -54,7 +45,7 @@ export const guardCommand = defineCommand({
 
     let losses: Loss[] = [];
     await withReadStorage(
-      { platformDir, dbPath: defaultIndexPath(platformDir), fresh: true },
+      { platformDir, dbPath: defaultIndexPath(platformDir), fresh: true, json: jsonMode },
       async (storage) => {
         losses = (await guard(storage, platformDir, ref)).losses;
       },

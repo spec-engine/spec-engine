@@ -1,13 +1,3 @@
-// packages/engine/src/commands/term.ts
-//
-// `spec term`: the glossary-term authoring surface over operations/term.ts.
-//
-//   spec term <name> --def <definition> [--aliases a,b] [--section s]  — author
-//   spec term                                                          — next unused TERM id
-//   spec term list                                                     — enumerate
-//   spec term revise <TERM-NNN> --def <definition>                     — revise in place, bump the version
-//   spec term confirm <KEY-NNN> <TERM-NNN>                             — re-pin a citation
-//
 // `list`, `revise`, and `confirm` are dispatched from the root `run` on the
 // first positional rather than as citty subcommands: citty refuses any first
 // positional that is not a registered subcommand name, which would break the
@@ -29,7 +19,12 @@ import {
 } from "../operations/term";
 import { ID_RE } from "../parser/grammar";
 import { platformDirArg } from "./_args";
-import { exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
+import {
+  exitOnFailure,
+  handleInvalidDomainFiles,
+  handleNotAPlatform,
+  printWarnings,
+} from "./_shared";
 
 /** Split a `--aliases "a, b, c"` flag into a trimmed, empty-filtered array. */
 function parseAliases(raw: string | undefined): string[] {
@@ -174,7 +169,10 @@ async function confirmTermCommand(opts: {
 
   const result = await confirmTerm({ platformDir, reqId, termId });
   if (!result.ok) exitOnFailure("spec term confirm", result);
-  await withIndex({ platformDir, build: "fresh" }, () => undefined);
+  await withIndex({ platformDir, build: "fresh" }, () => undefined).catch((e) => {
+    handleInvalidDomainFiles(e, false, EXIT.USAGE);
+    throw e;
+  });
 
   const { pinned, file } = result;
   if (opts.json) {

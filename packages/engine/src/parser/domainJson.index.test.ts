@@ -1,20 +1,5 @@
-// packages/engine/src/parser/domainJson.index.test.ts
-//
-// TERM-03 (Phase 6, Wave C — citation resolution). The `cites[]` field on a
-// requirement flattens into the derived `term_citations` table (mirroring
-// flattenRelates → relations), and each citation resolves to a `term_id`:
-//   - by TERM id (cited_as is a known TERM requirement id),
-//   - by exact term name/alias (resolved via the aggregate term_aliases map),
-//   - or NULL when unresolvable (Invariant #4 — the row still lands so Wave-D's
-//     UNDEFINED_TERM can fire).
-//
-// The `term`/`aliases` fields on a TERM requirement flatten into `term_aliases`
-// (one row per canonical name AND each alias), which is the name→id map the
-// citation-by-name resolution consumes. Resolution is a PIPELINE concern (it
-// needs the WHOLE platform's terms, not one spec's), so this integration test
-// drives the full runIndex and reads the derived tables back through storage.
-//
-// Scaffolding mirrors json-index.test.ts (mkdtempSync / openStorage / runIndex).
+// Resolution needs the whole platform's terms, so these drive the full
+// runIndex rather than the reader alone.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -36,12 +21,6 @@ afterEach(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 
-/**
- * Write a tmp platform with:
- *   - a TERM domain: TERM-001 term="Domain" aliases=["namespace"],
- *   - a BILLING domain: three reqs citing the term BY ID, BY NAME, and BY a
- *     ghost (unresolvable) surface form.
- */
 async function writeCitesFixture(root: string): Promise<void> {
   const fx = TestPlatform.at(root);
   await fx.terms();
@@ -68,7 +47,7 @@ async function writeCitesFixture(root: string): Promise<void> {
 }
 
 // @spec INDX-012 unit
-describe("cites → term_citations resolution (TERM-03)", () => {
+describe("cites → term_citations resolution", () => {
   test("term/aliases flatten to term_aliases (canonical name + each alias)", async () => {
     const fixture = join(tmp, "cites-fixture");
     await writeCitesFixture(fixture);
@@ -95,37 +74,26 @@ describe("cites → term_citations resolution (TERM-03)", () => {
       const byReq = new Map(cites.map((c) => [c.req_id, c]));
 
       expect(cites.length).toBe(3);
-      // Cite BY id (TERM-001) → resolves to TERM-001.
       expect(byReq.get("BILLING-001")?.term_id).toBe("TERM-001");
       expect(byReq.get("BILLING-001")?.cited_as).toBe("TERM-001");
-      // Cite BY name ("Domain") → resolves to the SAME term_id via term_aliases.
       expect(byReq.get("BILLING-002")?.term_id).toBe("TERM-001");
       expect(byReq.get("BILLING-002")?.cited_as).toBe("Domain");
-      // Cite BY a ghost surface form → term_id NULL (Invariant #4 — still lands).
       expect(byReq.get("BILLING-003")?.term_id).toBeNull();
       expect(byReq.get("BILLING-003")?.cited_as).toBe("Ghost");
-      // pinned_version round-trips.
       expect(byReq.get("BILLING-001")?.pinned_version).toBe(1);
     } finally {
       s.close();
     }
   });
 
-  // CR-01 regression: the schema allows an optional `aliases`/`term` on ANY
-  // requirement, but only TERM-domain entries may contribute to the name→term_id
-  // resolution map. A stray alias on a NON-TERM req must not enter term_aliases
-  // (a non-TERM id sorts before "TERM" and would hijack a colliding term name
-  // under first-wins, firing a spurious gating UNDEFINED_TERM).
-  test("a non-TERM requirement's aliases never pollute term resolution (CR-01)", async () => {
+  test("a non-TERM requirement's aliases never pollute term resolution", async () => {
     const fixture = join(tmp, "alias-pollution-fixture");
     const fx = TestPlatform.at(fixture);
     await fx.terms();
     await fx.term({ term: "Domain", definition: "The canonical Domain term." });
     const billing = await fx.domain("BILLING", { owner: "drea" });
-    // Malicious/stray: a NON-TERM req claiming the term name "Domain".
     const stray = await billing.req({ statement: "A charge." });
     await billing.amend(stray.id, { term: "Domain", aliases: ["Domain"] });
-    // A legit name-cite that must still resolve to the real TERM-001.
     await billing.req({
       statement: "Cites Domain by name.",
       cites: [{ term: "Domain", pinned: 1 }],
@@ -133,9 +101,7 @@ describe("cites → term_citations resolution (TERM-03)", () => {
     const s = openStorage(dbPath);
     try {
       await runIndex({ platformDir: fixture, storage: s });
-      // Only the TERM entry contributes to the alias map — BILLING-001 is absent.
       expect(s.listTermAliases()).toEqual([{ term_id: "TERM-001", name: "Domain" }]);
-      // The name-cite resolves to the real term, not hijacked to BILLING-001.
       const cite = s.listTermCitations().find((c) => c.req_id === "BILLING-002");
       expect(cite?.term_id).toBe("TERM-001");
     } finally {

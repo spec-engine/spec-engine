@@ -1,24 +1,8 @@
-// packages/engine/src/indexer/pipeline.json-index.test.ts
-//
-// STOR-01/STOR-02/STOR-03 (17-02, Task 3): end-to-end integration over the
-// committed planted-mess JSON fixture (`fixtures/json-fixture/`, a SEPARATE tree
-// from the Markdown `fixtures/platform-fixture/`). Proves:
-//   - a JSON domain file indexes into the correct internal rows (requirements,
-//     provenance) with lowercase statuses case-mapped to Capitalized;
-//   - the opaque KEY-NNN issue id (AUTH-001 created:BILLING-001) stores verbatim;
-//   - a planted bad issue role (BILLING-002 bogus-role) yields a UNKNOWN_ROLE
-//     diagnostic AND its well-formed issues still store (Invariant #4);
-//   - coverage is exercised — the api member's BILLING-009 spec tag lands;
-//   - a structurally-invalid SPEC.json is rejected LOUDLY as an error-severity
-//     INVALID_DOMAIN_FILE and contributes ZERO requirements (STOR-03) — no
-//     silent-zero, no crash.
-//
-// Scaffolding mirrors cold-rebuild.test.ts (mkdtempSync / openStorage / runIndex).
-
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { cpSync, existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { InvalidDomainFilesError, type Storage } from "@spec-engine/shared";
 import { openStorage } from "../storage/sqlite";
 import { specTag } from "../testing/cloneFixture";
 import { TestPlatform } from "../testing/platform";
@@ -49,7 +33,7 @@ afterEach(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 
-describe("JSON domain file → internal rows (STOR-01/STOR-02)", () => {
+describe("JSON domain file → internal rows", () => {
   test("requirements land with lowercase statuses case-mapped to Capitalized", async () => {
     const s = openStorage(dbPath);
     try {
@@ -69,7 +53,6 @@ describe("JSON domain file → internal rows (STOR-01/STOR-02)", () => {
       expect(byId.get("BILLING-002")?.status).toBe("Active");
       expect(byId.get("BILLING-007")?.status).toBe("Active");
       expect(byId.get("AUTH-001")?.status).toBe("Active");
-      // statement → text mapping is lossless
       expect(byId.get("AUTH-001")?.text).toBe("A session expires 30 days after last activity.");
     } finally {
       s.close();
@@ -92,14 +75,13 @@ describe("JSON domain file → internal rows (STOR-01/STOR-02)", () => {
         ["created", "ENG-1432"],
         ["supersedes-via", "ENG-1781"],
       ]);
-      // Opaque KEY-NNN-shaped issue id stored verbatim (PROV-02) — never resolved.
       expect(pairs("AUTH-001")).toEqual([["created", "BILLING-001"]]);
     } finally {
       s.close();
     }
   });
 
-  test("BILLING-002's planted bad role → UNKNOWN_ROLE, but its well-formed issues still store (Invariant #4)", async () => {
+  test("BILLING-002's planted bad role → UNKNOWN_ROLE, but its well-formed issues still store", async () => {
     const s = openStorage(dbPath);
     try {
       await runIndex({ platformDir: JSON_FIXTURE, storage: s });
@@ -107,7 +89,6 @@ describe("JSON domain file → internal rows (STOR-01/STOR-02)", () => {
       const unknown = s.listDiagnostics().filter((d) => d.code === "UNKNOWN_ROLE");
       expect(unknown.some((d) => d.req_id === "BILLING-002")).toBe(true);
 
-      // The two well-formed issues on BILLING-002 still landed.
       const prov002 = s
         .listProvenance()
         .filter((p) => p.req_id === "BILLING-002")
@@ -135,56 +116,64 @@ describe("JSON domain file → internal rows (STOR-01/STOR-02)", () => {
   });
 });
 
-describe("structurally-invalid SPEC.json is rejected LOUDLY (STOR-03)", () => {
-  test("a requirement missing id → error-severity INVALID_DOMAIN_FILE + ZERO requirements for that domain", async () => {
-    // A tmp platform with ONE planted invalid SPEC.json (a requirement missing
-    // its `id` — a structural reject) plus a minimal member so discoverRepos
-    // succeeds.
+/** The refusal `runIndex` throws for `platformDir`, or a failure when it builds. */
+async function refusal(platformDir: string, storage: Storage): Promise<InvalidDomainFilesError> {
+  try {
+    await runIndex({ platformDir, storage });
+  } catch (e) {
+    if (e instanceof InvalidDomainFilesError) return e;
+    throw e;
+  }
+  throw new Error("runIndex built an index over an invalid SPEC.json");
+}
+
+describe("an invalid SPEC.json refuses the build", () => {
+  // @spec INDX-016 unit
+  test("every invalid file is reported, as INVALID_DOMAIN_FILE rows only", async () => {
     const modFixture = join(tmp, "invalid-json-fixture");
     await platformWithPlantedBilling(modFixture, "missing-id");
-
-    const modDbPath = join(tmp, "invalid.sqlite");
-    const s = openStorage(modDbPath);
+    cpSync(join(PLANTED, "not-json", "spec-engine"), join(modFixture, "spec-engine"), {
+      recursive: true,
+    });
+    const s = openStorage(join(tmp, "invalid.sqlite"));
     try {
-      await runIndex({ platformDir: modFixture, storage: s });
-
-      const invalid = s.listDiagnostics().filter((d) => d.code === "INVALID_DOMAIN_FILE");
-      expect(invalid.length).toBeGreaterThan(0);
-      expect(invalid.every((d) => d.severity === "error")).toBe(true);
-      expect(invalid[0]?.source_file).toBe("spec-engine/BILLING/SPEC.json");
-
-      // ZERO requirements from the rejected domain — not a silent-zero, LOUD.
-      expect(s.listRequirements({ key: "BILLING" })).toEqual([]);
+      const err = await refusal(modFixture, s);
+      expect(err.diagnostics.every((d) => d.code === "INVALID_DOMAIN_FILE")).toBe(true);
+      expect(err.diagnostics.every((d) => d.severity === "error")).toBe(true);
+      expect([...new Set(err.diagnostics.map((d) => d.source_file))].sort()).toEqual([
+        "spec-engine/BILLING/SPEC.json",
+        "spec-engine/BROKEN/SPEC.json",
+      ]);
+      expect(err.diagnostics.some((d) => d.detail.includes("not valid JSON"))).toBe(true);
     } finally {
       s.close();
     }
   });
 
-  test("a non-JSON SPEC.json body → error-severity INVALID_DOMAIN_FILE, not a crash", async () => {
-    const modFixture = join(tmp, "nonjson-fixture");
-    await platformWithPlantedBilling(modFixture, "not-json");
-
-    const modDbPath = join(tmp, "nonjson.sqlite");
-    const s = openStorage(modDbPath);
+  // @spec INDX-016 unit
+  test("a refused build leaves the index on disk as it was", async () => {
+    const root = join(tmp, "warm");
+    await platformWithPlantedBilling(root, "missing-id");
+    rmSync(join(root, "spec-engine", "BILLING"), { recursive: true });
+    const fx = TestPlatform.at(root);
+    await (await fx.domain("ALPHA")).reqs(2);
+    const s = openStorage(join(tmp, "warm.sqlite"));
     try {
-      await runIndex({ platformDir: modFixture, storage: s });
-      const invalid = s.listDiagnostics().filter((d) => d.code === "INVALID_DOMAIN_FILE");
-      expect(invalid.length).toBe(1);
-      expect(invalid[0]?.severity).toBe("error");
-      expect(invalid[0]?.detail).toContain("not valid JSON");
-      expect(s.listRequirements()).toEqual([]);
+      const built = await runIndex({ platformDir: root, storage: s });
+      cpSync(join(PLANTED, "not-json", "spec-engine"), join(root, "spec-engine"), {
+        recursive: true,
+      });
+      await refusal(root, s);
+      expect(s.listRequirements().map((r) => r.id)).toEqual(["ALPHA-001", "ALPHA-002"]);
+      expect(s.listDiagnostics().some((d) => d.code === "INVALID_DOMAIN_FILE")).toBe(false);
+      expect(built.requirements).toBe(2);
     } finally {
       s.close();
     }
   });
 });
 
-// TERM-03 (Phase 6, Wave C): with `cites` POPULATED (not the present-and-empty
-// Wave-A state), cold-rebuild build_id stays byte-identical and listTermCitations
-// returns rows in the deterministic composite-key order the storage/build_id
-// sections use. Determinism is the T-06-08 tampering mitigation — a scan-order-
-// dependent resolution would flip the hash here.
-describe("citations populated: build_id byte-identity + deterministic order (TERM-03)", () => {
+describe("citations populated: build_id byte-identity + deterministic order", () => {
   function removeDbAndWalSiblings(path: string): void {
     for (const sfx of ["", "-wal", "-shm"]) {
       const p = path + sfx;
@@ -236,8 +225,6 @@ describe("citations populated: build_id byte-identity + deterministic order (TER
     try {
       await runIndex({ platformDir: fixture, storage: s });
       const cites = s.listTermCitations();
-      // Both cites resolve to TERM-001 (one by id, one by the "namespace" alias),
-      // ordered by req_id.
       expect(cites.map((c) => [c.req_id, c.term_id, c.cited_as])).toEqual([
         ["BILLING-001", "TERM-001", "TERM-001"],
         ["BILLING-002", "TERM-001", "namespace"],

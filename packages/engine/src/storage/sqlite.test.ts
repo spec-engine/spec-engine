@@ -16,7 +16,7 @@ afterEach(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 
-test("openStorage on a fresh path creates the schema and `coverage` is a VIEW (SCHM-06)", () => {
+test("openStorage on a fresh path creates the schema and `coverage` is a VIEW", () => {
   const path = join(tmp, "x.sqlite");
   const s = openStorage(path);
   s.close();
@@ -29,7 +29,7 @@ test("openStorage on a fresh path creates the schema and `coverage` is a VIEW (S
   db.close();
 });
 
-test("every required base table exists after open (SCHM-01..04)", () => {
+test("every required base table exists after open", () => {
   const path = join(tmp, "x.sqlite");
   const s = openStorage(path);
   s.close();
@@ -51,7 +51,7 @@ test("every required base table exists after open (SCHM-01..04)", () => {
   db.close();
 });
 
-test("`requirements_fts` is registered as a virtual table (SCHM-05)", () => {
+test("`requirements_fts` is registered as a virtual table", () => {
   const path = join(tmp, "x.sqlite");
   const s = openStorage(path);
   s.close();
@@ -66,7 +66,7 @@ test("`requirements_fts` is registered as a virtual table (SCHM-05)", () => {
   db.close();
 });
 
-test("FTS triggers exist (Pitfall 8 prevention)", () => {
+test("FTS triggers exist", () => {
   const path = join(tmp, "x.sqlite");
   const s = openStorage(path);
   s.close();
@@ -81,7 +81,7 @@ test("FTS triggers exist (Pitfall 8 prevention)", () => {
   db.close();
 });
 
-test("Phase 1 read stubs return empty arrays / null without throwing", () => {
+test("reads on an empty DB return empty arrays / null without throwing", () => {
   const path = join(tmp, "x.sqlite");
   const s = openStorage(path);
   expect(s.listRepos()).toEqual([]);
@@ -105,7 +105,6 @@ test("openStorage on an already-initialized path is idempotent", () => {
   s1.close();
   const s2 = openStorage(path);
   s2.close();
-  // If we got here without throwing, the second open is a no-op idempotent path.
   const db = new Database(path);
   const row = db.query("SELECT version FROM _schema_version").get() as { version: number };
   // Bound to the live constant so future bumps don't require a test edit.

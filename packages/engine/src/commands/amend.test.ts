@@ -1,18 +1,9 @@
-// packages/engine/src/commands/amend.test.ts
-//
-// `spec amend <KEY-NNN>`: the pre-production counterpart to supersede. Same
-// id, fields revised in place, envelope `updated` bumped, the derived domain
-// version untouched (amend refines truth that has not shipped; supersede
-// replaces truth that has). Only Active and Draft entries amend;
-// superseded/retired entries are history.
-//
-// Field mapping: --text→statement, --why→why, --lives→livesIn[].
-
 import { afterEach, beforeEach, describe, expect, setSystemTime, test } from "bun:test";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { localToday } from "../authoring/edit";
 import { deriveDomainVersion } from "../parser/domainJson";
+import { commitAndTag, git } from "../testing/git";
 import { type DomainHandle, TestPlatform } from "../testing/platform";
 import { specTag } from "../testing/specTag";
 import { amendCommand } from "./amend";
@@ -198,53 +189,99 @@ describe("spec amend", () => {
     const req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
     expect(req?.livesIn).toEqual(["@missing/file.ts"]);
   });
+
+  // @spec REQ-050 unit
+  // @spec REQ-051 unit
+  test("--relates replaces relates with every comma-split value; an empty value clears it", async () => {
+    await amendRun({
+      args: { id: ACTIVE, platformDir: tmp, relates: "BILLING-001" },
+      rawArgs: ["--relates", "BILLING-001", "--relates", " BILLING-003 ,BILLING-004"],
+    });
+    let req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
+    expect(req?.relates).toEqual(["BILLING-001", "BILLING-003", "BILLING-004"]);
+
+    await amendRun({ args: { id: ACTIVE, platformDir: tmp, relates: "" }, rawArgs: [] });
+    req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
+    expect(req?.relates).toEqual([]);
+  });
 });
 
-// ── amend is gated to UNSHIPPED entries. An Active requirement that code binds
-// (an implementing or verifying @spec tag) is shipped truth — amend refuses and
-// directs the author to supersede. A Draft entry, or an Active entry with zero
-// bound tags, still amends. Bound = code-derived kind only. ──────────────────
-describe("spec amend — bound-tag gate", () => {
-  // @spec REQ-035 unit
-  test("Active + implementing @spec tag → exit 2 (shipped; supersede instead), no write", async () => {
+const release = (tag: string) => commitAndTag(tmp, tag);
+
+describe("spec amend — release gate", () => {
+  // @spec REQ-044 unit
+  // @spec REQ-045 unit
+  test("a released Active entry refuses a statement change, naming the tag and both escape hatches", async () => {
     writeFileSync(join(tmp, "renew.ts"), `export const renew = 1; ${specTag(ACTIVE)}`);
+    release("v0.1.0");
     const before = await billing.raw();
     await expectExit2(() =>
       amendRun({ args: { id: ACTIVE, platformDir: tmp, text: "x" }, rawArgs: [] }),
     );
-    expect(errs.join("\n")).toContain("shipped");
-    expect(await billing.raw()).toBe(before); // gate runs before the write seam
+    const message = errs.join("\n");
+    expect(message).toContain("v0.1.0");
+    expect(message).toContain(`spec supersede ${ACTIVE}`);
+    expect(message).toContain("--lives");
+    expect(message).toContain("--relates");
+    expect(await billing.raw()).toBe(before);
   });
 
-  test("Active + only a verifying test tag → exit 2 (a test binding is still shipping)", async () => {
-    mkdirSync(join(tmp, "test"), { recursive: true });
-    writeFileSync(
-      join(tmp, "test", "renew.test.ts"),
-      `export const t = 1; ${specTag(ACTIVE, "unit")}`,
-    );
+  // @spec REQ-044 unit
+  test("a released Active entry refuses a why change", async () => {
+    release("v0.1.0");
     await expectExit2(() =>
-      amendRun({ args: { id: ACTIVE, platformDir: tmp, text: "x" }, rawArgs: [] }),
+      amendRun({ args: { id: ACTIVE, platformDir: tmp, why: "y" }, rawArgs: [] }),
     );
-    expect(errs.join("\n")).toContain("shipped");
   });
 
-  test("Active with zero bound tags still amends (the pre-ship path is unchanged)", async () => {
-    // No code file planted → the Active entry has no bindings → amend proceeds.
+  // @spec REQ-046 unit
+  test("a released Active entry amends --lives and --relates in place", async () => {
+    release("v0.1.0");
     await amendRun({
-      args: { id: ACTIVE, platformDir: tmp, text: "refined pre-ship", json: true },
+      args: { id: ACTIVE, platformDir: tmp, lives: "moved.ts", relates: "BILLING-001" },
       rawArgs: [],
     });
     const req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
-    expect(req?.statement).toBe("refined pre-ship");
+    expect(req?.livesIn).toEqual(["moved.ts"]);
+    expect(req?.relates).toEqual(["BILLING-001"]);
+    expect(req?.statement).toBe("rough draft of the rule");
   });
 
-  test("Draft entry amends even when a code tag binds it (Draft is unshipped by definition)", async () => {
+  // @spec REQ-044 unit
+  test("an entry minted after the newest release tag amends freely", async () => {
+    release("v0.1.0");
+    const later = await billing.req({ statement: "minted after the release", why: "w" });
+    await amendRun({ args: { id: later.id, platformDir: tmp, text: "reworded" }, rawArgs: [] });
+    const req = (await billing.read()).requirements.find((r) => r.id === later.id);
+    expect(req?.statement).toBe("reworded");
+  });
+
+  // @spec REQ-047 unit
+  test("a git repository with no v* tag treats every entry as unreleased", async () => {
+    git(tmp, "init", "-q");
+    git(tmp, "add", "-A");
+    git(tmp, "commit", "-q", "-m", "work");
+    git(tmp, "tag", "nightly");
+    await amendRun({ args: { id: ACTIVE, platformDir: tmp, text: "refined" }, rawArgs: [] });
+    const req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
+    expect(req?.statement).toBe("refined");
+  });
+
+  // @spec REQ-047 unit
+  test("a platform outside git amends a tagged entry freely", async () => {
+    writeFileSync(join(tmp, "renew.ts"), `export const renew = 1; ${specTag(ACTIVE)}`);
+    await amendRun({ args: { id: ACTIVE, platformDir: tmp, text: "refined" }, rawArgs: [] });
+    const req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
+    expect(req?.statement).toBe("refined");
+  });
+
+  test("Draft entry amends even after a release", async () => {
     const draft = await billing.req({
       status: "draft",
       statement: "a draft still being shaped",
       why: "w",
     });
-    writeFileSync(join(tmp, "draft.ts"), `export const d = 1; ${specTag(draft.id)}`);
+    release("v0.1.0");
     await amendRun({
       args: { id: draft.id, platformDir: tmp, text: "reshaped draft", json: true },
       rawArgs: [],

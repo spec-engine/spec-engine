@@ -1,13 +1,9 @@
-// packages/engine/src/commands/__smoke.ts
+// Hidden citty subcommands the CI smokes invoke against the compiled
+// `./dist/spec` binary, so the schema vocabulary is asserted against the
+// production artifact.
 //
-// Hidden citty subcommands invoked by the CI workflow against the compiled
-// `./dist/spec` binary (D-15 / CI-01). These exist solely so the integration
-// smoke suite has a deterministic invocation surface and can assert the
-// schema vocabulary directly against the production artifact.
-//
-// IMPORTANT: this file MUST NOT import `bun:sqlite` (D-08). All DB work
-// routes through `openStorage` + `inspectSchema` + `poisonSchemaVersion`
-// exported from `../storage/sqlite`, which is the sole bun:sqlite seam.
+// This file must not import `bun:sqlite`: all DB work routes through
+// `../storage/sqlite`, the sole bun:sqlite seam.
 
 import { defineCommand } from "citty";
 
@@ -16,7 +12,6 @@ export const schemaSmokeCommand = defineCommand({
     name: "__schema-smoke",
     description: "(hidden CI) open a fresh DB, exec DDL, assert the schema shape",
     hidden: true,
-    // hidden: true keeps this subcommand out of citty's `--help` output.
   },
   args: {
     path: {
@@ -42,7 +37,7 @@ export const schemaSmokeCommand = defineCommand({
         "domains",
         "requirements",
         "tags",
-        "relations", // RED-16 (self-review: the smoke must grow with the DDL)
+        "relations",
         "parse_diagnostics",
       ],
       views: ["coverage"],
@@ -76,10 +71,8 @@ export const schemaMismatchSmokeCommand = defineCommand({
   },
   async run({ args }) {
     const { openStorage, poisonSchemaVersion } = await import("../storage/sqlite");
-    // Open fresh (or reuse), then poison the version row, then re-open.
     openStorage(args.path).close();
     poisonSchemaVersion(args.path, 999);
-    // The next open MUST silently rebuild per D-12; if it throws, we fail.
     const s = openStorage(args.path);
     s.close();
     console.log("__schema-mismatch-smoke OK");

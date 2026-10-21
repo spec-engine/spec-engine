@@ -1,5 +1,3 @@
-// packages/engine/src/storage/sql/diagnostics.test.ts
-//
 // @spec CHCK-032 unit
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";

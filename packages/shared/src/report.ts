@@ -1,18 +1,5 @@
-// packages/shared/src/report.ts
-//
-// W1 (webapp coverage report) — pure rollup from the (req × repo) coverage
-// matrix to one row per domain over ACTIVE requirements. Lives in shared so
-// the engine API (/api/report), the webapp page, and any future CLI report
-// command compute the numbers from ONE function (one engine, not two).
-//
-// Coverage semantics mirror the check diagnostics' vocabulary:
-//   implemented — an implementing tag in ANY repo (ORPHAN_REQ's inverse)
-//   verified    — a verifying tag in ANY repo (UNVERIFIED_REQ's inverse)
-//   orphans     — Active reqs with no implementing tag anywhere
-//   unverified  — implemented but not verified
-//
-// Purity: no I/O, no bun:sqlite (D-11 fence) — input is the CoverageRow[]
-// shape the coverage VIEW already serves.
+// In shared so /api/report and the webapp page compute the numbers from one
+// function.
 
 import type { CoverageRow } from "./storage";
 
@@ -31,9 +18,7 @@ export interface ReportDomainRow {
 }
 
 /**
- * Roll the coverage matrix up into one row per domain, lexicographically
- * sorted. Non-Active requirements are excluded from every count — the
- * report answers "how covered is the standing truth", and superseded /
+ * Non-Active requirements are excluded from every count: superseded and
  * retired entries are history, not obligations.
  * @spec CHCK-032
  */

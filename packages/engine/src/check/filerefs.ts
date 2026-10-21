@@ -1,22 +1,7 @@
-// packages/engine/src/check/filerefs.ts
-//
-// The BROKEN_FILE_REF check pass. A requirement's `livesIn` entries name the
-// files that carry the behavior; this pass resolves each one against the
-// platform root and reports the ones that do not exist.
-//
-// Scoped to `livesIn`, NOT to free field text. The @-ref grammar's only rule
-// for telling a path from any other `@token` is "contains a slash", which a
-// scoped npm package name also satisfies — DIST-010's statement mentions
-// `@spec-engine/spec-engine` and would report as a missing file. `livesIn` is
-// a structured list of paths, so it carries no such ambiguity.
-//
-// Terminal-status entries (superseded/deprecated) are history: the file a
-// retired requirement used to live in is expected to disappear, so only
-// Active and Draft entries are judged.
-//
-// Reads the SPEC.json files straight from the filesystem, mirroring the
-// grammar pass — `livesIn` has no index column, so there is nothing to read
-// back and no SCHEMA_VERSION bump involved.
+// Scoped to `livesIn`, not free field text: the @-ref path rule ("contains a
+// slash") also matches scoped npm names like `@spec-engine/spec-engine`.
+// Superseded and deprecated entries are exempt; their files are expected to
+// disappear. Reads SPEC.json directly: `livesIn` has no index column.
 
 import {
   type Diagnostic,

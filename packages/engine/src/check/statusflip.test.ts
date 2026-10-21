@@ -1,18 +1,4 @@
-// packages/engine/src/check/statusflip.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec OWNER-002 unit
-//
-// GOV-02 unit cases for the pure `unapprovedStatusFlip()` detector. Drives the
-// function directly with hand-built SpecRequirement[] / CodeownersRule[] — no
-// git, no Storage, no bun:sqlite, no fixtures. UNAPPROVED_STATUS_FLIP is a
-// check-time projection with TWO-TIER severity: an active/draft → superseded/
-// retired flip on a CODEOWNERS-owned spec path whose domain owner is NOT in the
-// approver set fires ONE diagnostic — `severity: "warning"` by default and
-// `severity: "error"` only under strict (--require-owner-approval). Fail-closed
-// on an empty approver set. Exact-status-match (WR-02): a status outside the
-// union stays invisible (BAD_STATUS owns it). The detector returns UNSORTED.
-
 import { describe, expect, test } from "bun:test";
 import type { SpecRequirement } from "@spec-engine/shared";
 import type { CodeownersRule } from "./codeowners";
@@ -32,11 +18,10 @@ function mkReq(over: Partial<SpecRequirement> & { id: string }): SpecRequirement
   } as SpecRequirement;
 }
 
-// `spec-engine/BILLING/` (trailing slash → subtree) owns SPEC.json under it.
 const codeowners: CodeownersRule[] = [{ pattern: "spec-engine/BILLING/", owners: ["@drea"] }];
 const relPath = (_id: string): string | null => "spec-engine/BILLING/SPEC.json";
 
-describe("unapprovedStatusFlip() (GOV-02)", () => {
+describe("unapprovedStatusFlip()", () => {
   test("empty inputs → empty array", () => {
     expect(unapprovedStatusFlip([], [], codeowners, [], relPath, false)).toEqual([]);
   });
@@ -53,9 +38,7 @@ describe("unapprovedStatusFlip() (GOV-02)", () => {
     expect(out[0]?.source_file).toBe("spec-engine/BILLING/SPEC.json");
   });
 
-  test("WR-02: approver handle matches the CODEOWNERS owner case-insensitively", () => {
-    // CODEOWNERS owner @drea; PR-reviews approver arrives as @Drea (or DREA).
-    // GitHub logins are case-insensitive, so this flip IS approved → silent.
+  test("approver handle matches the CODEOWNERS owner case-insensitively", () => {
     const base = [mkReq({ id: "BILLING-001", status: "active" })];
     const change = [mkReq({ id: "BILLING-001", status: "superseded" })];
     expect(unapprovedStatusFlip(base, change, codeowners, ["@Drea"], relPath, true)).toEqual([]);
@@ -87,10 +70,8 @@ describe("unapprovedStatusFlip() (GOV-02)", () => {
   test("an approver matching a CODEOWNERS owner (@ normalized) → silent in BOTH modes", () => {
     const base = [mkReq({ id: "BILLING-001", status: "active" })];
     const change = [mkReq({ id: "BILLING-001", status: "superseded" })];
-    // approver "drea" (no @) matches CODEOWNERS owner "@drea" after normalization.
     expect(unapprovedStatusFlip(base, change, codeowners, ["drea"], relPath, false)).toEqual([]);
     expect(unapprovedStatusFlip(base, change, codeowners, ["drea"], relPath, true)).toEqual([]);
-    // and with the leading @ present on the approver handle too.
     expect(unapprovedStatusFlip(base, change, codeowners, ["@drea"], relPath, true)).toEqual([]);
   });
 

@@ -145,6 +145,9 @@ jobs:
       - name: "smoke 25 — governance-red on a cold build: REQUIREMENT_REMOVED + exit 1 (compiled binary) [GOV-01 / GOV-03]"
         run: bash scripts/smoke/25-governance-red.sh
 
+      - name: "smoke 26 — an invalid SPEC.json refuses the build: only INVALID_DOMAIN_FILE rows + exit 1 (compiled binary) [INDX-016 / INDX-017]"
+        run: bash scripts/smoke/26-invalid-domain-refusal.sh
+
       - name: secret-scan against compiled binary (T-1-02 mitigation)
         run: |
           if strings dist/spec 2>/dev/null | grep -E '(AKIA[0-9A-Z]{16}|sk-[a-zA-Z0-9]{20,}|xox[bp]-[a-zA-Z0-9-]+|ghp_[a-zA-Z0-9]{36}|AIza[0-9A-Za-z_-]{35})' >/dev/null 2>&1; then

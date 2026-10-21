@@ -1,10 +1,3 @@
-// packages/engine/src/parser/requirementLine.test.ts
-//
-// The `line` a requirement carries must point at that requirement's own `"id"`
-// key. Two ways a naive first-substring scan gets it wrong, both covered here:
-// an `issues[]` entry whose opaque tracker id is requirement-id-shaped, and a
-// later requirement whose id already appeared earlier in the file.
-
 import { describe, expect, test } from "bun:test";
 import { parseDomainJsonFile } from "./domainJson";
 import { findRequirementIdLine } from "./requirementLine";

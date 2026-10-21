@@ -34,10 +34,11 @@ Rules:
 - **The derived index owns nothing.** Never encode truth in `.spec-engine/`. It
   is rebuilt from `spec-engine/` plus `@spec` tags and must rebuild identically.
 - **Coverage is a SQL view**, never a materialized table.
-- **One engine, not two.** An operation is written once under
-  `packages/engine/src/operations/`. A surface (a command file, an API route,
-  an MCP tool) may only parse its input, call the operation, and render the
-  result. No forked logic between surfaces.
+- **An operation is written once**, under `packages/engine/src/operations/`.
+  A command file, an API route, an MCP tool, and the webapp parse their
+  input, call the operation, and render the result. An input the operation
+  accepts is exposed on every surface that calls it, and
+  `operations/parity.test.ts` proves the surfaces write the same envelope.
 - **Keep the planted defects in `fixtures/`.** They exist so `spec check` has
   something to catch.
 - **Exactly one `bun:sqlite` import**, in `packages/engine/src/storage/sqlite.ts`.
@@ -58,7 +59,10 @@ Rules:
   after the fact) is planted with `plantEdit` in `src/testing/plant.ts`, which
   still writes through `validateAndWrite`. A schema-invalid file lives under
   `src/testing/fixtures/`. Nothing else writes a `SPEC.json` by hand: the
-  SCHM-026 fence scans every source file and every test.
+  SCHM-026 fence scans every source file and every test. A rewrite of an
+  existing file preserves its shape: unchanged entries stay byte-identical, a
+  changed entry keeps its key order, and an appended entry takes the key order
+  of the last one (SCHM-031..034).
 - **Membership is platform-map's; the pin is ours.** Which directories are
   members, and whether a repo is a monorepo, comes from
   `@spec-engine/platform-map` (`map()` and `locate()`, imported only in
@@ -104,8 +108,8 @@ Rules:
   (`architecture-fences`, `corpus-hygiene`, `taxonomy`, `npm-package`, the
   webapp import fence) lives in `packages/<pkg>/test/`. The tag scanner
   classifies a file as a test by the `.test.` substring, so a co-located tag
-  still verifies; the engine-internal fences and the marker ratchet skip
-  `*.test.ts` and `src/testing/`, the write-seam fence does not.
+  still verifies; the engine-internal fences skip `*.test.ts` and
+  `src/testing/`, the write-seam fence does not.
 - **A fence runs inside `bun test` under a 5-second budget**
   (`architecture-fences.test.ts` spawns the whole script). Keep each fence to
   one process.
@@ -116,9 +120,8 @@ Comments:
 - Before writing one, prefer a named function, a test, or an `@spec KEY-NNN` tag.
 - Never restate a requirement, name a plan, phase, wave, pitfall, or review
   round, or narrate how the code got here. Behavior lives in `SPEC.json`.
-- Enforced by `fence_comment_markers`, a ratchet over
-  `scripts/comment-marker-debt.txt`: a file absent from the ledger must carry
-  zero markers, and a listed file's count may only fall.
+- A test name is a comment the runner prints: it claims only what the body
+  exercises and carries no process token.
 
 ## Invocation
 
@@ -145,8 +148,10 @@ How this implementation realizes them:
    are permanent. Changes supersede or `spec deprecate`, never overwrite.
 2. Code binds with a tag: `// @spec KEY-NNN`. A test tag may add a level token
    `unit` | `integration` | `e2e`. The scanner reads `.ts`, `.tsx`, `.js`,
-   `.jsx`, `.mjs`, `.sh`, `.lua`, `.luau`, `.go`, and `.rs` files; the tag
-   regex ignores the comment leader, so `--`, `//`, and `#` all work.
+   `.jsx`, `.mjs`, `.sh`, `.lua`, `.luau`, `.go`, `.rs`, `.tf`, `.toml`,
+   `.sql`, and `.css` files and any file named `Dockerfile` or
+   `Dockerfile.<suffix>`; the tag regex ignores the comment leader, so `--`,
+   `//`, `#`, and `/* … */` all work.
 3. Tag kind is path-derived. A tag in implementation code **implements**; a tag
    in a test path **verifies**. Never write those words in the tag. A test
    path contains `.test.`, `.spec.`, `__tests__/`, `/tests/`, `/e2e/`, or
@@ -244,9 +249,18 @@ Build or refresh the derived index.
 
 `--json`: `{ build_id, repos, domains, requirements, tags, diagnostics }`.
 
-Exit: 0 built / 1 crashed mid-index / 2 not a platform or bad args.
+Exit: 0 built / 1 an invalid SPEC.json refused the build, or the build crashed
+/ 2 not a platform or bad args.
 
 - `build_id` is deterministic for identical inputs (cold-rebuild equivalence).
+- A `SPEC.json` that is not JSON or fails the shared schema refuses the whole
+  build, and the index on disk is left as it was. Every file is parsed first,
+  so one run reports every invalid file. Under `--json` stdout holds only
+  the `INVALID_DOMAIN_FILE` rows in the `spec check --json` row shape; text
+  mode prints only those rows on stderr. Every other index-building command prints only the same rows and
+  exits 1 (`check`, `gate`, `guard`, `serve`, and the read commands); a
+  lifecycle command that reindexes for its worklist (`supersede`, `amend`,
+  `deprecate`, `move`, `term confirm`) exits 2 after its write.
 - Also writes `.spec-engine/doctor.md`, a list of doc lines that mention a
   requirement id without an explicit `<!-- @spec ID -->` binding.
 
@@ -279,10 +293,10 @@ Codes, in `DiagnosticCode` order:
 | `SUPERSEDED_REFERENCED` | error |
 | `DEPRECATED_REFERENCED` | error |
 | `STATEMENT_GRAMMAR` | per domain, default warning |
-| `DRAFT_REFERENCED` | warning |
+| `DRAFT_REFERENCED` | error on a verifying tag, warning on an implementing or documenting tag |
 | `GLOSSARY_DRIFT` | warning |
 | `ORPHAN_REQ` | error |
-| `UNVERIFIED_REQ` | error |
+| `UNVERIFIED_REQ` | warning |
 | `DRIFT` | error |
 | `NO_SPEC_CONFIG` | warning |
 | `BROKEN_FILE_REF` | error |
@@ -296,6 +310,9 @@ Codes, in `DiagnosticCode` order:
 | `UNPROVEN_REQ` | error, only with `--results` |
 | `PROOFS_UNCONFIRMED` | warning, only without `--results` |
 | `REQUIREMENT_REMOVED` | error |
+| `IMPL_LOST` | error, when a base ref resolves |
+| `VERIFY_LOST` | warning, when a base ref resolves |
+| `SPEC_FILE_DELETED` | error, when a base ref resolves |
 | `UNAPPROVED_STATUS_FLIP` | warning; error with `--require-owner-approval` |
 | `PARTIAL_PROPAGATION` | error, needs `--base` and `--results` |
 | `MALFORMED_FILE` | platform-map's severity: error, or warning for a manifest |
@@ -338,6 +355,34 @@ present on disk with no `spec-engine.member.json`.
   `TERM_DRIFT` (warning) is a pin behind the term's current version;
   `ORPHAN_TERM` (warning) is an Active term nothing cites. The first three
   clear with `spec term confirm`.
+- Losses: whenever a base ref resolves (`--base`, else `HEAD`), `check`
+  reports the `IMPL_LOST`, `VERIFY_LOST`, and `SPEC_FILE_DELETED` rows
+  `spec guard` would report against that ref. Guard's `REQUIREMENT_REMOVED`
+  rows are dropped; the removal check already reports that id.
+- Coverage counts only Active requirements: `ORPHAN_REQ` and
+  `UNVERIFIED_REQ` fire for Active entries only. <!-- @spec CHCK-032 -->
+
+#### check.json
+
+`spec-engine/check.json` regrades diagnostics. Absent means no rules.
+
+```json
+{ "severity": [
+  { "code": "UNVERIFIED_REQ", "severity": "error" },
+  { "code": "UNVERIFIED_REQ", "severity": "warning", "match": ["LEGACY", "BILLING-004"] }
+] }
+```
+
+- `code` is any diagnostic code; `severity` is `error`, `warning`, or `off`.
+- `match` lists domain keys and requirement ids. A scoped rule applies only
+  to rows whose `req_id` is listed or carries a listed key.
+- The most specific rule wins: an id match, then a domain match, then an
+  unscoped rule. Among equals, the later rule wins.
+- `off` drops the row from every output.
+- Grading runs inside the operation, so the CLI, `spec_check`, and every
+  other surface agree, and exit 1 follows the graded severities.
+- A file that fails the schema (unknown code or key, a bad severity, a
+  malformed match entry) exits 2 with `spec-engine/check.json: <path>: <reason>`.
 
 ### spec guard
 
@@ -508,8 +553,10 @@ Exit: 0 wrote or already configured / 2. Branch on `action`, not the exit code.
   engine's own checkout (root package named `@spec-engine/spec-engine`),
   where only the path below the platform root is judged.
 - `ignore: ["dir", …]` excludes repo-relative directory prefixes from that
-  repo's scans. The `members` glob is gone: a monorepo's columns are its
-  workspace manifest's packages.
+  repo's scans: `vendor` hides `vendor/x.ts` but not `src/vendor/x.ts`. A
+  monorepo root column excludes its workspace package paths the same way. The
+  `members` glob is gone: a monorepo's columns are its workspace manifest's
+  packages.
 
 ### spec domain
 
@@ -533,7 +580,7 @@ Exit: 0 / 2.
 | --- | --- |
 | stdin not a TTY, no `--text` | Print the bare next unused id (e.g. `BILLING-010`), exit 0. No prompts, no writes. |
 | `--json`, no `--text` | Print `{ domain, next_id }`. Same zero-write contract, even on a TTY. |
-| `--text "<statement>"` | Append an Active entry with zero prompts. `--why`, `--lives`, `--issue <ticket>` fill the other fields and error without `--text`. `--lives` repeats and comma-separates: `--lives a.ts --lives b.ts,c.ts` records all three. |
+| `--text "<statement>"` | Append an Active entry with zero prompts. `--why`, `--lives`, `--relates`, `--issue <ticket>` fill the other fields and error without `--text`. `--lives` and `--relates` repeat and comma-separate: `--lives a.ts --lives b.ts,c.ts` records all three. |
 | `--draft` | Author the entry as Draft (with `--text`, or on a TTY). Off a TTY without `--text` it exits 2. |
 | TTY, no flags | Interactive authoring. |
 
@@ -586,13 +633,18 @@ Exit: 0 / 2.
 ### spec supersede
 
 Requires an Active target. Flips it to `superseded by NEW`, mints the successor
-in the same domain, reindexes fresh, and prints the retag worklist (the sites
-`check` reports as `SUPERSEDED_REFERENCED` until retagged).
+in the domain file that holds the target, reindexes fresh, and prints the
+retag worklist (the sites `check` reports as `SUPERSEDED_REFERENCED` until
+retagged).
+
+The successor copies the predecessor's `why`, every `livesIn` entry,
+`relates`, `cites`, `aliases`, `term`, and `section` unless a flag overrides
+the field. Its `issues` hold only the `created` row from `--issue`.
 
 | Flag | Effect |
 | --- | --- |
 | `--text` | The successor statement. Required when not a TTY. |
-| `--why`, `--lives` | Successor fields. Default to copies of the predecessor's. `--lives` repeats or comma-separates and replaces the whole list; an empty value clears it. |
+| `--why`, `--lives`, `--relates` | Successor fields. Default to copies of the predecessor's. `--lives` and `--relates` repeat or comma-separate and replace the whole list; an empty value clears it. |
 | `--issue <ticket>` | Recorded as `supersedes-via` on the predecessor and `created` on the successor. |
 | `--no-bump` | TERM domain only: keep the authored `specVersion`. No-op elsewhere. |
 
@@ -606,9 +658,11 @@ Exit: 0 / 2. All guards run before the first byte is written.
 ### spec move
 
 Cross-domain supersede. Mints the successor as the next id in `<NEW-DOMAIN>`
-(which must exist), copies `statement`, `why`, `livesIn` (`--text`, `--why`,
+(which must exist), copies `statement`, `why`, every `livesIn` entry,
+`relates`, `cites`, `aliases`, `term`, and `section` (`--text`, `--why`,
 `--lives` override), flips the source to superseded with a cross-domain
-`supersededBy`, and prints the retag worklist.
+`supersededBy`, and prints the retag worklist. The successor carries no
+`issues`.
 
 `--json`: `{ old_id, new_id, from_file, to_file, source_spec_version,
 target_spec_version, retag: [...] }`.
@@ -624,14 +678,22 @@ Revise an Active or Draft entry in place. Same id, no version change.
 
 | Flag | Effect |
 | --- | --- |
-| `--text`, `--why`, `--lives` | Field to change. At least one flag is required. Untouched fields stay byte-identical. `--lives` repeats or comma-separates and replaces the whole `livesIn` list (the `--aliases` idiom); `--lives ""` clears it. |
+| `--text`, `--why`, `--lives`, `--relates` | Field to change. At least one flag is required. Untouched fields stay byte-identical. `--lives` and `--relates` repeat or comma-separate and replace the whole list (the `--aliases` idiom); an empty value clears it. |
 | `--issue <ticket>` | Append `amends-via` provenance. |
 | `--term`, `--aliases` | TERM ids only. |
 
 `--json`: `{ id, file, fields_changed }`.
 
-Exit: 0 / 2 (superseded or deprecated target; an Active entry that code already
-tags, which is shipped and must be superseded instead).
+A released requirement is an Active entry present in its domain file at the
+newest `v*` tag merged into HEAD. Its promise does not change in place: a
+`--text`, `--why`, `--term`, or `--aliases` amend refuses with exit 2, naming
+the tag. Two paths stay open: `spec supersede` changes the promise, and an
+amend of only `--lives`, `--relates`, or `--issue` writes in place. With no
+`v*` tag merged into HEAD, or outside git, every entry is unreleased. A Draft
+entry always amends.
+
+Exit: 0 / 2 (superseded or deprecated target; a released entry's promise
+fields).
 
 ### spec accept
 
@@ -708,7 +770,7 @@ MCP server over stdio. Register it as
 | `spec_next_id` | `{ domain, next_id }`, nothing written |
 | `spec_get` | one `Requirement` row, or `[]` for an unknown id; the `spec get --json` shape |
 | `spec_list` | `Requirement` rows in (key, seq) order, `domain` and `status` filters; the `spec list --json` shape |
-| `spec_supersede` | `{ old_id, new_id, file, spec_version, retag }`, the `spec supersede --json` shape |
+| `spec_supersede` | `{ old_id, new_id, file, spec_version, retag }`, the `spec supersede --json` shape; optional `why`, `lives_in`, `relates`, `issue` arguments |
 | `spec_deprecate` | `{ id, file, reason, sites }`, the `spec deprecate --json` shape |
 | `spec_accept` | `{ id, file }`, the `spec accept --json` shape |
 
@@ -731,8 +793,11 @@ command choreography:
 3. **Dedup.** `spec query "<phrase>" . --json` before minting. Overlap means
    `spec amend` or relate the existing requirement.
 4. **Draft to the standard.** Fixed EARS shape, checked at write time where the
-   domain declares it. The why names what breaks. Every draft quotes the phrase
-   of the brief it derives from.
+   domain declares it. One promise per statement: a result that chains two
+   behaviors with `and` is two requirements. Prefer `When`, `If … then`, and
+   the bare `shall` form; `While` and `Where` only when a state or feature
+   gates the behavior. The why names what breaks; rationale never enters the
+   statement. Every draft quotes the phrase of the brief it derives from.
 5. **Mint.** `spec req <domain> --text "<statement>" --why "<what breaks>"
    --lives "<file>" [--issue <ticket>]`.
 6. **Provenance, not identity.** The ticket goes in `--issue`, never in an id

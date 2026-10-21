@@ -1,18 +1,4 @@
-// packages/engine/src/check/propagation-teeth.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec PROOF-013 unit
-//
-// PROP-01 unit cases for the pure `changedRules()` + `partialPropagation()`
-// detectors. Drives the functions directly with hand-built SpecRequirement[] /
-// Tag[] / TestCaseResult[] — no git, no Storage, no bun:sqlite, no fixtures.
-//
-// `changedRules` = the base→change content/changedAtVersion diff.
-// `partialPropagation` = for a CHANGED active rule with ≥2 verifying tags, the
-// MIXED `anyPass && !allPass` case → ONE error PARTIAL_PROPAGATION. All-pass is
-// silent; all-fail is left to UNPROVEN_REQ (no double-diagnosis). Reuses
-// `correlateTag` from check/proven.ts. The detector returns UNSORTED.
-
 import { describe, expect, test } from "bun:test";
 import type { SpecRequirement, Tag } from "@spec-engine/shared";
 import type { TestCaseResult } from "../results/junit";
@@ -50,7 +36,7 @@ function mkResult(over: Partial<TestCaseResult> & { file: string }): TestCaseRes
 
 const relPath = (_id: string): string | null => "spec-engine/BILLING/SPEC.json";
 
-describe("changedRules() (PROP-01 base diff)", () => {
+describe("changedRules()", () => {
   test("statement differs → included", () => {
     const base = [mkReq({ id: "BILLING-007", statement: "old" })];
     const change = [mkReq({ id: "BILLING-007", statement: "new" })];
@@ -76,8 +62,7 @@ describe("changedRules() (PROP-01 base diff)", () => {
   });
 });
 
-describe("partialPropagation() (PROP-01)", () => {
-  // BILLING-007's two bound sites (the cart-vs-invoice partial-update analog).
+describe("partialPropagation()", () => {
   const passTag = mkTag({ req_id: "BILLING-007", file: "api/test/tax.test.ts" });
   const failTag = mkTag({ req_id: "BILLING-007", file: "admin/test/reports.int.test.ts" });
 
@@ -131,7 +116,6 @@ describe("partialPropagation() (PROP-01)", () => {
       mkResult({ file: "api/test/tax.test.ts", status: "pass" }),
       mkResult({ file: "admin/test/reports.int.test.ts", status: "fail" }),
     ];
-    // Only one verifying tag (passTag) + a non-verifying implTag → below threshold.
     expect(partialPropagation(changed, [passTag, implTag], results, relPath)).toEqual([]);
   });
 

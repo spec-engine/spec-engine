@@ -1,20 +1,3 @@
-// packages/engine/src/operations/glossary.test.ts
-//
-// TERM-06 (Phase 6, Wave F) — the GLOSSARY round-trip fence. GLOSSARY.md is
-// migrated into the TERM store (TERM-001..N), then GENERATED back from the store
-// deterministically so the human view can't drift. These are the RED tests for
-// that behavior (they fail until commands/glossary.ts + the migrated store land):
-//
-//   1. migrate/parse — each `- **Name** — def` bullet (multi-line collapsed) parses
-//      into a term with its enclosing `## Section`, in document order.
-//   2. generate determinism — generation over the same terms is byte-identical
-//      across two runs (no Date/random; LLM-free static template).
-//   3. round-trip fence — generation over the REAL migrated store equals the
-//      committed GLOSSARY.md byte-for-byte (the fence assertion; RED until the
-//      migration + regeneration land and are committed).
-//   4. gate-safe — the ~30 fresh uncited terms are ORPHAN_TERM WARNINGS, so
-//      `spec check --ci` (severity==='error' predicate) stays exit 0 post-migration.
-
 import { describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -26,14 +9,10 @@ import { openStorage } from "../storage/sqlite";
 import { TestPlatform } from "../testing/platform";
 import { generateGlossary, parseGlossary } from "./glossary";
 
-// The real repo root (contains spec-engine/ + the committed GLOSSARY.md).
 const REPO_ROOT = resolve(import.meta.dir, "..", "..", "..", "..");
 const GLOSSARY_MD = join(REPO_ROOT, "GLOSSARY.md");
 const TERM_SPEC = join(REPO_ROOT, "spec-engine", "TERM", "SPEC.json");
 
-// A small, self-contained fixture GLOSSARY exercising: an intro (ignored), two
-// `## Section` headings, a single-line bullet, a multi-line (hand-wrapped) bullet
-// that must collapse to one logical statement, and a second section.
 const FIXTURE = `# Glossary
 
 Intro prose that is not a term and must be skipped by the parser — even with an
@@ -86,7 +65,7 @@ async function diagnose(platformDir: string): Promise<Diagnostic[]> {
   }
 }
 
-describe("TERM-06 — GLOSSARY round-trip (migrate + generate + fence)", () => {
+describe("GLOSSARY round-trip (migrate + generate + fence)", () => {
   // @spec CHCK-021 integration
   test("migrate: parses bullets in document order with section + collapsed statement", () => {
     const terms = parseGlossary(FIXTURE);
@@ -97,7 +76,6 @@ describe("TERM-06 — GLOSSARY round-trip (migrate + generate + fence)", () => {
       "Second section",
     ]);
     expect(terms[0]?.statement).toBe("a one-line definition.");
-    // The hand-wrapped Beta bullet collapses to one logical line (single spaces).
     expect(terms[1]?.statement).toBe(
       "a definition that wraps across two source lines and must collapse into a single logical statement.",
     );
@@ -109,8 +87,6 @@ describe("TERM-06 — GLOSSARY round-trip (migrate + generate + fence)", () => {
     const a = generateGlossary(terms);
     const b = generateGlossary(terms);
     expect(a).toBe(b);
-    // A generated document ends with exactly one trailing newline and renders a
-    // bullet per term under its section heading.
     expect(a.endsWith("\n")).toBe(true);
     expect(a.endsWith("\n\n")).toBe(false);
     expect(a).toContain("## First section");
@@ -126,9 +102,7 @@ describe("TERM-06 — GLOSSARY round-trip (migrate + generate + fence)", () => {
 
   test("gate-safe: migrated uncited terms are warnings — no error-severity diagnostic", async () => {
     const rows = await diagnose(REPO_ROOT);
-    // ORPHAN_TERM is warning; no real requirement cites a term yet, so
-    // UNDEFINED_TERM must not fire. The `spec check --ci` exit contract is
-    // exactly `rows.some(d => d.severity === "error")`.
+    // The `spec check --ci` exit contract is exactly this predicate.
     expect(rows.some((d) => d.severity === "error")).toBe(false);
   });
 
@@ -158,10 +132,8 @@ describe("TERM-06 — GLOSSARY round-trip (migrate + generate + fence)", () => {
           run: (ctx: { args: Record<string, unknown>; rawArgs: string[] }) => Promise<void>;
         }
       ).run;
-      // Clean: committed file IS the generated output — check returns, no exit.
       writeFileSync(join(plat, "GLOSSARY.md"), generateGlossary([term]));
       await run({ args: { platformDir: plat, check: true }, rawArgs: [] });
-      // Drift: committed file differs by one byte-level edit — exit 1.
       writeFileSync(join(plat, "GLOSSARY.md"), "# Glossary\n\ndrifted\n");
       let code: number | null = null;
       try {

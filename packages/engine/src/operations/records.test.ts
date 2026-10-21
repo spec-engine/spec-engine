@@ -1,5 +1,3 @@
-// packages/engine/src/operations/records.test.ts
-
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { rmSync } from "node:fs";
 import { join } from "node:path";

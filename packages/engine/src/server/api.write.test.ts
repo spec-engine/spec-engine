@@ -1,26 +1,5 @@
-// packages/engine/src/server/api.write.test.ts
-//
-// VAL-03 (21-01): the engine HTTP plane gains its FIRST state-changing surface —
-// `POST /api/requirements` (create) and `PUT /api/requirements/:id` (amend). Both
-// route through the SINGLE `validateAndWrite()` seam in `@spec-engine/shared` (VAL-01 —
-// no forked write logic) and re-derive the index via `runIndex`. This suite proves
-// the four properties that make that surface trustworthy:
-//
-//   (1) CREATE — a POST creates a requirement in the target domain's SPEC.json
-//       through the seam, returns 201 {ok,id}, and a follow-up GET shows the row.
-//   (2) AMEND — a PUT amends an existing requirement's statement, returns 200, the
-//       follow-up GET reflects the new statement, and untouched fields are
-//       byte-identical on disk.
-//   (3) VAL-02 PARITY — an invalid submission returns 400 whose diagnostics are
-//       deep-equal to a DIRECT `validateDomainFile` call on the same mutated
-//       envelope (a single validator cannot fork).
-//   (4) CROSS-ORIGIN (T-21-01) — a browser POST carrying a mismatched `Origin`
-//       is rejected 403 with NO on-disk mutation; the in-process `app.request`
-//       case (no Origin header) succeeds.
-//
-// Everything is driven in-process through `app.request()` (Pitfall 6 — NEVER a
-// `fetch("http://…")` port round-trip). Scaffolding mirrors json-write-seam.test.ts
-// (openStorage on a cloned fixture, exercise the seam) + composeServeApp.
+// Everything is driven in-process through `app.request()`, never a
+// `fetch("http://…")` port round-trip.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { copyFileSync, readFileSync, rmSync } from "node:fs";
@@ -32,6 +11,7 @@ import { localToday } from "../authoring/edit";
 import { composeServeApp } from "../commands/serve";
 import { openStorage } from "../storage/sqlite";
 import { cloneFixture } from "../testing/cloneFixture";
+import { commitAndTag } from "../testing/git";
 
 const CANONICAL_FIXTURE = join(
   import.meta.dir,
@@ -90,7 +70,7 @@ function readBilling(): {
   return JSON.parse(readFileSync(billingSpecPath(), "utf8"));
 }
 
-describe("VAL-03 POST /api/requirements — create through validateAndWrite + runIndex", () => {
+describe("POST /api/requirements — create through validateAndWrite + runIndex", () => {
   test("a valid create returns 201 {ok,id} and a follow-up GET shows the new requirement", async () => {
     const res = await app.request("/api/requirements", {
       method: "POST",
@@ -115,7 +95,6 @@ describe("VAL-03 POST /api/requirements — create through validateAndWrite + ru
     expect(added?.status).toBe("Active");
     expect(added?.text).toBe("When a refund is issued, reverse the tax previously collected.");
 
-    // The on-disk canonical JSON carries the new active requirement.
     const onDisk = readBilling().requirements.find((r) => r.id === "BILLING-010");
     expect(onDisk).toBeDefined();
     expect(onDisk?.status).toBe("active");
@@ -130,7 +109,7 @@ function readAuth(): { requirements: Array<Record<string, unknown>> } {
   return JSON.parse(readFileSync(authSpecPath(), "utf8"));
 }
 
-describe("VAL-03 PUT /api/requirements/:id — amend through the same seam", () => {
+describe("PUT /api/requirements/:id — amend through the same seam", () => {
   // AUTH-001 is the fixture's Active-but-unbound requirement (the planted
   // orphan) — the only kind the amend gate lets through.
   test("amending statement returns 200, GET reflects it, untouched fields byte-identical", async () => {
@@ -156,7 +135,6 @@ describe("VAL-03 PUT /api/requirements/:id — amend through the same seam", () 
     const row = (await getRes.json()) as { text: string };
     expect(row.text).toBe("When a session is idle for 30 days, the system shall expire it.");
 
-    // Untouched fields are byte-identical on disk.
     const after = readAuth().requirements.find((r) => r.id === "AUTH-001");
     expect(after?.why).toEqual(beforeWhy);
     expect(after?.livesIn).toEqual(beforeLives);
@@ -175,8 +153,8 @@ describe("VAL-03 PUT /api/requirements/:id — amend through the same seam", () 
     expect(readFileSync(billingSpecPath(), "utf8")).toBe(onDiskBefore);
   });
 
-  test("a PUT on a shipped requirement (bound by code tags) is refused 409 — supersede instead", async () => {
-    // BILLING-002 is Active and implemented in the api repo.
+  test("a PUT changing a released requirement's statement is refused 409 — supersede instead", async () => {
+    commitAndTag(platformDir, "v1.0.0");
     const onDiskBefore = readFileSync(billingSpecPath(), "utf8");
     const res = await app.request("/api/requirements/BILLING-002", {
       method: "PUT",
@@ -210,12 +188,11 @@ describe("VAL-03 PUT /api/requirements/:id — amend through the same seam", () 
   });
 });
 
-describe("VAL-02 parity — an invalid create returns byte-identical INVALID_DOMAIN_FILE diagnostics", () => {
+describe("parity: an invalid create returns byte-identical INVALID_DOMAIN_FILE diagnostics", () => {
   test("an empty statement is rejected 400 with diagnostics deep-equal to a direct validateDomainFile call", async () => {
     const relFile = "spec-engine/BILLING/SPEC.json";
 
-    // Replicate EXACTLY the envelope the route builds for this invalid POST, then
-    // run the ONE structural validator directly — the single-validator proof.
+    // Replicate exactly the envelope the route builds for this invalid POST.
     const domain = readBilling();
     const id = await nextRequirementId(platformDir, "BILLING");
     domain.requirements.push({
@@ -245,12 +222,11 @@ describe("VAL-02 parity — an invalid create returns byte-identical INVALID_DOM
     if (!direct.ok) {
       expect(body.diagnostics).toEqual(direct.diagnostics);
     }
-    // The rejected write left the canonical JSON byte-identical.
     expect(readFileSync(billingSpecPath(), "utf8")).toBe(onDiskBefore);
   });
 });
 
-describe("T-21-01 cross-origin — a mismatched Origin is rejected 403 with no mutation", () => {
+describe("cross-origin — a mismatched Origin is rejected 403 with no mutation", () => {
   test("a POST with a cross-origin Origin header is rejected 403 and does not mutate the SPEC.json", async () => {
     const onDiskBefore = readFileSync(billingSpecPath(), "utf8");
     const res = await app.request("/api/requirements", {
@@ -266,7 +242,6 @@ describe("T-21-01 cross-origin — a mismatched Origin is rejected 403 with no m
       }),
     });
     expect(res.status).toBe(403);
-    // No on-disk mutation.
     expect(readFileSync(billingSpecPath(), "utf8")).toBe(onDiskBefore);
   });
 
@@ -283,7 +258,7 @@ describe("T-21-01 cross-origin — a mismatched Origin is rejected 403 with no m
   });
 });
 
-describe("2.6 write-path races + malformed-file handling", () => {
+describe("write-path races + malformed-file handling", () => {
   test("concurrent POSTs mint DISTINCT ids (in-process write mutex)", async () => {
     const posts = Array.from({ length: 6 }, () =>
       app.request("/api/requirements", {
@@ -295,7 +270,6 @@ describe("2.6 write-path races + malformed-file handling", () => {
     const resps = await Promise.all(posts);
     expect(resps.every((r) => r.status === 201)).toBe(true);
     const ids = await Promise.all(resps.map((r) => r.json().then((b) => (b as { id: string }).id)));
-    // No two concurrent creates collided on the same next id.
     expect(new Set(ids).size).toBe(ids.length);
   });
 
@@ -312,7 +286,7 @@ describe("2.6 write-path races + malformed-file handling", () => {
   });
 });
 
-describe("1.1 DNS-rebinding — a non-loopback Host is rejected 403 even when Origin matches", () => {
+describe("DNS-rebinding — a non-loopback Host is rejected 403 even when Origin matches", () => {
   test("a POST whose own Host is a rebound attacker domain is rejected 403 with no mutation", async () => {
     // The rebind: an attacker page on evil.example (DNS → 127.0.0.1) posts to
     // its own origin, so Origin and Host AGREE — the same-origin check alone

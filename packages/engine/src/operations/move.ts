@@ -1,9 +1,5 @@
-// packages/engine/src/operations/move.ts
-//
-// The cross-domain supersede: mint the successor as the next id in another
-// domain, carrying the source entry's fields forward, and flip the source to
-// superseded with a cross-domain `supersededBy`. Both envelopes validate
-// before either is written, so a refusal never leaves one side applied.
+// Both envelopes validate before either is written, so a refusal never
+// leaves one side applied.
 
 import {
   type Diagnostic,
@@ -21,7 +17,14 @@ import {
 } from "../authoring/grammar";
 import { deriveDomainVersion } from "../parser/domainJson";
 import type { ReqTagRow } from "../resolve/format";
-import { domainKeyOf, type EnvelopeFile, readEnvelope, successorEntry } from "./_envelope";
+import {
+  domainKeyOf,
+  type EnvelopeFile,
+  locateEntry,
+  readEnvelope,
+  type SuccessorFields,
+  successorEntry,
+} from "./_envelope";
 import type { FreshTags } from "./_index";
 import { fail, type OpFailure, type OpWarning } from "./_result";
 import { unresolvableRefWarnings } from "./mint";
@@ -66,19 +69,20 @@ async function locateMove(
   id: string,
   targetKey: string,
 ): Promise<MoveTarget | OpFailure> {
-  const sourceKey = domainKeyOf(id);
-  if (sourceKey === targetKey) {
+  const prefixKey = domainKeyOf(id);
+  const located = await locateEntry(
+    platformDir,
+    id,
+    `no domain ${prefixKey} (expected spec-engine/${prefixKey}/SPEC.json)`,
+  );
+  if (!located.ok) return located;
+  const { req, ...source } = located;
+  if (source.key === targetKey) {
     return fail(
       "usage",
       `${id} is already in ${targetKey} — use spec supersede for an in-domain revision`,
     );
   }
-  const source = await readEnvelope(
-    platformDir,
-    sourceKey,
-    `no domain ${sourceKey} (expected spec-engine/${sourceKey}/SPEC.json)`,
-  );
-  if (!source.ok) return source;
   const target = await readEnvelope(
     platformDir,
     targetKey,
@@ -86,8 +90,6 @@ async function locateMove(
   );
   if (!target.ok) return target;
 
-  const req = source.requirements.find((r) => r.id === id);
-  if (req === undefined) return fail("not_found", `no entry ${id} in ${source.relFile}`);
   if (req.status.toLowerCase() !== "active") {
     return fail(
       "conflict",
@@ -97,16 +99,16 @@ async function locateMove(
   return { ok: true, source, target, req };
 }
 
-/** The successor's fields: the input's, else the source's. */
-function successorFields(
-  input: MoveInput,
-  req: SpecRequirement,
-): { statement: string; why: string; livesIn: string[] } {
-  const srcLives = (req.livesIn[0] ?? "").trim();
+/**
+ * The successor's fields: the input's, else the source's.
+ * @spec REQ-052
+ */
+function successorFields(input: MoveInput, req: SpecRequirement): SuccessorFields {
   return {
     statement: (input.statement ?? req.statement).trim(),
     why: (input.why ?? req.why ?? "").trim(),
-    livesIn: input.livesIn ?? (srcLives === "" ? [] : [srcLives]),
+    livesIn: input.livesIn ?? [...req.livesIn],
+    relates: [...req.relates],
   };
 }
 
@@ -174,7 +176,7 @@ export async function move(
   const sourceCurrent = source.domain.specVersion ?? 1;
   req.status = "superseded";
   req.supersededBy = newId;
-  target.requirements.push(successorEntry(newId, fields));
+  target.requirements.push(successorEntry(newId, req, fields));
   const noBump = Boolean(input.noBump);
   const sourceSpecVersion = versionSide(source.domain, source.key, noBump);
   const targetSpecVersion = versionSide(target.domain, target.key, noBump);

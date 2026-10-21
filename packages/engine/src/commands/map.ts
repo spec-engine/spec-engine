@@ -1,11 +1,4 @@
-// packages/engine/src/commands/map.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec MAP-002
-//
-// `spec map [platformDir] [--out <path>] [--json] [--fresh]`: the
-// requirement-by-repo coverage matrix. Read-only: the data never drives a
-// non-zero exit; bad args and a `--out` outside the platform exit 2.
 
 import { defineCommand } from "citty";
 import { OUT_HELP, resolveDbPath } from "../constants";
@@ -56,13 +49,16 @@ export const mapCommand = defineCommand({
       },
     });
 
-    await withReadStorage({ platformDir, dbPath, fresh: !!args.fresh }, (storage) => {
-      const { rows } = coverageMatrix(storage);
-      if (!args.json && rows.length === 0) {
-        console.error(formatNoRequirementsIndexed(platformDir));
-        return;
-      }
-      console.log(renderMatrix(rows, args.json ? "json" : "text"));
-    });
+    await withReadStorage(
+      { platformDir, dbPath, fresh: !!args.fresh, json: !!args.json },
+      (storage) => {
+        const { rows } = coverageMatrix(storage);
+        if (!args.json && rows.length === 0) {
+          console.error(formatNoRequirementsIndexed(platformDir));
+          return;
+        }
+        console.log(renderMatrix(rows, args.json ? "json" : "text"));
+      },
+    );
   },
 });

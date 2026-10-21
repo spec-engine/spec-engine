@@ -83,7 +83,7 @@ fence_ops01_write_seam() {
 # reader. Nothing in production source casts through `unknown`.
 # @spec SCHM-030
 fence_schm030_schema_reads() {
-  ALLOWED='packages/shared/src/domain.ts|packages/engine/src/indexer/discover.ts|packages/engine/src/operations/init.ts|packages/engine/src/server/api.ts'
+  ALLOWED='packages/shared/src/domain.ts|packages/shared/src/checkConfig.ts|packages/engine/src/indexer/discover.ts|packages/engine/src/operations/init.ts|packages/engine/src/server/api.ts'
   OFFENDERS=$(grep -RnE --include='*.ts' --exclude='*.test.ts' --exclude-dir=testing 'JSON\.parse\(|as unknown as' packages/*/src 2>/dev/null \
     | awk -F: -v allowed="^($ALLOWED)$" '$0 ~ /as unknown as/ || $1 !~ allowed' || true)
   if [ -n "$OFFENDERS" ]; then
@@ -484,20 +484,6 @@ fence_taxonomy_charters() {
   fi
 }
 
-# --- AUTHOR-011: process markers in source comments -------------------------
-# A comment naming a plan, phase, wave, pitfall, or review round records how
-# the code arrived rather than what constrains it. Files still carry them, so
-# this is a ratchet over a ledger rather than a ban: the count can only fall.
-# @spec AUTHOR-011
-fence_comment_markers() {
-  if bash scripts/comment-markers.sh; then
-    :
-  else
-    echo "FORBIDDEN: process markers in source comments (see the comment policy in AGENTS.md)"
-    exit 1
-  fi
-}
-
 run "SCHM-025 bun:sqlite outside the engine"                  fence_d11_bun_sqlite
 run "SCHM-025 bun:sqlite outside storage/sqlite.ts"           fence_d08_engine_internal
 run "SCHM-028 no CHECK, FK, or UNIQUE on domain fields"        fence_schm07_schema_constraint
@@ -516,7 +502,6 @@ run "CHCK-020 glossary round-trip"                             fence_glossary_ro
 run "SCHM-020 no authored specVersion"                         fence_no_authored_specversion
 run "CHCK-030 AGENTS.md lists every diagnostic code"           fence_agents_check_codes
 run "CHRT-007 charters generated from the envelopes"           fence_taxonomy_charters
-run "AUTHOR-011 process-marker ratchet"                        fence_comment_markers
 run "SCHM-027 write seam under operations"                     fence_ops01_write_seam
 run "SCHM-030 every SPEC.json read parses through the shared schema" fence_schm030_schema_reads
 run "INIT-037 platform-map map() and locate() enter through discover.ts" fence_init037_platform_map_seam

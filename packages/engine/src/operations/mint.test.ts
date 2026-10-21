@@ -1,21 +1,3 @@
-// packages/engine/src/operations/mint.test.ts
-//
-// VAL-01 / VAL-02 (17-04): the requirement-CREATION write path now routes
-// through the ONE `validateAndWrite` seam in `@spec-engine/shared`, producing JSON.
-// This suite proves the two properties that make the seam trustworthy:
-//
-//   (1) ROUND-TRIP — `appendEntry` writes a SPEC.json that the index reads
-//       back into the authored requirement as an Active row. Writing and
-//       indexing cannot diverge because both sides share the ONE schema.
-//
-//   (2) VAL-02 PARITY — authoring a structurally-invalid requirement is
-//       rejected at write time with the BYTE-IDENTICAL Diagnostic the index
-//       path (`validateDomainFile`) emits for the same object, and the write
-//       path leaves NO file behind. A single validator cannot fork.
-//
-// Scaffolding mirrors json-index.test.ts (mkdtempSync / openStorage / runIndex)
-// and cli-req.test.ts (a valid domain platform in a tmpdir).
-
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -38,11 +20,6 @@ afterEach(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 
-/**
- * Build a minimal JSON platform in `tmp`: an empty BILLING domain scaffolded
- * through the seam, and an `api` member pinned at 2 whose BILLING-001 spec tag
- * exercises coverage after the append.
- */
 async function scaffoldPlatform(): Promise<void> {
   const fx = TestPlatform.at(tmp);
   await fx.domain("BILLING");
@@ -53,7 +30,7 @@ async function scaffoldPlatform(): Promise<void> {
 }
 
 // @spec SCHM-015
-describe("VAL-01 round-trip — mint writes JSON the index reads back (STOR-01)", () => {
+describe("round-trip: mint writes JSON the index reads back", () => {
   test("append → re-read shows the requirement with status active", async () => {
     await scaffoldPlatform();
     const id = await nextRequirementId(tmp, "BILLING");
@@ -80,7 +57,6 @@ describe("VAL-01 round-trip — mint writes JSON the index reads back (STOR-01)"
     expect(added.statement).toBe("Charge renewals at the current plan price");
     expect(added.why).toBe("Revenue correctness");
     expect(added.livesIn).toEqual(["@api/src/renew.ts"]);
-    // The written file is byte-stable (2-space + single trailing newline).
     const raw = await Bun.file(join(tmp, "spec-engine", "BILLING", "SPEC.json")).text();
     expect(raw.endsWith("}\n")).toBe(true);
   });
@@ -107,7 +83,6 @@ describe("VAL-01 round-trip — mint writes JSON the index reads back (STOR-01)"
       // lowercase "active" case-maps to Capitalized "Active" at the read boundary.
       expect(row?.status).toBe("Active");
       expect(row?.text).toBe("Charge renewals at the current plan price");
-      // Coverage: the api member's BILLING-001 spec tag lands.
       const cov = s.coverageMatrix().filter((c) => c.req_id === "BILLING-001" && c.repo === "api");
       expect(cov.length).toBe(1);
       expect(cov[0]?.implemented).toBe(1);
@@ -117,7 +92,7 @@ describe("VAL-01 round-trip — mint writes JSON the index reads back (STOR-01)"
   });
 });
 
-describe("VAL-02 parity — author-time reject == index-time reject (byte-identical)", () => {
+describe("parity: author-time reject == index-time reject (byte-identical)", () => {
   test("a structurally-invalid requirement yields IDENTICAL diagnostics on both paths, and writes nothing", async () => {
     const sourceFile = "spec-engine/BILLING/SPEC.json";
     // `statement: ""` fails the schema's z.string().min(1) — a structural reject.
@@ -129,28 +104,21 @@ describe("VAL-02 parity — author-time reject == index-time reject (byte-identi
       requirements: [{ id: "BILLING-001", status: "active", statement: "" }],
     };
 
-    // Index path (read): validateDomainFile is the ONE structural validator.
     const readResult = validateDomainFile(invalid, sourceFile);
-    // Write path: validateAndWrite validates through the SAME function.
     const writePath = join(tmp, "rejected.json");
     const writeResult = await validateAndWrite(writePath, invalid, sourceFile);
 
     expect(readResult.ok).toBe(false);
     expect(writeResult.ok).toBe(false);
     if (!readResult.ok && !writeResult.ok) {
-      // VAL-02: the write-path diagnostics are deep-equal to the index-path
-      // diagnostics for the same invalid object — a single function can't fork.
       expect(writeResult.diagnostics).toEqual(readResult.diagnostics);
       expect(writeResult.diagnostics[0]?.code).toBe("INVALID_DOMAIN_FILE");
       expect(writeResult.diagnostics[0]?.severity).toBe("error");
     }
-    // The rejected write left NO file behind.
     expect(existsSync(writePath)).toBe(false);
   });
 
   test("a domain reduced to invalid rejects at write time (no partial write)", async () => {
-    // A domain whose sole requirement carries an empty statement would fail the
-    // schema; validateAndWrite must reject rather than persist a broken file.
     const sourceFile = "spec-engine/BILLING/SPEC.json";
     const invalid = {
       key: "BILLING",

@@ -1,19 +1,3 @@
-// packages/engine/src/commands/propagation.test.ts
-//
-// Unit tests for `spec propagation` (commands/propagation.ts). In-process
-// invocation of the citty command with process.exit stubbed to throw
-// ExitError so the test runner can assert on the exit code without
-// terminating.
-//
-// Scope: COMMAND-level behavior — empty-reqId guard, V12 path-containment,
-// JSON shape against the canonical fixture trace, and text-mode column
-// headers. The storage-seam fixture trace is locked separately in
-// propagation.test.ts (plan 04-02); this file locks the CLI surface.
-//
-// Mirrors the harness pattern from cli-check-unit.test.ts (ExitError,
-// beforeEach stub block, RunFn cast). Tests that touch the platform fixture
-// use cloneFixture (WR-06) so fixtures/platform-fixture/ is never mutated.
-
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -40,8 +24,8 @@ class ExitError extends Error {
 }
 
 beforeEach(() => {
-  // WR-06: clone the canonical fixture into a fresh tmpdir per test so
-  // the indexer's .spec-engine/ writes land outside the canonical tree.
+  // A clone, so the indexer's .spec-engine/ writes land outside the
+  // canonical fixtures/platform-fixture/ tree.
   clone = cloneFixture(FIXTURE);
   logs = [];
   errs = [];
@@ -72,8 +56,6 @@ const propagationRun = (propagationCommand as unknown as { run: RunFn }).run;
 async function runPropagation(args: Record<string, unknown>): Promise<number> {
   try {
     await propagationRun({ args, rawArgs: [] });
-    // Success path: commands/propagation.ts does not call process.exit on
-    // success — citty exits 0 on normal return. Mirror map-json-snapshot.
     return 0;
   } catch (e) {
     if (e instanceof ExitError) return e.code;
@@ -130,7 +112,7 @@ describe("spec propagation (in-process)", () => {
     });
   });
 
-  test("--out outside platformDir exits 2 with V12 message", async () => {
+  test("--out outside platformDir exits 2 with the containment message", async () => {
     const code = await runPropagation({
       reqId: "BILLING-009",
       platformDir: clone,
@@ -166,8 +148,6 @@ describe("spec propagation (in-process)", () => {
   });
 });
 
-// ---------- RED-11: pre-index / pre-spec guidance ----------
-
 describe("spec propagation row order", () => {
   // @spec PROP-006 integration
   test("text and --json list members by dependency depth, providers first, ties by name", async () => {
@@ -192,7 +172,7 @@ describe("spec propagation row order", () => {
   });
 });
 
-describe("spec propagation — pre-index guidance (RED-11)", () => {
+describe("spec propagation — pre-index guidance", () => {
   test("non-platform dir: friendly message + exit 2, no stack trace, no .spec-engine artifact", async () => {
     const bare = mkdtempSync(join(tmpdir(), "spec-prop-red11-"));
     try {

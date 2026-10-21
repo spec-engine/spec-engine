@@ -1,14 +1,5 @@
-// packages/engine/src/indexer/pipeline.ignore-config.test.ts
-//
-// Audit hygiene pass T7 — per-repo `ignore` field in spec-engine.member.json.
-// Entries are repo-relative directory prefixes layered ON TOP of the
-// hardcoded IGNORE_SUBSTR list (additive only — a repo can exclude its own
-// generated trees, never re-include `fixtures/`). The field is a
-// discovery-time hint like Repo.selfMember: it shapes the scan, it is
-// never persisted to the repos table.
-//
 // Tag lines are composed via src/testing/specTag.ts so this file's
-// literals can never index as phantom claims of THIS repo (dogfood rule).
+// literals never index as claims of this repo.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -31,9 +22,6 @@ afterEach(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 
-/** Minimal platform: canonical ORD-001 + one member `api` with a tagged
- *  src file, a tagged file under `generated/`, and a doc binding under
- *  `generated/`. `ignore` lands in api/spec-engine.member.json when given. */
 async function buildPlatform(ignore?: string[]): Promise<string> {
   const platform = join(tmp, "platform");
   await TestPlatform.at(platform).member("api", { ignore });
@@ -57,7 +45,7 @@ async function buildPlatform(ignore?: string[]): Promise<string> {
   return platform;
 }
 
-describe("per-repo ignore config (T7)", () => {
+describe("per-repo ignore config", () => {
   test("baseline: without ignore, generated/ code and docs index normally", async () => {
     const platform = await buildPlatform();
     const s = openStorage(dbPath);
@@ -100,7 +88,6 @@ describe("per-repo ignore config (T7)", () => {
 
   test("ignore in one repo does not leak into sibling members", async () => {
     const platform = await buildPlatform(["generated"]);
-    // Second member with the SAME layout but no ignore field.
     await TestPlatform.at(platform).member("web");
     mkdirSync(join(platform, "web", "generated"), { recursive: true });
     writeFileSync(
@@ -113,6 +100,39 @@ describe("per-repo ignore config (T7)", () => {
       const files = s.listTags().map((t) => t.file);
       expect(files).not.toContain("api/generated/b.ts");
       expect(files).toContain("web/generated/c.ts");
+    } finally {
+      s.close();
+    }
+  });
+});
+
+describe("extra ignore entries match as repo-relative prefixes", () => {
+  let fx: TestPlatform;
+  beforeEach(() => {
+    fx = TestPlatform.temp("spec-ignore-prefix-");
+  });
+  afterEach(() => {
+    fx.remove();
+  });
+
+  // @spec INDX-018 unit
+  test("a package path or an ignore entry hides only the tree at the repo root", async () => {
+    const [id] = (await (await fx.domain("ORD")).reqs(1)) as [string];
+    const shop = await fx.member("shop", { ignore: ["vendor"] });
+    shop.workspace(["apps/web"]);
+    const tagged = `export const x = 1; ${specTag(id)}`;
+    shop.file("modules/billing/tree/apps/web/x.ts", tagged);
+    shop.file("src/vendor/x.ts", tagged);
+    shop.file("vendor/x.ts", tagged);
+    shop.file("apps/web/x.ts", tagged);
+    const s = openStorage(join(fx.dir, ".spec-engine", "index.sqlite"));
+    try {
+      await runIndex({ platformDir: fx.dir, storage: s });
+      expect(s.listTags().map((t) => `${t.repo} ${t.file}`)).toEqual([
+        "shop shop/modules/billing/tree/apps/web/x.ts",
+        "shop shop/src/vendor/x.ts",
+        "shop/apps/web shop/apps/web/x.ts",
+      ]);
     } finally {
       s.close();
     }

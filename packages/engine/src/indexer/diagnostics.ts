@@ -1,34 +1,7 @@
-// packages/engine/src/indexer/diagnostics.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec INDX-008
 //
-// PARS-02: structural-integrity validator that runs over the union of
-// parsed SPEC.md files. Emits five codes:
-//   - DUP_ID                  — a requirement.id appears in more than one place
-//   - BROKEN_SUPERSEDE        — `superseded_by` points to a non-existent id
-//   - BAD_STATUS              — `status` is not one of {Active,Draft,Retired,Superseded}
-//   - CYCLIC_SUPERSEDE        — the supersession chain loops (A→B→A)
-//   - SELF_RELATES            — a Relates: token names its own requirement (warning)
-//
-// Invariant #4 (parsed spec is canonical; DB has no CHECK constraints):
-// bad rows STILL land in the `requirements` table. This validator only
-// produces diagnostic rows. The indexer pipeline (pipeline.ts) inserts
-// EVERY parsed requirement regardless of what diagnostics say.
-//
-// Source pattern: 02-RESEARCH § Structural diagnostics (lines 1019-1042)
-// + § Spec parsing strategy → validateStructure (lines 869-905).
-//
-// Pitfall 3 (BAD_STATUS surfacing): the parser casts an Invalid status
-// through `RequirementStatus` so the row can land. Here we recognize that
-// cast by literal-set check and emit BAD_STATUS with the raw token.
-//
-// Purity: no I/O, no bun:sqlite import (D-08 grep-fence).
-//
-// Structure: `validateStructure` builds the shared id maps ONCE and then
-// concatenates one named detector per diagnostic pass, in the SAME pass
-// order the rows were historically emitted so output stays byte-identical.
-// Each detector is self-contained and scores ≤15 for cognitive complexity.
+// Bad rows still land in the `requirements` table: the DB has no CHECK
+// constraints, and this validator only produces diagnostic rows.
 
 import {
   DiagnosticCode,
@@ -38,17 +11,13 @@ import {
 } from "@spec-engine/shared";
 import type { ParsedSpec } from "../parser/types";
 
-// A diagnostic row before the storage upsert assigns its auto-increment id.
 type Diagnostic = Omit<ParseDiagnostic, "id">;
 
-// Set for BAD_STATUS detection, built from the shared single-source array so
-// a future widening of the status vocabulary flows here automatically.
 const VALID_STATUSES: ReadonlySet<RequirementStatus> = new Set(REQUIREMENT_STATUSES);
 
-/** First-seen location of a requirement id (id → where it was first parsed). */
 type FirstSeen = ReadonlyMap<string, { source_file: string; line: number }>;
 
-/** First-seen supersession edge (id → `superseded_by`), DUP collisions keep the first. */
+/** A DUP_ID collision keeps the first-seen edge. */
 type SupersedeEdges = ReadonlyMap<string, string | null>;
 
 interface IdMaps {
@@ -56,30 +25,19 @@ interface IdMaps {
   byId: SupersedeEdges;
 }
 
-/**
- * Build the two shared id maps in a single walk so no detector rebuilds them:
- *   - `firstSeen`: id → first-seen {source_file, line} (drives DUP_ID's cited
- *     location and BROKEN_SUPERSEDE's existence check).
- *   - `byId`: id → `superseded_by`, first-seen wins on DUP_ID collision
- *     (matching Pass 1), the graph the cyclic walker traverses.
- */
 function buildIdMaps(specs: ParsedSpec[]): IdMaps {
   const firstSeen = new Map<string, { source_file: string; line: number }>();
   const byId = new Map<string, string | null>();
   for (const spec of specs) {
     for (const r of spec.requirements) {
       if (!firstSeen.has(r.id)) firstSeen.set(r.id, { source_file: r.source_file, line: r.line });
-      // DUP_ID collisions keep the first-seen edge, matching Pass 1.
       if (!byId.has(r.id)) byId.set(r.id, r.superseded_by);
     }
   }
   return { firstSeen, byId };
 }
 
-/**
- * Pass 1: DUP_ID. On collision, emit against the SECOND (and any subsequent)
- * occurrence, citing the first-seen location from `firstSeen`.
- */
+/** The first occurrence is not flagged; each later one cites it. */
 function detectDupId(specs: ParsedSpec[], firstSeen: FirstSeen): Diagnostic[] {
   const out: Diagnostic[] = [];
   const counted = new Set<string>();
@@ -91,10 +49,6 @@ function detectDupId(specs: ParsedSpec[], firstSeen: FirstSeen): Diagnostic[] {
       }
       const first = firstSeen.get(r.id);
       if (first === undefined) continue; // unreachable: counted ⟹ firstSeen has it
-      // WR-02 review-fix: carry the colliding id on the second-seen row so
-      // `spec check` can link the row back to a requirement. The first
-      // occurrence is NOT flagged (it's the "real" req); only subsequent
-      // duplicates emit DUP_ID, and each one knows its own id.
       out.push({
         code: DiagnosticCode.DUP_ID,
         source_file: r.source_file,
@@ -108,18 +62,11 @@ function detectDupId(specs: ParsedSpec[], firstSeen: FirstSeen): Diagnostic[] {
   return out;
 }
 
-/**
- * Pass 2: BROKEN_SUPERSEDE. A requirement may declare
- * `### KEY-NNN — Superseded by KEY-MMM`. If KEY-MMM does not exist in the
- * parsed set, emit BROKEN_SUPERSEDE on the referencing requirement.
- */
 function detectBrokenSupersede(specs: ParsedSpec[], firstSeen: FirstSeen): Diagnostic[] {
   const out: Diagnostic[] = [];
   for (const spec of specs) {
     for (const r of spec.requirements) {
       if (r.superseded_by !== null && !firstSeen.has(r.superseded_by)) {
-        // WR-02 review-fix: the defect is on `r.id`'s SPEC.md line — the
-        // referencing requirement is the one with the broken pointer.
         out.push({
           code: DiagnosticCode.BROKEN_SUPERSEDE,
           source_file: r.source_file,
@@ -135,17 +82,14 @@ function detectBrokenSupersede(specs: ParsedSpec[], firstSeen: FirstSeen): Diagn
 }
 
 /**
- * Pass 3: BAD_STATUS. The parser casts an Invalid status through
- * RequirementStatus (Pitfall 3) so we test the runtime value, not the type.
- * Anything outside VALID_STATUSES is BAD_STATUS.
+ * The parser casts an invalid status through `RequirementStatus` so the row
+ * can land, so this tests the runtime value, not the type.
  */
 function detectBadStatus(specs: ParsedSpec[]): Diagnostic[] {
   const out: Diagnostic[] = [];
   for (const spec of specs) {
     for (const r of spec.requirements) {
       if (!VALID_STATUSES.has(r.status)) {
-        // WR-02 review-fix: BAD_STATUS is a defect on `r.id`'s `### KEY-NNN`
-        // header line — the id is known at the seam.
         out.push({
           code: DiagnosticCode.BAD_STATUS,
           source_file: r.source_file,
@@ -161,11 +105,9 @@ function detectBadStatus(specs: ParsedSpec[]): Diagnostic[] {
 }
 
 /**
- * Walk the supersession chain from `startId` over its first outgoing edge
- * `firstEdge`. Each requirement has at most one outgoing edge, so the start
- * is ON a cycle iff the walk returns to it (a node merely pointing INTO a
- * cycle never re-reaches itself). Returns the traversed `path` (excluding the
- * closing hop) so the caller can render the loop.
+ * Each requirement has at most one outgoing edge, so the start is on a cycle
+ * iff the walk returns to it; a node merely pointing into a cycle never
+ * re-reaches itself. `path` excludes the closing hop.
  */
 function walkSupersedeChain(
   startId: string,
@@ -188,10 +130,8 @@ function walkSupersedeChain(
 }
 
 /**
- * Pass 4 (T6): CYCLIC_SUPERSEDE. Error severity — the chain is the change
- * history, and a loop is corrupt history (contrast the propagation CTE, which
- * just stops at its depth guard). Delegates the per-node walk to
- * `walkSupersedeChain`.
+ * Error, not warning: the chain is the change history and a loop corrupts it.
+ * The propagation CTE merely stops at its depth guard.
  */
 function detectCyclicSupersede(specs: ParsedSpec[], byId: SupersedeEdges): Diagnostic[] {
   const out: Diagnostic[] = [];
@@ -214,11 +154,6 @@ function detectCyclicSupersede(specs: ParsedSpec[], byId: SupersedeEdges): Diagn
   return out;
 }
 
-/**
- * Pass 5 (T5): SELF_RELATES. The parser drops self-referencing Relates tokens
- * from the relations set but surfaces them (one per requirement). Warning
- * severity — the entry still indexes normally; only the self-link is ignored.
- */
 function detectSelfRelates(specs: ParsedSpec[]): Diagnostic[] {
   const out: Diagnostic[] = [];
   for (const spec of specs) {
@@ -236,14 +171,6 @@ function detectSelfRelates(specs: ParsedSpec[]): Diagnostic[] {
   return out;
 }
 
-/**
- * Pass 6 (PROV-05): UNKNOWN_ROLE. The parser surfaces `**Issues:**` tokens
- * whose role is outside the closed allow-list {created, supersedes-via,
- * amends-via}, or which have no `role:ID` colon shape. Those tokens are NOT
- * stored in `provenance`; here we emit one warning per surfaced token so the
- * author sees the line. The entry still indexes normally — only the malformed
- * Issues token is dropped.
- */
 function detectUnknownRole(specs: ParsedSpec[]): Diagnostic[] {
   const out: Diagnostic[] = [];
   for (const spec of specs) {
@@ -261,14 +188,7 @@ function detectUnknownRole(specs: ParsedSpec[]): Diagnostic[] {
   return out;
 }
 
-/**
- * Run structural validation over the union of every parsed SPEC.md file.
- *
- * The input `specs` array is NOT mutated. Returns one or more diagnostic
- * rows (sans the auto-increment `id` — that's assigned by the storage
- * upsert). The six detectors are concatenated in historical pass order so
- * row order is byte-identical to the pre-split single-function version.
- */
+/** Detector order fixes row order; reordering changes the emitted output. */
 export function validateStructure(specs: ParsedSpec[]): Diagnostic[] {
   const { firstSeen, byId } = buildIdMaps(specs);
   return [

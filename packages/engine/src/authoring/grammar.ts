@@ -1,9 +1,5 @@
-// packages/engine/src/authoring/grammar.ts
-//
-// Write-time statement-grammar judgment, the authoring half of the
-// STATEMENT_GRAMMAR check (check/grammar.ts owns the read half). Only NEW
-// statement text is judged; existing statements are the check pass's
-// burn-down list, never a write blocker.
+// Only new statement text is judged; existing statements are the check pass's
+// burn-down list (check/grammar.ts), never a write blocker.
 
 import { parseDomainText, parseEarsStatement } from "@spec-engine/shared";
 import { specPaths } from "../constants";

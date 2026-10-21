@@ -1,20 +1,3 @@
-// packages/webapp/src/pages/requirements.ts
-//
-// The SSR requirement browser (`GET /requirements`
-// list + `GET /requirements/:id` detail).
-//
-// D-09 / WORK-04 / Invariant #5: webapp source imports ONLY from
-// `@spec-engine/shared` (types) and `hono` (runtime). NO `bun:sqlite`, no
-// `node:fs`, no `fs`, no `bun`, no `node:path`, no `@spec-engine/spec-engine`.
-//
-// Rendering shape — each handler is a single self-contained
-// `<!doctype html>` document via ONE `hono/html` tagged template
-// (auto-escape). The `raw` helper is used ONLY for the
-// static styles.css asset (see coverage.ts header for the contract).
-//
-// Data fetch — in-process via `app.request(path)` (NEVER
-// `fetch("http://...")`).
-
 import type { CoverageRow, Requirement } from "@spec-engine/shared";
 import type { Hono } from "hono";
 import { html, raw } from "hono/html";
@@ -25,9 +8,8 @@ import styleSheet from "./styles.css" with { type: "text" };
 
 const styleTag = raw(`<style>${styleSheet}</style>`);
 
-/** One tag site for a requirement — the row shape `/api/resolve?req=` returns
- *  (the engine's `ReqTagRow`, a `Tag` minus its AUTOINCREMENT id). Redeclared
- *  here because the import fence forbids reaching into `@spec-engine/spec-engine`. */
+/** The engine's `ReqTagRow`, redeclared because the import fence forbids
+ *  reaching into `@spec-engine/spec-engine`. */
 interface ReqTagRow {
   req_id: string;
   repo: string;
@@ -37,38 +19,31 @@ interface ReqTagRow {
   level: string | null;
 }
 
-/** Per-requirement view model backing one accordion row + its detail panel. */
 interface PanelReq {
   req: Requirement;
-  impl: number; // repos implementing (src or src+test)
-  verif: number; // repos verifying (src+test)
-  chain: Requirement[]; // supersession lineage, most-recent-first; length 1 = standalone
-  tags: ReqTagRow[]; // bound files (tag sites)
+  impl: number;
+  verif: number;
+  chain: Requirement[]; // most-recent-first; length 1 = standalone
+  tags: ReqTagRow[];
 }
 
-/** The short kind tag shown against each bound file. */
 const KIND_LABEL: Record<string, string> = {
   implements: "impl",
   verifies: "test",
   documents: "doc",
 };
 
-/** One domain's accordion card + its requirements' view models. */
 interface DomainGroup {
   key: string;
   reqs: PanelReq[];
 }
 
-/** A chevron that rotates open via `details[open] .domain-chevron` (CSS-only). */
 const chevron = raw(
   '<svg class="domain-chevron" width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M5 3 L11 8 L5 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 );
 
-/** The client-side progressive enhancement: Expand/Collapse-all toggle the
- *  `<details>` cards, and clicking a requirement row reveals its detail panel
- *  in place (no navigation, no fetch, no innerHTML — attribute/class toggles
- *  only). The typed `type="module"` form is the sanctioned escalation (the XSS
- *  guard forbids only a BARE `<script>`; relations.ts ships the same pattern). */
+/** Class and attribute toggles only: no innerHTML. The XSS guard forbids only a
+ *  bare `<script>`, so the script must keep `type="module"`. */
 const enhanceScript = raw(`<script type="module">
       const cards = () => document.querySelectorAll("details.domain-card");
       const expand = document.querySelector(".expand-all");
@@ -97,9 +72,6 @@ const enhanceScript = raw(`<script type="module">
       });
     </script>`);
 
-/** Members implementing / verifying, per requirement — the coverage rollup.
- *  Active requirements only: a Superseded/Retired req is a null req whose
- *  coverage no longer matters, so it never contributes to any rollup. */
 function coverageRollups(coverage: CoverageRow[]): Map<string, { impl: number; verif: number }> {
   const cov = new Map<string, { impl: number; verif: number }>();
   for (const row of coverage) {
@@ -112,10 +84,7 @@ function coverageRollups(coverage: CoverageRow[]): Map<string, { impl: number; v
   return cov;
 }
 
-/** The supersession lineage of one requirement, most-recent-first.
- *  `superseded_by` points OLD → NEW and is resolved GLOBALLY (a cross-domain
- *  move still lands in `byId`): walk back to the root, then forward collecting
- *  the chain. length 1 = standalone (no amendments).
+/** `byId` spans every domain, so a cross-domain move stays in the chain.
  *  @spec SERV-016 */
 function lineageOf(
   byId: Map<string, Requirement>,
@@ -141,14 +110,9 @@ function lineageOf(
   return chain.reverse();
 }
 
-/** Assemble the domain groups (sorted by key, requirements sorted by id — the
- *  same grouping the coverage matrix uses) plus the id of the default-selected
- *  panel (the first requirement of the first domain).
- *
- *  RED-99 — @spec SERV-014: `allReqs` vs `listed` matters — lineage (byId /
- *  predecessorOf) walks the FULL ledger so a visible requirement's version
- *  history keeps its superseded predecessors even while the default filter
- *  hides those predecessors as rows. */
+/** Lineage walks `allReqs`, not `listed`, so a visible requirement's history
+ *  keeps the superseded predecessors the default filter hides as rows.
+ *  @spec SERV-014 */
 function buildDomains(
   allReqs: Requirement[],
   listed: Requirement[],
@@ -183,20 +147,15 @@ function buildDomains(
   return { domains, defaultId: domains[0]?.reqs[0]?.req.id ?? "" };
 }
 
-/** The `v{n}` pill — accent-styled when the requirement is part of a lineage.
- *  `spec_version` is the DOMAIN envelope's current version (shared by every req
- *  in the domain), hence the title — it is NOT a per-requirement revision count. */
+/** `spec_version` is the domain envelope's version, shared by every requirement
+ *  in the domain, not a per-requirement revision count. */
 function verPill(r: Requirement, versioned: boolean): ReturnType<typeof html> {
   return html`<span class="ver-pill ${versioned ? "versioned" : ""}" title="domain spec version (envelope)">v${r.spec_version}</span>`;
 }
 
-/** The lifecycle-meaningful version label for one lineage node. A superseded /
- *  retired entry shows the envelope version it DIED at (`superseded_at_version`,
- *  authored once at the supersession); one superseded before that field existed
- *  shows no number (the historical value is unrecoverable — no back-fill). A live
- *  entry shows "current". Deliberately NOT `spec_version`, which is the domain
- *  envelope's CURRENT version — identical for every req in the domain and the
- *  source of the "why does this jump 10 → 23?" confusion. */
+/** Deliberately not `spec_version`, which is the domain's current version and
+ *  identical for every requirement in it. An entry superseded before
+ *  `superseded_at_version` existed shows no number: the value is unrecoverable. */
 function chainVerLabel(v: Requirement): ReturnType<typeof html> {
   const dead = v.status === "Superseded" || v.status === "Deprecated";
   if (dead && v.superseded_at_version != null) {
@@ -208,8 +167,6 @@ function chainVerLabel(v: Requirement): ReturnType<typeof html> {
   return html`<span class="chain-ver current-ver">current</span>`;
 }
 
-/** The version-history disclosure: the real lineage timeline, or the single
- *  "no amendments" line for a standalone requirement. */
 function renderLineage(m: PanelReq): ReturnType<typeof html> {
   if (m.chain.length <= 1) {
     return html`<div class="single-version">
@@ -232,7 +189,6 @@ function renderLineage(m: PanelReq): ReturnType<typeof html> {
   </div>`;
 }
 
-/** The bound-files (tag sites) list, or a "no code binds yet" note. */
 function renderBoundFiles(tags: ReqTagRow[]): ReturnType<typeof html> {
   if (tags.length === 0) {
     return html`<p class="no-files">No code binds to this requirement yet.</p>`;
@@ -250,8 +206,6 @@ function renderBoundFiles(tags: ReqTagRow[]): ReturnType<typeof html> {
   </div>`;
 }
 
-/** One requirement's sticky detail panel (server-rendered, hidden unless it is
- *  the default or the client selects it). */
 function renderPanel(m: PanelReq, defaultId: string): ReturnType<typeof html> {
   const r = m.req;
   return html`
@@ -275,8 +229,6 @@ function renderPanel(m: PanelReq, defaultId: string): ReturnType<typeof html> {
   `;
 }
 
-/** One collapsible domain card: summary (chevron · key · count · active/super
- *  segment bar · verified/implemented rollup) + the requirement rows. */
 function renderDomainCard(dom: DomainGroup, defaultId: string): ReturnType<typeof html> {
   const active = dom.reqs.filter((m) => m.req.status === "Active").length;
   const sup = dom.reqs.length - active;
@@ -320,8 +272,6 @@ function renderDomainCard(dom: DomainGroup, defaultId: string): ReturnType<typeo
   `;
 }
 
-/** The page body: header + Expand/Collapse-all + accordion / sticky panels, or
- *  a first-requirement guidance note when the platform has none. */
 function renderBody(
   domains: DomainGroup[],
   defaultId: string,
@@ -329,8 +279,8 @@ function renderBody(
   showAll: boolean,
   hiddenCount: number,
 ): ReturnType<typeof html> {
-  // RED-99 — @spec SERV-014: the toggle is a plain link (SSR-honest, no-JS-safe)
-  // between the live-contract default and the full ledger.
+  // @spec SERV-014
+  // The toggle is a plain link so the filter works without JS.
   const statusToggle = showAll
     ? html`<a class="req-btn status-toggle" href="/requirements">Hide superseded &amp; retired</a>`
     : html`<a class="req-btn status-toggle" href="/requirements?all=1">Show superseded &amp; retired${hiddenCount > 0 ? html` (${hiddenCount})` : ""}</a>`;
@@ -379,15 +329,12 @@ function renderBody(
   `;
 }
 
-/** Mount both `/requirements` (list) and `/requirements/:id` (detail). */
 export function mountRequirements(app: Hono): void {
   app.get("/requirements", async (c) => {
     const reqs = await apiJson<Requirement[]>(app, "/api/requirements");
     const coverage = await apiJson<CoverageRow[]>(app, "/api/coverage");
 
-    // RED-99 — @spec SERV-014: default to the live contract — Superseded/Retired
-    // entries (and any domain they empty out) list only under ?all=1. The
-    // full ledger still feeds buildDomains so version history stays whole.
+    // @spec SERV-014
     const showAll = c.req.query("all") === "1";
     const listed = showAll
       ? reqs
@@ -396,10 +343,7 @@ export function mountRequirements(app: Hono): void {
       (r) => r.status === "Superseded" || r.status === "Deprecated",
     ).length;
 
-    // Per-requirement bound files for the LISTED reqs only: reverse-resolve
-    // each id in-process (cheap prepared queries; no network).
-    // Parallel so page latency is one round of the derived index, not N
-    // sequential reads.
+    // Parallel so page latency is one round of the derived index, not N sequential reads.
     const tagLists = await Promise.all(
       listed.map((r) => apiJson<ReqTagRow[]>(app, `/api/resolve?req=${encodeURIComponent(r.id)}`)),
     );
@@ -424,8 +368,6 @@ export function mountRequirements(app: Hono): void {
     const id = c.req.param("id");
     const res = await app.request(`/api/requirements/${encodeURIComponent(id)}`);
 
-    // Not-ok other than the friendly 404 (storage unavailable, internal
-    // error) routes to the app error boundary with the engine's hint.
     if (!res.ok && res.status !== 404) {
       throw await toApiError(res, "/api/requirements/:id");
     }

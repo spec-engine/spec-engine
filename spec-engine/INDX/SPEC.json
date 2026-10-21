@@ -1,7 +1,7 @@
 {
   "key": "INDX",
   "owner": null,
-  "updated": "2026-09-05",
+  "updated": "2026-10-21",
   "scope": "The derivation pipeline and index lifecycle: cold-rebuild identity, build_id determinism, structural integrity at index time, and spec index. Belongs here: deleting .spec-engine/ and rebuilding yields an identical result; build_id is deterministic for identical inputs; index-time structural checks; spec index itself. Does not belong here: check severities (CHCK); the SPEC.json envelope shape (SCHM). Boundary case: cold-rebuild identity is INDX's promise even though the model it rebuilds is defined in SCHM.",
   "grammar": "ears",
   "requirements": [
@@ -215,16 +215,17 @@
     },
     {
       "id": "INDX-014",
-      "status": "active",
+      "status": "superseded",
       "statement": "When walking a member for tags, the scanner shall read .lua, .luau, .go, and .rs files alongside the TypeScript, JavaScript, and shell files, so a requirement implemented in those languages is covered.",
       "why": "A @spec tag in a file the walker never opens is invisible: the requirement it binds reports ORPHAN_REQ or UNVERIFIED_REQ while the code and the test exist.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INDX-019",
       "relates": [],
       "livesIn": [
         "packages/engine/src/scanner/fs.ts"
       ],
       "issues": [],
+      "supersededAtVersion": 7,
       "aliases": [],
       "cites": []
     },
@@ -238,6 +239,66 @@
       "relates": [],
       "livesIn": [
         "packages/engine/src/scanner/tags.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INDX-016",
+      "status": "active",
+      "statement": "If any SPEC.json is not JSON or fails the shared schema, then the index build shall refuse to write the index.",
+      "why": "A domain dropped from the index turns every reference to it into DANGLING_TAG and BROKEN_RELATES noise that hides the parse error.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/indexer/pipeline.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INDX-017",
+      "status": "active",
+      "statement": "When an index build refuses on an invalid domain file, the spec command that requested it shall print only the INVALID_DOMAIN_FILE rows, naming the file and the failing field, and exit 1.",
+      "why": "The root cause has to be the only thing on screen.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/_shared.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INDX-018",
+      "status": "active",
+      "statement": "When a member's scan excludes an ignore entry or a sibling workspace package path, the scanner shall match the entry as a repo-relative path prefix.",
+      "why": "A module tree that mirrors a package path at depth is never scanned, and its requirements report ORPHAN_REQ while the tags exist.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/scanner/fs.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INDX-019",
+      "status": "active",
+      "statement": "When walking a member for tags, the scanner shall read .ts, .tsx, .js, .jsx, .mjs, .sh, .lua, .luau, .go, .rs, .tf, .toml, .sql, and .css files and any file named Dockerfile or Dockerfile.<suffix>.",
+      "why": "A @spec tag in a file the walker never opens is invisible: the requirement it binds reports ORPHAN_REQ or UNVERIFIED_REQ while the code and the test exist.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/scanner/fs.ts"
       ],
       "issues": [],
       "aliases": [],

@@ -1,11 +1,6 @@
-// packages/engine/src/commands/mcp.test.ts
-//
-// L4 (lifecycle pass) — `spec mcp` end-to-end over REAL stdio: spawn the
-// CLI, speak newline-delimited JSON-RPC (initialize → initialized →
-// tools/list), and assert the tool surface comes back. This is the seam
-// the in-process InMemoryTransport tests (server-mcp.test.ts) cannot
-// cover — argv parsing, the stdout-is-protocol discipline, and the stdio
-// transport wiring.
+// Real stdio covers what the in-process InMemoryTransport tests
+// (server-mcp.test.ts) cannot: argv parsing, stdout as the protocol
+// channel, and the stdio transport wiring.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -80,8 +75,8 @@ describe("spec mcp (stdio end-to-end)", () => {
     proc.kill();
     await proc.exited;
 
-    // Every stdout line parsed as JSON (the protocol-channel discipline) —
-    // JSON.parse above would have thrown otherwise.
+    // Every stdout line already went through JSON.parse above, which throws
+    // on anything that is not protocol.
     expect(lines.length).toBeGreaterThan(0);
     const tools = (toolsResponse as ToolsResponse | null)?.result?.tools ?? [];
     const names = tools.map((t) => t.name).sort();

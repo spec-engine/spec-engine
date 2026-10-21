@@ -1,13 +1,4 @@
-// packages/tracker/src/adapter.test.ts
-//
-// TRK-03: noopAdapter is the offline-first default. It must
-//   1. match every opaque id (no-op claims all),
-//   2. degrade every id to the bare opaque id via {ok:false, reason:"absent"},
-//   3. NEVER touch the network — proven by replacing globalThis.fetch with a spy
-//      that throws if called and asserting it was not called, and
-//   4. resolve (never reject) even on the degraded path.
-//
-// The id mix (ENG-, BILLING-, KEY-NNN) proves opacity: ids are stored/returned
+// The id mix (ENG-, BILLING-, KEY-NNN) proves opacity: ids are returned
 // verbatim, never parsed for identity or routing.
 
 import { afterEach, describe, expect, mock, test } from "bun:test";

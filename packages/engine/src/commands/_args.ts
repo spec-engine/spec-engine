@@ -1,8 +1,3 @@
-// packages/engine/src/commands/_args.ts
-//
-// The citty arg specs every command shares, declared once, plus the
-// platformDir resolution every command performs.
-
 import { resolve } from "node:path";
 import { OUT_HELP } from "../constants";
 
@@ -39,6 +34,12 @@ export const livesArg = {
   type: "string",
   description:
     "Lives in (livesIn) paths: repeat the flag or comma-separate; an empty value clears the list",
+} as const;
+
+export const relatesArg = {
+  type: "string",
+  description:
+    "Related requirement ids (relates): repeat the flag or comma-separate; an empty value clears the list",
 } as const;
 
 /**

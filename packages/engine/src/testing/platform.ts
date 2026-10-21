@@ -1,12 +1,5 @@
-// packages/engine/src/testing/platform.ts
-//
-// The one platform builder a test uses to author its fixture. Every SPEC.json
-// it produces is written by the same operations a user reaches through the
-// CLI, the API, or MCP, so a test never restates the envelope shape. The
-// builder itself serializes nothing; a state the engine refuses to author
-// (a removed entry, an unapproved status flip, a broken pointer) is planted
-// through `plantEdit` in ./plant.ts, and a schema-invalid file lives under
-// ./fixtures/.
+// A state the engine refuses to author is planted with `plantEdit`
+// (./plant.ts); a schema-invalid file lives under ./fixtures/.
 
 import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -240,12 +233,9 @@ export class DomainHandle {
     );
   }
 
-  /** Amend in place. The fixture has no index, so the bound-tag gate sees no tags. */
+  /** Amend in place. */
   async amend(id: string, fields: AmendFields): Promise<AmendResult> {
-    return unwrap(
-      await amend({ platformDir: this.platform.dir, id, fields }, noTags),
-      `amend ${id}`,
-    );
+    return unwrap(await amend({ platformDir: this.platform.dir, id, fields }), `amend ${id}`);
   }
 
   /** Cross-domain supersede into `targetKey`, which must already be scaffolded. */

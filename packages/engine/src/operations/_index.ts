@@ -1,20 +1,11 @@
-// packages/engine/src/operations/_index.ts
-//
-// The one place an operation or a surface acquires a Storage handle over the
-// derived index. Four build policies:
-//   fresh   — cold-reset the DB in place, open, run the index (never trust a
-//             warm index: every MCP call, `gate`, the lifecycle commands, and
-//             `--fresh` reads).
-//   reset   — cold-reset and open without building; the operation runs the
-//             index itself because it needs the IndexResult (`check --ci`).
-//   missing — open; build only when the DB is absent or holds zero repos (the
-//             warm read path of map / query / resolve / propagation).
-//   never   — open without building (the caller will run the index itself).
-//
-// `assertSpecPlatform` runs before any filesystem write, so a non-platform
-// directory throws NotASpecPlatformError and leaves no `.spec-engine/` behind.
-// Errors propagate: the surface maps them (the CLI to exit codes, the API to
-// a 503, MCP to isError). Nothing here prints.
+// Build policies:
+//   fresh   — cold-reset, open, run the index (never trusts a warm index).
+//   reset   — cold-reset and open without building; the caller runs the index
+//             because it needs the IndexResult (`check --ci`).
+//   missing — open; build only when the DB is absent or holds zero repos.
+//   never   — open without building.
+// `assertSpecPlatform` must run before any filesystem write, so a
+// non-platform directory leaves no `.spec-engine/` behind.
 
 import { existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -41,11 +32,7 @@ export interface IndexHandle {
   built: boolean;
 }
 
-/**
- * Open the index under `opts.build`, run `fn`, and close the handle in a
- * `finally`. A callback that calls `process.exit` skips the close (Bun exits
- * synchronously), which matches every command that did so before this helper.
- */
+/** A callback that calls `process.exit` skips the close: Bun exits synchronously. */
 export async function withIndex<T>(
   opts: WithIndexOptions,
   fn: (handle: IndexHandle) => T | Promise<T>,

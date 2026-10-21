@@ -1,16 +1,9 @@
-// packages/webapp/src/server.test.ts
-//
-// RED-14 dead-end audit: `createApp()` (the Phase 1 probe factory that
-// `spec serve --probe` binds) was only exercised by the CI smoke against
-// the compiled binary, never by `bun test`. Lock its two contracts here:
-// `/` serves the embedded placeholder HTML, and the export `placeholderHtml`
-// is the same string the route returns (the D-14 inline-embedding proof
-// the probe smoke asserts end-to-end).
+// `createApp()` is otherwise exercised only by the compiled-binary probe smoke.
 
 import { describe, expect, test } from "bun:test";
 import { createApp, placeholderHtml } from "./server";
 
-describe("createApp (Phase 1 probe factory)", () => {
+describe("createApp", () => {
   test("GET / → 200 with the embedded placeholder HTML", async () => {
     const app = createApp();
     const res = await app.request("/");

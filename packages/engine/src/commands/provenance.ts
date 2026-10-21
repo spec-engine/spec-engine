@@ -1,11 +1,3 @@
-// packages/engine/src/commands/provenance.ts
-//
-// `spec provenance [issueId] [platformDir] [--out <path>] [--json]
-// [--resolve-issues] [--fresh]`: the per-requirement provenance matrix, or
-// the rows one opaque issue id is linked to. The issue id is a display-only
-// filter value, never a key. Read-only; `--resolve-issues` overlays tracker
-// data through the same decorator the webapp renders with.
-
 import { statSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineCommand } from "citty";
@@ -98,21 +90,24 @@ export const provenanceCommand = defineCommand({
       },
     });
 
-    await withReadStorage({ platformDir, dbPath, fresh: !!args.fresh }, async (storage) => {
-      const { rows } = provenance(storage, issueId || undefined);
-      if (!args.json && rows.length === 0) {
-        console.error(
-          issueId
-            ? formatNoProvenanceForIssue(issueId, platformDir)
-            : formatNoProvenance(platformDir),
-        );
-        return;
-      }
-      const mode = args.json ? "json" : "text";
-      const output = args.resolveIssues
-        ? renderProvenanceDecorated(rows, await resolveAndCache(rows, platformDir), mode)
-        : renderProvenance(rows, mode);
-      console.log(output);
-    });
+    await withReadStorage(
+      { platformDir, dbPath, fresh: !!args.fresh, json: !!args.json },
+      async (storage) => {
+        const { rows } = provenance(storage, issueId || undefined);
+        if (!args.json && rows.length === 0) {
+          console.error(
+            issueId
+              ? formatNoProvenanceForIssue(issueId, platformDir)
+              : formatNoProvenance(platformDir),
+          );
+          return;
+        }
+        const mode = args.json ? "json" : "text";
+        const output = args.resolveIssues
+          ? renderProvenanceDecorated(rows, await resolveAndCache(rows, platformDir), mode)
+          : renderProvenance(rows, mode);
+        console.log(output);
+      },
+    );
   },
 });

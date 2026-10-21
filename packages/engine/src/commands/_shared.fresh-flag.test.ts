@@ -1,13 +1,5 @@
-// packages/engine/src/commands/_shared.fresh-flag.test.ts
-//
-// `--fresh` on the read commands. The read commands trust a schema-matching
-// index by design (speed); `gate` and `check --ci` rebuild cold by design
-// (correctness). `--fresh` gives the read commands an explicit opt-in to the
-// cold path: rm db + WAL/SHM siblings before openStorage (the same trio
-// pattern as check --ci), so the command's output reflects the platform AS IT
-// IS NOW.
-//
-// Tag lines are composed via src/testing/specTag.ts (dogfood rule).
+// Tag lines are composed via src/testing/specTag.ts so the self-scan never
+// indexes them as this repo's tags.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { type DomainHandle, TestPlatform } from "../testing/platform";
@@ -70,7 +62,6 @@ afterEach(() => {
   fx.remove();
 });
 
-/** Add ORD-002 to the spec AFTER the index exists — the staleness probe. */
 async function appendOrd002(): Promise<void> {
   const minted = await ord.req({ statement: "refunds reverse inventory", why: "w" });
   expect(minted.id).toBe("ORD-002");
@@ -78,17 +69,14 @@ async function appendOrd002(): Promise<void> {
 
 describe("--fresh forces a cold rebuild on the read commands", () => {
   test("map without --fresh trusts the stale index; --fresh sees the new requirement", async () => {
-    // Build the index (transparent first-run reindex).
     await run(mapCommand)({ args: { platformDir: platform, json: true }, rawArgs: [] });
     logs = [];
     await appendOrd002();
 
-    // Stale read: ORD-002 invisible.
     await run(mapCommand)({ args: { platformDir: platform, json: true }, rawArgs: [] });
     expect(logs.join("\n")).not.toContain("ORD-002");
     logs = [];
 
-    // Fresh read: cold rebuild sees it.
     await run(mapCommand)({
       args: { platformDir: platform, json: true, fresh: true },
       rawArgs: [],

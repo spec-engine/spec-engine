@@ -1,23 +1,10 @@
-// packages/engine/src/base/gitBase.test.ts
-//
-// gitShow / gitLsTree are the only git subprocess seam for the governance and
-// propagation gates. This test proves:
-//   - gitShow returns the committed bytes at <ref>:<path>, null when absent;
-//   - gitLsTree enumerates the committed spec files at the ref (recursive,
-//     names only), the whole-file-deletion-safe base enumeration, never a
-//     working-tree glob;
-//   - an unsafe ref (space / leading `-` / `;`) is rejected before any spawn:
-//     gitShow returns null and gitLsTree returns [].
-//
-// The tmp platform is a real `git init`. A git identity is injected via env so
-// the commit succeeds in CI.
-
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { commitAndTag } from "../testing/git";
 import { TestPlatform } from "../testing/platform";
-import { gitLsTree, gitRefResolves, gitShow } from "./gitBase";
+import { gitLsTree, gitRefResolves, gitShow, newestReleaseTag } from "./gitBase";
 
 // Deterministic git identity so commits succeed on a bare CI runner.
 const GIT_ENV = {
@@ -108,9 +95,34 @@ describe("gitBase — gitShow / gitLsTree (ref-validated argv-array git readers)
     });
   });
 
-  test("a safe ref shape (HEAD, a sha, a branch/tag) is accepted", () => {
-    // The committed HEAD is a safe ref; already covered, but assert the
-    // allow-shape does not reject ordinary refs.
+  test("a safe ref shape such as HEAD is accepted", () => {
     expect(gitShow(repo, "HEAD", REL)).not.toBeNull();
+  });
+});
+
+describe("gitBase — newestReleaseTag", () => {
+  // @spec REQ-047 unit
+  test("the newest v* tag by version sort, ignoring other tags; null outside git or with none", () => {
+    const dir = mkdtempSync(join(tmpdir(), "spec-release-"));
+    try {
+      expect(newestReleaseTag(dir)).toBeNull();
+      commitAndTag(dir, "v0.9.0");
+      git(dir, "tag", "v0.10.0");
+      git(dir, "tag", "nightly");
+      expect(newestReleaseTag(dir)).toBe("v0.10.0");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // @spec REQ-047 unit
+  test("a repository with commits but no v* tag has no release", () => {
+    const dir = mkdtempSync(join(tmpdir(), "spec-release-"));
+    try {
+      commitAndTag(dir, "nightly");
+      expect(newestReleaseTag(dir)).toBeNull();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

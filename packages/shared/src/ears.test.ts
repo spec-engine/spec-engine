@@ -1,10 +1,3 @@
-// packages/shared/src/ears.test.ts
-//
-// The EARS statement parser (shared/ears.ts) — the five shapes decompose into
-// clauses; everything else is rejected with a plain-words problem plus the
-// expected shapes (with a filled example, never just a rule name).
-//
-// Verifies:
 // @spec SCHM-010 unit
 
 import { describe, expect, test } from "bun:test";

@@ -1,24 +1,8 @@
-// packages/engine/src/commands/check.governance.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec CHCK-023 integration
 // @spec OWNER-002 integration
 //
-// GOV-01/02/03 at the INTEGRATION layer: one in-process `spec check --ci --base
-// HEAD` over a git-init'd clone proves the governance teeth compose correctly
-// through the real command (git transport via git show/ls-tree, CODEOWNERS
-// resolution, cold build, exit codes, build_id parity). The base ref is the
-// UNMUTATED clone (committed baseline); each scenario mutates only the WORKING
-// TREE copy of spec-engine/BILLING/SPEC.json — the canonical fixture is never
-// touched (rmSync in afterEach; a git-status assertion belt-and-suspenders it).
-//
-//   - Scenario 1: remove BILLING-002 (no successor) → REQUIREMENT_REMOVED + exit 1
-//   - Scenario 2: remove BILLING-001 (supersededBy BILLING-009 survives) → exempt
-//   - Scenario 3: delete the whole domain file → git ls-tree still surfaces
-//     BILLING-009 (the id a working-tree-only scan would MISS)
-//   - Scenario 4: flip BILLING-002 → retired: warning by default, error under
-//     --require-owner-approval, silent when --approved-by names the owner
-//   - Scenario 5: build_id byte-identical WITH vs WITHOUT --base (GATE-04)
+// The base ref is the unmutated clone; each scenario mutates only the
+// working tree copy of spec-engine/BILLING/SPEC.json.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { rmSync, unlinkSync } from "node:fs";
@@ -65,7 +49,6 @@ let originalExit: typeof process.exit;
 beforeEach(() => {
   clone = cloneFixture(FIXTURE);
   dbPath = join(clone, ".spec-engine", "index.sqlite");
-  // The base ref is the UNMUTATED clone. git init + commit BEFORE any mutation.
   git(clone, "init", "-q");
   git(clone, "add", "-A");
   git(clone, "commit", "-q", "-m", "baseline");
@@ -95,7 +78,6 @@ afterEach(() => {
 type RunFn = (ctx: { args: Record<string, unknown>; rawArgs: string[] }) => Promise<void>;
 const checkRun = (checkCommand as unknown as { run: RunFn }).run;
 
-/** Invoke checkCommand.run against the clone with the supplied governance flags. */
 async function runCheck(opts: {
   ci?: boolean;
   json?: boolean;
@@ -138,8 +120,6 @@ function parseDiags(captured: string[]): Diagnostic[] {
   return JSON.parse(captured[0] ?? "[]") as Diagnostic[];
 }
 
-// ---- working-tree mutators (clone only; never the canonical fixture) --------
-
 function removeReq(id: string): Promise<void> {
   return plantEdit(clone, "BILLING", (dom) => {
     dom.requirements = dom.requirements.filter((r) => r.id !== id);
@@ -151,7 +131,6 @@ function flipStatus(id: string, status: string): Promise<void> {
   });
 }
 
-/** Belt-and-suspenders: the canonical fixture is never git-dirty after a run. */
 function fixtureClean(): boolean {
   const proc = Bun.spawnSync(["git", "status", "--porcelain", "fixtures/platform-fixture/"], {
     cwd: FIXTURE_REPO,
@@ -160,7 +139,7 @@ function fixtureClean(): boolean {
 }
 const FIXTURE_REPO = resolve(import.meta.dir, "..", "..", "..", "..");
 
-describe("governance integration (GOV-01/02/03) — cold spec check --ci --base", () => {
+describe("governance integration — cold spec check --ci --base", () => {
   test("Scenario 1: removing BILLING-002 (no successor) fires REQUIREMENT_REMOVED + exit 1", async () => {
     await removeReq("BILLING-002");
     const { logs: out, exitCode } = await runCheck({ ci: true, json: true, base: "HEAD" });
@@ -188,9 +167,8 @@ describe("governance integration (GOV-01/02/03) — cold spec check --ci --base"
     const removed = parseDiags(out)
       .filter((d) => d.code === "REQUIREMENT_REMOVED")
       .map((d) => d.req_id);
-    // The id a working-tree-only enumeration would MISS (its file is gone):
+    // A working-tree-only enumeration would miss it: its file is gone.
     expect(removed).toContain("BILLING-009");
-    // And the plainly-removed active reqs:
     expect(removed).toContain("BILLING-002");
     expect(removed).toContain("BILLING-007");
     expect(exitCode).toBe(1);
@@ -236,22 +214,19 @@ describe("governance integration (GOV-01/02/03) — cold spec check --ci --base"
     expect(approvedRows.length).toBe(0);
   });
 
-  test("CR-01: an unresolvable --base ref refuses fail-open with exit 2 (not a silent green)", async () => {
-    // Remove a requirement so governance WOULD fire if the base resolved — the
-    // point is that an unresolvable ref must NOT silently no-op to green.
+  test("an unresolvable --base ref refuses fail-open with exit 2 (not a silent green)", async () => {
+    // A removal governance would catch if the base resolved.
     await removeReq("BILLING-002");
     const { exitCode } = await runCheck({
       ci: true,
       json: true,
       base: "no-such-ref-xyz",
     });
-    // Exit 2 = usage error (distinct from exit 1 = diagnostics), NOT 0/1.
     expect(exitCode).toBe(2);
   });
 
-  test("Scenario 5 (GATE-04): build_id byte-identical WITH vs WITHOUT --base", async () => {
-    // No mutation → base == change → governance silent. The point is the hash is
-    // unmoved by --base (governance reads sit BELOW runIndex — temporal isolation).
+  test("Scenario 5: build_id byte-identical WITH vs WITHOUT --base", async () => {
+    // Governance reads run after runIndex computes the hash.
     const without = await runCheck({ ci: true, json: false });
     const hWithout = extractBuildId(without.logs);
     const withBase = await runCheck({ ci: true, json: false, base: "HEAD" });
