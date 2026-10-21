@@ -15,8 +15,10 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { Storage } from "@spec-engine/shared";
 import { Hono } from "hono";
 import { acceptCommand } from "../commands/accept";
+import { amendCommand } from "../commands/amend";
 import { deprecateCommand } from "../commands/deprecate";
 import { moveCommand } from "../commands/move";
+import { reqCommand } from "../commands/req";
 import { supersedeCommand } from "../commands/supersede";
 import { termCommand } from "../commands/term";
 import { runIndex } from "../indexer/pipeline";
@@ -24,6 +26,7 @@ import { sortRelations } from "../relations/format";
 import { mountApi } from "../server/api";
 import { buildMcpServer } from "../server/mcp";
 import { openStorage } from "../storage/sqlite";
+import { commitAndTag } from "../testing/git";
 import { entryOf, plantEdit } from "../testing/plant";
 import { TestPlatform } from "../testing/platform";
 import { specTag } from "../testing/specTag";
@@ -322,10 +325,7 @@ describe("write operations leave the same envelope from every surface", () => {
     const specPath = join(platform, "spec-engine", "BILLING", "SPEC.json");
     const restore = fx.snapshotSpecs();
 
-    const direct = await amend(
-      { platformDir: platform, id: "BILLING-003", fields: { why: null } },
-      fresh(),
-    );
+    const direct = await amend({ platformDir: platform, id: "BILLING-003", fields: { why: null } });
     expect(direct.ok).toBe(true);
     const afterDirect = await Bun.file(specPath).text();
 
@@ -338,19 +338,21 @@ describe("write operations leave the same envelope from every surface", () => {
     expect(put.status).toBe(200);
     expect(await Bun.file(specPath).text()).toBe(afterDirect);
 
-    // The shipped gate refuses on both surfaces with the same reason.
-    const shipped = await amend(
-      { platformDir: platform, id: "BILLING-002", fields: { why: "x" } },
-      fresh(),
-    );
-    expect(shipped.ok).toBe(false);
-    if (!shipped.ok) expect(shipped.reason).toBe("conflict");
-    const putShipped = await apiJson("/api/requirements/BILLING-002", {
+    // The release gate refuses on both surfaces with the same reason.
+    commitAndTag(platform, "v1.0.0");
+    const released = await amend({
+      platformDir: platform,
+      id: "BILLING-002",
+      fields: { why: "x" },
+    });
+    expect(released.ok).toBe(false);
+    if (!released.ok) expect(released.reason).toBe("conflict");
+    const putReleased = await apiJson("/api/requirements/BILLING-002", {
       method: "PUT",
       headers: apiHeaders,
       body: JSON.stringify({ why: "x" }),
     });
-    expect(putShipped.status).toBe(409);
+    expect(putReleased.status).toBe(409);
   });
 
   // @spec REQ-038 integration
@@ -605,4 +607,104 @@ describe("write operations leave the same envelope from every surface", () => {
     });
     expectAllEqual(confirmed);
   });
+});
+
+const REFUND = "When a refund is issued, the billing service shall reverse the charge.";
+const JSON_HEADERS = { "content-type": "application/json" };
+
+async function send(path: string, method: string, body: unknown, status: number): Promise<void> {
+  const res = await apiJson(path, { method, headers: JSON_HEADERS, body: JSON.stringify(body) });
+  expect(res.status).toBe(status);
+}
+
+function expectOk(r: { ok: boolean }): void {
+  expect(r.ok).toBe(true);
+}
+
+/** Each write operation that takes `relates`: every surface exposing it, one input each. */
+const RELATES_TABLE: Record<string, Record<string, () => Promise<void>>> = {
+  mint: {
+    operation: async () =>
+      expectOk(
+        await mint({
+          platformDir: platform,
+          key: "BILLING",
+          statement: REFUND,
+          why: "w",
+          livesIn: [],
+          relates: ["BILLING-001, BILLING-003"],
+        }),
+      ),
+    cli: () =>
+      runCli(reqCommand, {
+        domainPrefix: "BILLING",
+        text: REFUND,
+        why: "w",
+        relates: "BILLING-001,BILLING-003",
+      }),
+    api: () =>
+      send(
+        "/api/requirements",
+        "POST",
+        { key: "BILLING", statement: REFUND, why: "w", relates: ["BILLING-001", " BILLING-003"] },
+        201,
+      ),
+  },
+  amend: {
+    operation: async () =>
+      expectOk(
+        await amend({
+          platformDir: platform,
+          id: "BILLING-003",
+          fields: { relates: ["BILLING-001,BILLING-002"] },
+        }),
+      ),
+    cli: () => runCli(amendCommand, { id: "BILLING-003", relates: "BILLING-001, BILLING-002" }),
+    api: () =>
+      send("/api/requirements/BILLING-003", "PUT", { relates: "BILLING-001,BILLING-002" }, 200),
+  },
+  supersede: {
+    operation: async () =>
+      expectOk(
+        await supersede(
+          { platformDir: platform, id: "BILLING-003", statement: REFUND, relates: ["BILLING-001"] },
+          coldFreshTags(platform),
+        ),
+      ),
+    cli: () =>
+      runCli(supersedeCommand, { id: "BILLING-003", text: REFUND, relates: "BILLING-001" }),
+    api: () =>
+      send(
+        "/api/requirements/BILLING-003/supersede",
+        "POST",
+        { statement: REFUND, relates: ["BILLING-001"] },
+        201,
+      ),
+    mcp: async () => {
+      await mcpJson("spec_supersede", {
+        req_id: "BILLING-003",
+        statement: REFUND,
+        relates: ["BILLING-001"],
+      });
+    },
+  },
+};
+
+// @spec SCHM-024 integration
+// @spec REQ-050 integration
+// @spec REQ-051 integration
+describe("a relates list reaches every surface of every write operation", () => {
+  for (const [operation, surfaces] of Object.entries(RELATES_TABLE)) {
+    test(`${operation}: ${Object.keys(surfaces).join(", ")} write the same envelope`, async () => {
+      const snapshots = await writeThrough(["BILLING"], surfaces);
+      expectAllEqual(snapshots);
+      const written = JSON.parse(snapshots.operation?.[0] ?? "{}") as {
+        requirements: Array<{ relates: string[] }>;
+      };
+      const last = written.requirements.at(-1);
+      const touched = operation === "amend" ? written.requirements[2] : last;
+      expect(touched?.relates[0]).toBe("BILLING-001");
+      expect(touched?.relates.length).toBe(operation === "supersede" ? 1 : 2);
+    });
+  }
 });

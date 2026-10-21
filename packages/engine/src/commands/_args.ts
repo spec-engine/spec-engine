@@ -41,6 +41,12 @@ export const livesArg = {
     "Lives in (livesIn) paths: repeat the flag or comma-separate; an empty value clears the list",
 } as const;
 
+export const relatesArg = {
+  type: "string",
+  description:
+    "Related requirement ids (relates): repeat the flag or comma-separate; an empty value clears the list",
+} as const;
+
 /**
  * Every value a repeatable list flag carried, each split on commas, trimmed,
  * empties dropped. citty keeps only the last occurrence of a repeated flag, so

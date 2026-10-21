@@ -170,3 +170,19 @@ export function gitDiffNameStatus(platformDir: string, ref: string): DiffEntry[]
   }
   return rows;
 }
+
+/**
+ * The newest `v*` tag merged into HEAD by version sort, or null when there is
+ * none, `platformDir` is not in a git repository, or the name fails the
+ * allow-shape. Never throws.
+ * @spec REQ-047
+ */
+export function newestReleaseTag(platformDir: string): string | null {
+  const proc = Bun.spawnSync(
+    ["git", "tag", "--list", "v*", "--merged", "HEAD", "--sort=-v:refname"],
+    { cwd: platformDir },
+  );
+  if (proc.exitCode !== 0) return null;
+  const tag = proc.stdout.toString().split("\n")[0]?.trim() ?? "";
+  return tag !== "" && isSafeRef(tag) ? tag : null;
+}

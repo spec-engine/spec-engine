@@ -251,11 +251,11 @@ async function readJsonBody(
 }
 
 /**
- * Normalize the optional `livesIn` write field to the STOR-01 `string[]` shape:
+ * Normalize an optional list write field (`livesIn`, `relates`) to `string[]`:
  * a string becomes a single-element array, an array passes through, anything
  * else (or absent) becomes `[]`. Mirrors the `req.ts` / `amend.ts` recipe.
  */
-function toLivesIn(v: unknown): string[] {
+function toStringList(v: unknown): string[] {
   if (Array.isArray(v)) return v.filter((x): x is string => typeof x === "string");
   if (typeof v === "string" && v.length > 0) return [v];
   return [];
@@ -266,10 +266,22 @@ function mintFieldsFromBody(body: Record<string, unknown>) {
   return {
     statement: typeof body.statement === "string" ? body.statement : "",
     why: typeof body.why === "string" ? body.why : "",
-    livesIn: toLivesIn(body.livesIn),
+    livesIn: toStringList(body.livesIn),
+    relates: toStringList(body.relates),
     issue:
       typeof body.issue === "string" && body.issue.trim() !== "" ? body.issue.trim() : undefined,
     status: body.status === "draft" ? ("draft" as const) : ("active" as const),
+  };
+}
+
+/** A supersede body's optional successor fields; an absent field is copied from the predecessor. */
+function successorFieldsFromBody(body: Record<string, unknown>) {
+  return {
+    why: typeof body.why === "string" ? body.why : undefined,
+    livesIn: "livesIn" in body ? toStringList(body.livesIn) : undefined,
+    relates: "relates" in body ? toStringList(body.relates) : undefined,
+    issue:
+      typeof body.issue === "string" && body.issue.trim() !== "" ? body.issue.trim() : undefined,
   };
 }
 
@@ -278,7 +290,8 @@ function amendFieldsFromBody(body: Record<string, unknown>): AmendFields | null 
   const fields: AmendFields = {};
   if (typeof body.statement === "string") fields.statement = body.statement;
   if ("why" in body) fields.why = typeof body.why === "string" ? body.why : null;
-  if ("livesIn" in body) fields.livesIn = toLivesIn(body.livesIn);
+  if ("livesIn" in body) fields.livesIn = toStringList(body.livesIn);
+  if ("relates" in body) fields.relates = toStringList(body.relates);
   return Object.keys(fields).length === 0 ? null : fields;
 }
 
@@ -484,9 +497,8 @@ export function mountApi(
 
   // --- PUT /api/requirements/:id (VAL-03 amend) --------------------------
   //
-  // Amend an existing requirement's statement/why/livesIn through the same
-  // seam. The domain is resolved by `locateRequirement` scanning the enumerated
-  // domain keys; only the provided fields are mutated (amend.ts semantics),
+  // Amend an existing requirement's statement/why/livesIn/relates through the
+  // same seam; only the provided fields are mutated (amend.ts semantics),
   // untouched fields stay byte-identical.
   app.put(
     "/api/requirements/:id",
@@ -507,12 +519,12 @@ export function mountApi(
       return withWriteLock(async () => {
         const fields = amendFieldsFromBody(body);
         if (fields === null) {
-          return c.json({ error: "nothing to amend — provide statement, why, or livesIn" }, 400);
+          return c.json(
+            { error: "nothing to amend — provide statement, why, livesIn, or relates" },
+            400,
+          );
         }
-        const r = await amend({ platformDir, id, fields }, async (reqId) => {
-          await runIndex({ platformDir, storage });
-          return storage.listTags({ req_id: reqId });
-        });
+        const r = await amend({ platformDir, id, fields });
         if (!r.ok) return failureResponse(c, r);
         await runIndex({ platformDir, storage });
         return c.json({ ok: true, id }, 200);
@@ -547,17 +559,7 @@ export function mountApi(
 
       return withWriteLock(async () => {
         const r = await supersede(
-          {
-            platformDir,
-            id,
-            statement,
-            why: typeof body.why === "string" ? body.why : undefined,
-            livesIn: "livesIn" in body ? toLivesIn(body.livesIn) : undefined,
-            issue:
-              typeof body.issue === "string" && body.issue.trim() !== ""
-                ? body.issue.trim()
-                : undefined,
-          },
+          { platformDir, id, statement, ...successorFieldsFromBody(body) },
           async (reqId) => {
             await runIndex({ platformDir, storage });
             return storage.listTags({ req_id: reqId });

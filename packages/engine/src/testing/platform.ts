@@ -240,12 +240,9 @@ export class DomainHandle {
     );
   }
 
-  /** Amend in place. The fixture has no index, so the bound-tag gate sees no tags. */
+  /** Amend in place. */
   async amend(id: string, fields: AmendFields): Promise<AmendResult> {
-    return unwrap(
-      await amend({ platformDir: this.platform.dir, id, fields }, noTags),
-      `amend ${id}`,
-    );
+    return unwrap(await amend({ platformDir: this.platform.dir, id, fields }), `amend ${id}`);
   }
 
   /** Cross-domain supersede into `targetKey`, which must already be scaffolded. */

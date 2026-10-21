@@ -16,8 +16,9 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { commitAndTag } from "../testing/git";
 import { TestPlatform } from "../testing/platform";
-import { gitLsTree, gitRefResolves, gitShow } from "./gitBase";
+import { gitLsTree, gitRefResolves, gitShow, newestReleaseTag } from "./gitBase";
 
 // Deterministic git identity so commits succeed on a bare CI runner.
 const GIT_ENV = {
@@ -112,5 +113,32 @@ describe("gitBase — gitShow / gitLsTree (ref-validated argv-array git readers)
     // The committed HEAD is a safe ref; already covered, but assert the
     // allow-shape does not reject ordinary refs.
     expect(gitShow(repo, "HEAD", REL)).not.toBeNull();
+  });
+});
+
+describe("gitBase — newestReleaseTag", () => {
+  // @spec REQ-047 unit
+  test("the newest v* tag by version sort, ignoring other tags; null outside git or with none", () => {
+    const dir = mkdtempSync(join(tmpdir(), "spec-release-"));
+    try {
+      expect(newestReleaseTag(dir)).toBeNull();
+      commitAndTag(dir, "v0.9.0");
+      git(dir, "tag", "v0.10.0");
+      git(dir, "tag", "nightly");
+      expect(newestReleaseTag(dir)).toBe("v0.10.0");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // @spec REQ-047 unit
+  test("a repository with commits but no v* tag has no release", () => {
+    const dir = mkdtempSync(join(tmpdir(), "spec-release-"));
+    try {
+      commitAndTag(dir, "nightly");
+      expect(newestReleaseTag(dir)).toBeNull();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

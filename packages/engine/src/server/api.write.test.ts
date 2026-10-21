@@ -32,6 +32,7 @@ import { localToday } from "../authoring/edit";
 import { composeServeApp } from "../commands/serve";
 import { openStorage } from "../storage/sqlite";
 import { cloneFixture } from "../testing/cloneFixture";
+import { commitAndTag } from "../testing/git";
 
 const CANONICAL_FIXTURE = join(
   import.meta.dir,
@@ -175,8 +176,8 @@ describe("VAL-03 PUT /api/requirements/:id — amend through the same seam", () 
     expect(readFileSync(billingSpecPath(), "utf8")).toBe(onDiskBefore);
   });
 
-  test("a PUT on a shipped requirement (bound by code tags) is refused 409 — supersede instead", async () => {
-    // BILLING-002 is Active and implemented in the api repo.
+  test("a PUT changing a released requirement's statement is refused 409 — supersede instead", async () => {
+    commitAndTag(platformDir, "v1.0.0");
     const onDiskBefore = readFileSync(billingSpecPath(), "utf8");
     const res = await app.request("/api/requirements/BILLING-002", {
       method: "PUT",

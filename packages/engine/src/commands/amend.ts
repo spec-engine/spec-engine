@@ -1,16 +1,23 @@
 // packages/engine/src/commands/amend.ts
 //
-// `spec amend <KEY-NNN>`: revise an unshipped entry in place. The command
-// parses flags into the operation's field set and reports; every gate lives
-// in operations/amend.ts.
+// `spec amend <KEY-NNN>`: revise an entry in place. The command parses flags
+// into the operation's field set and reports; every gate lives in
+// operations/amend.ts.
 
 import { defineCommand, type ParsedArgs } from "citty";
 import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
 import { type AmendFields, amend } from "../operations/amend";
 import { ID_RE } from "../parser/grammar";
-import { jsonArg, listFlag, livesArg, platformDirArg, resolvePlatformDir } from "./_args";
-import { cliFreshTags, exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
+import {
+  jsonArg,
+  listFlag,
+  livesArg,
+  platformDirArg,
+  relatesArg,
+  resolvePlatformDir,
+} from "./_args";
+import { exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
 
 const amendArgs = {
   id: {
@@ -22,6 +29,7 @@ const amendArgs = {
   text: { type: "string", description: "New Requirement (statement) field value" },
   why: { type: "string", description: "New Why it matters field value" },
   lives: livesArg,
+  relates: relatesArg,
   issue: {
     type: "string",
     description:
@@ -41,7 +49,7 @@ export const amendCommand = defineCommand({
   meta: {
     name: "amend",
     description:
-      "Revise an unshipped requirement's fields in place (same id, no specVersion bump). Supersede shipped truth instead.",
+      "Revise a requirement's fields in place (same id, no version bump). A released requirement's statement and why are superseded instead; --lives and --relates still amend.",
   },
   args: amendArgs,
   async run({ args, rawArgs }) {
@@ -60,7 +68,7 @@ export const amendCommand = defineCommand({
 
     const fields = fieldsFromArgs(args, rawArgs);
 
-    const result = await amend({ platformDir, id, fields }, cliFreshTags(platformDir));
+    const result = await amend({ platformDir, id, fields });
     if (!result.ok) exitOnFailure("spec amend", result);
     printWarnings("spec amend", result.warnings);
     if (args.json) {
@@ -78,11 +86,12 @@ function assertAmendFlags(args: AmendArgs): void {
     args.text !== undefined ||
     args.why !== undefined ||
     args.lives !== undefined ||
+    args.relates !== undefined ||
     args.term !== undefined ||
     args.aliases !== undefined;
   if (!hasField && !hasIssue) {
     console.error(
-      "spec amend: nothing to amend — pass at least one of --text / --why / --lives / --term / --aliases",
+      "spec amend: nothing to amend — pass at least one of --text / --why / --lives / --relates / --term / --aliases",
     );
     process.exit(EXIT.USAGE);
   }
@@ -119,6 +128,8 @@ function fieldsFromArgs(args: AmendArgs, rawArgs: readonly string[]): AmendField
   }
   const livesIn = listFlag(rawArgs, "lives", args.lives);
   if (livesIn !== undefined) fields.livesIn = livesIn;
+  const relates = listFlag(rawArgs, "relates", args.relates);
+  if (relates !== undefined) fields.relates = relates;
   if (args.term !== undefined) fields.term = args.term.trim();
   if (args.issue !== undefined && args.issue.trim() !== "") fields.issue = args.issue.trim();
   if (args.aliases !== undefined) fields.aliases = splitAliases(args.aliases.trim());

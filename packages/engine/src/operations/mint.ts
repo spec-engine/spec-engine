@@ -21,7 +21,7 @@ import {
   judgeStatementGrammar,
 } from "../authoring/grammar";
 import { specPaths } from "../constants";
-import { readEnvelope } from "./_envelope";
+import { readEnvelope, splitList } from "./_envelope";
 import { fail, type OpFailure, type OpWarning } from "./_result";
 
 export interface MintInput {
@@ -103,7 +103,8 @@ export async function mint(input: MintInput): Promise<MintResult | OpFailure> {
     why: input.why || null,
     supersedes: null,
     supersededBy: null,
-    relates: input.relates ?? [],
+    // @spec REQ-050
+    relates: splitList(input.relates ?? []),
     livesIn: input.livesIn,
     // @spec PROV-003
     issues: input.issue ? [{ role: "created", id: input.issue }] : [],

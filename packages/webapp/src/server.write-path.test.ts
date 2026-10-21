@@ -31,6 +31,7 @@ import { join, resolve } from "node:path";
 import type { Storage } from "@spec-engine/shared";
 import { composeServeApp } from "@spec-engine/spec-engine/src/commands/serve";
 import { openStorage } from "@spec-engine/spec-engine/src/storage/sqlite";
+import { commitAndTag } from "@spec-engine/spec-engine/src/testing/git";
 import { cloneFixture } from "./testing/cloneFixture";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "fixtures", "platform-fixture");
@@ -143,8 +144,8 @@ describe("VAL-03 webapp editor — the amend form forwards to PUT /api/requireme
     expect(row.text).toBe("When a session is idle for 30 days, the system shall expire it.");
   });
 
-  test("an amend submit for a shipped requirement renders the engine's refusal, not a save", async () => {
-    // BILLING-002 is Active and implemented in the api repo — immutable in place.
+  test("an amend submit for a released requirement renders the engine's refusal, not a save", async () => {
+    commitAndTag(platformDir, "v1.0.0");
     const res = await postForm("/editor/amend", {
       id: "BILLING-002",
       statement: "Editing a shipped requirement in place.",
