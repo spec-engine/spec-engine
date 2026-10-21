@@ -17,7 +17,8 @@ description: Diagnostic codes and what they mean
 | `DANGLING_TAG` | error | A `@spec` tag references no requirement |
 | `SUPERSEDED_REFERENCED` | error | Code still tags a superseded requirement (retag to the successor) |
 | `ORPHAN_REQ` | error | An active requirement has no implementing `@spec` tag |
-| `UNVERIFIED_REQ` | error | An active requirement is implemented but has no verifying test tag |
+| `UNVERIFIED_REQ` | warning | An active requirement is implemented but has no verifying test tag |
+| `DRAFT_REFERENCED` | error / warning | A tag references a draft requirement: error on a verifying (test) tag, warning on an implementing or documenting tag |
 | `DRIFT` | error | A member is pinned behind the version at which a requirement it references changed |
 | `BROKEN_FILE_REF` | error | An active or draft requirement's `livesIn` entry does not resolve to a file under the platform root (a terminal-status entry is exempt) |
 | `NO_SPEC_CONFIG` | warning | A declared member is present on disk with no `spec-engine.member.json` |
@@ -33,6 +34,8 @@ description: Diagnostic codes and what they mean
 | `RELATES_SUPERSEDED` | warning | A `relates` entry points at a superseded requirement |
 | `SELF_RELATES` | warning | A `relates` entry names its own requirement (dropped, but surfaced) |
 | `UNKNOWN_ROLE` | warning | An `issues` entry uses a role outside `created` / `supersedes-via` / `amends-via` — surfaced and dropped, never stored |
+
+Coverage counts only active requirements: a draft never raises `ORPHAN_REQ` or `UNVERIFIED_REQ`. <!-- @spec CHCK-032 -->
 
 ## Glossary (TERM) diagnostics
 
@@ -59,7 +62,7 @@ spec check . --ci --results .spec-engine/results.xml
 
 ## Governance diagnostics (`--base <ref>`)
 
-With a git base ref, `check` also diffs the requirement set against that ref:
+With a git base ref, `check` also diffs the requirement set against that ref. Without `--base`, the removal and loss rows are computed against `HEAD` whenever git resolves:
 
 | Code | Severity | Condition |
 | --- | --- | --- |
@@ -67,10 +70,32 @@ With a git base ref, `check` also diffs the requirement set against that ref:
 | `UNAPPROVED_STATUS_FLIP` | warning† | A flip to superseded/deprecated whose CODEOWNERS domain owner is absent from `--approved-by` — †error under `--require-owner-approval` |
 | `PARTIAL_PROPAGATION` | error | Needs `--base` **and** `--results`: a changed requirement where some bound tests pass and some fail — one site migrated, another still red |
 
-See also `spec guard`, the pre-commit loss gate that reports `REQUIREMENT_REMOVED` / `IMPL_LOST` / `VERIFY_LOST` / `SPEC_FILE_DELETED` against the working tree — [Commands](/commands/#spec-guard-platformdir).
+| `IMPL_LOST` | error | The change removes the last implementing tag of a surviving active requirement |
+| `VERIFY_LOST` | warning | The change removes the last verifying tag of a surviving active requirement |
+| `SPEC_FILE_DELETED` | error | A `SPEC.json` present at the base ref is gone |
+
+The three loss rows are the ones `spec guard` reports against the same ref; guard's own `REQUIREMENT_REMOVED` row is not repeated. See [Commands](/commands/#spec-guard-platformdir).
 
 ## Opt-in policy diagnostics
 
 | Code | Severity | Condition |
 | --- | --- | --- |
 | `UNSOURCED_CHANGE` | warning | A superseded requirement carries no `supersedes-via` issue. Emitted only under `spec check --unsourced-change` |
+
+## Severity policy (`spec-engine/check.json`)
+
+`spec-engine/check.json` regrades diagnostics. Absent means no rules.
+
+```json
+{ "severity": [
+  { "code": "UNVERIFIED_REQ", "severity": "error" },
+  { "code": "UNVERIFIED_REQ", "severity": "warning", "match": ["LEGACY", "BILLING-004"] }
+] }
+```
+
+- `code` is any diagnostic code; `severity` is `error`, `warning`, or `off`.
+- `match` lists domain keys and requirement ids. A scoped rule applies only to rows whose requirement is listed or carries a listed key.
+- The most specific rule wins: an id match, then a domain match, then an unscoped rule. Among equals, the later rule wins.
+- `off` drops the row from every output.
+- Exit 1 follows the graded severities, on every surface.
+- A file that fails the schema exits 2 with `spec-engine/check.json: <path>: <reason>`.

@@ -279,10 +279,10 @@ Codes, in `DiagnosticCode` order:
 | `SUPERSEDED_REFERENCED` | error |
 | `DEPRECATED_REFERENCED` | error |
 | `STATEMENT_GRAMMAR` | per domain, default warning |
-| `DRAFT_REFERENCED` | warning |
+| `DRAFT_REFERENCED` | error on a verifying tag, warning on an implementing or documenting tag |
 | `GLOSSARY_DRIFT` | warning |
 | `ORPHAN_REQ` | error |
-| `UNVERIFIED_REQ` | error |
+| `UNVERIFIED_REQ` | warning |
 | `DRIFT` | error |
 | `NO_SPEC_CONFIG` | warning |
 | `BROKEN_FILE_REF` | error |
@@ -296,6 +296,9 @@ Codes, in `DiagnosticCode` order:
 | `UNPROVEN_REQ` | error, only with `--results` |
 | `PROOFS_UNCONFIRMED` | warning, only without `--results` |
 | `REQUIREMENT_REMOVED` | error |
+| `IMPL_LOST` | error, when a base ref resolves |
+| `VERIFY_LOST` | warning, when a base ref resolves |
+| `SPEC_FILE_DELETED` | error, when a base ref resolves |
 | `UNAPPROVED_STATUS_FLIP` | warning; error with `--require-owner-approval` |
 | `PARTIAL_PROPAGATION` | error, needs `--base` and `--results` |
 | `MALFORMED_FILE` | platform-map's severity: error, or warning for a manifest |
@@ -338,6 +341,34 @@ present on disk with no `spec-engine.member.json`.
   `TERM_DRIFT` (warning) is a pin behind the term's current version;
   `ORPHAN_TERM` (warning) is an Active term nothing cites. The first three
   clear with `spec term confirm`.
+- Losses: whenever a base ref resolves (`--base`, else `HEAD`), `check`
+  reports the `IMPL_LOST`, `VERIFY_LOST`, and `SPEC_FILE_DELETED` rows
+  `spec guard` would report against that ref. Guard's `REQUIREMENT_REMOVED`
+  rows are dropped; the removal check already reports that id.
+- Coverage counts only Active requirements: `ORPHAN_REQ` and
+  `UNVERIFIED_REQ` fire for Active entries only. <!-- @spec CHCK-032 -->
+
+#### check.json
+
+`spec-engine/check.json` regrades diagnostics. Absent means no rules.
+
+```json
+{ "severity": [
+  { "code": "UNVERIFIED_REQ", "severity": "error" },
+  { "code": "UNVERIFIED_REQ", "severity": "warning", "match": ["LEGACY", "BILLING-004"] }
+] }
+```
+
+- `code` is any diagnostic code; `severity` is `error`, `warning`, or `off`.
+- `match` lists domain keys and requirement ids. A scoped rule applies only
+  to rows whose `req_id` is listed or carries a listed key.
+- The most specific rule wins: an id match, then a domain match, then an
+  unscoped rule. Among equals, the later rule wins.
+- `off` drops the row from every output.
+- Grading runs inside the operation, so the CLI, `spec_check`, and every
+  other surface agree, and exit 1 follows the graded severities.
+- A file that fails the schema (unknown code or key, a bad severity, a
+  malformed match entry) exits 2 with `spec-engine/check.json: <path>: <reason>`.
 
 ### spec guard
 
