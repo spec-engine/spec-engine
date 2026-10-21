@@ -2,11 +2,11 @@
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { openStorage } from "../storage/sqlite";
-import { specTag } from "../testing/specTag";
+import { cloneFixture } from "../testing/cloneFixture";
+import { entryOf, plantEdit } from "../testing/plant";
 import { runIndex } from "./pipeline";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "platform-fixture");
@@ -59,41 +59,31 @@ describe("cold-rebuild equivalence", () => {
     expect(c.build_id).toBe(a.build_id);
   });
 
-  test("mutated fixture content produces a different build_id", async () => {
-    const sA = openStorage(dbPath);
-    const a = await runIndex({ platformDir: FIXTURE, storage: sA });
-    sA.close();
+  test("editing a SPEC.json statement changes build_id; rebuilding unchanged content does not", async () => {
+    const clone = cloneFixture(FIXTURE);
+    // repos.path is hashed into build_id, so every build here reads the same clone.
+    const build = async (db: string) => {
+      const s = openStorage(join(tmp, db));
+      try {
+        return (await runIndex({ platformDir: clone, storage: s })).build_id;
+      } finally {
+        s.close();
+      }
+    };
+    try {
+      const before = await build("a.sqlite");
+      expect(await build("b.sqlite")).toBe(before);
 
-    const modFixture = join(tmp, "modified-fixture");
-    await mkdir(join(modFixture, "spec-engine", "BILLING"), { recursive: true });
-    await mkdir(join(modFixture, "api", "src"), { recursive: true });
-    const billingText = `---
-key: BILLING
-owner: drea
-spec_version: 2
----
+      await plantEdit(clone, "BILLING", (d) => {
+        entryOf(d, "BILLING-001").statement += " Tax is computed at charge time.";
+      });
 
-### BILLING-007 — Active
-**Requirement:** When a charge is made, compute tax per region at charge time.X
-**Why it matters:** Compliance.
-`;
-    await writeFile(join(modFixture, "spec-engine", "BILLING", "SPEC.md"), billingText);
-    await writeFile(
-      join(modFixture, "api", "spec-engine.member.json"),
-      JSON.stringify({ specs: "spec-engine@2" }, null, 2),
-    );
-    await writeFile(
-      join(modFixture, "api", "src", "tax.ts"),
-      `${specTag("BILLING-007")}export const computeTax = () => 0;\n`,
-    );
-
-    const modDbPath = join(tmp, "modified.sqlite");
-    const sB = openStorage(modDbPath);
-    const b = await runIndex({ platformDir: modFixture, storage: sB });
-    sB.close();
-
-    expect(b.build_id).not.toBe(a.build_id);
-    expect(b.build_id).toMatch(/^[0-9a-f]{64}$/);
+      const after = await build("c.sqlite");
+      expect(after).toMatch(/^[0-9a-f]{64}$/);
+      expect(after).not.toBe(before);
+    } finally {
+      rmSync(clone, { recursive: true, force: true });
+    }
   });
 
   test("three-run stability: A == B (warm) and A == C (cold) and B == C", async () => {
