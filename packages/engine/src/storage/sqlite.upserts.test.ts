@@ -1,9 +1,3 @@
-// packages/engine/src/storage/sqlite.upserts.test.ts
-//
-// Phase 2 / Plan 02-03 — proves every WriteHandle upsert, FTS5 sync,
-// transaction rollback (INDX-04 / Assumption A2), and sqlite_sequence reset.
-// File-DB tests per CLAUDE.md Q8 (mkdtempSync, NOT :memory:).
-
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -11,10 +5,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ParseDiagnostic, Repo, Requirement, Tag } from "@spec-engine/shared";
 import { computeBuildId, openStorage } from "./sqlite";
-
-// ---------------------------------------------------------------------------
-// Scaffold: fresh tmp DB per test (file-mode; not :memory:). CLAUDE.md Q8.
-// ---------------------------------------------------------------------------
 
 let tmp: string;
 let dbPath: string;
@@ -27,10 +17,6 @@ beforeEach(() => {
 afterEach(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
-
-// ---------------------------------------------------------------------------
-// Sample row fixtures (deterministic, minimal).
-// ---------------------------------------------------------------------------
 
 const SAMPLE_REPO: Repo = {
   name: "api",
@@ -71,10 +57,6 @@ const SAMPLE_DIAG: Omit<ParseDiagnostic, "id"> = {
   detail: "duplicate id",
   severity: "error",
 };
-
-// ---------------------------------------------------------------------------
-// upsertRepo
-// ---------------------------------------------------------------------------
 
 describe("upsertRepo", () => {
   test("inserts one repo; SELECT shows correct columns", () => {
@@ -124,10 +106,6 @@ describe("upsertRepo", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// upsertDomain
-// ---------------------------------------------------------------------------
-
 describe("upsertDomain", () => {
   test("inserts with null owner/schema landing as SQL NULL (not the string 'null')", () => {
     const s = openStorage(dbPath);
@@ -170,10 +148,6 @@ describe("upsertDomain", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// upsertRequirement
-// ---------------------------------------------------------------------------
-
 describe("upsertRequirement", () => {
   test("inserts one requirement; SELECT returns all 12 columns matching input", () => {
     const s = openStorage(dbPath);
@@ -195,11 +169,11 @@ describe("upsertRequirement", () => {
     expect(row).toEqual(SAMPLE_REQ);
   });
 
-  test("BAD_STATUS string lands verbatim (Pitfall 3 / Invariant #4 — no CHECK constraint)", () => {
+  test("BAD_STATUS string lands verbatim (no CHECK constraint)", () => {
     const s = openStorage(dbPath);
     s.withWriteTx((w) => {
-      // Cast at the seam (Pitfall 3 recommended approach B): TS narrow elsewhere,
-      // DB stores the raw bad value for diagnostic recovery.
+      // Cast at the seam: the DB stores the raw bad value so a diagnostic can
+      // report it.
       w.upsertRequirement({
         ...SAMPLE_REQ,
         id: "BILLING-010",
@@ -218,10 +192,6 @@ describe("upsertRequirement", () => {
     expect(row?.status).toBe("Drft");
   });
 });
-
-// ---------------------------------------------------------------------------
-// upsertTag
-// ---------------------------------------------------------------------------
 
 describe("upsertTag", () => {
   test("inserts one tag; AUTOINCREMENT id starts at 1", () => {
@@ -248,10 +218,6 @@ describe("upsertTag", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// recordParseDiagnostic
-// ---------------------------------------------------------------------------
-
 describe("recordParseDiagnostic", () => {
   test("inserts one diagnostic; SELECT shows the row", () => {
     const s = openStorage(dbPath);
@@ -277,15 +243,10 @@ describe("recordParseDiagnostic", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// clearAll
-// ---------------------------------------------------------------------------
-
 describe("clearAll", () => {
-  test("empties all five tables; subsequent upsertTag returns id=1 (sqlite_sequence reset)", () => {
+  test("empties all six tables; subsequent upsertTag returns id=1 (sqlite_sequence reset)", () => {
     const s = openStorage(dbPath);
 
-    // Populate, then clear, then re-populate one tag.
     s.withWriteTx((w) => {
       w.upsertRepo(SAMPLE_REPO);
       w.upsertDomain({
@@ -298,7 +259,6 @@ describe("clearAll", () => {
       w.upsertRequirement(SAMPLE_REQ);
       w.upsertTag(SAMPLE_TAG);
       w.upsertTag({ ...SAMPLE_TAG, file: "api/src/renew2.ts" });
-      // RED-16: relations must participate in the clearAll contract too.
       w.upsertRelation({
         from_id: "BILLING-009",
         to_id: "BILLING-002",
@@ -308,7 +268,6 @@ describe("clearAll", () => {
       w.recordParseDiagnostic(SAMPLE_DIAG);
     });
 
-    // Verify populated.
     {
       const db = new Database(dbPath);
       expect((db.query("SELECT count(*) AS c FROM tags").get() as { c: number }).c).toBe(2);
@@ -319,7 +278,6 @@ describe("clearAll", () => {
       w.clearAll();
     });
 
-    // All six tables empty after clearAll (relations joined in RED-16).
     {
       const db = new Database(dbPath);
       for (const tbl of [
@@ -336,7 +294,6 @@ describe("clearAll", () => {
       db.close();
     }
 
-    // Re-insert one tag — id MUST be 1 again (sqlite_sequence was reset).
     s.withWriteTx((w) => {
       w.upsertTag(SAMPLE_TAG);
     });
@@ -350,15 +307,10 @@ describe("clearAll", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// FTS5 sync (Pitfall 2 — _ai/_ad/_au triggers fire in the same transaction)
-// ---------------------------------------------------------------------------
-
-describe("FTS5 sync (Pitfall 2)", () => {
+describe("FTS5 sync", () => {
   test("count(requirements_fts) tracks count(requirements) across insert/clearAll/insert", () => {
     const s = openStorage(dbPath);
 
-    // Step 1: insert one requirement → fts count == 1.
     s.withWriteTx((w) => {
       w.upsertRequirement(SAMPLE_REQ);
     });
@@ -375,7 +327,6 @@ describe("FTS5 sync (Pitfall 2)", () => {
       expect(ftsCount).toBe(1);
     }
 
-    // Step 2: clearAll → fts count == 0 (requirements_ad trigger fires per row).
     s.withWriteTx((w) => {
       w.clearAll();
     });
@@ -392,7 +343,6 @@ describe("FTS5 sync (Pitfall 2)", () => {
       expect(ftsCount).toBe(0);
     }
 
-    // Step 3: re-insert → fts count == 1 again.
     s.withWriteTx((w) => {
       w.upsertRequirement(SAMPLE_REQ);
     });
@@ -409,11 +359,7 @@ describe("FTS5 sync (Pitfall 2)", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// withWriteTx rollback (INDX-04 / Assumption A2: synchronous throw → rollback)
-// ---------------------------------------------------------------------------
-
-describe("withWriteTx rollback (INDX-04 / Assumption A2)", () => {
+describe("withWriteTx rollback", () => {
   test("synchronous throw inside the tx rolls back all writes; DB stays empty", () => {
     const s = openStorage(dbPath);
 
@@ -440,15 +386,7 @@ describe("withWriteTx rollback (INDX-04 / Assumption A2)", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// computeBuildId — Phase 2 deterministic content hash (INDX-03 / CI-02)
-// ---------------------------------------------------------------------------
-
-/**
- * Helper: populate a DB with a fixed, deterministic dataset suitable for
- * cross-DB hash comparison. Returns the open Storage so callers can decide
- * when to close it.
- */
+/** Returns the open Storage; the caller closes it. */
 function populateDeterministic(path: string) {
   const s = openStorage(path);
   s.withWriteTx((w) => {
@@ -559,11 +497,9 @@ describe("computeBuildId", () => {
     const s = populateDeterministic(dbPath);
     const idBefore = computeBuildId(s);
 
-    // Clear and re-populate with identical content.
     s.withWriteTx((w) => {
       w.clearAll();
     });
-    // After clearAll, sqlite_sequence is reset; re-insert the same rows.
     s.withWriteTx((w) => {
       w.upsertRepo({ name: "api", path: "/x/api", pinned_spec_version: 2, dependency_depth: 0 });
       w.upsertRepo({
@@ -624,7 +560,6 @@ describe("computeBuildId", () => {
     const tagB = { ...SAMPLE_TAG, file: "api/src/b.ts" };
     const tagC = { ...SAMPLE_TAG, file: "api/src/c.ts" };
 
-    // Insert order A → B → C
     sA.withWriteTx((w) => {
       seed(w);
       w.upsertTag(tagA);
@@ -632,7 +567,6 @@ describe("computeBuildId", () => {
       w.upsertTag(tagC);
     });
 
-    // Insert order C → B → A (same logical content, different AUTOINCREMENT order)
     sB.withWriteTx((w) => {
       seed(w);
       w.upsertTag(tagC);

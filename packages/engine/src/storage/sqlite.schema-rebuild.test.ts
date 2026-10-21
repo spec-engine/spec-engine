@@ -1,20 +1,7 @@
-// packages/engine/src/storage/sqlite.schema-rebuild.test.ts
-//
-// RED-16 regression guard for the D-12 silent-rebuild path. Read commands
-// (`map` / `query` / `resolve` / `propagation` / `serve`) capture
-// `needsIndex = !existsSync(dbPath)` BEFORE openStorage. When a SCHEMA_VERSION
-// bump lands (1→2→3→4→5 so far), every existing on-disk DB takes the
-// silent-rebuild branch inside openStorage: the file is wiped and recreated
-// EMPTY — but the command observed "file exists" and skips runIndex, so it
-// queries the empty DB and emits [] (exit 0) on every invocation until the
-// user manually runs `spec index`. Silent wrong output, the worst kind.
-//
-// The fix: read commands re-index when the DB existed but came back with
-// zero repos — an indexed platform ALWAYS has ≥1 repo row (the canonical),
-// so `listRepos().length === 0` is unambiguous "this DB holds no index".
-//
-// The test simulates "user upgraded spec across a schema bump": build a
-// valid index, poison _schema_version to an old number, re-run the command.
+// Read commands decide `needsIndex` from file existence before openStorage,
+// but a schema-version mismatch makes openStorage recreate the file empty. An
+// indexed platform always has at least one repo row, so zero repos is what
+// tells the command to re-index instead of emitting [].
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { rmSync } from "node:fs";
@@ -44,9 +31,8 @@ class ExitError extends Error {
 
 beforeEach(() => {
   clone = cloneFixture(FIXTURE);
-  // WR-06-adjacent: the committed fixture tree is clean, but a LOCAL
-  // checkout may carry a stale gitignored .spec-engine/ from manual runs — and
-  // cloneFixture copies it. Remove it so this test owns the DB lifecycle.
+  // A local checkout may carry a stale gitignored .spec-engine/ that
+  // cloneFixture copies; this test must own the DB lifecycle.
   rmSync(join(clone, ".spec-engine"), { recursive: true, force: true });
   logs = [];
   errs = [];
@@ -74,9 +60,7 @@ afterEach(() => {
 type RunFn = (ctx: { args: Record<string, unknown>; rawArgs: string[] }) => Promise<void>;
 const run = (cmd: unknown): RunFn => (cmd as { run: RunFn }).run;
 
-/** Build a valid index, then poison _schema_version — the exact on-disk
- *  state every user's .spec-engine/index.sqlite is in after a SCHEMA_VERSION
- *  bump ships. */
+/** The on-disk state every user's index is in after a SCHEMA_VERSION bump ships. */
 async function indexThenPoison(): Promise<void> {
   const dbPath = join(clone, ".spec-engine", "index.sqlite");
   const s = openStorage(dbPath);
@@ -85,13 +69,9 @@ async function indexThenPoison(): Promise<void> {
   poisonSchemaVersion(dbPath, 1);
 }
 
-// Self-review: the predicate fix landed identically in FIVE commands
-// (map/query/resolve/propagation/serve). One covered command would not
-// guard the other four against a bad merge reverting `if (needsIndex)` —
-// each in-process-testable command gets its own case. `serve` is excluded
-// (long-running Bun.serve loop, no clean in-process harness); its predicate
-// is byte-identical to the four covered here.
-describe("schema-version bump → silent rebuild → transparent re-index (RED-16)", () => {
+// Each command carries its own copy of the predicate, so each gets a case.
+// `serve` is not covered: its Bun.serve loop has no clean in-process harness.
+describe("schema-version bump → silent rebuild → transparent re-index", () => {
   test("map against a DB from an older schema version re-indexes instead of emitting []", async () => {
     await indexThenPoison();
     await run(mapCommand)({ args: { platformDir: clone, json: true }, rawArgs: [] });

@@ -1,15 +1,7 @@
-// packages/engine/src/map/format.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec MAP-002
 //
-// Pure-function tests for map/format.ts (MAP-01 / MAP-02). No I/O, no
-// Storage, no DB — just sortMatrix / cellStatus / renderMatrix exercised
-// over hand-rolled CoverageRow fixtures.
-//
-// JSON-mode determinism is asserted strictly (byte-equal across two calls).
-// Text-mode is asserted loosely via substring checks — column padding is
-// hand-rolled and not part of the MAP-02 contract.
+// Text mode is asserted by substring only: column padding is not part of the
+// output contract.
 
 import { describe, expect, test } from "bun:test";
 import type { CoverageRow } from "@spec-engine/shared";
@@ -99,7 +91,6 @@ describe("renderMatrix", () => {
     const a = renderMatrix(input, "json");
     const b = renderMatrix(input, "json");
     expect(a).toBe(b);
-    // And the contents must be a JSON array — quick sanity check.
     expect(Array.isArray(JSON.parse(a))).toBe(true);
   });
 
@@ -121,11 +112,9 @@ describe("renderMatrix", () => {
     expect(out).toContain("—");
   });
 
-  test("empty input → JSON '[]' and text returns a string (possibly just header)", () => {
+  test("empty input → JSON '[]' and text returns a string", () => {
     expect(renderMatrix([], "json")).toBe("[]");
-    // text mode: empty rows means no repos to discover → no columns. We
-    // document the behavior as 'returns a string'; either an empty string
-    // or a header-only line is acceptable.
+    // Either an empty string or a header-only line is acceptable.
     const text = renderMatrix([], "text");
     expect(typeof text).toBe("string");
   });

@@ -1,20 +1,4 @@
-// packages/engine/src/storage/sql/propagation.test.ts
-//
-// Dogfood (spec self-consumes this repo — see spec-engine/):
 // @spec PROP-005
-//
-// Plan 04-02 / Task 2 — lock the canonical fixture trace for PROP-02 at the
-// Storage seam. The 5-state classifier (PROP_REPO_STATES_SQL + propagationFor
-// in storage/sqlite.ts) is the single SQL+TS surface every higher-level
-// member (plan 04-04's `spec propagation` command, the webapp in Phase 5)
-// reads through; if a future refactor changes the precedence ladder, the
-// cycle guard, or the member-only filter, this file fails before any
-// rendered output churns.
-//
-// Pattern mirrors check-drift-view.test.ts: mkdtempSync tmp dir,
-// openStorage(dbPath), runIndex({ platformDir: FIXTURE, storage }), then
-// read via storage.propagationFor(...) and assert on PropagationRow shape
-// with literal PropagationState.* constants (no string smell-tests).
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -56,13 +40,12 @@ async function buildFixtureStorage(): Promise<Storage> {
   return storage;
 }
 
-describe("propagationFor (PROP-02 — 5-state classifier)", () => {
+describe("propagationFor (5-state classifier)", () => {
   test("BILLING-009 fixture trace: api=MIGRATED_VERIFIED, mobile=ON_PREDECESSOR via BILLING-001 (drifted), admin=ON_OTHER_DOMAIN_REQ via BILLING-007", async () => {
     const storage = await buildFixtureStorage();
     try {
       const rows = storage.propagationFor("BILLING-009");
 
-      // SQL orders by repos.name; assert exact set + order.
       expect(rows.length).toBe(3);
       expect(rows.map((r) => r.repo)).toEqual(["admin", "api", "mobile"]);
 
@@ -94,7 +77,7 @@ describe("propagationFor (PROP-02 — 5-state classifier)", () => {
     }
   });
 
-  test("spec-engine is never included in propagation rows (Pitfall 6 member-only filter)", async () => {
+  test("spec-engine is never included in propagation rows (member-only filter)", async () => {
     const storage = await buildFixtureStorage();
     try {
       const rows = storage.propagationFor("BILLING-009");
@@ -105,13 +88,8 @@ describe("propagationFor (PROP-02 — 5-state classifier)", () => {
   });
 
   test("BILLING-007 (unchanged Active req, no ancestors) classifies tagging members as MIGRATED_*", async () => {
-    // BILLING-007 is Active and not superseded by anything; nothing supersedes
-    // INTO it either. So the ancestors CTE is empty. Every member that tags
-    // BILLING-007 directly lands MIGRATED_VERIFIED (if any tag is `verifies`)
-    // or MIGRATED_UNVERIFIED (implements only). Fixture trace:
-    //   - api:    tags BILLING-007 in src/tax.ts (implements) + test/tax.test.ts (verifies unit) → MIGRATED_VERIFIED
-    //   - admin:  tags BILLING-007 in src/reports.ts (implements) + test/reports.int.test.ts (verifies integration) → MIGRATED_VERIFIED
-    //   - mobile: tags BILLING-007 in src/tax.ts only (implements, no verifies) → MIGRATED_UNVERIFIED
+    // In the fixture, mobile tags BILLING-007 from src/tax.ts only, with no
+    // verifying tag; api and admin carry both kinds.
     const storage = await buildFixtureStorage();
     try {
       const rows = storage.propagationFor("BILLING-007");
@@ -147,15 +125,8 @@ describe("propagationFor (PROP-02 — 5-state classifier)", () => {
   });
 
   test("non-existent target req still returns 3 rows (member-only filter); all NO_DOMAIN_REFERENCE, no exception", async () => {
-    // When $target is not present in `requirements`, target_domain returns 0
-    // rows so `(SELECT key FROM target_domain)` is NULL. SQL `r.key = NULL`
-    // is always falsy under three-valued logic, so the ON_OTHER_DOMAIN_REQ
-    // branch never matches. The ancestors CTE is also empty (no req has
-    // superseded_by=BILLING-404). All rows fall through to
-    // NO_DOMAIN_REFERENCE. via_req_id is null and the drift lookup misses
-    // (drift set keyed by real (repo,req_id) pairs; BILLING-404 cannot
-    // appear). The CLI command in plan 04-04 will still print 3 rows; this
-    // is the documented "missing target" path, not a crash.
+    // A missing target makes `(SELECT key FROM target_domain)` NULL, and
+    // `r.key = NULL` is never true, so ON_OTHER_DOMAIN_REQ cannot match.
     const storage = await buildFixtureStorage();
     try {
       const rows = storage.propagationFor("BILLING-404");
@@ -170,11 +141,7 @@ describe("propagationFor (PROP-02 — 5-state classifier)", () => {
     }
   });
 
-  test("predecessor-chain cycle guard: PROP_REPO_STATES_SQL contains `a.depth < 16` (Pitfall 3)", () => {
-    // Structural regression guard. If a future refactor removes the bound
-    // (e.g., 'just make the CTE recurse until convergence'), this fails
-    // before runtime would. The grep-style assertion matches the same
-    // substring the plan's acceptance criteria locks.
+  test("predecessor-chain cycle guard: PROP_REPO_STATES_SQL contains `a.depth < 16`", () => {
     expect(PROP_REPO_STATES_SQL).toContain("a.depth < 16");
   });
 });

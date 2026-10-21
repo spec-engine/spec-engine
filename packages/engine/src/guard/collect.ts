@@ -1,23 +1,7 @@
-// packages/engine/src/guard/collect.ts
-//
-// GUARD-001/003/004: gather the facts guard/losses.ts decides over. This is the
-// ONLY impure module in the guard package — it reads the base ref through the
-// one git seam (base/gitBase.ts), the working-tree spec through the shared
-// SPEC.json validator, and the working-tree tag counts through the Storage
-// interface (the derived index). It writes nothing and returns a plain
-// `GuardFacts` bag; the classifier stays pure and git-free.
-//
-// Cheap by construction (GUARD-01 "keep it cheap"): the base ref is read ONLY
-// for the files in the change scope (`git diff --name-status`), never the whole
-// tree. The "last tag survives?" question is answered from the already-built
-// derived index (Storage) rather than a second full-tree scan.
-//
-// REUSE, do not re-parse: base requirements go through `validateDomainFile`
-// (the ONE structural validator) and base tags through `scanTagsInFile` (the
-// ONE tag parser). No second parser is introduced.
-//
-// D-08 grep-fence: this file imports NO bun:sqlite. Tag counts come through the
-// Storage interface, never a raw driver.
+// The only impure module in the guard package; losses.ts stays pure and
+// git-free. The base ref is read only for the files in the change scope, never
+// the whole tree, and "does the last tag survive?" is answered from the
+// already-built index rather than a second full-tree scan.
 
 import { join } from "node:path";
 import { parseDomainText, type SpecRequirement, type Storage } from "@spec-engine/shared";
@@ -43,16 +27,14 @@ function isCodeFile(path: string): boolean {
   return !isSpecFile(path) && !isIgnored(path) && isTagSource(path);
 }
 
-/** Parse SPEC.json bytes → requirements through the ONE validator. A malformed
- *  body contributes zero reqs and never throws — guard is advisory, so a bad
- *  base file must not crash the gate. */
+/** A malformed body contributes zero reqs and never throws: a bad base file
+ *  must not crash the gate. */
 function parseReqs(text: string): SpecRequirement[] {
   const v = parseDomainText(text, "");
   return v.ok ? v.data.requirements : [];
 }
 
-/** Base requirements + their source paths, read from the ref for each changed
- *  spec file (an added file has no base blob → gitShow null → skipped). */
+/** An added file has no base blob, so gitShow returns null and it is skipped. */
 function collectBaseReqs(
   platformDir: string,
   ref: string,
@@ -71,9 +53,7 @@ function collectBaseReqs(
   return { reqs, path };
 }
 
-/** Base implementing/verifying tag sites (first site per id wins, so the block
- *  message points at a stable location) read from the ref for each changed code
- *  file. Kind is path-derived by the shared scanner. */
+/** The first site per id wins, so the block message points at a stable location. */
 function collectBaseTags(
   platformDir: string,
   ref: string,
@@ -92,8 +72,8 @@ function collectBaseTags(
   return { implSite, verifySite };
 }
 
-/** Working-tree requirement facts: every id, the Active subset, and the set of
- *  ids some surviving req supersedes (the GUARD-006 backward-supersede path). */
+/** `supersedesTargets` feeds the backward-supersede suppression: a surviving
+ *  req that names a removed one as its predecessor ends it. */
 async function collectWorktreeReqs(canonicalDir: string): Promise<{
   ids: Set<string>;
   activeIds: Set<string>;
@@ -113,9 +93,6 @@ async function collectWorktreeReqs(canonicalDir: string): Promise<{
   return { ids, activeIds, supersedesTargets };
 }
 
-/** Tally implementing/verifying tag counts across the WHOLE working tree from
- *  the derived index (Storage seam). This is the "does the last tag survive?"
- *  oracle — full-tree, but free (the index is already built). */
 function tallyWorktreeTags(storage: Storage): {
   implCount: Map<string, number>;
   verifyCount: Map<string, number>;
@@ -129,12 +106,6 @@ function tallyWorktreeTags(storage: Storage): {
   return { implCount, verifyCount };
 }
 
-/**
- * Assemble the full `GuardFacts` bag for the classifier. Orchestrates the five
- * collectors above over the `git diff --name-status <ref>` change scope; each
- * collector stays small and single-purpose so no function exceeds the biome
- * complexity ceiling.
- */
 export async function collectFacts(
   platformDir: string,
   ref: string,

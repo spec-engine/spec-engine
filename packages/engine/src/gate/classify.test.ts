@@ -1,32 +1,6 @@
-// packages/engine/src/gate/classify.test.ts
-//
-// Plan 06-02 / Task 2 — RED phase: lock the pure-classifier contract for
-// `spec gate`. classifyGate is the decision function the CLI command
-// (plan 06-03) composes around; everything else (argv parsing, exit
-// codes, JSON rendering) is mechanical surface over this outcome.
-//
-// Tests construct synthetic Requirement / Repo rows literally — no DB,
-// no fixture clone, no runIndex, no bun:sqlite. The whole point of the
-// pure-classifier seam is that the decision logic can be exhaustively
-// covered without I/O.
-//
-// Coverage map:
-//   Test 1 — PASS (GATE-01 happy path)
-//   Test 2 — PASS boundary: changed_at_version === pinned_spec_version
-//            (Pitfall 5: equality is PASS, NOT VERSION_PIN)
-//   Test 3 — NOT_FOUND (GATE-02)
-//   Test 4 — DRAFT (GATE-02)
-//   Test 5 — SUPERSEDED (GATE-02)
-//   Test 6 — SUPERSEDED precedence over VERSION_PIN
-//            (Pitfall 3 / T-06-02-02 — the critical branch-order test)
-//   Test 7 — VERSION_PIN (GATE-02)
-//   Test 8 — null repo throws (defensive contract for plan 06-03)
-
 import { describe, expect, test } from "bun:test";
 import type { Repo, Requirement } from "@spec-engine/shared";
 import { classifyGate } from "./classify";
-
-// --- Synthetic row builders ----------------------------------------------
 
 function makeRepo(pinned_spec_version: number, name = "api"): Repo {
   return {
@@ -56,7 +30,7 @@ function makeReq(overrides: Partial<Requirement> = {}): Requirement {
 }
 
 describe("classifyGate", () => {
-  test("Test 1 — PASS: Active req at the member's pin (GATE-01 happy path)", () => {
+  test("PASS: an Active req at the member's pin", () => {
     const req = makeReq({ status: "Active", changed_at_version: 2 });
     const repo = makeRepo(2);
     const out = classifyGate({
@@ -76,10 +50,7 @@ describe("classifyGate", () => {
     expect(out.detail).toContain("@2");
   });
 
-  test("Test 2 — PASS boundary: changed_at_version === pinned_spec_version is PASS, NOT VERSION_PIN (Pitfall 5 / T-06-02-01)", () => {
-    // Same input as Test 1 — labelled separately because the boundary
-    // is the critical Pitfall-5 mitigation: equality must be PASS, and
-    // the strict-vs-equal predicate is what makes it so.
+  test("PASS boundary: changed_at_version === pinned_spec_version is PASS, not VERSION_PIN", () => {
     const req = makeReq({ status: "Active", changed_at_version: 2 });
     const repo = makeRepo(2);
     const out = classifyGate({
@@ -93,7 +64,7 @@ describe("classifyGate", () => {
     expect(out.pass).toBe(true);
   });
 
-  test("Test 3 — NOT_FOUND: req row is null (GATE-02)", () => {
+  test("NOT_FOUND: req row is null", () => {
     const repo = makeRepo(2);
     const out = classifyGate({
       req: null,
@@ -111,7 +82,7 @@ describe("classifyGate", () => {
     expect(out.detail.toLowerCase()).toContain("not found");
   });
 
-  test("Test 4 — DRAFT: req status is Draft (GATE-02)", () => {
+  test("DRAFT: req status is Draft", () => {
     const req = makeReq({ status: "Draft", changed_at_version: 2 });
     const repo = makeRepo(2);
     const out = classifyGate({
@@ -126,7 +97,7 @@ describe("classifyGate", () => {
     expect(out.detail).toContain("Draft");
   });
 
-  test("Test 5 — SUPERSEDED: req status is Superseded, detail cites superseded_by id (GATE-02)", () => {
+  test("SUPERSEDED: req status is Superseded, detail cites superseded_by id", () => {
     const req = makeReq({
       id: "BILLING-001",
       seq: 1,
@@ -148,9 +119,7 @@ describe("classifyGate", () => {
   });
 
   // @spec GATE-009 unit
-  test("Test 5b — DEPRECATED: a deprecated req fails the gate, never PASSes through the version comparison", () => {
-    // Before the branch existed, Deprecated fell through to VERSION_PIN/PASS —
-    // changed_at_version <= pin would approve building against a dead promise.
+  test("DEPRECATED: a deprecated req at or below the pin fails the gate", () => {
     const req = makeReq({
       id: "BILLING-001",
       seq: 1,
@@ -170,14 +139,7 @@ describe("classifyGate", () => {
     expect(out.detail).toContain("end-of-life");
   });
 
-  test("Test 6 — SUPERSEDED precedence over VERSION_PIN (Pitfall 3 / T-06-02-02) — critical branch-order lock", () => {
-    // Superseded AND behind-pin: req.changed_at_version=2 > repo.pin=1
-    // would naively classify VERSION_PIN. The hard-ordered branches
-    // (NOT_FOUND → DRAFT → SUPERSEDED → VERSION_PIN → PASS) MUST surface
-    // SUPERSEDED — it's the structural defect, the version skew is a
-    // downstream symptom. Maps to ROADMAP Success Criterion #1:
-    //   "spec gate mobile BILLING-001 [Superseded] exits non-zero with
-    //    reason SUPERSEDED"
+  test("SUPERSEDED takes precedence over VERSION_PIN for a req also ahead of the pin", () => {
     const req = makeReq({
       id: "BILLING-001",
       seq: 1,
@@ -197,7 +159,7 @@ describe("classifyGate", () => {
     expect(out.pass).toBe(false);
   });
 
-  test("Test 7 — VERSION_PIN: Active req ahead of member pin (GATE-02), detail cites both versions", () => {
+  test("VERSION_PIN: Active req ahead of member pin, detail cites both versions", () => {
     const req = makeReq({ status: "Active", changed_at_version: 2 });
     const repo = makeRepo(1, "mobile");
     const out = classifyGate({
@@ -215,7 +177,7 @@ describe("classifyGate", () => {
     expect(out.detail).toContain("@2");
   });
 
-  test("Test 8 — null repo throws (defensive contract — caller in plan 06-03 must screen unknown repos to exit 2 BEFORE calling)", () => {
+  test("a null repo throws, naming the requested repo", () => {
     const req = makeReq();
     expect(() =>
       classifyGate({
