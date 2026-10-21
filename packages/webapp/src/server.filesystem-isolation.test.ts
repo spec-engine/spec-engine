@@ -36,7 +36,7 @@ function buildApp(): Hono {
 }
 
 describe("filesystem isolation", () => {
-  test("after rmSync of the member source, /api/coverage and SSR pages render identically", async () => {
+  test("after rmSync of the member source and the SPEC.json files, /api/coverage and SSR pages render identically", async () => {
     const app = buildApp();
 
     const beforeCoverage = await app.request("/api/coverage");
@@ -56,10 +56,12 @@ describe("filesystem isolation", () => {
     expect((beforeRows as unknown[]).length).toBeGreaterThan(0);
     expect(beforeIndexBody).toContain("BILLING-009");
 
-    const billingSpec = join(clone, "spec-engine", "BILLING", "SPEC.md");
-    const authSpec = join(clone, "spec-engine", "AUTH", "SPEC.md");
-    rmSync(billingSpec, { force: true });
-    rmSync(authSpec, { force: true });
+    const billingSpec = join(clone, "spec-engine", "BILLING", "SPEC.json");
+    const authSpec = join(clone, "spec-engine", "AUTH", "SPEC.json");
+    expect(existsSync(billingSpec)).toBe(true);
+    expect(existsSync(authSpec)).toBe(true);
+    rmSync(billingSpec);
+    rmSync(authSpec);
     expect(existsSync(billingSpec)).toBe(false);
     expect(existsSync(authSpec)).toBe(false);
 
