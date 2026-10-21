@@ -39,7 +39,7 @@
     "prepack": "bun run build:npm"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.29.0",
+    "@modelcontextprotocol/sdk": "1.32.0",
     "@spec-engine/platform-map": "0.5.0",
     "citty": "0.2.2",
     "hono": "4.12.27",
