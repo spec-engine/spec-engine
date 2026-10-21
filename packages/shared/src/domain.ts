@@ -307,31 +307,154 @@ function orderDomain(d: SpecDomain) {
   };
 }
 
+type JsonObject = Record<string, unknown>;
+type ProjectedDomain = JsonObject & { requirements: JsonObject[] };
+
+function isDefaultValue(v: unknown): boolean {
+  return v === undefined || v === null || (Array.isArray(v) && v.length === 0);
+}
+
+/** Equality over canonical projections, whose key order is fixed. */
+const sameValue = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
+
+/**
+ * Patch `raw` in place from `before` to `next`, both canonical projections: an
+ * unchanged field keeps its raw bytes, a changed field keeps its key position,
+ * a field that turns default is written only where the raw carries the key.
+ * @spec SCHM-032
+ */
+function patchFields(raw: JsonObject, before: JsonObject, next: JsonObject): void {
+  for (const key of new Set([...Object.keys(before), ...Object.keys(next)])) {
+    if (key === "requirements") continue;
+    const v = next[key];
+    if (sameValue(before[key], v)) continue;
+    if (v === undefined) delete raw[key];
+    else if (!isDefaultValue(v) || key in raw) raw[key] = v;
+  }
+}
+
+/**
+ * A new entry in the key order of `template`: the template's keys first
+ * (a defaulted value only where the template carries the key), then every
+ * remaining non-default field in canonical order.
+ * @spec SCHM-033
+ */
+function shapeLike(template: JsonObject | undefined, next: JsonObject): JsonObject {
+  if (template === undefined) return next;
+  const out: JsonObject = {};
+  for (const key of Object.keys(template)) {
+    if (next[key] !== undefined) out[key] = next[key];
+  }
+  for (const [key, v] of Object.entries(next)) {
+    if (!(key in out) && !isDefaultValue(v)) out[key] = v;
+  }
+  return out;
+}
+
+/**
+ * The validated domain rendered onto the existing file's raw object, entries
+ * in the validated order, matched to raw entries by id (duplicates in turn).
+ * @spec SCHM-031
+ */
+function preserveShape(raw: JsonObject, rawDomain: SpecDomain, domain: SpecDomain): JsonObject {
+  const before = orderDomain(rawDomain) as ProjectedDomain;
+  const next = orderDomain(domain) as ProjectedDomain;
+  patchFields(raw, before, next);
+
+  const rawEntries = raw.requirements as JsonObject[];
+  const byId = new Map<string, number[]>();
+  rawDomain.requirements.forEach((r, i) => {
+    byId.set(r.id, [...(byId.get(r.id) ?? []), i]);
+  });
+  const template = rawEntries[rawEntries.length - 1];
+  raw.requirements = next.requirements.map((entry, i) => {
+    const idx = byId.get(domain.requirements[i]?.id ?? "")?.shift();
+    if (idx === undefined) return shapeLike(template, entry);
+    const rawEntry = rawEntries[idx] as JsonObject;
+    patchFields(rawEntry, before.requirements[idx] as JsonObject, entry);
+    return rawEntry;
+  });
+  return raw;
+}
+
+/**
+ * Accept `serialized` only when it re-parses to `domain`, compared through the
+ * canonical projection (an absent nullable field equals an explicit null).
+ * @spec SCHM-034
+ */
+export function verifyRoundTrip(
+  serialized: string,
+  domain: SpecDomain,
+  sourceFile: string,
+): { ok: true } | { ok: false; diagnostics: Diagnostic[] } {
+  const reparsed = parseDomainText(serialized, sourceFile);
+  if (!reparsed.ok) return { ok: false, diagnostics: reparsed.diagnostics };
+  if (sameValue(orderDomain(reparsed.data), orderDomain(domain))) return { ok: true };
+  return {
+    ok: false,
+    diagnostics: [
+      {
+        code: DiagnosticCode.INVALID_DOMAIN_FILE,
+        source_file: sourceFile,
+        line: 0,
+        repo: null,
+        req_id: null,
+        detail: "the shape-preserving rewrite does not re-parse to the validated domain",
+        severity: "error",
+      },
+    ],
+  };
+}
+
+/** The existing file's raw object and its validated form; null for a missing, non-JSON, or invalid file. */
+async function readExisting(
+  path: string,
+  sourceFile: string,
+): Promise<{ raw: JsonObject; data: SpecDomain } | null> {
+  const file = Bun.file(path);
+  if (!(await file.exists())) return null;
+  let raw: unknown;
+  try {
+    raw = JSON.parse(await file.text());
+  } catch {
+    return null;
+  }
+  const validated = validateDomainFile(raw, sourceFile);
+  return validated.ok ? { raw: raw as JsonObject, data: validated.data } : null;
+}
+
 /**
  * The single WRITE seam (VAL-01 / VAL-02). Validates `domain` through the SAME
- * `validateDomainFile` the index reader uses, then — only on success — serializes
- * with a fixed key order + exactly one trailing newline and writes to `path`.
+ * `validateDomainFile` the index reader uses, then — only on success — writes
+ * it as two-space JSON with exactly one trailing newline. A new file takes the
+ * canonical key order; an existing valid file is patched in its own shape, and
+ * the patched text must re-parse to the validated domain or nothing is written.
  *
- * On validation failure it writes NOTHING and returns the reject Diagnostic[]
- * (the discriminated-union contract callers in 17-04/17-05 branch on — print the
- * diagnostics + exit non-zero rather than throw). Because the rejection comes
- * straight from `validateDomainFile`, the write-path diagnostic is byte-identical
- * to the index-path diagnostic for the same object (VAL-02).
- *
- * Uses `Bun.write` (a global) — it does NOT trip the D-11 bun:sqlite import fence.
+ * On validation failure it writes NOTHING and returns the reject Diagnostic[],
+ * straight from `validateDomainFile` (VAL-02 parity with the index path).
  *
  * @spec SCHM-015
+ * @spec SCHM-031
  */
 export async function validateAndWrite(
   path: string,
   domain: unknown,
   sourceFile?: string,
 ): Promise<{ ok: true } | { ok: false; diagnostics: Diagnostic[] }> {
-  const validated = validateDomainFile(domain, sourceFile ?? path);
+  const src = sourceFile ?? path;
+  const validated = validateDomainFile(domain, src);
   if (!validated.ok) {
     return { ok: false, diagnostics: validated.diagnostics };
   }
-  const serialized = `${JSON.stringify(orderDomain(validated.data), null, 2)}\n`;
+  const existing = await readExisting(path, src);
+  if (existing === null) {
+    await Bun.write(path, `${JSON.stringify(orderDomain(validated.data), null, 2)}\n`);
+    return { ok: true };
+  }
+  const shaped = preserveShape(existing.raw, existing.data, validated.data);
+  const serialized = `${JSON.stringify(shaped, null, 2)}\n`;
+  const verdict = verifyRoundTrip(serialized, validated.data, src);
+  if (!verdict.ok) return verdict;
   await Bun.write(path, serialized);
   return { ok: true };
 }
