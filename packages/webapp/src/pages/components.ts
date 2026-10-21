@@ -1,35 +1,18 @@
-// packages/webapp/src/pages/components.ts
-//
-// Tokenized brand "components" for the SSR pages — the code translation of the
-// brand kit's <StatusBadge> / <SpecId> primitives, rendered as `hono/html`
-// fragments styled by the token classes in styles.css. Each helper maps a
-// domain value (requirement status, propagation state, a coverage boolean) to
-// the canonical status variant + label, so the mapping lives in ONE place and
-// every page reads the same visual vocabulary.
-//
-// D-09 / WORK-04 / Invariant #5: imports ONLY `@spec-engine/shared` (types)
-// and `hono` (runtime). No engine, no filesystem. Every interpolation flows
-// through the auto-escaping `hono/html` tagged template (Pitfall 7).
+// Every interpolation must flow through the auto-escaping `hono/html` template;
+// `raw` is reserved for build-time assets.
 
 import type { PropagationRow, RequirementStatus } from "@spec-engine/shared";
 import { html, raw } from "hono/html";
 import { navBar } from "./nav";
 import styleSheet from "./styles.css" with { type: "text" };
 
-/** Embedded style tag (build-time asset, never request data — Pitfall 7). */
+/** `raw` is safe here only because the stylesheet is a build-time asset, never request data. */
 const styleTag = raw(`<style>${styleSheet}</style>`);
 
-/** The stamped spec-id motif — mono, accent. Mirrors the kit's <SpecId plain>. */
 export function specId(id: string): ReturnType<typeof html> {
   return html`<span class="spec-id">${id}</span>`;
 }
 
-/**
- * A full self-contained "coming soon" document for a feature-flagged-off route
- * (Query / Relations / Provenance). Keeps the page's own `<h1>` and nav-active
- * key so the shell reads correctly, and shows a Coming-soon notice instead of
- * the feature UI. Centralized so every disabled route renders identically.
- */
 export function comingSoonDoc(active: string, title: string): ReturnType<typeof html> {
   return html`<!doctype html>
 <html lang="en">
@@ -52,13 +35,10 @@ export function comingSoonDoc(active: string, title: string): ReturnType<typeof 
 </html>`;
 }
 
-/** A status pill: `variant` is the CSS class (verified/drift/…); `label` the text. */
 export function badge(variant: string, label: string): ReturnType<typeof html> {
   return html`<span class="badge ${variant}">${label}</span>`;
 }
 
-/** Webapp display labels for the engine's requirement-status vocabulary —
- *  one word per status, the same word everywhere a human reads it. */
 const STATUS_LABEL: Record<RequirementStatus, string> = {
   Active: "ACTIVE",
   Superseded: "SUPERSEDED",
@@ -66,7 +46,6 @@ const STATUS_LABEL: Record<RequirementStatus, string> = {
   Deprecated: "DEPRECATED",
 };
 
-/** Requirement lifecycle status → canonical badge variant + display label. */
 export function requirementStatusBadge(status: RequirementStatus): ReturnType<typeof html> {
   const variant =
     status === "Active"
@@ -80,11 +59,9 @@ export function requirementStatusBadge(status: RequirementStatus): ReturnType<ty
 }
 
 /**
- * Propagation state → badge, colored purely by the 5-state machine. Drift is a
- * separate axis (its own column / overlay), so it is NOT folded in here — that
- * keeps the state color honest and avoids double-encoding the same signal. The
- * label keeps the exact state token so the value stays greppable and the CLI
- * vocabulary is preserved.
+ * Drift is deliberately not folded into the color: it has its own column, and
+ * folding it in would double-encode one signal. The label is the raw state
+ * token so it stays greppable against the CLI output.
  */
 export function propagationStateBadge(row: PropagationRow): ReturnType<typeof html> {
   let variant: string;
@@ -104,12 +81,7 @@ export function propagationStateBadge(row: PropagationRow): ReturnType<typeof ht
   return badge(variant, row.state);
 }
 
-/**
- * The coverage matrix glyph: one box encoding a requirement's bind state in a
- * repo from its two bits (implemented, verified). Colorblind-safe (the brand
- * kit's default): the state is carried by a glyph AND colour, not colour alone
- * — ✓ src+test, S src only, T test only, empty none.
- */
+/** The state is carried by a glyph as well as a colour so it stays colorblind-safe. */
 export function coverageGlyph(impl: 0 | 1, verif: 0 | 1): ReturnType<typeof html> {
   const [variant, char, title] =
     impl && verif
@@ -123,14 +95,9 @@ export function coverageGlyph(impl: 0 | 1, verif: 0 | 1): ReturnType<typeof html
 }
 
 /**
- * One platform-health heat cell: the count of a domain's active requirements
- * implemented in one member, tinted by the share of the domain that member
- * covers. Renders the SAME cube as the requirement rows' bind glyphs
- * (`.glyph` — the `heat` modifier only widens for multi-digit counts and
- * applies the tint), carrying a number instead of a letter; zero renders
- * the same empty bordered square a `none` bind cell does. Absorbed from
- * the retired /report grid — the Coverage matrix's domain header rows are
- * the surviving surface.
+ * Reuses the bind-glyph cube (`.glyph`) so a domain row lines up with its
+ * requirement rows; the `heat` modifier only widens it for multi-digit counts
+ * and applies the tint.
  */
 export function heatCell(n: number, den: number): ReturnType<typeof html> {
   if (n === 0) {

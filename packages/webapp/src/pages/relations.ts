@@ -1,29 +1,10 @@
-// packages/webapp/src/pages/relations.ts
-//
-// RED-17 — SSR Relates entity-diagram page (`GET /relations`).
-//
-// D-09 / WORK-04 / Invariant #5: webapp source imports ONLY from
-// `@spec-engine/shared` (types) and `hono` (runtime) — see coverage.ts. The
-// mermaid SOURCE TEXT comes from `/api/relations?format=mermaid`
-// (in-process via `app.request`, Pitfall 6), which renders through the
-// engine's relations/format.ts — the same formatter `spec relations`
-// prints. This page never builds mermaid syntax itself, so the CLI and
-// webapp diagrams cannot drift (one engine, not two).
-//
-// Client-side rendering: the mermaid text is embedded in a
-// `<pre class="mermaid">` and rendered by the mermaid ESM module loaded
-// from the jsdelivr CDN in a STATIC `<script type="module">` tag — the
-// first (and only) client script in the webapp, per the project's
-// "htmx-style single script tag before any bundler" escalation path.
-// The tag is a template LITERAL (never interpolated request data), so the
-// pages.test.ts XSS guard's bare-`<script>` ban still holds. Without
-// network access the page degrades gracefully: the <pre> shows the
-// readable mermaid source.
-//
-// Escaping note (Pitfall 7): `${mermaidText}` flows through the
-// auto-escaping `hono/html` tagged template. Entity-escaped quotes parse
-// back to literal quotes in the element's text content, which is exactly
-// what mermaid's startOnLoad reads.
+// The page never builds mermaid syntax: the text comes from
+// `/api/relations?format=mermaid`, the formatter `spec relations` prints, so
+// the CLI and webapp diagrams cannot drift. The script tag is a template
+// literal with `type="module"`, never interpolated, so the pages.test.ts XSS
+// guard's bare-`<script>` ban still holds. Offline, the <pre> shows the
+// readable mermaid source. Escaping `mermaidText` is safe: entity-escaped
+// quotes parse back to literal quotes in the text content mermaid reads.
 
 import { featureEnabled, type RelationRow } from "@spec-engine/shared";
 import type { Hono } from "hono";
@@ -33,13 +14,9 @@ import { apiJson, apiText } from "./data";
 import { navBar } from "./nav";
 import styleSheet from "./styles.css" with { type: "text" };
 
-/** Embedded style tag — safe `raw` use: build-time asset, never request
- *  data (Pitfall 7). Mirrors coverage.ts. */
+/** `raw` is safe here only because the stylesheet is a build-time asset, never request data. */
 const styleTag = raw(`<style>${styleSheet}</style>`);
 
-/** Mount the Relates diagram page (`GET /relations`) onto an existing
- *  Hono app. The handler closes over `app` so it can read its own
- *  `/api/relations` routes in-process via `app.request` (Pitfall 6). */
 export function mountRelations(app: Hono): void {
   app.get("/relations", async (c) => {
     if (!featureEnabled("relations")) return c.html(comingSoonDoc("relations", "Relates graph"));

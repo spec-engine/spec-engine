@@ -1,32 +1,9 @@
-// packages/webapp/src/pages/coverage.ts
-//
-// Plan 05-04 / Task 1 — SSR coverage matrix page (`GET /`). This is the
-// CANONICAL coverage component from the brand kit's Spec Check Dashboard: a
-// domain-grouped matrix where each cell is a per-repo glyph encoding the
-// requirement's bind state in that repo (src+test / src only / test only /
-// none) and a ROLLUP column reads implemented / verified across repos.
-//
-// D-09 / WORK-04 / Invariant #5: webapp source imports ONLY from
-// `@spec-engine/shared` (types) and `hono` (runtime). NO `bun:sqlite`, no
-// `node:fs`, no `fs`, no `bun`, no `node:path`, no `@spec-engine/spec-engine`.
-// Enforced by `packages/webapp/biome.json`'s `noRestrictedImports` rule
-// AND by the defense-in-depth grep test in
-// `packages/webapp/test/import-fence.test.ts`.
-//
-// Rendering shape (RESEARCH § Webapp SSR + plan 05-04 acceptance):
-//   - Every handler renders a single self-contained `<!doctype html>`
-//     document via ONE `hono/html` tagged template — no shared layout
-//     partial, no title/body placeholder substitution, no string-replace
-//     on embedded HTML.
-//   - Every interpolation auto-escapes via the `hono/html` tagged
-//     template (Pitfall 7). The `raw` helper is used ONLY to embed the
-//     static `styles.css` asset (origin: source file, never request data).
-//
-// Data fetch (Pitfall 6): the handler reads `/api/coverage` (and
-// `/api/requirements` for row titles) via Hono's in-process
-// `app.request(path)` — never `fetch("http://...")`. The caller passes the
-// same Hono app that has `mountApi(app, storage)` already wired (plan 05-03),
-// so the API and SSR planes share one engine boundary.
+// Webapp source imports only `@spec-engine/shared` types and `hono`, enforced
+// by `packages/webapp/biome.json` (`noRestrictedImports`) and
+// `test/import-fence.test.ts`. Each page is one self-contained `hono/html`
+// document: no layout partial, no string-replace on embedded HTML, so every
+// interpolation auto-escapes. Data is read in-process through
+// `app.request(path)` on the app `mountApi` wired, never `fetch("http://...")`.
 
 import type { CoverageRow, ReportDomainRow, Requirement } from "@spec-engine/shared";
 import type { Hono } from "hono";
@@ -37,23 +14,17 @@ import { healthPcts, reportTotals } from "./health";
 import { navBar } from "./nav";
 import styleSheet from "./styles.css" with { type: "text" };
 
-/** Embedded style tag — only call site of `raw` in this module; safe
- *  because `styleSheet` originates from a source file at build time,
- *  never from request data (Pitfall 7). */
+/** `raw` is safe here only because the stylesheet is a build-time asset, never request data. */
 const styleTag = raw(`<style>${styleSheet}</style>`);
 
-/** A chevron that rotates open via `.domain-group:not(.collapsed)` (CSS-only).
- *  Own class (not the requirements page's `.domain-chevron`) so the two pages'
- *  rotation rules never cross specificity. */
+/** Its own class, not the requirements page's `.domain-chevron`, so the two
+ *  pages' rotation rules never cross specificity. */
 const chevron = raw(
   '<svg class="matrix-chevron" width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M5 3 L11 8 L5 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 );
 
-/** Progressive enhancement: click a domain header row to collapse/expand its
- *  requirement rows; Expand/Collapse-all toggle every group at once. No-JS
- *  degrades to every group expanded (the server-rendered default). The typed
- *  `type="module"` form is the sanctioned escalation — the XSS guard forbids
- *  only a BARE `<script>` (see requirements.ts / relations.ts for the pattern). */
+/** Without JS every group renders expanded. The XSS guard forbids only a bare
+ *  `<script>`, so the script must keep `type="module"`. */
 const enhanceScript = raw(`<script type="module">
       const groups = () => document.querySelectorAll("tbody.domain-group");
       const setAll = (collapsed) => groups().forEach((g) => g.classList.toggle("collapsed", collapsed));
@@ -69,19 +40,12 @@ const enhanceScript = raw(`<script type="module">
       });
     </script>`);
 
-/** One requirement's row in the pivoted matrix: its status, title, and a
- *  per-repo bind-state map. */
 interface MatrixReq {
   id: string;
   status: Requirement["status"];
   cells: Map<string, { impl: 0 | 1; verif: 0 | 1 }>;
 }
 
-/**
- * Pivot the flat `(req, repo)` coverage rows into domain → requirement →
- * per-repo cells, plus the stable sorted repo column order. Pure: rows in,
- * a plain nested structure out (no I/O, no request access).
- */
 function pivot(rows: CoverageRow[]): {
   repos: string[];
   domains: { key: string; reqs: MatrixReq[] }[];
@@ -110,11 +74,10 @@ function pivot(rows: CoverageRow[]): {
   return { repos, domains };
 }
 
-/** Mount the coverage page (`GET /`) onto an existing Hono app. */
 export function mountCoverage(app: Hono): void {
   app.get("/", async (c) => {
     // The canonical spec store is never tag-scanned, so its column would be
-    // structurally all-empty — members only (mirrors the Setup page).
+    // structurally all-empty.
     const rows = (await apiJson<CoverageRow[]>(app, "/api/coverage")).filter(
       (r) => r.repo !== CANONICAL_REPO_NAME,
     );
@@ -122,10 +85,9 @@ export function mountCoverage(app: Hono): void {
     const reqs = await apiJson<Requirement[]>(app, "/api/requirements");
     const titleOf = new Map(reqs.map((r) => [r.id, r.text]));
 
-    // RED-99 — @spec SERV-014: the default view is the LIVE contract — Superseded/
+    // @spec SERV-014
     // @spec SERV-015
-    // Retired rows (and any domain they empty out) hide unless ?all=1. The
-    // toggle is a plain link so the filter is SSR-honest and no-JS-safe.
+    // The toggle is a plain link so the filter works without JS.
     const showAll = c.req.query("all") === "1";
     const visible = showAll
       ? rows
@@ -138,9 +100,6 @@ export function mountCoverage(app: Hono): void {
 
     const { repos, domains } = pivot(visible);
     const reqCount = domains.reduce((n, d) => n + d.reqs.length, 0);
-    // Platform-health headline: the /api/report rollup + health math
-    // (pages/health.ts) — Active reqs only, same numbers the API and MCP
-    // report tools serve.
     const reportRows = await apiJson<ReportDomainRow[]>(app, "/api/report");
     const { implPct, verifPct, verifyGap } = healthPcts(reportTotals(reportRows));
 
@@ -197,7 +156,6 @@ export function mountCoverage(app: Hono): void {
             </tr>
           </thead>
           ${domains.map((dom) => {
-            // Rollups sum Active reqs only — Superseded/Retired are null reqs.
             const activeReqs = dom.reqs.filter((req) => req.status === "Active");
             const domImpl = activeReqs.reduce(
               (n, req) => n + [...req.cells.values()].filter((c) => c.impl).length,
@@ -218,10 +176,7 @@ export function mountCoverage(app: Hono): void {
                     </span>
                   </td>
                   ${repos.map((repo) =>
-                    // The absorbed /report heatmap: per member, how many of
-                    // this domain's active reqs it implements, tinted by the
-                    // share of the domain covered. Collapse the groups and
-                    // the matrix reads as the platform-health heat grid.
+                    // Collapsed, the domain rows read as a platform-health heat grid.
                     heatCell(
                       activeReqs.filter((req) => req.cells.get(repo)?.impl).length,
                       activeReqs.length,
