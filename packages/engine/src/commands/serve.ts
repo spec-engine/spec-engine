@@ -7,8 +7,6 @@
 // Storage lifecycle: real-serve mode keeps storage open for the process
 // lifetime; there is deliberately no try/finally close around the Bun.serve
 // bind. SIGINT terminates the process and Bun closes the file descriptor.
-//
-// This file must not import bun:sqlite: DB access goes through `openStorage`.
 
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";

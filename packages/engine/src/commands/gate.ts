@@ -1,8 +1,3 @@
-// `spec gate <repo> <reqId> [platformDir]`: the approval gate. The command
-// validates the positionals, cold-resets the index, and renders the outcome;
-// the decision lives in operations/gate.ts. Exit 0 PASS, 1 any gate failure,
-// 2 bad args, unknown repo, path-containment violation, or a crash.
-//
 // Bun's `process.exit` skips pending `finally` blocks, so every exit here
 // happens after `withIndex` has closed the storage handle.
 

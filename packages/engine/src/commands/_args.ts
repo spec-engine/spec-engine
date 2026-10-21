@@ -1,6 +1,3 @@
-// The citty arg specs every command shares, declared once, plus the
-// platformDir resolution every command performs.
-
 import { resolve } from "node:path";
 import { OUT_HELP } from "../constants";
 

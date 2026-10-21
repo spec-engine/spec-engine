@@ -1,7 +1,3 @@
-// `spec move <KEY-NNN> <NEW-DOMAIN>`: the cross-domain supersede. The command
-// normalizes the target key and renders; the guards, both writes, and the
-// retag worklist live in operations/move.ts.
-
 import { defineCommand, type ParsedArgs } from "citty";
 import { normalizeDomainKey } from "../authoring/domains";
 import { EXIT } from "../constants";

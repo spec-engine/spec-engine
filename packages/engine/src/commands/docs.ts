@@ -3,17 +3,8 @@
 // @spec DIST-007
 // @spec DIST-008
 //
-// Asset resolution is module-relative (import.meta.url), NEVER cwd-relative:
-// the published artifact ships the site at dist/docs/ (scripts/build-npm.ts)
-// beside the bundle, and a checkout serves packages/site/dist (built via
-// `bun run build:site`). A cwd-relative lookup would break the moment the
-// CLI runs from any other directory — the classic embedded-UI bug (and why
-// Hono's serveStatic, whose root resolves against cwd, is not used here).
-//
-// SECURITY: the hostname is hardcoded to 127.0.0.1 at every Bun.serve
-// construction site; there is no --host surface. Path traversal is
-// contained by normalizing every request path against the docs root and
-// refusing anything that escapes it.
+// Asset paths resolve from import.meta.url, never cwd: the CLI runs from any
+// directory, which is why Hono's cwd-rooted serveStatic is not used here.
 
 import { existsSync, statSync } from "node:fs";
 import { join, normalize, sep } from "node:path";

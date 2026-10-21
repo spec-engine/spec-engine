@@ -1,9 +1,3 @@
-// `spec init [repo]`: declare a member and write its `spec-engine.member.json`
-// pin. The command resolves the repo argument, validates the `--specs` shape,
-// and renders; placement, declaration, and the write live in
-// operations/init.ts. Exit codes are 0 (wrote, or already configured) and 2;
-// never 1.
-
 import { resolve } from "node:path";
 import { SpecConfigSchema } from "@spec-engine/shared";
 import { defineCommand } from "citty";

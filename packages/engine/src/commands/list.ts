@@ -1,7 +1,3 @@
-// `spec list [platformDir] [--domain KEY] [--status S]`: every requirement
-// record in (key, seq) order, history included. A `--status` value outside
-// active | draft | superseded | deprecated is exit 2.
-
 import { defineCommand, type ParsedArgs } from "citty";
 import { normalizeDomainKey } from "../authoring/domains";
 import { EXIT, resolveDbPath } from "../constants";

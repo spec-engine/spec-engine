@@ -1,9 +1,3 @@
-// `spec provenance [issueId] [platformDir] [--out <path>] [--json]
-// [--resolve-issues] [--fresh]`: the per-requirement provenance matrix, or
-// the rows one opaque issue id is linked to. The issue id is a display-only
-// filter value, never a key. Read-only; `--resolve-issues` overlays tracker
-// data through the same decorator the webapp renders with.
-
 import { statSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineCommand } from "citty";

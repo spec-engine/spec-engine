@@ -1,7 +1,4 @@
 // @spec INDX-009
-//
-// This file must not import bun:sqlite: storage is built through
-// `openStorage`, the one file allowed to touch it.
 
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";

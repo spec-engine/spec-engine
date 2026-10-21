@@ -1,11 +1,3 @@
-// `spec term`: the glossary-term authoring surface over operations/term.ts.
-//
-//   spec term <name> --def <definition> [--aliases a,b] [--section s]  — author
-//   spec term                                                          — next unused TERM id
-//   spec term list                                                     — enumerate
-//   spec term revise <TERM-NNN> --def <definition>                     — revise in place, bump the version
-//   spec term confirm <KEY-NNN> <TERM-NNN>                             — re-pin a citation
-//
 // `list`, `revise`, and `confirm` are dispatched from the root `run` on the
 // first positional rather than as citty subcommands: citty refuses any first
 // positional that is not a registered subcommand name, which would break the

@@ -1,5 +1,4 @@
-// stdout is the JSON-RPC channel: every human-facing line goes to stderr, or
-// it corrupts the stream. The process serves until stdin closes.
+// stdout is the JSON-RPC channel; every log line goes to stderr.
 
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { defineCommand } from "citty";

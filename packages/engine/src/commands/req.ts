@@ -11,9 +11,7 @@
 // @spec REQ-037
 // @spec REQ-039
 //
-// `spec req <domain-prefix> [platformDir]`: piped, the next unused id; with
-// `--text`, a non-interactive mint; on a TTY, the per-field prompt flow. The
-// prompts render to stderr so stdout stays machine-parseable.
+// Prompts render to stderr so stdout stays machine-parseable.
 
 import { createInterface } from "node:readline";
 import { defineCommand, type ParsedArgs } from "citty";

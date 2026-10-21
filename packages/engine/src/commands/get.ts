@@ -1,7 +1,3 @@
-// `spec get <KEY-NNN> [platformDir]`: one requirement's full record. An
-// unknown id is `[]` on stdout with guidance on stderr and exit 0; a malformed
-// id is exit 2.
-
 import { defineCommand } from "citty";
 import { EXIT, resolveDbPath } from "../constants";
 import { formatNoRequirementsIndexed } from "../indexer/discover";
