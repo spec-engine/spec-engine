@@ -762,18 +762,19 @@
     },
     {
       "id": "REQ-046",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec amend changes only livesIn or relates of a released requirement, it shall write the change in place.",
       "why": "Location and cross-references are not the promise; a file move otherwise churns ids and rewrites every tag site.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "REQ-059",
       "relates": [],
       "livesIn": [
         "packages/engine/src/operations/amend.ts"
       ],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 22
     },
     {
       "id": "REQ-047",
@@ -852,18 +853,19 @@
     },
     {
       "id": "REQ-052",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec supersede or spec move mints a successor, it shall copy the predecessor's relates, every livesIn entry, cites, aliases, term, and section unless a flag overrides the field.",
       "why": "A successor that silently drops cross-references and all but the first location loses facts nobody chose to remove.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "REQ-058",
       "relates": [],
       "livesIn": [
         "packages/engine/src/operations/_envelope.ts"
       ],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 21
     },
     {
       "id": "REQ-053",
@@ -905,6 +907,66 @@
       "relates": [],
       "livesIn": [
         "packages/engine/src/commands/amend.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-056",
+      "status": "active",
+      "statement": "When an authoring command receives --tests, the spec CLI shall build verifiedIn from every --tests occurrence, splitting each value on commas, trimming, and dropping empty entries.",
+      "why": "A requirement is often proved by several test files; a flag that keeps only one entry forces the author to pick or to edit the file by hand.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/_args.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-057",
+      "status": "active",
+      "statement": "When spec amend or spec supersede or spec move receives --tests, the spec CLI shall replace the target's verifiedIn with that list, an empty --tests value clearing it.",
+      "why": "One replace-or-clear idiom, the same as --lives, so an author always knows what a repeated flag does to the list.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/amend.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-058",
+      "status": "active",
+      "statement": "When spec supersede or spec move mints a successor, it shall copy the predecessor's relates, every livesIn entry, every verifiedIn entry, cites, aliases, term, and section unless a flag overrides the field.",
+      "why": "A successor that silently drops cross-references and all but the first location loses facts nobody chose to remove.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/_envelope.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-059",
+      "status": "active",
+      "statement": "When spec amend changes only livesIn, verifiedIn, or relates of a released requirement, it shall write the change in place.",
+      "why": "Location and cross-references are not the promise; a file move otherwise churns ids and rewrites every tag site.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/amend.ts"
       ],
       "issues": [],
       "aliases": [],
