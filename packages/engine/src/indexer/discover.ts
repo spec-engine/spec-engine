@@ -590,14 +590,17 @@ async function membersOf(
  * version). Throws `NotASpecPlatformError` when `spec-engine/` is absent.
  * @spec INIT-037
  */
-export async function discoverRepos(platformDir: string): Promise<DiscoveredPlatform> {
+export async function discoverRepos(
+  platformDir: string,
+  opts: { quiet?: boolean } = {},
+): Promise<DiscoveredPlatform> {
   const absPlatform = resolve(platformDir);
   const canonicalPath = join(absPlatform, CANONICAL_SPECS_DIR);
   if (!isExistingDir(canonicalPath)) {
     throw new NotASpecPlatformError(absPlatform);
   }
   const platformVersion = await derivePlatformVersion(absPlatform);
-  warnIfRetiredManifest(absPlatform, platformVersion);
+  if (!opts.quiet) warnIfRetiredManifest(absPlatform, platformVersion);
 
   // @spec INIT-028
   const canonical: Repo = {

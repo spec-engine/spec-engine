@@ -233,6 +233,7 @@ function mintFieldsFromBody(body: Record<string, unknown>) {
     statement: typeof body.statement === "string" ? body.statement : "",
     why: typeof body.why === "string" ? body.why : "",
     livesIn: toStringList(body.livesIn),
+    verifiedIn: toStringList(body.verifiedIn),
     relates: toStringList(body.relates),
     issue:
       typeof body.issue === "string" && body.issue.trim() !== "" ? body.issue.trim() : undefined,
@@ -245,6 +246,7 @@ function successorFieldsFromBody(body: Record<string, unknown>) {
   return {
     why: typeof body.why === "string" ? body.why : undefined,
     livesIn: "livesIn" in body ? toStringList(body.livesIn) : undefined,
+    verifiedIn: "verifiedIn" in body ? toStringList(body.verifiedIn) : undefined,
     relates: "relates" in body ? toStringList(body.relates) : undefined,
     issue:
       typeof body.issue === "string" && body.issue.trim() !== "" ? body.issue.trim() : undefined,
@@ -257,6 +259,7 @@ function amendFieldsFromBody(body: Record<string, unknown>): AmendFields | null 
   if (typeof body.statement === "string") fields.statement = body.statement;
   if ("why" in body) fields.why = typeof body.why === "string" ? body.why : null;
   if ("livesIn" in body) fields.livesIn = toStringList(body.livesIn);
+  if ("verifiedIn" in body) fields.verifiedIn = toStringList(body.verifiedIn);
   if ("relates" in body) fields.relates = toStringList(body.relates);
   return Object.keys(fields).length === 0 ? null : fields;
 }
@@ -441,7 +444,7 @@ export function mountApi(
         const fields = amendFieldsFromBody(body);
         if (fields === null) {
           return c.json(
-            { error: "nothing to amend — provide statement, why, livesIn, or relates" },
+            { error: "nothing to amend — provide statement, why, livesIn, verifiedIn, or relates" },
             400,
           );
         }
@@ -532,6 +535,7 @@ export function mountApi(
             statement: typeof body.text === "string" ? body.text : undefined,
             why: typeof body.why === "string" ? body.why : undefined,
             livesIn: "lives" in body ? toStringList(body.lives) : undefined,
+            verifiedIn: "verifiedIn" in body ? toStringList(body.verifiedIn) : undefined,
           },
           async (reqId) => {
             await runIndex({ platformDir, storage });

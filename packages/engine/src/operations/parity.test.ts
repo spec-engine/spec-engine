@@ -302,6 +302,7 @@ describe("write operations leave the same envelope from every surface", () => {
           statement,
           why: "w",
           livesIn: ["x.ts"],
+          verifiedIn: ["x.test.ts"],
         });
         expect(r.ok).toBe(true);
         if (r.ok) results.operation = { id: r.id, file: r.file, clauses: r.clauses };
@@ -313,6 +314,7 @@ describe("write operations leave the same envelope from every surface", () => {
             text: statement,
             why: "w",
             lives: "x.ts",
+            tests: "x.test.ts",
             json: true,
           }),
         );
@@ -321,7 +323,13 @@ describe("write operations leave the same envelope from every surface", () => {
         const posted = await apiJson("/api/requirements", {
           method: "POST",
           headers: apiHeaders,
-          body: JSON.stringify({ key: "BILLING", statement, why: "w", livesIn: "x.ts" }),
+          body: JSON.stringify({
+            key: "BILLING",
+            statement,
+            why: "w",
+            livesIn: "x.ts",
+            verifiedIn: "x.test.ts",
+          }),
         });
         expect(posted.status).toBe(201);
         expect(posted.body).toEqual({ ok: true, id: "BILLING-004" });
@@ -332,10 +340,12 @@ describe("write operations leave the same envelope from every surface", () => {
           text: statement,
           why: "w",
           lives: ["x.ts"],
+          verified_in: ["x.test.ts"],
         });
       },
     });
     expectAllEqual(snapshots);
+    expect(snapshots.operation?.join("")).toContain('"verifiedIn": [\n        "x.test.ts"');
     expect((results.operation as { id: string }).id).toBe("BILLING-004");
     expect(results.cli).toEqual(results.operation);
     expect(results.mcp).toEqual(results.operation);
@@ -349,29 +359,41 @@ describe("write operations leave the same envelope from every surface", () => {
         const r = await amend({
           platformDir: platform,
           id: "BILLING-003",
-          fields: { why: null, livesIn: ["x.ts"] },
+          fields: { why: null, livesIn: ["x.ts"], verifiedIn: ["x.test.ts"] },
         });
         expect(r.ok).toBe(true);
         if (r.ok) results.operation = { id: r.id, file: r.file, fields_changed: r.fieldsChanged };
       },
       cli: async () => {
         results.cli = JSON.parse(
-          await runCli(amendCommand, { id: "BILLING-003", why: "", lives: "x.ts", json: true }),
+          await runCli(amendCommand, {
+            id: "BILLING-003",
+            why: "",
+            lives: "x.ts",
+            tests: "x.test.ts",
+            json: true,
+          }),
         );
       },
       api: async () => {
         const put = await apiJson("/api/requirements/BILLING-003", {
           method: "PUT",
           headers: apiHeaders,
-          body: JSON.stringify({ why: null, livesIn: ["x.ts"] }),
+          body: JSON.stringify({ why: null, livesIn: ["x.ts"], verifiedIn: ["x.test.ts"] }),
         });
         expect(put.status).toBe(200);
       },
       mcp: async () => {
-        results.mcp = await mcpJson("spec_amend", { id: "BILLING-003", why: "", lives: ["x.ts"] });
+        results.mcp = await mcpJson("spec_amend", {
+          id: "BILLING-003",
+          why: "",
+          lives: ["x.ts"],
+          verified_in: ["x.test.ts"],
+        });
       },
     });
     expectAllEqual(snapshots);
+    expect(snapshots.operation?.join("")).toContain('"verifiedIn": [\n        "x.test.ts"');
     expect(results.cli).toEqual(results.operation);
     expect(results.mcp).toEqual(results.operation);
 
@@ -400,7 +422,13 @@ describe("write operations leave the same envelope from every surface", () => {
     const snapshots = await writeThrough(["BILLING"], {
       operation: async () => {
         const r = await supersede(
-          { platformDir: platform, id: "BILLING-002", statement: successor, why: "w" },
+          {
+            platformDir: platform,
+            id: "BILLING-002",
+            statement: successor,
+            why: "w",
+            verifiedIn: ["t.test.ts"],
+          },
           fresh(),
         );
         expect(r.ok).toBe(true);
@@ -414,12 +442,18 @@ describe("write operations leave the same envelope from every surface", () => {
           };
         }
       },
-      cli: () => runCli(supersedeCommand, { id: "BILLING-002", text: successor, why: "w" }),
+      cli: () =>
+        runCli(supersedeCommand, {
+          id: "BILLING-002",
+          text: successor,
+          why: "w",
+          tests: "t.test.ts",
+        }),
       api: async () => {
         const res = await apiJson("/api/requirements/BILLING-002/supersede", {
           method: "POST",
           headers: apiHeaders,
-          body: JSON.stringify({ statement: successor, why: "w" }),
+          body: JSON.stringify({ statement: successor, why: "w", verifiedIn: ["t.test.ts"] }),
         });
         expect(res.status).toBe(201);
         const { ok, ...rest } = res.body as Record<string, unknown>;
@@ -431,10 +465,12 @@ describe("write operations leave the same envelope from every surface", () => {
           req_id: "BILLING-002",
           statement: successor,
           why: "w",
+          verified_in: ["t.test.ts"],
         });
       },
     });
     expectAllEqual(snapshots);
+    expect(snapshots.operation?.join("")).toContain('"verifiedIn": [\n        "t.test.ts"');
     expect(results.api).toEqual(results.operation);
     expect(results.mcp).toEqual(results.operation);
     const retag = (results.operation as { retag: unknown[] }).retag;
@@ -571,7 +607,12 @@ describe("write operations leave the same envelope from every surface", () => {
     const snapshots = await writeThrough(["BILLING", "AUTH"], {
       operation: async () => {
         const r = await move(
-          { platformDir: platform, id: "BILLING-002", targetKey: "AUTH" },
+          {
+            platformDir: platform,
+            id: "BILLING-002",
+            targetKey: "AUTH",
+            verifiedIn: ["m.test.ts"],
+          },
           fresh(),
         );
         expect(r.ok).toBe(true);
@@ -589,14 +630,19 @@ describe("write operations leave the same envelope from every surface", () => {
       },
       cli: async () => {
         results.cli = JSON.parse(
-          await runCli(moveCommand, { id: "BILLING-002", newDomain: "auth", json: true }),
+          await runCli(moveCommand, {
+            id: "BILLING-002",
+            newDomain: "auth",
+            tests: "m.test.ts",
+            json: true,
+          }),
         );
       },
       api: async () => {
         const res = await apiJson("/api/requirements/BILLING-002/move", {
           method: "POST",
           headers: apiHeaders,
-          body: JSON.stringify({ newDomain: "auth" }),
+          body: JSON.stringify({ newDomain: "auth", verifiedIn: ["m.test.ts"] }),
         });
         expect(res.status).toBe(201);
         const { ok, ...rest } = res.body as Record<string, unknown>;
@@ -604,10 +650,15 @@ describe("write operations leave the same envelope from every surface", () => {
         results.api = rest;
       },
       mcp: async () => {
-        results.mcp = await mcpJson("spec_move", { id: "BILLING-002", newDomain: "auth" });
+        results.mcp = await mcpJson("spec_move", {
+          id: "BILLING-002",
+          newDomain: "auth",
+          verified_in: ["m.test.ts"],
+        });
       },
     });
     expectAllEqual(snapshots);
+    expect(snapshots.operation?.join("")).toContain('"verifiedIn": [\n        "m.test.ts"');
     expect(results.operation).toMatchObject({
       new_id: "AUTH-001",
       source_spec_version: 3,

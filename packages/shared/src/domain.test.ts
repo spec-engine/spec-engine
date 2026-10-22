@@ -180,6 +180,7 @@ describe("validateDomainFile — structural ACCEPT despite a SEMANTIC defect", (
     expect(res.data.requirements[0]!.issues).toEqual([]);
   });
 
+  // @spec SCHM-036 unit
   test("optional array fields default to [] when omitted", () => {
     const d = {
       key: "AUTH",
@@ -193,7 +194,20 @@ describe("validateDomainFile — structural ACCEPT despite a SEMANTIC defect", (
     const r = res.data.requirements[0]!;
     expect(r.relates).toEqual([]);
     expect(r.livesIn).toEqual([]);
+    expect(r.verifiedIn).toEqual([]);
     expect(r.issues).toEqual([]);
+  });
+
+  // @spec SCHM-036 unit
+  test("verifiedIn accepts a string array and rejects anything else", () => {
+    const d = validDomain();
+    const withList = (verifiedIn: unknown) => ({
+      ...d,
+      requirements: [{ ...entry(d, 0), verifiedIn }],
+    });
+    const ok = validateDomainFile(withList(["api/test/renew.test.ts"]), SRC);
+    expect(ok.ok && ok.data.requirements[0]?.verifiedIn).toEqual(["api/test/renew.test.ts"]);
+    expect(validateDomainFile(withList("api/test/renew.test.ts"), SRC).ok).toBe(false);
   });
 });
 

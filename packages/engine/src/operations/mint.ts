@@ -24,6 +24,8 @@ export interface MintInput {
   statement: string;
   why: string;
   livesIn: string[];
+  /** Test files that verify the requirement. Absent: none. */
+  verifiedIn?: string[] | undefined;
   /** Originating ticket, recorded as `created` provenance. Opaque, never an id. */
   issue?: string | undefined;
   /** Defaults to `active`. A `draft` is a promise not yet agreed; code may not bind it. */
@@ -74,6 +76,7 @@ export async function mint(input: MintInput): Promise<MintResult | OpFailure> {
     input.statement,
     input.why,
     ...input.livesIn,
+    ...(input.verifiedIn ?? []),
   ]);
   const verdict = await judgeStatementGrammar(platformDir, key, input.statement);
   if (!verdict.ok) {
@@ -99,6 +102,9 @@ export async function mint(input: MintInput): Promise<MintResult | OpFailure> {
     // @spec REQ-050
     relates: splitList(input.relates ?? []),
     livesIn: input.livesIn,
+    // @spec SCHM-036
+    // @spec REQ-056
+    verifiedIn: input.verifiedIn ?? [],
     // @spec PROV-003
     issues: input.issue ? [{ role: "created", id: input.issue }] : [],
     aliases: [],

@@ -40,6 +40,8 @@ export const SpecRequirementSchema = z
     supersededBy: z.string().nullable().optional(),
     relates: z.array(z.string()).optional().default([]),
     livesIn: z.array(z.string()).optional().default([]),
+    // @spec SCHM-036
+    verifiedIn: z.array(z.string()).optional().default([]),
     issues: z.array(SpecIssueSchema).optional().default([]),
     changedAtVersion: z.number().int().optional(),
     // Stamped once at supersession and never recomputed, unlike
@@ -180,6 +182,7 @@ function orderDomain(d: SpecDomain) {
       supersededBy: r.supersededBy ?? null,
       relates: r.relates,
       livesIn: r.livesIn,
+      verifiedIn: r.verifiedIn,
       issues: r.issues.map((iss) => ({ role: iss.role, id: iss.id })),
       changedAtVersion: r.changedAtVersion,
       supersededAtVersion: r.supersededAtVersion,

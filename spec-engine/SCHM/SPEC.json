@@ -555,6 +555,21 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "SCHM-036",
+      "status": "active",
+      "statement": "The SPEC.json requirement entry shall carry an optional verifiedIn array of platform-relative test file paths, defaulting to empty, beside livesIn.",
+      "why": "A requirement records where it is implemented but not which test file is expected to prove it, so a named proof cannot be checked and adopters keep that claim in a side ledger.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/shared/src/domain.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
   ],
   "grammarSeverity": "error"

@@ -204,6 +204,22 @@ describe("spec amend", () => {
     req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
     expect(req?.relates).toEqual([]);
   });
+
+  // @spec REQ-056 unit
+  // @spec REQ-057 unit
+  test("--tests replaces verifiedIn with every comma-split value; an empty value clears it", async () => {
+    await amendRun({
+      args: { id: ACTIVE, platformDir: tmp, tests: "c.test.ts" },
+      rawArgs: ["--tests", "a.test.ts", "--tests", " b.test.ts ,c.test.ts"],
+    });
+    let req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
+    expect(req?.verifiedIn).toEqual(["a.test.ts", "b.test.ts", "c.test.ts"]);
+    expect(req?.livesIn).toEqual(["renew.ts"]);
+
+    await amendRun({ args: { id: ACTIVE, platformDir: tmp, tests: "" }, rawArgs: [] });
+    req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
+    expect(req?.verifiedIn).toEqual([]);
+  });
 });
 
 const release = (tag: string) => commitAndTag(tmp, tag);
@@ -222,6 +238,7 @@ describe("spec amend — release gate", () => {
     expect(message).toContain("v0.1.0");
     expect(message).toContain(`spec supersede ${ACTIVE}`);
     expect(message).toContain("--lives");
+    expect(message).toContain("--tests");
     expect(message).toContain("--relates");
     expect(await billing.raw()).toBe(before);
   });
@@ -234,7 +251,7 @@ describe("spec amend — release gate", () => {
     );
   });
 
-  // @spec REQ-046 unit
+  // @spec REQ-059 unit
   test("a released Active entry amends --lives and --relates in place", async () => {
     release("v0.1.0");
     await amendRun({
@@ -244,6 +261,19 @@ describe("spec amend — release gate", () => {
     const req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
     expect(req?.livesIn).toEqual(["moved.ts"]);
     expect(req?.relates).toEqual(["BILLING-001"]);
+    expect(req?.statement).toBe("rough draft of the rule");
+  });
+
+  // @spec REQ-059 unit
+  test("a released Active entry amends --tests alone in place", async () => {
+    release("v0.1.0");
+    await amendRun({
+      args: { id: ACTIVE, platformDir: tmp, tests: "renew.test.ts", json: true },
+      rawArgs: [],
+    });
+    expect(JSON.parse(logs.join("")).fields_changed).toEqual(["tests"]);
+    const req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
+    expect(req?.verifiedIn).toEqual(["renew.test.ts"]);
     expect(req?.statement).toBe("rough draft of the rule");
   });
 

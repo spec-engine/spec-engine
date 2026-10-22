@@ -112,6 +112,7 @@ export interface SuccessorFields {
   statement: string;
   why: string;
   livesIn: string[];
+  verifiedIn: string[];
   relates: string[];
   issue?: string | undefined;
 }
@@ -120,7 +121,7 @@ export interface SuccessorFields {
  * The successor both `supersede` and `move` append: the given fields, the
  * predecessor's cites, aliases, term, and section, and no issue but the
  * `created` row.
- * @spec REQ-052
+ * @spec REQ-058
  * @spec REQ-053
  */
 export function successorEntry(
@@ -137,6 +138,7 @@ export function successorEntry(
     supersededBy: null,
     relates: fields.relates,
     livesIn: fields.livesIn,
+    verifiedIn: fields.verifiedIn,
     issues: fields.issue ? [{ role: "created", id: fields.issue }] : [],
     aliases: [...pred.aliases],
     cites: pred.cites.map((c) => ({ ...c })),

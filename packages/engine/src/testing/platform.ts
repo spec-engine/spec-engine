@@ -41,6 +41,7 @@ export interface RequirementInput {
   statement?: string;
   why?: string;
   livesIn?: string[];
+  verifiedIn?: string[];
   issue?: string;
   status?: "active" | "draft";
   relates?: string[];
@@ -52,6 +53,7 @@ export interface SuccessorInput {
   statement?: string;
   why?: string;
   livesIn?: string[];
+  verifiedIn?: string[];
   issue?: string;
   term?: string;
   aliases?: string[];
@@ -175,6 +177,7 @@ export class DomainHandle {
         statement: input.statement ?? placeholderStatement(id),
         why: input.why ?? "",
         livesIn: input.livesIn ?? [],
+        verifiedIn: input.verifiedIn,
         issue: input.issue,
         status: input.status,
         relates: input.relates,
@@ -215,6 +218,7 @@ export class DomainHandle {
           statement: input.statement ?? placeholderStatement(successor),
           why: input.why,
           livesIn: input.livesIn,
+          verifiedIn: input.verifiedIn,
           issue: input.issue,
           term: input.term,
           aliases: input.aliases,
@@ -242,7 +246,7 @@ export class DomainHandle {
   async moveTo(
     id: string,
     targetKey: string,
-    input: Pick<SuccessorInput, "statement" | "why" | "livesIn"> = {},
+    input: Pick<SuccessorInput, "statement" | "why" | "livesIn" | "verifiedIn"> = {},
   ): Promise<MoveResult> {
     return unwrap(
       await move(
@@ -253,6 +257,7 @@ export class DomainHandle {
           statement: input.statement,
           why: input.why,
           livesIn: input.livesIn,
+          verifiedIn: input.verifiedIn,
         },
         noTags,
       ),

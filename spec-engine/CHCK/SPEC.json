@@ -411,11 +411,11 @@
     },
     {
       "id": "CHCK-026",
-      "status": "active",
+      "status": "superseded",
       "statement": "If an Active or Draft requirement's livesIn entry does not resolve to a file under the platform root, then spec check shall report BROKEN_FILE_REF at error severity.",
       "why": "A requirement that points at a file which is not there is a broken link nobody can see; without the check, livesIn is write-only text that CI can never verify.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHCK-045",
       "relates": [],
       "livesIn": [
         "packages/engine/src/check/filerefs.ts"
@@ -427,7 +427,8 @@
         }
       ],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 13
     },
     {
       "id": "CHCK-027",
@@ -723,6 +724,51 @@
       ],
       "livesIn": [
         "packages/engine/src/operations/check.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-045",
+      "status": "active",
+      "statement": "If an Active or Draft requirement's livesIn or verifiedIn entry does not resolve to a file under the platform root, then spec check shall report BROKEN_FILE_REF at error severity.",
+      "why": "A requirement that points at a file which is not there is a broken link nobody can see; without the check, livesIn is write-only text that CI can never verify.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/check/filerefs.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-046",
+      "status": "active",
+      "statement": "When an Active requirement's livesIn entry resolves to a file the scanner reads and that file holds no implementing or documenting tag for the requirement, spec check shall report UNIMPLEMENTED_IN_FILE at warning severity by default, or at the severity check.json configures for the code.",
+      "why": "A location claim that silently stops carrying its tag keeps the gate green while the claim is false; one in four of this platform's own entries had drifted that way unreported.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/check/filerefs.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-047",
+      "status": "active",
+      "statement": "When an Active requirement's verifiedIn entry resolves to a file the scanner reads and that file holds no verifying tag for the requirement, spec check shall report UNVERIFIED_IN_FILE at warning severity by default, or at the severity check.json configures for the code.",
+      "why": "A named test file that does not claim the requirement is a proof nobody runs; without the check an adopter keeps a per-file ledger outside the CLI to enforce it.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/check/filerefs.ts"
       ],
       "issues": [],
       "aliases": [],

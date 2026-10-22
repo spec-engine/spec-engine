@@ -93,6 +93,7 @@ describe("validateAndWrite — deterministic serialization + round-trip", () => 
           supersededBy: null,
           relates: ["BILLING-002"],
           livesIn: ["api/src/billing/renew.ts"],
+          verifiedIn: [],
           issues: [{ role: "created", id: "JIRA-1" }],
           // aliases/cites default to []; term/section are omitted when absent.
           aliases: [],

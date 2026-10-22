@@ -1,4 +1,5 @@
 // @spec REQ-042 unit
+// @spec REQ-056 unit
 
 import { describe, expect, test } from "bun:test";
 import { listFlag } from "./_args";
@@ -25,6 +26,12 @@ describe("listFlag", () => {
   test("an empty value is an empty list; an absent flag is undefined", () => {
     expect(listFlag(["--lives", ""], "lives", "")).toEqual([]);
     expect(listFlag(["--why", "w"], "lives", undefined)).toBeUndefined();
+  });
+
+  test("reads --tests the way it reads --lives, ignoring the other flag", () => {
+    expect(
+      listFlag(["--tests", " a.test.ts ,", "--lives", "a.ts", "--tests=b.test.ts"], "tests", ""),
+    ).toEqual(["a.test.ts", "b.test.ts"]);
   });
 
   test("does not read a different flag that shares the prefix", () => {

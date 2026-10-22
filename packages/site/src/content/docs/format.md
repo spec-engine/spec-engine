@@ -19,7 +19,8 @@ One JSON **domain envelope** per domain, at `spec-engine/<KEY>/SPEC.json`. Human
       "why": "Revenue path. Silent failure loses money with no visible error.",
       "issues": [{ "role": "created", "id": "ENG-1432" }],
       "relates": ["BILLING-002", "BILLING-007"],
-      "livesIn": ["@lib-billing/renew.ts"]
+      "livesIn": ["@lib-billing/renew.ts"],
+      "verifiedIn": ["lib-billing/renew.test.ts"]
     }
   ]
 }
@@ -49,6 +50,7 @@ One JSON **domain envelope** per domain, at `spec-engine/<KEY>/SPEC.json`. Human
 | `supersededAtVersion` | The derived domain version at which the entry died — stamped once at supersession |
 | `relates` | Advisory links to other requirement ids (rendered by `spec relations`) |
 | `livesIn` | Where the requirement is *enforced* — `@<path>` refs. Metadata, not identity |
+| `verifiedIn` | The test files that verify the requirement — platform-relative paths. Optional, defaults to empty. Metadata, not identity |
 | `issues` | Optional provenance — see below |
 
 Glossary `TERM` entries reuse the same shape plus `term` (the headword), `aliases`, `cites` (pinned term citations), and `section` (the GLOSSARY.md heading).
