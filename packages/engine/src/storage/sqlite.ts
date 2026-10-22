@@ -389,54 +389,9 @@ class SqliteStorage implements Storage {
         `resolveByFiles: too many files (max ${FILES_MAX} per call; got ${files.length})`,
       );
     }
-    const queryFiles = this.#expandSelfMemberFiles(files);
-    // Self-member expansion can double the bind count, so a FILES_MAX bump
-    // past ~16k fails here rather than as an opaque SQLite error.
-    if (queryFiles.length > 32000) {
-      throw new Error(
-        `resolveByFiles: expanded bind count ${queryFiles.length} would exceed ` +
-          "SQLITE_MAX_VARIABLE_NUMBER (32766); lower FILES_MAX",
-      );
-    }
-    const placeholders = queryFiles.map(() => "?").join(",");
+    const placeholders = files.map(() => "?").join(",");
     const sql = RESOLVE_BY_FILES_SQL_PREFIX + placeholders + RESOLVE_BY_FILES_SQL_SUFFIX;
-    return this.#db.query(sql).all(...queryFiles) as Requirement[];
-  }
-
-  /**
-   * A lone repo registers the platform directory itself as its member, so
-   * `tags.file` carries a `<repo-basename>/` prefix the natural user input
-   * lacks. The self-member is the repo row whose `path` is the platform root
-   * (the parent of the canonical `spec-engine` row's path). In a multi-repo
-   * platform every member lives under the root, so no row matches.
-   *
-   * Derived per call, never cached: `spec serve` reindexes through the same
-   * handle and the repos table is rewritten each time.
-   *
-   * A platform directory literally named "spec-engine" collides with the
-   * canonical row and is excluded by the name filter, so expansion never
-   * fires for it.
-   */
-  #selfMemberName(): string | null {
-    const canonical = this.getRepo("spec-engine");
-    if (!canonical) return null;
-    const platformRoot = dirname(canonical.path);
-    const row = this.#db
-      .query("SELECT name FROM repos WHERE name != 'spec-engine' AND path = $path")
-      .get({ path: platformRoot }) as { name: string } | null;
-    return row?.name ?? null;
-  }
-
-  /** Both forms are kept; DISTINCT in the SELECT collapses any double match. */
-  #expandSelfMemberFiles(files: string[]): string[] {
-    const self = this.#selfMemberName();
-    if (!self) return files;
-    const prefix = `${self}/`;
-    const expanded = [...files];
-    for (const f of files) {
-      if (!f.startsWith(prefix)) expanded.push(prefix + f);
-    }
-    return expanded;
+    return this.#db.query(sql).all(...files) as Requirement[];
   }
 
   withWriteTx<T>(fn: (w: WriteHandle) => T): T {

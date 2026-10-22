@@ -77,7 +77,7 @@ export const indexCommand = defineCommand({
         console.error(formatNotASpecPlatform(err.platformDir));
         process.exit(EXIT.USAGE);
       }
-      handleInvalidDomainFiles(err, !!args.json);
+      await handleInvalidDomainFiles(err, !!args.json);
       console.error("spec index FAILED:", err);
       process.exit(EXIT.FAILURE);
     } finally {

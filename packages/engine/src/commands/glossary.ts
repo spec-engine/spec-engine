@@ -3,6 +3,7 @@ import { defineCommand } from "citty";
 import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
 import { checkGlossary, migrateGlossary, writeGlossary } from "../operations/glossary";
+import { exit } from "../stdout";
 import { platformDirArg } from "./_args";
 import { exitOnFailure, handleNotAPlatform } from "./_shared";
 
@@ -39,7 +40,7 @@ async function generate(platformDir: string, json: boolean): Promise<void> {
 }
 
 /** The drift fence: exit 1 on any drift, 0 clean. What `fence_glossary_roundtrip` runs. */
-function check(platformDir: string, json: boolean): void {
+async function check(platformDir: string, json: boolean): Promise<void> {
   if (checkGlossary(platformDir).clean) {
     if (json) console.log(JSON.stringify({ ok: true }));
     else console.error("glossary round-trip: OK (committed GLOSSARY.md == generated)");
@@ -48,7 +49,7 @@ function check(platformDir: string, json: boolean): void {
   console.error("glossary drift: committed GLOSSARY.md != generated from the TERM store");
   console.error("run `spec glossary .` to regenerate the human view from the store");
   if (json) console.log(JSON.stringify({ ok: false }));
-  process.exit(EXIT.FAILURE);
+  await exit(EXIT.FAILURE);
 }
 
 export const glossaryCommand = defineCommand({
@@ -73,7 +74,7 @@ export const glossaryCommand = defineCommand({
     const platformDir = resolvePlatform(args.platformDir);
     const json = Boolean(args.json);
     if (args.migrate) await migrate(platformDir, json);
-    else if (args.check) check(platformDir, json);
+    else if (args.check) await check(platformDir, json);
     else await generate(platformDir, json);
   },
 });

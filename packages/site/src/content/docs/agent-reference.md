@@ -56,7 +56,7 @@ spec guard . --json                    # exit 1 → this change deletes a live r
 ## Path rules for `spec resolve`
 
 - **Multi-repo platform:** pass `<repo>/<path>` — e.g., `spec resolve api/src/renew.ts .`
-- **Single-repo (rung-1):** both repo-relative (`src/orders.ts`) and basename-prefixed forms accepted
+- **Single-repo (rung-1):** pass the path from the platform root (`src/orders.ts`, `.github/workflows/ci.yml`); a lone repository's files carry no directory-name prefix
 - Absolute paths normalized against `platformDir`; paths outside it exit 2
 
 ## Gotchas

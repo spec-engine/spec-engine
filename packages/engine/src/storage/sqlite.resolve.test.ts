@@ -55,9 +55,9 @@ describe("storage.resolveByFiles against canonical platform-fixture", () => {
   });
 });
 
-// A lone repo stores tag files as `<repo-basename>/<rel>`, so the natural
-// `src/orders.ts` must be expanded to match. The DB lives in a tmpdir so the
-// committed fixture tree is never mutated.
+// A lone repo's tag files are platform-relative, so the natural `src/orders.ts`
+// is the stored key. The DB lives in a tmpdir so the committed fixture tree is
+// never mutated.
 describe("storage.resolveByFiles in self-member (rung-1) mode", () => {
   const SINGLE_REPO_FIXTURE = resolve(
     import.meta.dir,
@@ -88,16 +88,8 @@ describe("storage.resolveByFiles in self-member (rung-1) mode", () => {
     expect(ids).toEqual(["ORDERS-001", "ORDERS-002"]);
   });
 
-  test("basename-prefixed form 'single-repo-fixture/src/orders.ts' keeps working", () => {
-    const ids = rung1.resolveByFiles(["single-repo-fixture/src/orders.ts"]).map((r) => r.id);
-    expect(ids).toEqual(["ORDERS-001", "ORDERS-002"]);
-  });
-
-  test("both forms in one call collapse via DISTINCT (no duplicate rows)", () => {
-    const ids = rung1
-      .resolveByFiles(["src/orders.ts", "single-repo-fixture/src/orders.ts"])
-      .map((r) => r.id);
-    expect(ids).toEqual(["ORDERS-001", "ORDERS-002"]);
+  test("the directory-name-prefixed form 'single-repo-fixture/src/orders.ts' matches nothing", () => {
+    expect(rung1.resolveByFiles(["single-repo-fixture/src/orders.ts"])).toEqual([]);
   });
 
   test("natural test path 'test/orders.test.ts' resolves the verifies tag (ORDERS-001)", () => {

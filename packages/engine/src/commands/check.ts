@@ -13,6 +13,7 @@ import { formatNotASpecPlatform } from "../indexer/discover";
 import { maybePromptForOnboarding } from "../onboarding/prompt";
 import { withIndex } from "../operations/_index";
 import { type CheckResult, check } from "../operations/check";
+import { exit } from "../stdout";
 import { jsonArg, noPromptArg, outArg, platformDirArg, resolvePlatformDir } from "./_args";
 import { assertContainedPath, handleInvalidDomainFiles } from "./_shared";
 
@@ -99,7 +100,7 @@ export const checkCommand = defineCommand({
         },
       );
     } catch (e) {
-      handleInvalidDomainFiles(e, jsonMode);
+      await handleInvalidDomainFiles(e, jsonMode);
       exitAfterCrash(e);
     }
     if (outcome === undefined) {
@@ -119,7 +120,7 @@ export const checkCommand = defineCommand({
     }
     console.log(renderDiagnostics(diagnostics, jsonMode ? "json" : "text"));
     if (!jsonMode) console.log(`build_id: ${outcome.buildId}`);
-    process.exit(outcome.failing ? EXIT.FAILURE : EXIT.OK);
+    await exit(outcome.failing ? EXIT.FAILURE : EXIT.OK);
   },
 });
 

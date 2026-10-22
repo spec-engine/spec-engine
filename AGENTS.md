@@ -112,6 +112,11 @@ Rules:
   classifies a file as a test by the `.test.` substring, so a co-located tag
   still verifies; the engine-internal fences skip `*.test.ts` and
   `src/testing/`, the write-seam fence does not.
+- **stdout goes through `packages/engine/src/stdout.ts`.** `cli.ts` routes
+  `console.log` through the stream, and a command that prints its result and
+  then ends the process calls `exit()` from that module, never `process.exit`.
+  Bun drops stdout bytes still queued when `process.exit` runs, so a piped
+  `--json` report larger than one pipe buffer was cut off.
 - **A fence runs inside `bun test` under a 5-second budget**
   (`architecture-fences.test.ts` spawns the whole script). Keep each fence to
   one process.
@@ -908,11 +913,14 @@ make the gate pass.
 
 ## Path rules for `spec resolve`
 
-`tags.file` is stored as `<repo>/<path>`.
+`tags.file` is platform-relative: `<member>/<path>` for a file inside a
+declared member or a workspace package, and the bare `<path>` for a file a
+lone repository owns itself (its directory-named or `root` column). The key
+never carries the checkout's folder name.
 
 - Multi-repo platform: pass `<repo>/<path>`, e.g. `spec resolve api/src/renew.ts .`
-- Single repo: both the natural repo-relative path (`src/orders.ts`) and the
-  basename-prefixed form are accepted. Prefer the natural form.
+- Single repo: pass the path from the platform root, e.g.
+  `spec resolve src/orders.ts .` or `spec resolve .github/workflows/ci.yml .`
 - Absolute paths are normalized against `platformDir`. A path outside it exits 2.
 
 ## Gotchas

@@ -28,6 +28,7 @@ import {
   pinnedTokenRefusal,
   urlHost,
 } from "../server/lan";
+import { exit } from "../stdout";
 import { openStorage } from "../storage/sqlite";
 import { platformDirArg, resolvePlatformDir } from "./_args";
 import {
@@ -129,7 +130,7 @@ async function runProbe(): Promise<void> {
   }
   console.log("serve --probe OK");
   server.stop();
-  process.exit(EXIT.OK);
+  await exit(EXIT.OK);
 }
 
 export const serveCommand = defineCommand({
@@ -259,7 +260,7 @@ export const serveCommand = defineCommand({
       });
     } catch (err) {
       storage.close();
-      handleInvalidDomainFiles(err, false);
+      await handleInvalidDomainFiles(err, false);
       handleStorageUnavailable(err, dbPath);
       console.error(`spec serve: failed to start on ${urlHost(host, port)}:`, err);
       process.exit(EXIT.FAILURE);
