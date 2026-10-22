@@ -61,6 +61,17 @@ describe("single-repo mode end-to-end", () => {
     }
   });
 
+  test("tag files are platform-relative, without the directory name", async () => {
+    const s = openStorage(dbPath);
+    try {
+      await runIndex({ platformDir: SINGLE_REPO_FIXTURE, storage: s });
+      const files = [...new Set(s.listTags().map((t) => t.file))].sort();
+      expect(files).toEqual(["src/orders.ts", "test/orders.test.ts"]);
+    } finally {
+      s.close();
+    }
+  });
+
   test("coverage shows the basename column with ORDERS-001 implemented+verified", async () => {
     const s = openStorage(dbPath);
     try {

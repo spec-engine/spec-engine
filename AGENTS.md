@@ -908,11 +908,14 @@ make the gate pass.
 
 ## Path rules for `spec resolve`
 
-`tags.file` is stored as `<repo>/<path>`.
+`tags.file` is platform-relative: `<member>/<path>` for a file inside a
+declared member or a workspace package, and the bare `<path>` for a file a
+lone repository owns itself (its directory-named or `root` column). The key
+never carries the checkout's folder name.
 
 - Multi-repo platform: pass `<repo>/<path>`, e.g. `spec resolve api/src/renew.ts .`
-- Single repo: both the natural repo-relative path (`src/orders.ts`) and the
-  basename-prefixed form are accepted. Prefer the natural form.
+- Single repo: pass the path from the platform root, e.g.
+  `spec resolve src/orders.ts .` or `spec resolve .github/workflows/ci.yml .`
 - Absolute paths are normalized against `platformDir`. A path outside it exits 2.
 
 ## Gotchas

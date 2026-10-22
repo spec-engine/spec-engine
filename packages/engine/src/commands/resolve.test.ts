@@ -6,6 +6,8 @@ import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { FILES_MAX } from "@spec-engine/shared";
 import { cloneFixture } from "../testing/cloneFixture";
+import { TestPlatform } from "../testing/platform";
+import { SPEC_TOKEN } from "../testing/specTag";
 import { resolveCommand } from "./resolve";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "platform-fixture");
@@ -324,9 +326,9 @@ describe("spec resolve — pre-index guidance", () => {
   });
 });
 
-// In rung-1 mode tags are stored as `<repo-basename>/<rel>` but the natural
-// input from the platform root is `<rel>` (e.g. `src/orders.ts`); both forms
-// must resolve. The fixture is cloned because the command writes
+// In rung-1 mode tags are stored under the platform-relative path alone, so
+// the natural input from the platform root (`src/orders.ts`) is the key. The
+// fixture is cloned because the command writes
 // `<platformDir>/.spec-engine/index.sqlite` into the platform tree.
 describe("spec resolve in self-member (rung-1) mode", () => {
   const SINGLE_REPO_FIXTURE = resolve(
@@ -359,15 +361,35 @@ describe("spec resolve in self-member (rung-1) mode", () => {
     expect(parsed.map((r) => r.id)).toEqual(["ORDERS-001", "ORDERS-002"]);
   });
 
-  test("basename-prefixed form keeps working (--json)", async () => {
-    // The self-member's repo name is the platform dir's basename — for a
-    // cloned fixture that's the tmpdir leaf, computed here rather than
-    // hardcoded.
+  test("the directory-name-prefixed form resolves nothing (--json)", async () => {
     const prefixed = `${basename(rung1Clone)}/src/orders.ts`;
     const code = await runResolve({ files: prefixed, platformDir: rung1Clone, json: true }, []);
     expect(code).toBe(0);
-    const parsed = JSON.parse(logs[0] ?? "[]") as Array<{ id: string }>;
-    expect(parsed.map((r) => r.id)).toEqual(["ORDERS-001", "ORDERS-002"]);
+    expect(JSON.parse(logs[0] ?? "[]")).toEqual([]);
+  });
+
+  test("a root-owned file keeps the same key under two checkout directory names", async () => {
+    const checkouts = [TestPlatform.temp("checkout-alpha-"), TestPlatform.temp("checkout-beta-")];
+    try {
+      for (const fx of checkouts) {
+        const id = (await (await fx.domain("CI")).reqs(1))[0] ?? "";
+        fx.file(".github/workflows/ci.yml", `# ${SPEC_TOKEN} ${id}\n`);
+
+        logs = [];
+        expect(
+          await runResolve({ files: ".github/workflows/ci.yml", platformDir: fx.dir, json: true }),
+        ).toBe(0);
+        const hits = JSON.parse(logs[0] ?? "[]") as Array<{ id: string }>;
+        expect(hits.map((r) => r.id)).toEqual([id]);
+
+        logs = [];
+        expect(await runResolve({ req: id, platformDir: fx.dir, json: true })).toBe(0);
+        const sites = JSON.parse(logs[0] ?? "[]") as Array<{ file: string }>;
+        expect(sites.map((s) => s.file)).toEqual([".github/workflows/ci.yml"]);
+      }
+    } finally {
+      for (const fx of checkouts) fx.remove();
+    }
   });
 });
 

@@ -148,7 +148,12 @@ export function scannedTagFile(
   const { member, rel } = owner;
   if (isHiddenPath(rel) || isPathIgnored(rel, repoExtraIgnore(member))) return null;
   if (!isTagSource(rel) && !isDocSource(rel)) return null;
-  return `${member.name}/${rel}`;
+  return tagFile(member, rel);
+}
+
+/** Platform-relative: a lone repository is the platform, so its column name is no path inside it. */
+function tagFile(member: Repo, rel: string): string {
+  return member.selfMember ? rel : `${member.name}/${rel}`;
 }
 
 async function scanMemberCode(member: Repo, extraIgnore: string[]): Promise<Omit<Tag, "id">[]> {
@@ -157,7 +162,7 @@ async function scanMemberCode(member: Repo, extraIgnore: string[]): Promise<Omit
   for (const rel of codePaths) {
     const absPath = join(member.path, rel);
     const text = await Bun.file(absPath).text();
-    const platformRelative = `${member.name}/${rel}`;
+    const platformRelative = tagFile(member, rel);
     const hits = scanTagsInFile(member.name, platformRelative, text);
     for (const h of hits) hitsOut.push(h);
   }
@@ -174,7 +179,7 @@ async function scanMemberDocs(
   for (const rel of docPaths) {
     const absPath = join(member.path, rel);
     const text = await Bun.file(absPath).text();
-    const platformRelative = `${member.name}/${rel}`;
+    const platformRelative = tagFile(member, rel);
     const { tags, mentions } = scanDocFile(member.name, platformRelative, text);
     for (const t of tags) tagsOut.push(t);
     for (const m of mentions) mentionsOut.push(m);
