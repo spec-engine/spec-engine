@@ -697,11 +697,11 @@
     },
     {
       "id": "INIT-040",
-      "status": "active",
+      "status": "superseded",
       "statement": "Where a monorepo has files outside every workspace package, the spec engine shall scan them as one more coverage column, named by the directory for a lone repository and by the member name for a declared member, without scanning any package's files twice.",
       "why": "Repo-root code such as CI scripts, infrastructure and migrations implements requirements too; a tag there that no column scans reads as an orphan requirement.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-041",
       "relates": [],
       "livesIn": [
         "packages/engine/src/indexer/discover.ts"
@@ -712,6 +712,22 @@
           "id": "probooks Q-06"
         }
       ],
+      "aliases": [],
+      "cites": [],
+      "supersededAtVersion": 21
+    },
+    {
+      "id": "INIT-041",
+      "status": "active",
+      "statement": "Where a monorepo has files outside every workspace package, the spec engine shall scan them as one more coverage column, named by the directory for a lone repository, or root when the directory name is the reserved specs folder name, and by the member name for a declared member, without scanning any package's files twice.",
+      "why": "The engine's own checkout is named after the reserved specs folder, so its root workspace is never scanned and the tags in its CI workflow are invisible to it. Repo-root code such as CI scripts, infrastructure, and migrations implements requirements too.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/indexer/discover.ts"
+      ],
+      "issues": [],
       "aliases": [],
       "cites": []
     }

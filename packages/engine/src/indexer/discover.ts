@@ -389,10 +389,14 @@ function toRepos(columns: readonly Column[]): Repo[] {
     .sort(byName);
 }
 
-/** A lone single repository is its own coverage column, named by its directory and pinned to the derived version. */
+/** A lone repository's own column, named by its directory and pinned to the
+ *  derived version. A directory named `spec-engine` would collide with the
+ *  canonical row, so that column is `root`.
+ *  @spec INIT-041 */
 function selfMember(absPlatform: string, platformVersion: number): Repo {
+  const dir = basename(absPlatform);
   return {
-    name: basename(absPlatform),
+    name: dir === CANONICAL_SPECS_DIR ? "root" : dir,
     path: absPlatform,
     pinned_spec_version: platformVersion,
     dependency_depth: 0,
@@ -448,13 +452,13 @@ function packageDirs(repo: MapRepo): string[] | null {
 
 /**
  * A lone monorepo's files outside every workspace package, as one column
- * named by the directory like a lone single repo's.
- * @spec INIT-040
+ * named like a lone single repo's.
+ * @spec INIT-041
  */
 function loneRootColumn(absPlatform: string, repo: MapRepo, platformVersion: number): Column[] {
   const dirs = packageDirs(repo);
   const { dependency_depth: _depth, ...self } = selfMember(absPlatform, platformVersion);
-  if (dirs === null || self.name === CANONICAL_SPECS_DIR) return [];
+  if (dirs === null) return [];
   return [{ repo: { ...self, ignore: dirs }, node: repo }];
 }
 
@@ -476,7 +480,7 @@ async function loneMembers(
 /**
  * A pinned member's columns: a monorepo's packages plus its files outside
  * them under the member's name, else the member itself.
- * @spec INIT-040
+ * @spec INIT-041
  */
 async function memberColumns(repo: MapRepo, path: string, cfg: SpecConfig): Promise<Column[]> {
   const pin = extractPin(cfg.specs);
