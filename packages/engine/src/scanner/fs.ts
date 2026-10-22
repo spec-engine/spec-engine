@@ -47,8 +47,15 @@ export function isPathIgnored(path: string, extra: readonly string[] = []): bool
   );
 }
 
-/** Dot-prefixed entries are skipped. An unreadable directory is skipped rather
- *  than thrown: a walk must never crash the indexer. */
+/** `.github/` is the one dot entry opened: a workflow is often a promise's
+ *  only implementation.
+ *  @spec INDX-021 */
+function isHiddenEntry(name: string): boolean {
+  return name.startsWith(".") && name !== ".github";
+}
+
+/** An unreadable directory is skipped rather than thrown: a walk must never
+ *  crash the indexer. */
 async function walkInto(
   rootDir: string,
   relDir: string,
@@ -64,7 +71,7 @@ async function walkInto(
     return;
   }
   for (const ent of entries) {
-    if (ent.name.startsWith(".")) continue;
+    if (isHiddenEntry(ent.name)) continue;
     const rel = relDir ? `${relDir}/${ent.name}` : ent.name;
     if (ent.isDirectory()) {
       if (!isPathIgnored(`${rel}/`, extraIgnore)) {
@@ -90,7 +97,7 @@ async function walkFiles(
 /** Default code-file extensions. The tag regex is comment-leader agnostic, so a
  *  language joins by its extension alone; its test-file convention joins
  *  `TEST_MATCH` in tags.ts. A Dockerfile has no extension: `isDockerfile`.
- *  @spec INDX-019 */
+ *  @spec INDX-020 */
 export const DEFAULT_EXTS = [
   "ts",
   "tsx",
@@ -106,16 +113,19 @@ export const DEFAULT_EXTS = [
   "toml",
   "sql",
   "css",
+  "yml",
+  "yaml",
+  "astro",
 ] as const;
 
 /** `Dockerfile` or `Dockerfile.<suffix>`, judged on the basename.
- *  @spec INDX-019 */
+ *  @spec INDX-020 */
 function isDockerfile(name: string): boolean {
   return name === "Dockerfile" || (name.startsWith("Dockerfile.") && name.length > 11);
 }
 
 /** Whether the file at `rel` is one the tag scanner reads; `guard` applies the same test at a base ref.
- *  @spec INDX-019 */
+ *  @spec INDX-020 */
 export function isTagSource(rel: string, exts: readonly string[] = DEFAULT_EXTS): boolean {
   const name = rel.slice(rel.lastIndexOf("/") + 1);
   const dot = name.lastIndexOf(".");
