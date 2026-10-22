@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/spec-engine/spec-engine/compare/v0.8.0...v0.8.1) (2026-10-22)
+
+
+### Bug Fixes
+
+* piped --json delivered whole; lone-repo root files keyed platform-relative ([#71](https://github.com/spec-engine/spec-engine/issues/71)) ([5b90acf](https://github.com/spec-engine/spec-engine/commit/5b90acf31d2c598fce809ea24852bc886119c286))
+
 ## [0.8.0](https://github.com/spec-engine/spec-engine/compare/v0.7.3...v0.8.0) (2026-10-22)
 
 
