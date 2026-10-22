@@ -12,6 +12,27 @@
 // @spec QURY-009
 // @spec QURY-006
 // @spec QURY-004
+const FTS_OPERATORS = new Set(["AND", "OR", "NOT", "NEAR"]);
+const FTS_SYNTAX = /["()*:^]/;
+
+/** Wraps a bare word holding punctuation (`changed-since`, `v1.2`) in double
+ *  quotes so FTS5 reads it as a phrase instead of operators. Quoted phrases,
+ *  operators, and tokens using deliberate syntax pass through.
+ *  @spec QURY-005 */
+export function quoteBareWords(text: string): string {
+  return text
+    .split(/\s+/)
+    .map((token) =>
+      token === "" ||
+      FTS_OPERATORS.has(token) ||
+      FTS_SYNTAX.test(token) ||
+      /^[\p{L}\p{N}_]+$/u.test(token)
+        ? token
+        : `"${token}"`,
+    )
+    .join(" ");
+}
+
 export const FTS_SEARCH_SQL = `SELECT r.id AS req_id, r.key AS key, r.text AS text, r.why AS why, r.source_file AS source_file, r.line AS line, bm25(requirements_fts, 1.0, 0.5) AS rank FROM requirements_fts JOIN requirements r ON r.rowid = requirements_fts.rowid WHERE requirements_fts MATCH $query AND r.status NOT IN ('Superseded', 'Deprecated') ORDER BY rank ASC LIMIT $limit`;
 
 // Built as prefix + a `(?, ?, …)` placeholder list + suffix, so file paths

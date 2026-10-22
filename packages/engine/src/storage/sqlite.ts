@@ -46,6 +46,7 @@ import {
 } from "./sql/diagnostics";
 import {
   FTS_SEARCH_SQL,
+  quoteBareWords,
   RESOLVE_BY_FILES_SQL_PREFIX,
   RESOLVE_BY_FILES_SQL_SUFFIX,
 } from "./sql/fts";
@@ -339,7 +340,7 @@ class SqliteStorage implements Storage {
   }
   searchFts(text: string, limit: number = 10): FtsHit[] {
     try {
-      return this.#db.query(FTS_SEARCH_SQL).all({ query: text, limit }) as FtsHit[];
+      return this.#db.query(FTS_SEARCH_SQL).all({ query: quoteBareWords(text), limit }) as FtsHit[];
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       // Only grammar errors are rewrapped. Operational errors (locked, I/O,
