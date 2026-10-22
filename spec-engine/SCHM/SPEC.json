@@ -1,7 +1,7 @@
 {
   "key": "SCHM",
   "owner": null,
-  "updated": "2026-10-21",
+  "updated": "2026-10-22",
   "scope": "The shared data model: the SPEC.json envelope, the DDL, the coverage view, and the promise that CLI, webapp, and MCP never disagree. Belongs here: the @spec-engine/shared schema every surface shares; the DDL; the coverage SQL view; one model, one storage seam. Does not belong here: the drift definition (PROP); cold-rebuild identity (INDX); loopback-only binding (SERV). Boundary case: one-model-one-seam is stated here; cold-rebuild identity stays INDX's and loopback-only stays SERV's.",
   "grammar": "ears",
   "requirements": [
@@ -274,7 +274,8 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/storage/sqlite.ts"
+        "packages/engine/src/storage/sql/diagnostics.ts",
+        "packages/shared/src/schema.ts"
       ],
       "issues": [],
       "aliases": [],

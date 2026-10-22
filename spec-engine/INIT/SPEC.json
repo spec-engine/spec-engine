@@ -1,7 +1,7 @@
 {
   "key": "INIT",
   "owner": "drea",
-  "updated": "2026-09-24",
+  "updated": "2026-10-22",
   "scope": "Membership, discovery, and onboarding, plus the adoption rungs. Belongs here: spec init pin authoring; member discovery; the three adoption rungs (a lone repo; plus the CI gate; plus a second repo sharing requirements). Does not belong here: check severities (CHCK). Boundary case: each rung is its own INIT requirement, independently testable.",
   "grammar": "ears",
   "requirements": [
@@ -241,7 +241,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/init.ts"
+        "packages/engine/src/operations/init.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
@@ -257,7 +257,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/init.ts"
+        "packages/engine/src/operations/init.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
@@ -273,7 +273,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/init.ts"
+        "packages/engine/src/operations/init.ts"
       ],
       "issues": [],
       "aliases": [],
@@ -288,7 +288,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/init.ts"
+        "packages/engine/src/operations/init.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
@@ -304,7 +304,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/init.ts"
+        "packages/engine/src/operations/init.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
@@ -320,7 +320,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/init.ts"
+        "packages/engine/src/operations/init.ts"
       ],
       "issues": [],
       "aliases": [],
@@ -455,7 +455,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/init.ts"
+        "packages/engine/src/operations/init.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,

@@ -1,7 +1,7 @@
 {
   "key": "GATE",
   "owner": "drea",
-  "updated": "2026-07-30",
+  "updated": "2026-10-22",
   "scope": "The spec gate approval command: the decision order NOT_FOUND, DRAFT, SUPERSEDED, DEPRECATED, VERSION_PIN, PASS, with pin equality passing. Belongs here: the approval decision. Does not belong here: proof-of-passing (PROOF); loss detection (GUARD). Boundary case: an unknown repo name is a usage error (exit 2), not a gate failure, and that contract is GATE's.",
   "grammar": "ears",
   "requirements": [
@@ -122,7 +122,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/gate.ts"
+        "packages/engine/src/operations/gate.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,

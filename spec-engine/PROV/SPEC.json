@@ -1,7 +1,7 @@
 {
   "key": "PROV",
   "owner": null,
-  "updated": "2026-10-21",
+  "updated": "2026-10-22",
   "scope": "The spec provenance matrix and the issue-link model, with issue_id an opaque external payload. Belongs here: the matrix rows and their sort and render; the role:ID parse into (req_id, issue_id, role); issue_id is projected only, never a key. Does not belong here: resolving an issue id to a title (TRK); requirement identity or routing. Boundary case: an issue id shaped like KEY-NNN stays an opaque string and is never resolved against the requirements table.",
   "grammar": "ears",
   "requirements": [
@@ -46,7 +46,9 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/supersede.ts"
+        "packages/engine/src/operations/amend.ts",
+        "packages/engine/src/operations/mint.ts",
+        "packages/engine/src/operations/supersede.ts"
       ],
       "issues": [],
       "aliases": [],

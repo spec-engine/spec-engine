@@ -1,7 +1,7 @@
 {
   "key": "DIST",
   "owner": null,
-  "updated": "2026-10-21",
+  "updated": "2026-10-22",
   "scope": "The npm distribution surface: what the published @spec-engine/spec-engine artifact contains and the CLI surfaces that exist only because of it (spec docs, the non-Bun runtime guard). Belongs here: tarball-content promises; the bin wrapper's runtime guard; the offline docs command. Does not belong here: the webapp routes the artifact embeds (SERV); the compiled-binary channel (CI-owned); the docs site content (packages/site). Boundary case: spec docs binds loopback like spec serve, but it is a distribution surface over static files, so the promise lives here.",
   "grammar": "ears",
   "requirements": [
@@ -234,7 +234,9 @@
       "livesIn": [
         ".github/workflows/ci.yml",
         "release-please-config.json",
-        ".release-please-manifest.json"
+        ".release-please-manifest.json",
+        "scripts/arch-fences.sh",
+        "scripts/release-config.ts"
       ],
       "issues": [],
       "aliases": [],
@@ -279,7 +281,9 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "renovate.json"
+        "renovate.json",
+        "scripts/arch-fences.sh",
+        "scripts/release-config.ts"
       ],
       "issues": [],
       "aliases": [],

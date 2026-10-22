@@ -1,7 +1,7 @@
 {
   "key": "PROOF",
   "owner": null,
-  "updated": "2026-10-21",
+  "updated": "2026-10-22",
   "scope": "Trusted-red: JUnit ingestion, the PROVEN/UNPROVEN determination, and proof enforcement under --ci. Belongs here: --results ingestion; the PROVEN/UNPROVEN status; proof-of-passing under --ci. Does not belong here: the structural gate with no results file (CHCK). Boundary case: an active requirement with a verifying tag but no results file is CHCK's structural check, not a PROOF proof.",
   "grammar": "ears",
   "requirements": [
@@ -182,7 +182,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/check.ts"
+        "packages/engine/src/storage/sql/diagnostics.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
@@ -198,7 +198,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/check.ts"
+        "packages/engine/src/check/proven.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,

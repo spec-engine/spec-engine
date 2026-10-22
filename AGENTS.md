@@ -805,6 +805,10 @@ Exit: 0 / 2.
 
 ## Authoring requirements (brief → mint)
 
+<!-- @spec AUTHOR-010 -->
+
+<!-- @spec AUTHOR-005 -->
+
 The full authoring standard (the eight rules and the fixed statement shapes) is
 the "Requirement authoring standard" section of `spec-engine/TAXONOMY.md`. The
 command choreography:
