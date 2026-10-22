@@ -1,4 +1,5 @@
-// @spec INDX-019 unit
+// @spec INDX-020 unit
+// @spec INDX-021 unit
 // @spec INDX-015
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
@@ -40,6 +41,9 @@ describe("the scanner reads every listed source kind", () => {
       "toml",
       "sql",
       "css",
+      "yml",
+      "yaml",
+      "astro",
     ]);
   });
 
@@ -60,13 +64,21 @@ describe("the scanner reads every listed source kind", () => {
         "ops/Dockerfile.": "",
         "ops/Dockerfiles": "",
         "ops.d/README": "",
+        ".github/workflows/ci.yml": "",
+        ".github/dependabot.yaml": "",
+        ".venv/pyvenv.yml": "",
+        ".astro/types.d.ts": "",
+        "site/index.astro": "",
       },
     });
     expect(await findCodeFiles(api.dir)).toEqual([
+      ".github/dependabot.yaml",
+      ".github/workflows/ci.yml",
       "Dockerfile",
       "db/001.sql",
       "infra/main.tf",
       "ops/Dockerfile.dev",
+      "site/index.astro",
       "src/a.lua",
       "src/b.luau",
       "src/c.go",
@@ -78,8 +90,17 @@ describe("the scanner reads every listed source kind", () => {
 
   test("a hash, double-dash, or block-comment tag in the new kinds indexes as implements", async () => {
     const billing = await fx.domain("BILLING");
-    const ids = (await billing.reqs(6)) as [string, string, string, string, string, string];
-    const [tf, toml, docker, dockerDev, sql, css] = ids;
+    const ids = (await billing.reqs(8)) as [
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+    ];
+    const [tf, toml, docker, dockerDev, sql, css, yml, astro] = ids;
     await fx.member("api", {
       files: {
         "infra/main.tf": `resource "x" "y" {} # ${SPEC_TOKEN} ${tf}\n`,
@@ -88,6 +109,8 @@ describe("the scanner reads every listed source kind", () => {
         "ops/Dockerfile.dev": `# ${SPEC_TOKEN} ${dockerDev}\nFROM scratch\n`,
         "db/001.sql": `-- ${SPEC_TOKEN} ${sql}\nSELECT 1;\n`,
         "web/app.css": `/* ${SPEC_TOKEN} ${css} */\nbody {}\n`,
+        ".github/workflows/ci.yml": `jobs:\n  gate:\n    # ${SPEC_TOKEN} ${yml}\n    runs-on: ubuntu-latest\n`,
+        "site/index.astro": `---\n// ${SPEC_TOKEN} ${astro}\nconst x = 1;\n---\n<p>{x}</p>\n`,
       },
     });
     const s = openStorage(join(fx.dir, ".spec-engine", "index.sqlite"));
@@ -152,7 +175,7 @@ describe("the scanner reads every listed source kind", () => {
 });
 
 describe("isTagSource", () => {
-  // @spec INDX-019 unit
+  // @spec INDX-020 unit
   test("accepts every DEFAULT_EXTS file and a Dockerfile, rejects docs and extensionless files", () => {
     for (const ext of DEFAULT_EXTS) expect(isTagSource(`deep/dir/x.${ext}`)).toBe(true);
     expect(isTagSource("infra/Dockerfile")).toBe(true);

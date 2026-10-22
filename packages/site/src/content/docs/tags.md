@@ -13,7 +13,33 @@ it("renews end to end", () => {})        // @spec BILLING-009 e2e
 
 ## Scanned files
 
-The scanner reads `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.sh`, `.lua`, `.luau`, `.go`, `.rs`, `.tf`, `.toml`, `.sql`, and `.css` files and any file named `Dockerfile` or `Dockerfile.<suffix>`. The tag regex ignores the comment leader, so a Lua or SQL `-- @spec BILLING-009`, a Go or Rust `// @spec BILLING-009`, a shell, Terraform, TOML, or Dockerfile `# @spec BILLING-009`, and a CSS `/* @spec BILLING-009 */` all bind. Documentation is scanned from `.md` files.
+Code is read from any file named `Dockerfile` or `Dockerfile.<suffix>` and from these extensions:
+
+- `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`
+- `.sh`
+- `.lua`, `.luau`
+- `.go`
+- `.rs`
+- `.tf`
+- `.toml`
+- `.sql`
+- `.css`
+- `.yml`, `.yaml`
+- `.astro`
+
+Documentation is read from `.md` files.
+
+The tag regex ignores the comment leader, so each of these binds:
+
+| Leader | Where |
+| --- | --- |
+| `// @spec BILLING-009` | TypeScript, JavaScript, Go, Rust, Astro front-matter |
+| `# @spec BILLING-009` | shell, Terraform, TOML, YAML, Dockerfile |
+| `-- @spec BILLING-009` | Lua, Luau, SQL |
+| `/* @spec BILLING-009 */` | CSS |
+| an HTML comment | Astro template, Markdown |
+
+Dot-prefixed directories are skipped, except `.github/`.
 
 ## Tag kind
 

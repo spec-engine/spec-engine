@@ -291,9 +291,40 @@
     },
     {
       "id": "INDX-019",
-      "status": "active",
+      "status": "superseded",
       "statement": "When walking a member for tags, the scanner shall read .ts, .tsx, .js, .jsx, .mjs, .sh, .lua, .luau, .go, .rs, .tf, .toml, .sql, and .css files and any file named Dockerfile or Dockerfile.<suffix>.",
       "why": "A @spec tag in a file the walker never opens is invisible: the requirement it binds reports ORPHAN_REQ or UNVERIFIED_REQ while the code and the test exist.",
+      "supersedes": null,
+      "supersededBy": "INDX-020",
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/scanner/fs.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "supersededAtVersion": 8
+    },
+    {
+      "id": "INDX-020",
+      "status": "active",
+      "statement": "When walking a member for tags, the scanner shall read .ts, .tsx, .js, .jsx, .mjs, .sh, .lua, .luau, .go, .rs, .tf, .toml, .sql, .css, .yml, .yaml, and .astro files and any file named Dockerfile or Dockerfile.<suffix>.",
+      "why": "A @spec tag in a file the walker never opens is invisible: the requirement it binds reports ORPHAN_REQ or UNVERIFIED_REQ while the code and the test exist.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/scanner/fs.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INDX-021",
+      "status": "active",
+      "statement": "When walking a member for tags, the scanner shall read the .github directory and skip every other dot-prefixed entry.",
+      "why": "A CI workflow file is often the only implementation of a promise, and a tag there is invisible while the directory is skipped; opening every dot directory would crawl .venv and tool caches.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

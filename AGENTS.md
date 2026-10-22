@@ -151,9 +151,10 @@ How this implementation realizes them:
 2. Code binds with a tag: `// @spec KEY-NNN`. A test tag may add a level token
    `unit` | `integration` | `e2e`. The scanner reads `.ts`, `.tsx`, `.js`,
    `.jsx`, `.mjs`, `.sh`, `.lua`, `.luau`, `.go`, `.rs`, `.tf`, `.toml`,
-   `.sql`, and `.css` files and any file named `Dockerfile` or
-   `Dockerfile.<suffix>`; the tag regex ignores the comment leader, so `--`,
-   `//`, `#`, and `/* … */` all work.
+   `.sql`, `.css`, `.yml`, `.yaml`, and `.astro` files and any file named
+   `Dockerfile` or `Dockerfile.<suffix>`; the tag regex ignores the comment
+   leader, so `--`, `//`, `#`, `<!-- -->`, and `/* … */` all work. Dot-prefixed
+   directories are skipped except `.github/`.
 3. Tag kind is path-derived. A tag in implementation code **implements**; a tag
    in a test path **verifies**. Never write those words in the tag. A test
    path contains `.test.`, `.spec.`, `__tests__/`, `/tests/`, `/e2e/`, or
