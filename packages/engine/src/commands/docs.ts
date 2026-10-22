@@ -11,6 +11,7 @@ import { join, normalize, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineCommand } from "citty";
 import { EXIT } from "../constants";
+import { exit } from "../stdout";
 
 /**
  * Split from `resolveDocsRoot` so tests can drive the fallback order with
@@ -108,7 +109,7 @@ export async function runProbe(root: string): Promise<void> {
   }
   console.log("docs --probe OK");
   server.stop();
-  process.exit(EXIT.OK);
+  await exit(EXIT.OK);
 }
 
 /**

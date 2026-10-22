@@ -169,8 +169,8 @@ async function confirmTermCommand(opts: {
 
   const result = await confirmTerm({ platformDir, reqId, termId });
   if (!result.ok) exitOnFailure("spec term confirm", result);
-  await withIndex({ platformDir, build: "fresh" }, () => undefined).catch((e) => {
-    handleInvalidDomainFiles(e, false, EXIT.USAGE);
+  await withIndex({ platformDir, build: "fresh" }, () => undefined).catch(async (e) => {
+    await handleInvalidDomainFiles(e, false, EXIT.USAGE);
     throw e;
   });
 

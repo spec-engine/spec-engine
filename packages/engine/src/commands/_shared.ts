@@ -5,6 +5,7 @@ import { EXIT, isContainedPath } from "../constants";
 import { formatNotASpecPlatform } from "../indexer/discover";
 import { coldFreshTags, type FreshTags, withIndex } from "../operations/_index";
 import type { OpFailure, OpWarning } from "../operations/_result";
+import { exit } from "../stdout";
 import { describeStorageError, formatStorageUnavailable } from "../storage/errors";
 
 export { coldResetDb } from "../storage/sqlite";
@@ -35,15 +36,15 @@ export function handleNotAPlatform(e: unknown): never {
  * otherwise) and exits `code`; anything else falls through.
  * @spec INDX-017
  */
-export function handleInvalidDomainFiles(
+export async function handleInvalidDomainFiles(
   e: unknown,
   json: boolean,
   code: number = EXIT.FAILURE,
-): void {
+): Promise<void> {
   if (!(e instanceof InvalidDomainFilesError)) return;
   if (json) console.log(renderDiagnostics(e.diagnostics, "json"));
   else console.error(renderDiagnostics(e.diagnostics, "text"));
-  process.exit(code);
+  await exit(code);
 }
 
 /** `coldFreshTags` for a lifecycle command, whose exits are 0 or 2: a refused build exits 2. */
@@ -53,7 +54,7 @@ export function cliFreshTags(platformDir: string): FreshTags {
     try {
       return await fresh(reqId);
     } catch (e) {
-      handleInvalidDomainFiles(e, false, EXIT.USAGE);
+      await handleInvalidDomainFiles(e, false, EXIT.USAGE);
       throw e;
     }
   };
@@ -112,7 +113,7 @@ export async function withReadStorage(
     });
   } catch (e) {
     handleStorageUnavailable(e, dbPath);
-    handleInvalidDomainFiles(e, json);
+    await handleInvalidDomainFiles(e, json);
     handleNotAPlatform(e);
   }
 }

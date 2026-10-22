@@ -10,6 +10,7 @@ import { formatNotASpecPlatform } from "../indexer/discover";
 import { maybePromptForOnboarding } from "../onboarding/prompt";
 import { withIndex } from "../operations/_index";
 import { type GateResult, gate } from "../operations/gate";
+import { exit } from "../stdout";
 import { platformDirArg, resolvePlatformDir } from "./_args";
 import { assertContainedPath, handleInvalidDomainFiles } from "./_shared";
 
@@ -113,7 +114,7 @@ export const gateCommand = defineCommand({
         if (!args.json) writeStdoutTolerant(`build_id: ${gated.buildId}`);
       }
     } catch (e) {
-      handleInvalidDomainFiles(e, Boolean(args.json));
+      await handleInvalidDomainFiles(e, Boolean(args.json));
       const msg = e instanceof Error ? e.message : String(e);
       console.error(`spec gate: crashed: ${msg}`);
       process.exit(EXIT.USAGE);
@@ -123,6 +124,6 @@ export const gateCommand = defineCommand({
       process.exit(EXIT.USAGE);
       return;
     }
-    process.exit(gated.outcome.pass ? EXIT.OK : EXIT.FAILURE);
+    await exit(gated.outcome.pass ? EXIT.OK : EXIT.FAILURE);
   },
 });

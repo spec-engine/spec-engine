@@ -6,6 +6,7 @@ import { defaultIndexPath, EXIT } from "../constants";
 import { renderGuard } from "../guard/format";
 import type { Loss } from "../guard/losses";
 import { guard } from "../operations/guard";
+import { exit } from "../stdout";
 import { platformDirArg, resolvePlatformDir } from "./_args";
 import { withReadStorage } from "./_shared";
 
@@ -40,7 +41,7 @@ export const guardCommand = defineCommand({
       console.log(
         jsonMode ? "[]" : `✓ spec guard: no requirements about to be lost (non-git context)`,
       );
-      process.exit(EXIT.OK);
+      await exit(EXIT.OK);
     }
 
     let losses: Loss[] = [];
@@ -52,6 +53,6 @@ export const guardCommand = defineCommand({
     );
 
     console.log(renderGuard(losses, jsonMode ? "json" : "text", ref));
-    process.exit(losses.length > 0 ? EXIT.FAILURE : EXIT.OK);
+    await exit(losses.length > 0 ? EXIT.FAILURE : EXIT.OK);
   },
 });

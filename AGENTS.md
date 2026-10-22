@@ -112,6 +112,11 @@ Rules:
   classifies a file as a test by the `.test.` substring, so a co-located tag
   still verifies; the engine-internal fences skip `*.test.ts` and
   `src/testing/`, the write-seam fence does not.
+- **stdout goes through `packages/engine/src/stdout.ts`.** `cli.ts` routes
+  `console.log` through the stream, and a command that prints its result and
+  then ends the process calls `exit()` from that module, never `process.exit`.
+  Bun drops stdout bytes still queued when `process.exit` runs, so a piped
+  `--json` report larger than one pipe buffer was cut off.
 - **A fence runs inside `bun test` under a 5-second budget**
   (`architecture-fences.test.ts` spawns the whole script). Keep each fence to
   one process.

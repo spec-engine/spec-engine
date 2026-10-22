@@ -4,6 +4,9 @@
 
 import { defineCommand, runMain, showUsage } from "citty";
 import packageJson from "../package.json" with { type: "json" };
+import { routeStdout } from "./stdout";
+
+routeStdout();
 
 const main = defineCommand({
   meta: {
