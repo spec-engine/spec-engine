@@ -157,7 +157,7 @@ describe("a declared platform: membership comes from the platform file", () => {
     expect(r.members[2]?.path).toBe(join(shared.dir, "packages", "ui"));
   });
 
-  // @spec INIT-040 unit
+  // @spec INIT-041 unit
   test("a monorepo member's root column is named by the member and skips its packages", async () => {
     const shared = await fx.member("shared", { ignore: ["generated"] });
     shared.workspace(["packages/ui"]);
@@ -354,7 +354,7 @@ describe("a lone repository", () => {
     expect(r.members.some((m) => m.name === "packages")).toBe(false);
   });
 
-  // @spec INIT-040 unit
+  // @spec INIT-041 unit
   test("a lone monorepo's files outside every package are one more column, named by the directory", async () => {
     await writeVersionedDomain(tmp, "ALPHA", 2);
     fx.workspace(["packages/engine", "scripts"]);
@@ -368,7 +368,22 @@ describe("a lone repository", () => {
     expect(root?.ignore).toEqual(["packages/engine", "scripts"]);
   });
 
-  // @spec INIT-040 integration
+  // @spec INIT-041 unit
+  test("a lone repository in a directory named spec-engine gets a column named root", async () => {
+    const dir = join(tmp, "checkout", "spec-engine");
+    mkdirSync(join(dir, ".git"), { recursive: true });
+    const nested = TestPlatform.at(dir);
+    await writeVersionedDomain(dir, "ALPHA", 2);
+    nested.workspace(["packages/engine"]);
+
+    const r = await discoverRepos(dir);
+
+    const root = r.members.find((m) => m.selfMember);
+    expect(root?.name).toBe("root");
+    expect(root?.ignore).toEqual(["packages/engine"]);
+  });
+
+  // @spec INIT-041 integration
   test("a root-level tag implements its requirement once; a package's tag is not scanned twice", async () => {
     const alpha = await fx.domain("ALPHA");
     const atRoot = await alpha.req({ statement: "s", why: "w" });

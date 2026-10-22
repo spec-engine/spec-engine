@@ -70,7 +70,9 @@ Rules:
   monorepo with no platform file: its coverage columns are the root
   `workspaces` packages (`packages/*` and `scripts`), each pinned to the
   derived platform version unless it carries a nested
-  `spec-engine.member.json` (`scripts/` does). A fixture platform
+  `spec-engine.member.json` (`scripts/` does), plus a `root` column for the
+  files outside every package (the directory is named `spec-engine`, so
+  the column cannot take its name). A fixture platform
   (`fixtures/platform-fixture`, the trees under `src/testing/fixtures/`)
   carries a `platform-map.json` platform file, a marker and a private
   `package.json` per member. See the
