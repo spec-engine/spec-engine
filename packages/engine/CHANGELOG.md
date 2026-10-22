@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.8.0](https://github.com/spec-engine/spec-engine/compare/v0.7.3...v0.8.0) (2026-10-22)
+
+
+### Features
+
+* **engine:** verifiedIn names the test file expected to prove a requirement ([#70](https://github.com/spec-engine/spec-engine/issues/70)) ([529db11](https://github.com/spec-engine/spec-engine/commit/529db11a288e5aaea1d05cb659720be46b6b1a20))
+* **scanner:** read .yml, .yaml, and .astro sources and open .github/ ([#65](https://github.com/spec-engine/spec-engine/issues/65)) ([84fee7b](https://github.com/spec-engine/spec-engine/commit/84fee7b6a794770884a3aaba34850b327d5f1e37))
+
+
+### Bug Fixes
+
+* **engine:** name a lone repository's column root when its directory is spec-engine ([#66](https://github.com/spec-engine/spec-engine/issues/66)) ([3779bbb](https://github.com/spec-engine/spec-engine/commit/3779bbb42c4dd79b51da7d446358e024f3ba0a61))
+* **query:** match a hyphenated word instead of parsing it as FTS5 syntax ([#67](https://github.com/spec-engine/spec-engine/issues/67)) ([1c164b2](https://github.com/spec-engine/spec-engine/commit/1c164b29fd42cc7fe28db8263b5e873e6bbfe5e6))
+
 ## [0.7.3](https://github.com/spec-engine/spec-engine/compare/v0.7.2...v0.7.3) (2026-10-21)
 
 
