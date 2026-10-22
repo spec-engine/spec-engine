@@ -36,6 +36,13 @@ export const livesArg = {
     "Lives in (livesIn) paths: repeat the flag or comma-separate; an empty value clears the list",
 } as const;
 
+// @spec REQ-056
+export const testsArg = {
+  type: "string",
+  description:
+    "Verified in (verifiedIn) test paths: repeat the flag or comma-separate; an empty value clears the list",
+} as const;
+
 export const relatesArg = {
   type: "string",
   description:

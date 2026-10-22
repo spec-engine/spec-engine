@@ -151,6 +151,26 @@ describe("spec mcp — tool surface", () => {
     expect(rows.map((r) => r.req_id)).toContain("BILLING-003");
   });
 
+  // @spec REQ-056 unit
+  // @spec REQ-057 unit
+  test("spec_req records verified_in and spec_amend replaces it; an empty list clears it", async () => {
+    const minted = (await call("spec_req", {
+      domain: "bil",
+      text: "The billing service shall email a receipt.",
+      verified_in: ["api/test/receipt.test.ts"],
+    })) as { id: string };
+    const entry = async () =>
+      (await billing.read()).requirements.find((r) => r.id === minted.id)?.verifiedIn;
+    expect(await entry()).toEqual(["api/test/receipt.test.ts"]);
+
+    expect(await call("spec_amend", { id: minted.id, verified_in: ["a.test.ts"] })).toMatchObject({
+      fields_changed: ["tests"],
+    });
+    expect(await entry()).toEqual(["a.test.ts"]);
+    await call("spec_amend", { id: minted.id, verified_in: [] });
+    expect(await entry()).toEqual([]);
+  });
+
   test("malformed req_id returns an MCP tool error, not a crash", async () => {
     const res = (await client.callTool({
       name: "spec_req_tags",

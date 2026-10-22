@@ -65,6 +65,7 @@ export async function mintTerm(input: MintTermInput): Promise<MintTermResult | O
     supersededBy: null,
     relates: [],
     livesIn: [],
+    verifiedIn: [],
     issues: [],
     aliases: input.aliases,
     cites: [],

@@ -42,6 +42,7 @@ function amendFieldsOf(args: {
   text: string | undefined;
   why: string | undefined;
   lives: string[] | undefined;
+  verified_in: string[] | undefined;
   relates: string[] | undefined;
   issue: string | undefined;
 }): AmendFields {
@@ -49,6 +50,7 @@ function amendFieldsOf(args: {
   if (args.text !== undefined) fields.statement = args.text;
   if (args.why !== undefined) fields.why = args.why || null;
   if (args.lives !== undefined) fields.livesIn = args.lives;
+  if (args.verified_in !== undefined) fields.verifiedIn = args.verified_in;
   if (args.relates !== undefined) fields.relates = args.relates;
   if (args.issue) fields.issue = args.issue;
   return fields;
@@ -238,6 +240,10 @@ export function buildMcpServer(platformDir: string): McpServer {
           .array(z.string())
           .optional()
           .describe("Successor's livesIn paths (default: copied from the predecessor)"),
+        verified_in: z
+          .array(z.string())
+          .optional()
+          .describe("Successor's verifiedIn paths (default: copied from the predecessor)"),
         relates: z
           .array(z.string())
           .optional()
@@ -252,12 +258,21 @@ export function buildMcpServer(platformDir: string): McpServer {
           ),
       },
     },
-    async ({ req_id, statement, why, lives_in, relates, issue }) => {
+    async ({ req_id, statement, why, lives_in, verified_in, relates, issue }) => {
       if (!ID_RE.test(req_id)) {
         return errorResult(`req_id must be a requirement id (KEY-NNN); got ${req_id}`);
       }
       const r = await supersede(
-        { platformDir, id: req_id, statement, why, livesIn: lives_in, relates, issue },
+        {
+          platformDir,
+          id: req_id,
+          statement,
+          why,
+          livesIn: lives_in,
+          verifiedIn: verified_in,
+          relates,
+          issue,
+        },
         coldFreshTags(platformDir),
       );
       if (!r.ok) return errorResult(r.detail);
@@ -330,6 +345,7 @@ export function buildMcpServer(platformDir: string): McpServer {
         text: z.string().trim().min(1).describe("The requirement statement"),
         why: z.string().trim().default("").describe("What breaks without it"),
         lives: z.array(z.string()).default([]).describe("livesIn paths"),
+        verified_in: z.array(z.string()).default([]).describe("verifiedIn test paths"),
         relates: z
           .array(z.string())
           .default([])
@@ -338,7 +354,7 @@ export function buildMcpServer(platformDir: string): McpServer {
         draft: z.boolean().default(false).describe("Author as Draft instead of Active"),
       },
     },
-    async ({ domain, text, why, lives, relates, issue, draft }) => {
+    async ({ domain, text, why, lives, verified_in, relates, issue, draft }) => {
       const allocated = await nextId(platformDir, domain);
       if (!allocated.ok) return errorResult(allocated.detail);
       const r = await mint({
@@ -347,6 +363,7 @@ export function buildMcpServer(platformDir: string): McpServer {
         statement: text,
         why,
         livesIn: lives,
+        verifiedIn: verified_in,
         relates,
         issue: issue || undefined,
         status: draft ? "draft" : "active",
@@ -371,6 +388,10 @@ export function buildMcpServer(platformDir: string): McpServer {
         text: z.string().trim().min(1).optional().describe("New statement"),
         why: z.string().trim().optional().describe("New why; empty clears it"),
         lives: z.array(z.string()).optional().describe("Replacement livesIn list; empty clears"),
+        verified_in: z
+          .array(z.string())
+          .optional()
+          .describe("Replacement verifiedIn list; empty clears"),
         relates: z
           .array(z.string())
           .optional()
@@ -378,11 +399,13 @@ export function buildMcpServer(platformDir: string): McpServer {
         issue: z.string().trim().optional().describe("Ticket recorded as amends-via"),
       },
     },
-    async ({ id, text, why, lives, relates, issue }) => {
+    async ({ id, text, why, lives, verified_in, relates, issue }) => {
       if (!ID_RE.test(id)) return errorResult(`id must be a requirement id (KEY-NNN); got ${id}`);
-      const fields = amendFieldsOf({ text, why, lives, relates, issue });
+      const fields = amendFieldsOf({ text, why, lives, verified_in, relates, issue });
       if (Object.keys(fields).length === 0) {
-        return errorResult("nothing to amend — pass at least one of text, why, lives, relates");
+        return errorResult(
+          "nothing to amend — pass at least one of text, why, lives, verified_in, relates",
+        );
       }
       const r = await amend({ platformDir, id, fields });
       if (!r.ok) return errorResult(r.detail);
@@ -407,14 +430,26 @@ export function buildMcpServer(platformDir: string): McpServer {
           .array(z.string())
           .optional()
           .describe("Successor livesIn list; empty clears (default: copied)"),
+        verified_in: z
+          .array(z.string())
+          .optional()
+          .describe("Successor verifiedIn list; empty clears (default: copied)"),
       },
     },
-    async ({ id, newDomain, text, why, lives }) => {
+    async ({ id, newDomain, text, why, lives, verified_in }) => {
       if (!ID_RE.test(id)) return errorResult(`id must be a requirement id (KEY-NNN); got ${id}`);
       const targetKey = normalizeDomainKey(newDomain);
       if (targetKey === "") return errorResult(`newDomain must be a domain key; got ${newDomain}`);
       const r = await move(
-        { platformDir, id, targetKey, statement: text, why, livesIn: lives },
+        {
+          platformDir,
+          id,
+          targetKey,
+          statement: text,
+          why,
+          livesIn: lives,
+          verifiedIn: verified_in,
+        },
         coldFreshTags(platformDir),
       );
       if (!r.ok) return errorResult(r.detail);

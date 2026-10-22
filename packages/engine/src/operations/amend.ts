@@ -17,6 +17,8 @@ export interface AmendFields {
   why?: string | null | undefined;
   livesIn?: string[] | undefined;
   /** Replaces the whole list; an empty list clears it. */
+  verifiedIn?: string[] | undefined;
+  /** Replaces the whole list; an empty list clears it. */
   relates?: string[] | undefined;
   /** Appended as `amends-via` provenance. */
   issue?: string | undefined;
@@ -35,7 +37,7 @@ export interface AmendResult {
   ok: true;
   id: string;
   file: string;
-  /** Sorted names of the fields that changed: requirement, why, lives, relates, term, issue, aliases. */
+  /** Sorted names of the fields that changed: requirement, why, lives, tests, relates, term, issue, aliases. */
   fieldsChanged: string[];
   warnings: OpWarning[];
 }
@@ -62,7 +64,7 @@ const PROMISE_FIELDS = ["statement", "why", "term", "aliases"] as const;
  * Null when the amend may proceed.
  * @spec REQ-044
  * @spec REQ-045
- * @spec REQ-046
+ * @spec REQ-059
  */
 function gateRejection(
   platformDir: string,
@@ -86,7 +88,7 @@ function gateRejection(
     "conflict",
     `${id} is released in ${tag} — its promise is immutable. ` +
       `Run \`spec supersede ${id}\` to change the statement or why; ` +
-      "pass only --lives or --relates to amend its metadata in place.",
+      "pass only --lives, --tests, or --relates to amend its metadata in place.",
   );
 }
 
@@ -111,6 +113,12 @@ function applyFields(
     req.livesIn = fields.livesIn;
     fieldsChanged.push("lives");
     refValues.push(...fields.livesIn);
+  }
+  // @spec REQ-057
+  if (fields.verifiedIn !== undefined) {
+    req.verifiedIn = fields.verifiedIn;
+    fieldsChanged.push("tests");
+    refValues.push(...fields.verifiedIn);
   }
   // @spec REQ-050
   // @spec REQ-051

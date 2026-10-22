@@ -54,6 +54,11 @@ function isHiddenEntry(name: string): boolean {
   return name.startsWith(".") && name !== ".github";
 }
 
+/** True when the walk never reaches `rel`: one of its segments is a hidden entry. */
+export function isHiddenPath(rel: string): boolean {
+  return rel.split("/").some(isHiddenEntry);
+}
+
 /** An unreadable directory is skipped rather than thrown: a walk must never
  *  crash the indexer. */
 async function walkInto(
@@ -147,14 +152,14 @@ export async function findCodeFiles(
   return walkFiles(repoDir, (rel) => isTagSource(rel, exts), extraIgnore);
 }
 
+/** Whether the file at `rel` is one the doc scanner reads. A SPEC.md anywhere is a spec source, never documentation. */
+export function isDocSource(rel: string): boolean {
+  return rel.endsWith(".md") && rel !== "SPEC.md" && !rel.endsWith("/SPEC.md");
+}
+
 export async function findDocFiles(
   repoDir: string,
   extraIgnore: readonly string[] = [],
 ): Promise<string[]> {
-  return walkFiles(
-    repoDir,
-    // A SPEC.md anywhere is a spec source, never documentation.
-    (rel) => rel.endsWith(".md") && rel !== "SPEC.md" && !rel.endsWith("/SPEC.md"),
-    extraIgnore,
-  );
+  return walkFiles(repoDir, isDocSource, extraIgnore);
 }

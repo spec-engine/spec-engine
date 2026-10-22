@@ -150,13 +150,14 @@ describe("spec move — happy path", () => {
     expect(succ?.livesIn).toEqual(["a.ts", "b.ts"]);
   });
 
-  // @spec REQ-052 unit
+  // @spec REQ-058 unit
   // @spec REQ-053 unit
-  test("the successor copies relates, every livesIn entry, cites, and section, and no issues", async () => {
+  test("the successor copies relates, every livesIn and verifiedIn entry, cites, and section, and no issues", async () => {
     await plantEdit(platform, "BILLING", (doc) => {
       const entry = entryOf(doc, "BILLING-001");
       entry.relates = ["BILLING-002"];
       entry.livesIn = ["a.ts", "b.ts"];
+      entry.verifiedIn = ["a.test.ts"];
       entry.cites = [{ term: "TERM-001", pinned: 1 }];
       entry.section = "Charging";
       entry.issues = [{ role: "created", id: "ENG-1" }];
@@ -168,9 +169,33 @@ describe("spec move — happy path", () => {
     const succ = (await auth.read()).requirements.find((r) => r.id === "AUTH-002");
     expect(succ?.relates).toEqual(["BILLING-002"]);
     expect(succ?.livesIn).toEqual(["a.ts", "b.ts"]);
+    expect(succ?.verifiedIn).toEqual(["a.test.ts"]);
     expect(succ?.cites).toEqual([{ term: "TERM-001", pinned: 1 }]);
     expect(succ?.section).toBe("Charging");
     expect(succ?.issues).toEqual([]);
+  });
+
+  // @spec REQ-057 unit
+  test("--tests replaces the copied verifiedIn list", async () => {
+    await moveRun({
+      args: { id: "BILLING-001", newDomain: "AUTH", platformDir: platform, tests: "x.test.ts" },
+      rawArgs: ["--tests", "x.test.ts", "--tests", "y.test.ts"],
+    });
+    const succ = (await auth.read()).requirements.find((r) => r.id === "AUTH-002");
+    expect(succ?.verifiedIn).toEqual(["x.test.ts", "y.test.ts"]);
+  });
+
+  // @spec REQ-057 unit
+  test("an empty --tests clears the copied verifiedIn list", async () => {
+    await plantEdit(platform, "BILLING", (doc) => {
+      entryOf(doc, "BILLING-001").verifiedIn = ["a.test.ts"];
+    });
+    await moveRun({
+      args: { id: "BILLING-001", newDomain: "AUTH", platformDir: platform, tests: "" },
+      rawArgs: ["--tests", ""],
+    });
+    const succ = (await auth.read()).requirements.find((r) => r.id === "AUTH-002");
+    expect(succ?.verifiedIn).toEqual([]);
   });
 
   // @spec REQ-036

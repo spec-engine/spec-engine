@@ -195,15 +195,16 @@ describe("spec supersede — the successor keeps what nobody chose to drop", () 
       const entry = entryOf(doc, ACTIVE);
       entry.relates = [HISTORY];
       entry.livesIn = ["renew.ts", "price.ts"];
+      entry.verifiedIn = ["renew.test.ts"];
       entry.cites = [{ term: "TERM-001", pinned: 1 }];
       entry.section = "Charging";
       entry.issues = [{ role: "created", id: "ENG-1" }];
     });
   });
 
-  // @spec REQ-052 unit
+  // @spec REQ-058 unit
   // @spec REQ-053 unit
-  test("relates, every livesIn entry, cites, and section copy; issues hold only the new created row", async () => {
+  test("relates, every livesIn and verifiedIn entry, cites, and section copy; issues hold only the new created row", async () => {
     await supersedeRun({
       args: { id: ACTIVE, platformDir: platform, text: "charge at renewal", issue: "ENG-9" },
       rawArgs: [],
@@ -211,9 +212,27 @@ describe("spec supersede — the successor keeps what nobody chose to drop", () 
     const succ = (await billing.read()).requirements.find((r) => r.id === SUCCESSOR);
     expect(succ?.relates).toEqual([HISTORY]);
     expect(succ?.livesIn).toEqual(["renew.ts", "price.ts"]);
+    expect(succ?.verifiedIn).toEqual(["renew.test.ts"]);
     expect(succ?.cites).toEqual([{ term: "TERM-001", pinned: 1 }]);
     expect(succ?.section).toBe("Charging");
     expect(succ?.issues).toEqual([{ role: "created", id: "ENG-9" }]);
+  });
+
+  // @spec REQ-057 unit
+  test("--tests replaces the copied verifiedIn; an empty value clears it", async () => {
+    await supersedeRun({
+      args: { id: ACTIVE, platformDir: platform, text: "charge at renewal", tests: "b.test.ts" },
+      rawArgs: ["--tests", "a.test.ts,b.test.ts"],
+    });
+    let succ = (await billing.read()).requirements.find((r) => r.id === SUCCESSOR);
+    expect(succ?.verifiedIn).toEqual(["a.test.ts", "b.test.ts"]);
+    await supersedeRun({
+      args: { id: SUCCESSOR, platformDir: platform, text: "charge on renewal", tests: "" },
+      rawArgs: ["--tests", ""],
+    });
+    const next = (await billing.read()).requirements.find((r) => r.id === succ?.id)?.supersededBy;
+    succ = (await billing.read()).requirements.find((r) => r.id === next);
+    expect(succ?.verifiedIn).toEqual([]);
   });
 
   // @spec REQ-051 unit

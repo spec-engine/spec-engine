@@ -63,6 +63,7 @@ describe("validateAndWrite preserves an existing file's shape", () => {
       supersededBy: null,
       relates: [],
       livesIn: ["api/receipt.ts"],
+      verifiedIn: [],
       issues: [{ role: "created", id: "ENG-7" }],
       aliases: [],
       cites: [],
@@ -120,6 +121,18 @@ describe("validateAndWrite preserves an existing file's shape", () => {
 
     const expected = handShaped();
     (expected.requirements[1] as { why: string | null }).why = null;
+    expect(await Bun.file(target).text()).toBe(text(expected));
+  });
+
+  // @spec SCHM-036 unit
+  // @spec SCHM-032 unit
+  test("a set verifiedIn is written on its entry alone; entries without the key stay without it", async () => {
+    const domain = await writeAndLoad();
+    entry(domain, 0).verifiedIn = ["api/renew.test.ts"];
+    expect((await validateAndWrite(target, domain, SRC)).ok).toBe(true);
+
+    const expected = handShaped();
+    (expected.requirements[0] as Record<string, unknown>).verifiedIn = ["api/renew.test.ts"];
     expect(await Bun.file(target).text()).toBe(text(expected));
   });
 

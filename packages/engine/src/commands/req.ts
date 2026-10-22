@@ -10,6 +10,7 @@
 // @spec REQ-032
 // @spec REQ-037
 // @spec REQ-039
+// @spec REQ-056
 //
 // Prompts render to stderr so stdout stays machine-parseable.
 
@@ -27,6 +28,7 @@ import {
   platformDirArg,
   relatesArg,
   resolvePlatformDir,
+  testsArg,
 } from "./_args";
 import { exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
 
@@ -45,6 +47,7 @@ const reqArgs = {
   },
   why: { type: "string", description: "Why it matters field (only with --text)" },
   lives: livesArg,
+  tests: testsArg,
   relates: relatesArg,
   issue: {
     type: "string",
@@ -87,11 +90,12 @@ export const reqCommand = defineCommand({
     const hasFieldFlags =
       typeof args.why === "string" ||
       typeof args.lives === "string" ||
+      typeof args.tests === "string" ||
       typeof args.relates === "string" ||
       typeof args.issue === "string";
     if (hasFieldFlags) {
       console.error(
-        "spec req: --why/--lives/--relates/--issue require --text (the Requirement field is mandatory)",
+        "spec req: --why/--lives/--tests/--relates/--issue require --text (the Requirement field is mandatory)",
       );
       process.exit(EXIT.USAGE);
       return;
@@ -131,6 +135,7 @@ async function mintFromFlags(
     statement,
     why: (args.why ?? "").trim(),
     livesIn: listFlag(rawArgs, "lives", args.lives) ?? [],
+    verifiedIn: listFlag(rawArgs, "tests", args.tests) ?? [],
     relates: listFlag(rawArgs, "relates", args.relates) ?? [],
     issue: (args.issue ?? "").trim() || undefined,
     status: statusOf(args),
@@ -177,6 +182,7 @@ async function mintAndReport(
     statement: string;
     why: string;
     livesIn: string[];
+    verifiedIn?: string[] | undefined;
     relates?: string[] | undefined;
     issue?: string | undefined;
     status: "active" | "draft";

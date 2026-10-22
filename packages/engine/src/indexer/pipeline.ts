@@ -9,7 +9,7 @@
 // File reads use `Bun.file(...).text()`, not node's sync reads, so the
 // indexer survives `bun --compile`.
 
-import { basename, dirname, join, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import type {
   Domain,
   IndexResult,
@@ -28,7 +28,16 @@ import { type Diagnostic, DiagnosticCode, InvalidDomainFilesError } from "@spec-
 import { parseDomainJsonFile } from "../parser/domainJson";
 import type { ParsedSpec } from "../parser/types";
 import { type DocMention, scanDocFile } from "../scanner/docs";
-import { DEFAULT_EXTS, findCodeFiles, findDocFiles, findDomainJsonFiles } from "../scanner/fs";
+import {
+  DEFAULT_EXTS,
+  findCodeFiles,
+  findDocFiles,
+  findDomainJsonFiles,
+  isDocSource,
+  isHiddenPath,
+  isPathIgnored,
+  isTagSource,
+} from "../scanner/fs";
 import { scanTagsInFile } from "../scanner/tags";
 import { computeBuildId } from "../storage/sqlite";
 import { validateStructure } from "./diagnostics";
@@ -116,6 +125,30 @@ async function readSpecs(canonical: Repo): Promise<ParsedSpec[]> {
 function repoExtraIgnore(member: Repo): string[] {
   const repoIgnore = (member.ignore ?? []).map((e) => (e.endsWith("/") ? e : `${e}/`));
   return [...(member.selfMember ? ["spec-engine/"] : []), ...repoIgnore];
+}
+
+/**
+ * The `tags.file` key of the platform-relative path `platformRel` when a
+ * member scan reads it, else null. The deepest member holding the path owns
+ * it: a monorepo's root column ignores its package directories.
+ */
+export function scannedTagFile(
+  members: readonly Repo[],
+  platformDir: string,
+  platformRel: string,
+): string | null {
+  const abs = resolve(platformDir, platformRel);
+  let owner: { member: Repo; rel: string } | null = null;
+  for (const member of members) {
+    const rel = relative(member.path, abs).split(sep).join("/");
+    if (rel === "" || rel === ".." || rel.startsWith("../") || isAbsolute(rel)) continue;
+    if (owner === null || member.path.length > owner.member.path.length) owner = { member, rel };
+  }
+  if (owner === null) return null;
+  const { member, rel } = owner;
+  if (isHiddenPath(rel) || isPathIgnored(rel, repoExtraIgnore(member))) return null;
+  if (!isTagSource(rel) && !isDocSource(rel)) return null;
+  return `${member.name}/${rel}`;
 }
 
 async function scanMemberCode(member: Repo, extraIgnore: string[]): Promise<Omit<Tag, "id">[]> {

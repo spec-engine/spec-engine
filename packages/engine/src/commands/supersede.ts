@@ -52,6 +52,7 @@ function splitAliases(raw: string): string[] {
 /**
  * Flags to the operation's input. An absent flag leaves the field to be copied from the predecessor.
  * @spec REQ-055
+ * @spec REQ-057
  */
 function inputFromArgs(
   args: SupersedeArgs,
@@ -64,6 +65,8 @@ function inputFromArgs(
   if (typeof args.why === "string") input.why = args.why;
   const livesIn = listFlag(rawArgs, "lives", args.lives);
   if (livesIn !== undefined) input.livesIn = livesIn;
+  const verifiedIn = listFlag(rawArgs, "tests", args.tests);
+  if (verifiedIn !== undefined) input.verifiedIn = verifiedIn;
   const relates = listFlag(rawArgs, "relates", args.relates);
   if (relates !== undefined) input.relates = relates;
   if (typeof args.term === "string") input.term = args.term;
@@ -93,6 +96,11 @@ const supersedeArgs = {
     type: "string",
     description:
       "Successor's Lives in: repeat or comma-separate; empty clears (default: copied from the old entry)",
+  },
+  tests: {
+    type: "string",
+    description:
+      "Successor's Verified in (verifiedIn): repeat or comma-separate; empty clears (default: copied from the old entry)",
   },
   relates: {
     type: "string",

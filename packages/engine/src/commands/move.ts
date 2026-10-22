@@ -11,6 +11,7 @@ import { cliFreshTags, exitOnFailure, handleNotAPlatform, printWarnings } from "
 /**
  * Flags to the operation's input. An absent flag leaves the field to be copied from the source.
  * @spec REQ-055
+ * @spec REQ-057
  */
 function inputFromArgs(
   args: MoveArgs,
@@ -24,6 +25,8 @@ function inputFromArgs(
   if (typeof args.why === "string") input.why = args.why;
   const livesIn = listFlag(rawArgs, "lives", args.lives);
   if (livesIn !== undefined) input.livesIn = livesIn;
+  const verifiedIn = listFlag(rawArgs, "tests", args.tests);
+  if (verifiedIn !== undefined) input.verifiedIn = verifiedIn;
   return input;
 }
 
@@ -51,6 +54,11 @@ const moveArgs = {
     type: "string",
     description:
       "Rewrite the successor's Lives in: repeat or comma-separate; empty clears (default: copied from the source)",
+  },
+  tests: {
+    type: "string",
+    description:
+      "Rewrite the successor's Verified in (verifiedIn): repeat or comma-separate; empty clears (default: copied from the source)",
   },
   noBump: {
     type: "boolean",

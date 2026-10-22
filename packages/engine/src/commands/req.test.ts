@@ -514,6 +514,31 @@ describe("spec req — field-flag authoring", () => {
     expect(added().livesIn).toEqual(["a.ts", "b.ts", "c.ts"]);
   });
 
+  // @spec REQ-056 unit
+  // @spec SCHM-036 unit
+  test("repeated and comma-separated --tests record every path in verifiedIn", async () => {
+    setIsTTY(undefined);
+    await reqRun({
+      args: { domainPrefix: "BILLING", platformDir: tmp, text: "tested rule", tests: "c.test.ts" },
+      rawArgs: ["--text", "tested rule", "--tests", "a.test.ts", "--tests", "b.test.ts, c.test.ts"],
+    });
+    expect(added().verifiedIn).toEqual(["a.test.ts", "b.test.ts", "c.test.ts"]);
+    expect(added().livesIn).toEqual([]);
+  });
+
+  test("--tests without --text is a usage error (exit 2, nothing written)", async () => {
+    setIsTTY(undefined);
+    const before = readSpec(tmp, "BILLING");
+    await expectExit2(() =>
+      reqRun({
+        args: { domainPrefix: "BILLING", platformDir: tmp, tests: "a.test.ts" },
+        rawArgs: [],
+      }),
+    );
+    expect(errs.join("\n")).toContain("--tests");
+    expect(readSpec(tmp, "BILLING")).toBe(before);
+  });
+
   test("--draft with no --text off a TTY is a usage error (exit 2, nothing written)", async () => {
     setIsTTY(undefined);
     const before = readSpec(tmp, "BILLING");
