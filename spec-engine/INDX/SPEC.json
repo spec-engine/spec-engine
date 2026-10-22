@@ -1,7 +1,7 @@
 {
   "key": "INDX",
   "owner": null,
-  "updated": "2026-10-21",
+  "updated": "2026-10-22",
   "scope": "The derivation pipeline and index lifecycle: cold-rebuild identity, build_id determinism, structural integrity at index time, and spec index. Belongs here: deleting .spec-engine/ and rebuilding yields an identical result; build_id is deterministic for identical inputs; index-time structural checks; spec index itself. Does not belong here: check severities (CHCK); the SPEC.json envelope shape (SCHM). Boundary case: cold-rebuild identity is INDX's promise even though the model it rebuilds is defined in SCHM.",
   "grammar": "ears",
   "requirements": [
@@ -97,7 +97,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/_shared.ts"
+        "packages/engine/src/operations/_index.ts"
       ],
       "issues": [],
       "aliases": [],

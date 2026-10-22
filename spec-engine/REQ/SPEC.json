@@ -1,7 +1,7 @@
 {
   "key": "REQ",
   "owner": null,
-  "updated": "2026-10-21",
+  "updated": "2026-10-22",
   "scope": "Requirement lifecycle: spec req, spec supersede, spec amend, and @-refs. Belongs here: next-id allocation; non-interactive authoring; supersede, move, and amend; @path file-ref resolution. Does not belong here: scaffolding a domain (DOMAIN). Boundary case: minting a requirement id is REQ; scaffolding the domain that holds it is DOMAIN.",
   "grammar": "ears",
   "requirements": [
@@ -348,7 +348,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/deprecate.ts"
+        "packages/engine/src/operations/deprecate.ts"
       ],
       "issues": [],
       "aliases": [],
@@ -539,7 +539,9 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/term.ts"
+        "packages/engine/src/operations/amend.ts",
+        "packages/engine/src/operations/supersede.ts",
+        "packages/engine/src/operations/term.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
@@ -555,7 +557,8 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/term.ts"
+        "packages/engine/src/operations/amend.ts",
+        "packages/engine/src/operations/supersede.ts"
       ],
       "issues": [],
       "aliases": [],
@@ -587,7 +590,8 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/supersede.ts"
+        "packages/engine/src/operations/move.ts",
+        "packages/engine/src/operations/supersede.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,

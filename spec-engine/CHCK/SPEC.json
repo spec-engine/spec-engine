@@ -1,7 +1,7 @@
 {
   "key": "CHCK",
   "owner": null,
-  "updated": "2026-10-21",
+  "updated": "2026-10-22",
   "scope": "spec check: the diagnostic codes, their severities, the --ci cold-rebuild gate, which severity exits 1, and the spec glossary round-trip that GLOSSARY_DRIFT enforces. Belongs here: diagnostic codes and severities; the --ci gate; the exit-1 contract. Does not belong here: member discovery (INIT). Boundary case: NO_SPEC_CONFIG is emitted by discovery, but its severity is CHCK's.",
   "grammar": "ears",
   "requirements": [
@@ -112,7 +112,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/storage/sqlite.ts"
+        "packages/engine/src/storage/sql/diagnostics.ts"
       ],
       "issues": [],
       "aliases": [],
@@ -255,7 +255,8 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/storage/sqlite.ts"
+        "packages/engine/src/storage/sql/diagnostics.ts",
+        "packages/shared/src/diagnostics.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
@@ -271,7 +272,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/storage/sqlite.ts"
+        "packages/engine/src/storage/sql/diagnostics.ts"
       ],
       "issues": [],
       "aliases": [],
@@ -286,7 +287,10 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/storage/sqlite.ts"
+        "packages/engine/src/operations/term.ts",
+        "packages/engine/src/storage/sql/diagnostics.ts",
+        "packages/shared/src/diagnostics.ts",
+        "packages/shared/src/schema.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
@@ -302,7 +306,8 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/storage/sqlite.ts"
+        "packages/engine/src/operations/term.ts",
+        "packages/engine/src/storage/sql/diagnostics.ts"
       ],
       "issues": [],
       "aliases": [],
@@ -317,7 +322,8 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/glossary.ts"
+        "packages/engine/src/operations/glossary.ts",
+        "scripts/arch-fences.sh"
       ],
       "issues": [],
       "changedAtVersion": 1,
@@ -333,7 +339,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/glossary.ts"
+        "packages/engine/src/operations/glossary.ts"
       ],
       "issues": [],
       "aliases": [],
@@ -348,7 +354,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/glossary.ts"
+        "packages/engine/src/operations/glossary.ts"
       ],
       "issues": [],
       "aliases": [],
@@ -363,7 +369,8 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/check.ts"
+        "packages/engine/src/check/removed.ts",
+        "packages/engine/src/operations/check.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
@@ -379,7 +386,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/glossary.ts"
+        "packages/engine/src/operations/glossary.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
@@ -591,7 +598,8 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/operations/check.ts"
+        "packages/engine/src/check/severity.ts",
+        "packages/shared/src/checkConfig.ts"
       ],
       "issues": [],
       "aliases": [],
@@ -606,7 +614,8 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/operations/check.ts"
+        "packages/engine/src/check/severity.ts",
+        "packages/shared/src/checkConfig.ts"
       ],
       "issues": [],
       "aliases": [],
@@ -621,7 +630,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/operations/check.ts"
+        "packages/engine/src/check/severity.ts"
       ],
       "issues": [],
       "aliases": [],
@@ -651,8 +660,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/shared/src/ears.ts",
-        "packages/engine/src/check/grammar.ts"
+        "packages/shared/src/ears.ts"
       ],
       "issues": [],
       "aliases": [],
@@ -667,8 +675,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/shared/src/ears.ts",
-        "packages/engine/src/check/grammar.ts"
+        "packages/shared/src/ears.ts"
       ],
       "issues": [],
       "aliases": [],
@@ -683,8 +690,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/shared/src/ears.ts",
-        "packages/engine/src/check/grammar.ts"
+        "packages/shared/src/ears.ts"
       ],
       "issues": [],
       "aliases": [],

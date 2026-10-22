@@ -1,7 +1,7 @@
 {
   "key": "GUARD",
   "owner": "drea",
-  "updated": "2026-10-21",
+  "updated": "2026-10-22",
   "scope": "Loss detection: diffing the requirement derivation at a git ref against the working tree to block a change that would lose a requirement. Belongs here: REQUIREMENT_REMOVED, IMPL_LOST, VERIFY_LOST, SPEC_FILE_DELETED; the supersede and deprecate suppression paths; never-fail outside git. Does not belong here: who may approve a supersession (OWNER). Boundary case: the same REQUIREMENT_REMOVED concept is enforced twice, at pre-commit by spec guard and at CI by spec check --base, and both live here.",
   "grammar": "ears",
   "requirements": [
@@ -217,7 +217,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/guard.ts"
+        "packages/engine/src/operations/guard.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,

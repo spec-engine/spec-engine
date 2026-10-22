@@ -1,7 +1,7 @@
 {
   "key": "OWNER",
   "owner": null,
-  "updated": "2026-07-30",
+  "updated": "2026-10-22",
   "scope": "Approval policy: who may retire or supersede a requirement, via CODEOWNERS. Belongs here: the CODEOWNERS approval policy. Does not belong here: the loss-detection mechanism (GUARD). Boundary case: detecting that a requirement disappeared is GUARD; deciding who may approve that is OWNER.",
   "grammar": "ears",
   "requirements": [
@@ -31,7 +31,8 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/check/statusflip.ts"
+        "packages/engine/src/check/codeowners.ts",
+        "packages/engine/src/operations/check.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,

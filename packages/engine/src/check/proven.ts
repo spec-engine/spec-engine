@@ -157,6 +157,7 @@ export function provenDetermination(
 // Warning severity so a check without `--results` keeps its exit code.
 export function proofsUnconfirmedWarning(): Diagnostic {
   return {
+    // @spec PROOF-012
     code: DiagnosticCode.PROOFS_UNCONFIRMED,
     source_file: null,
     line: null,

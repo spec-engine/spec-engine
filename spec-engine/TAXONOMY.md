@@ -26,6 +26,8 @@ charter here to decide whether a new requirement belongs in it.
 
 ## Requirement id format
 
+<!-- @spec CHRT-008 -->
+
 - Ids are `KEY-NNN`, a 3-digit zero-padded number: `CHRT-007`, `BILLING-010`.
 - Two-digit shorthand in old planning notes (`CHRT-01`) is a label, never a real id.
 - Ids are permanent. A requirement is superseded or deprecated, never renumbered
@@ -287,6 +289,8 @@ title and URL.
 
 ## Requirement authoring standard
 
+<!-- @spec CHRT-009 -->
+
 The rules every new requirement is written against. The `req-author` skill
 applies them. The statement-shape rule is also checked at write time and by
 `spec check`.
@@ -344,6 +348,8 @@ applies them. The statement-shape rule is also checked at write time and by
 ---
 
 ## Six invariants worth knowing
+
+<!-- @spec CHRT-013 -->
 
 Six promises the whole system leans on, each a real requirement in its domain:
 

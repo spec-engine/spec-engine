@@ -1,7 +1,7 @@
 {
   "key": "DOMAIN",
   "owner": null,
-  "updated": "2026-10-21",
+  "updated": "2026-10-22",
   "scope": "Domain lifecycle: spec domain new, spec domain list, and charter editing. Belongs here: the born-valid scaffold; the domain list output; the scope field on the envelope. Does not belong here: requirement authoring (REQ). Boundary case: minting a requirement id is REQ; scaffolding the domain that holds it is DOMAIN.",
   "grammar": "ears",
   "requirements": [
@@ -232,7 +232,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/domain.ts"
+        "packages/engine/src/operations/domain.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
@@ -248,7 +248,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/domain.ts"
+        "packages/engine/src/operations/domain.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
@@ -313,7 +313,8 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/domain.ts"
+        "packages/engine/src/authoring/domains.ts",
+        "packages/engine/src/operations/domain.ts"
       ],
       "issues": [],
       "changedAtVersion": 1,
@@ -329,8 +330,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/operations/domain.ts",
-        "packages/engine/src/commands/domain.ts"
+        "packages/engine/src/operations/domain.ts"
       ],
       "issues": [],
       "aliases": [],
@@ -376,7 +376,7 @@
       "supersededBy": null,
       "relates": [],
       "livesIn": [
-        "packages/engine/src/commands/domain.ts"
+        "packages/engine/src/operations/domain.ts"
       ],
       "issues": [],
       "aliases": [],
