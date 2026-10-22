@@ -76,12 +76,22 @@ describe("storage.searchFts against canonical platform-fixture", () => {
   });
 
   test("non-matching query returns empty array, not an exception", async () => {
-    // A plain alphanumeric token: FTS5 reads `-` as NOT and `:` as a column
-    // filter, so a hyphenated probe would take the syntax-error path instead.
     const storage = await buildFixtureStorage();
     try {
       const hits = storage.searchFts("nonexistenttokenzzzzz");
       expect(hits).toEqual([]);
+    } finally {
+      storage.close();
+    }
+  });
+
+  // @spec QURY-005 unit
+  test("a hyphenated word matches as the phrase of its parts", async () => {
+    const storage = await buildFixtureStorage();
+    try {
+      const hyphenated = storage.searchFts("mid-cycle").map((h) => h.req_id);
+      expect(hyphenated.length).toBeGreaterThan(0);
+      expect(hyphenated).toEqual(storage.searchFts('"mid cycle"').map((h) => h.req_id));
     } finally {
       storage.close();
     }
