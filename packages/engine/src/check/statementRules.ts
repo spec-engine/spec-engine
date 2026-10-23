@@ -3,6 +3,7 @@ import {
   DiagnosticCode,
   formatStatementFinding,
   parseDomainText,
+  ruleSeverity,
   type StatementRule,
   type StatementRulesConfig,
   statementFindings,
@@ -88,7 +89,7 @@ export async function statementRulesDiagnostics(
   const rows = await statementRuleRows(platformDir, config, { statuses: new Set(["active"]) });
   return rows.map((r) => ({
     code: DiagnosticCode.STATEMENT_RULES,
-    severity: config?.severity?.[r.rule] === "warning" ? "warning" : "error",
+    severity: ruleSeverity(r.rule, config) === "warning" ? "warning" : "error",
     repo: null,
     source_file: r.source_file,
     line: r.line,

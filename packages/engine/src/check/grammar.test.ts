@@ -177,7 +177,6 @@ describe("statement grammar — the write-time gate (spec req --text)", () => {
 });
 
 // @spec CHCK-040 integration
-// @spec CHCK-041 integration
 // @spec CHCK-042 integration
 describe("STATEMENT_GRAMMAR — the one-promise lint", () => {
   async function flagged(statement: string): Promise<string[]> {
@@ -196,14 +195,6 @@ describe("STATEMENT_GRAMMAR — the one-promise lint", () => {
     );
     expect(details).toHaveLength(1);
     expect(details[0]).toContain('"; "');
-  });
-
-  test('", and <subject> shall" is reported', async () => {
-    const details = await flagged(
-      "The system shall expire idle sessions, and the audit log shall record each expiry.",
-    );
-    expect(details).toHaveLength(1);
-    expect(details[0]).toContain("own subject");
   });
 
   test("a rationale connective is reported", async () => {

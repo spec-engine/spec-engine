@@ -13,6 +13,12 @@ export const STATEMENT_RULES = [
   "no-history",
   "no-jargon",
   "no-tool-statement",
+  "one-promise",
+  "no-mechanism",
+  "no-contrast",
+  "no-document-content",
+  "where-takes-a-feature",
+  "no-trailing-commentary",
 ] as const;
 
 export type StatementRule = (typeof STATEMENT_RULES)[number];
@@ -42,7 +48,25 @@ export const DEFAULT_JARGON: readonly string[] = [
   "matrix entry",
   "stage runner",
   "the stage",
+  "self-member",
+  "context walk",
+  "canonical row",
+  "layer",
+  "corpus",
 ];
+
+/** A rule absent here grades `error` when check.json names no severity for it. */
+export const DEFAULT_RULE_SEVERITY: Partial<Record<StatementRule, RuleSeverity>> = {
+  "no-trailing-commentary": "warning",
+};
+
+// @spec CHRT-031
+export function ruleSeverity(
+  rule: StatementRule,
+  config: StatementRulesConfig | undefined,
+): RuleSeverity {
+  return config?.severity?.[rule] ?? DEFAULT_RULE_SEVERITY[rule] ?? "error";
+}
 
 export const STATEMENT_RULE_REASONS: Record<StatementRule, string> = {
   "one-sentence": "a statement is one testable sentence",
@@ -53,6 +77,12 @@ export const STATEMENT_RULE_REASONS: Record<StatementRule, string> = {
   "no-history": "a statement says what holds now, not how it got there",
   "no-jargon": "a reader without the codebase cannot parse project jargon",
   "no-tool-statement": "naming the tool in use is a decision record, not a requirement",
+  "one-promise": "a second promise is its own requirement",
+  "no-mechanism": "how the product does it is design, not behaviour",
+  "no-contrast": "a behaviour is stated by what it does, not by what it is not",
+  "no-document-content": "what a document contains is documentation, not behaviour",
+  "where-takes-a-feature": "a flag or an invocation is a trigger and takes When",
+  "no-trailing-commentary": "a trailing so-clause names one short consequence, not a second point",
 };
 
 const EXT = "ts|tsx|js|mjs|json|yml|yaml|sql|md|toml|css|astro|sh";
@@ -128,6 +158,87 @@ const TOOL_STATEMENT: readonly RegExp[] = [
   /\bis pinned (?:to|at) (?:`?[\w@./-]+`? )?v?\d/i,
 ];
 
+const MECHANISM: readonly RegExp[] = [
+  /\bvia\b/i,
+  /\bby (?:means of|\w+ing)\b/i,
+  /\bthrough the\b/i,
+  /\busing\b/i,
+];
+
+const CONTRAST: readonly RegExp[] = [/\binstead of\b/i, /\brather than\b/i, /\bnever\b.*?\bbut\b/i];
+
+/** A word that opens a noun or prepositional phrase: `, and <word>` continues a list. A word
+ *  ending in a single `s` is a plural noun, since a verb after `shall` takes its bare form. */
+const NOT_A_VERB =
+  /^(?:the|a|an|its|their|each|every|all|any|no|one|two|both|then|so|not|only|that|this|these|those|it|they|as|by|of|on|in|at|to|for|from|with|without|under|over|into|onto|if|when|where|while|whether|\w*[^s]s)$/i;
+
+function afterShall(statement: string): string | null {
+  const m = /\bshall\b/i.exec(statement);
+  return m ? statement.slice(m.index + m[0].length) : null;
+}
+
+/** The doer: the text before the first `shall`, from the last comma before it. */
+function subjectOf(statement: string): string {
+  const m = /\bshall\b/i.exec(statement);
+  const head = m ? statement.slice(0, m.index) : statement;
+  return head.slice(head.lastIndexOf(",") + 1);
+}
+
+function onePromiseDetail(statement: string): string | null {
+  const tail = afterShall(statement);
+  if (tail === null) return null;
+  if (/\bshall\b/i.test(tail)) return 'a second "shall"';
+  const exit = tail.match(/, and exits? \d+/i);
+  if (exit) return `"${exit[0]}"`;
+  // A serial list ("A, B, and C") carries a comma before its `, and`.
+  const chained = tail.match(/^[^,]*(, and ([a-z]+)\b)/);
+  if (chained?.[1] && chained[2] && !NOT_A_VERB.test(chained[2])) return `"${chained[1]}"`;
+  return null;
+}
+
+function contrastDetail(statement: string): string | null {
+  const fixed = hitsDetail(statement, CONTRAST);
+  if (fixed !== null) return fixed;
+  const tail = afterShall(statement) ?? "";
+  return hitsDetail(tail, [/\bnot\b[^,.]*, (?!and\b|or\b|then\b)\w+/i, /, not\b/i]);
+}
+
+function documentContentDetail(statement: string): string | null {
+  const anywhere = hitsDetail(statement, [/\bREADME\b/, /\bthe document states\b/i]);
+  if (anywhere !== null) return anywhere;
+  const subject = hitsDetail(subjectOf(statement), [
+    /\bthe table\b/i,
+    /\bsection\b/i,
+    /\bdocument\b/i,
+    /\bthe agent reference\b/i,
+    /\bAGENTS\.md\b/,
+    /\bTAXONOMY\.md\b/,
+  ]);
+  return subject === null ? null : `${subject} as the subject`;
+}
+
+function whereFeatureDetail(statement: string): string | null {
+  const m = /^Where\s+([^,]*),/.exec(statement.trim());
+  if (!m?.[1]) return null;
+  return hitsDetail(m[1], [
+    /(?<![\w-])--[\w-]+/,
+    /\b(?:runs?|is run|is given|are given|is passed|are passed)\b/i,
+  ]);
+}
+
+const MAX_SO_CLAUSE_WORDS = 8;
+
+function trailingCommentaryDetail(statement: string): string | null {
+  const m = /, so (?!that\b)(.*)$/is.exec(statement);
+  if (!m?.[1]) return null;
+  const clause = m[1].replace(/[.?!]$/, "").trim();
+  const words = clause.split(/\s+/).length;
+  if (words > MAX_SO_CLAUSE_WORDS)
+    return `a ${words}-word so-clause; at most ${MAX_SO_CLAUSE_WORDS}`;
+  const second = clause.match(/,|\b(?:and|which|while|because)\b/i);
+  return second ? `a so-clause with a second verb phrase ("${second[0]}")` : null;
+}
+
 const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 function jargonPatterns(words: readonly string[]): RegExp[] {
@@ -173,6 +284,12 @@ function hitsDetail(text: string, patterns: readonly RegExp[]): string | null {
 // @spec CHRT-019
 // @spec CHRT-020
 // @spec CHRT-021
+// @spec CHRT-025
+// @spec CHRT-026
+// @spec CHRT-027
+// @spec CHRT-028
+// @spec CHRT-029
+// @spec CHRT-030
 // @spec CHCK-048
 export function statementFindings(
   statement: string,
@@ -189,6 +306,12 @@ export function statementFindings(
     "no-history": null,
     "no-jargon": hitsDetail(statement, jargonPatterns(config.jargon ?? DEFAULT_JARGON)),
     "no-tool-statement": hitsDetail(statement, TOOL_STATEMENT),
+    "one-promise": onePromiseDetail(statement),
+    "no-mechanism": hitsDetail(afterShall(statement) ?? "", MECHANISM),
+    "no-contrast": contrastDetail(statement),
+    "no-document-content": documentContentDetail(statement),
+    "where-takes-a-feature": whereFeatureDetail(statement),
+    "no-trailing-commentary": trailingCommentaryDetail(statement),
   };
   for (const { rule, patterns } of FIXED_RULES) details[rule] = hitsDetail(statement, patterns);
   const findings: StatementFinding[] = [];

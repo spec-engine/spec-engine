@@ -26,7 +26,12 @@
       "length": "warning",
       "no-file-path": "warning",
       "no-history": "warning",
-      "no-test-narration": "warning"
+      "no-test-narration": "warning",
+      "one-promise": "warning",
+      "no-mechanism": "warning",
+      "no-contrast": "warning",
+      "no-document-content": "warning",
+      "where-takes-a-feature": "warning"
     }
   }
 }
