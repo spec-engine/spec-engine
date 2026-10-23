@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { git } from "../testing/git";
 import { entryOf, plantEdit } from "../testing/plant";
 import { TestPlatform } from "../testing/platform";
 import { SPEC_TOKEN } from "../testing/specTag";
@@ -23,22 +24,6 @@ import { guardCommand } from "./guard";
 const tag = (id: string, level?: string): string =>
   `${SPEC_TOKEN} ${id}${level ? ` ${level}` : ""}`;
 const approve = (id: string, reason: string): string => `${SPEC_TOKEN} approve ${id} ${reason}`;
-
-const GIT_ENV = {
-  ...process.env,
-  GIT_AUTHOR_NAME: "spec-check Test",
-  GIT_AUTHOR_EMAIL: "test@spec.local",
-  GIT_COMMITTER_NAME: "spec-check Test",
-  GIT_COMMITTER_EMAIL: "test@spec.local",
-};
-
-function git(cwd: string, ...args: string[]): void {
-  if (!cwd) throw new Error("git helper needs a cwd; refusing to run in the process cwd");
-  const proc = Bun.spawnSync(["git", ...args], { cwd, env: GIT_ENV });
-  if (proc.exitCode !== 0) {
-    throw new Error(`git ${args.join(" ")} failed: ${proc.stderr.toString()}`);
-  }
-}
 
 /** Drop one entry from the working-tree BILLING file (the engine refuses this; the guard must catch it). */
 function removeBilling(root: string, id: string): Promise<void> {

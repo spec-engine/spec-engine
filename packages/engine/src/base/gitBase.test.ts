@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { commitAndTag } from "../testing/git";
+import { commitAndTag, git } from "../testing/git";
 import { TestPlatform } from "../testing/platform";
 import {
   gitDiffNameStatus,
@@ -12,23 +12,6 @@ import {
   isSafeRef,
   newestReleaseTag,
 } from "./gitBase";
-
-// Deterministic git identity so commits succeed on a bare CI runner.
-const GIT_ENV = {
-  ...process.env,
-  GIT_AUTHOR_NAME: "spec-check Test",
-  GIT_AUTHOR_EMAIL: "test@spec.local",
-  GIT_COMMITTER_NAME: "spec-check Test",
-  GIT_COMMITTER_EMAIL: "test@spec.local",
-};
-
-function git(cwd: string, ...args: string[]): void {
-  if (!cwd) throw new Error("git helper needs a cwd; refusing to run in the process cwd");
-  const proc = Bun.spawnSync(["git", ...args], { cwd, env: GIT_ENV });
-  if (proc.exitCode !== 0) {
-    throw new Error(`git ${args.join(" ")} failed: ${proc.stderr.toString()}`);
-  }
-}
 
 describe("gitBase — gitShow / gitLsTree (ref-validated argv-array git readers)", () => {
   let fx: TestPlatform;
@@ -163,5 +146,39 @@ describe("gitBase — newestReleaseTag", () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+describe("gitBase — an inherited GIT_DIR does not redirect the platform's repository", () => {
+  let platform: string;
+  let decoy: string;
+  const saved = process.env.GIT_DIR;
+
+  beforeEach(() => {
+    platform = mkdtempSync(join(tmpdir(), "spec-gitbase-platform-"));
+    decoy = mkdtempSync(join(tmpdir(), "spec-gitbase-decoy-"));
+    commitAndTag(platform, "v1.0.0");
+    commitAndTag(decoy, "decoy");
+  });
+
+  afterEach(() => {
+    if (saved === undefined) delete process.env.GIT_DIR;
+    else process.env.GIT_DIR = saved;
+    rmSync(platform, { recursive: true, force: true });
+    rmSync(decoy, { recursive: true, force: true });
+  });
+
+  // @spec GUARD-030 unit
+  test("refs resolve against the platform dir's repository, not GIT_DIR", () => {
+    process.env.GIT_DIR = join(decoy, ".git");
+    expect(gitRefResolves(platform, "v1.0.0")).toBe(true);
+    expect(gitRefResolves(platform, "decoy")).toBe(false);
+    expect(newestReleaseTag(platform)).toBe("v1.0.0");
+  });
+
+  // @spec GUARD-030 unit
+  test("a hook's relative GIT_DIR inside the platform repository still reads it", () => {
+    process.env.GIT_DIR = ".git";
+    expect(gitRefResolves(platform, "v1.0.0")).toBe(true);
   });
 });

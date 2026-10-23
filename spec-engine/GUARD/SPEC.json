@@ -478,6 +478,24 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "GUARD-030",
+      "status": "active",
+      "statement": "When spec guard or spec check runs git with a repository-location variable such as GIT_DIR inherited from its environment, the engine shall read the repository that holds the platform directory.",
+      "why": "A git hook exports GIT_DIR, GIT_WORK_TREE, and GIT_INDEX_FILE, so a guard run from a hook in one repository against a platform in another would diff the wrong history and miss or invent losses.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/base/gitBase.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/engine/src/base/gitBase.test.ts"
+      ]
     }
   ],
   "grammarSeverity": "error"
