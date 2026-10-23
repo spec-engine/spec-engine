@@ -295,13 +295,18 @@ export class TestPlatform extends FileTree {
    * back, so a test can run the same write from the same starting bytes
    * through several surfaces. A restore is a file copy, never a serialization.
    */
-  snapshotSpecs(): () => void {
-    const specs = join(this.dir, CANONICAL_SPECS_DIR);
-    const copy = mkdtempSync(join(tmpdir(), "spec-snapshot-"));
-    cpSync(specs, copy, { recursive: true });
+  snapshotSpecs(...members: string[]): () => void {
+    const restores = [CANONICAL_SPECS_DIR, ...members].map((rel) => {
+      const dir = join(this.dir, rel);
+      const copy = mkdtempSync(join(tmpdir(), "spec-snapshot-"));
+      cpSync(dir, copy, { recursive: true });
+      return () => {
+        rmSync(dir, { recursive: true, force: true });
+        cpSync(copy, dir, { recursive: true });
+      };
+    });
     return () => {
-      rmSync(specs, { recursive: true, force: true });
-      cpSync(copy, specs, { recursive: true });
+      for (const restore of restores) restore();
     };
   }
 

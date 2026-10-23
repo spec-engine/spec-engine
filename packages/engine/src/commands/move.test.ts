@@ -2,6 +2,8 @@
 // indexes them as this repo's tags.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { entryOf, plantEdit } from "../testing/plant";
 import { type DomainHandle, TestPlatform } from "../testing/platform";
 import { specTag } from "../testing/specTag";
@@ -84,6 +86,7 @@ async function expectExit2(fn: () => Promise<void>): Promise<void> {
 
 describe("spec move — happy path", () => {
   // @spec REQ-036
+  // @spec REQ-066 integration
   // The source gains a supersede edge (derived 1 → 2); the target gains only
   // an Active successor, so its derived version stays 1.
   test("flips source, mints successor in target, reports each side's derived version", async () => {
@@ -112,13 +115,14 @@ describe("spec move — happy path", () => {
       to_file: string;
       source_spec_version: number | null;
       target_spec_version: number | null;
-      retag: Array<{ file: string }>;
+      retagged: Array<{ file: string }>;
     };
     expect(out.old_id).toBe("BILLING-001");
     expect(out.new_id).toBe("AUTH-002");
     expect(out.source_spec_version).toBe(2);
     expect(out.target_spec_version).toBe(1);
-    expect(out.retag.map((r) => r.file)).toEqual(["api/src/renew.ts"]);
+    expect(out.retagged.map((r) => r.file)).toEqual(["api/src/renew.ts"]);
+    expect(readFileSync(join(platform, "api/src/renew.ts"), "utf8")).toContain(specTag("AUTH-002"));
   });
 
   test("--text/--why rewrite the successor as it moves", async () => {

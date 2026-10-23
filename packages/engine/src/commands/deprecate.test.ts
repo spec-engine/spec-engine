@@ -1,8 +1,10 @@
-// @spec REQ-021 unit
+// @spec REQ-068 unit
+// @spec REQ-067 integration
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { readFileSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { coldFreshTags } from "../operations/_index";
 import { cloneFixture } from "../testing/cloneFixture";
 import { deprecateCommand } from "./deprecate";
 
@@ -64,8 +66,8 @@ async function expectExit(code: number, fn: () => Promise<void>): Promise<void> 
   expect(caught?.code).toBe(code);
 }
 
-describe("spec deprecate — the end-of-life command (REQ-021)", () => {
-  test("an Active requirement deprecates: status + reason on disk, bound tags listed", async () => {
+describe("spec deprecate — the end-of-life command", () => {
+  test("an Active requirement deprecates: status + reason on disk, bound tags removed", async () => {
     // BILLING-002 is Active and implemented in api/src.
     await run({
       args: {
@@ -79,9 +81,20 @@ describe("spec deprecate — the end-of-life command (REQ-021)", () => {
     const out = JSON.parse(logs[logs.length - 1] ?? "{}");
     expect(out.id).toBe("BILLING-002");
     expect(out.reason).toBe("feature removed from the product");
-    // The cleanup worklist: the api/src tag still binds the id.
-    expect(out.sites.length).toBeGreaterThan(0);
-    expect(out.sites[0].repo).toBe("api");
+    expect(out.removed).toEqual([
+      {
+        req_id: "BILLING-002",
+        repo: "api",
+        file: "api/src/charge.ts",
+        line: 1,
+        kind: "implements",
+        level: null,
+      },
+    ]);
+    expect(readFileSync(join(platformDir, "api", "src", "charge.ts"), "utf8")).not.toContain(
+      "BILLING-002",
+    );
+    expect(await coldFreshTags(platformDir)("BILLING-002")).toEqual([]);
 
     const onDisk = readBilling().requirements.find((r) => r.id === "BILLING-002");
     expect(onDisk?.status).toBe("deprecated");

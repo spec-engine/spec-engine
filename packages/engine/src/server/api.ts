@@ -449,7 +449,7 @@ export function mountApi(
 
   // --- POST /api/requirements/:id/supersede -------------------------------
   //
-  // The operation re-indexes into this handle for the retag worklist, so the
+  // The operation re-indexes into this handle after the retag, so the
   // index is current when the response goes out.
   app.post(
     "/api/requirements/:id/supersede",
@@ -486,7 +486,7 @@ export function mountApi(
             new_id: r.newId,
             file: r.file,
             spec_version: r.specVersion,
-            retag: r.retag,
+            retagged: r.retagged,
           },
           201,
         );
@@ -541,7 +541,7 @@ export function mountApi(
             to_file: r.toFile,
             source_spec_version: r.sourceSpecVersion,
             target_spec_version: r.targetSpecVersion,
-            retag: r.retag,
+            retagged: r.retagged,
           },
           201,
         );
@@ -575,7 +575,10 @@ export function mountApi(
           return storage.listTags({ req_id: reqId });
         });
         if (!r.ok) return failureResponse(c, r);
-        return c.json({ ok: true, id: r.id, file: r.file, reason: r.reason, sites: r.sites }, 200);
+        return c.json(
+          { ok: true, id: r.id, file: r.file, reason: r.reason, removed: r.removed },
+          200,
+        );
       });
     }),
   );

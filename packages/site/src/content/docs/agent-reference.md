@@ -202,7 +202,7 @@ Branch on exit codes, not on output text.
 | `spec term …` | Author, list, revise, and confirm glossary terms | yes | 0 / 2 |
 | `spec glossary [platformDir]` | Generate `GLOSSARY.md` from the TERM store; `--migrate`, `--check` | yes (object) | 0 / 1 / 2 |
 | `spec deprecate <KEY-NNN> --reason "…" [platformDir]` | End an Active/Draft requirement with a recorded reason | yes (object) | 0 / 2 |
-| `spec supersede <KEY-NNN> [platformDir]` | Flip to superseded, mint the successor, emit the retag worklist | yes (object) | 0 / 2 |
+| `spec supersede <KEY-NNN> [platformDir]` | Flip to superseded, mint the successor, retag every site to it | yes (object) | 0 / 2 |
 | `spec move <KEY-NNN> <NEW-DOMAIN> [platformDir]` | Cross-domain supersede | yes (object) | 0 / 2 |
 | `spec amend <KEY-NNN> [platformDir]` | Revise an unshipped entry in place | yes (object) | 0 / 2 |
 | `spec accept <KEY-NNN> [platformDir]` | Promote a Draft requirement to Active | yes (object) | 0 / 2 |
@@ -233,7 +233,7 @@ Build or refresh the derived index.
 Exit: 0 built / 1 an invalid SPEC.json refused the build, or the build crashed / 2 not a platform or bad args.
 
 - `build_id` is deterministic for identical inputs (cold-rebuild equivalence).
-- A `SPEC.json` that is not JSON or fails the shared schema refuses the whole build, and the index on disk is left as it was. Every file is parsed first, so one run reports every invalid file. Under `--json` stdout holds only the `INVALID_DOMAIN_FILE` rows in the `spec check --json` row shape; text mode prints only those rows on stderr. Every other index-building command prints only the same rows and exits 1 (`check`, `gate`, `guard`, `serve`, and the read commands); a lifecycle command that reindexes for its worklist (`supersede`, `amend`, `deprecate`, `move`, `term confirm`) exits 2 after its write.
+- A `SPEC.json` that is not JSON or fails the shared schema refuses the whole build, and the index on disk is left as it was. Every file is parsed first, so one run reports every invalid file. Under `--json` stdout holds only the `INVALID_DOMAIN_FILE` rows in the `spec check --json` row shape; text mode prints only those rows on stderr. Every other index-building command prints only the same rows and exits 1 (`check`, `gate`, `guard`, `serve`, and the read commands); a lifecycle command that reindexes for its retag (`supersede`, `amend`, `deprecate`, `move`, `term confirm`) exits 2 after its write.
 - Also writes `.spec-engine/doctor.md`, a list of doc lines that mention a requirement id without an explicit `<!-- @spec ID -->` binding.
 
 ### spec check
@@ -547,13 +547,17 @@ Exit: 0 / 1 (`--check` drift) / 2.
 
 ### spec deprecate
 
-Marks an Active/Draft requirement `deprecated`, records `--reason` on the entry, and prints the cleanup worklist of tags still bound to the id.
+Marks an Active/Draft requirement `deprecated`, records `--reason` on the entry, and removes every `@spec` tag of the id from the code. A line that holds only the tag (and its comment leader) is deleted; on a line with other text, only the tag and its level token go. Text mode prints the removed sites.
+
+`--json`: `{ id, file, reason, removed: [{ req_id, repo, file, line, kind, level }] }`, the sites as they stood before the removal.
+
+Tag sites come from the freshly built index, so `fixtures/` and dot-prefixed directories are never touched. Each rewritten line keeps its comment leader, level token, and line ending, and no other line changes. Running the command again finds no sites.
 
 Exit: 0 / 2.
 
 ### spec supersede
 
-Requires an Active target. Flips it to `superseded by NEW`, mints the successor in the domain file that holds the target, reindexes fresh, and prints the retag worklist (the sites `check` reports as `SUPERSEDED_REFERENCED` until retagged).
+Requires an Active target. Flips it to `superseded by NEW`, mints the successor in the domain file that holds the target, reindexes fresh, and rewrites every `@spec OLD` tag in the code to `@spec NEW`, keeping the level token and the rest of the line. Text mode prints the rewritten sites. Tag sites come from the freshly built index, so `fixtures/` and dot-prefixed directories are never touched. Each rewritten line keeps its comment leader, level token, and line ending, and no other line changes. Running the command again finds no sites.
 
 The successor copies the predecessor's `why`, `relates`, `cites`, `aliases`, `term`, and `section` unless a flag overrides the field. Its `issues` hold only the `created` row from `--issue`.
 
@@ -564,15 +568,15 @@ The successor copies the predecessor's `why`, `relates`, `cites`, `aliases`, `te
 | `--issue <ticket>` | Recorded as `supersedes-via` on the predecessor and `created` on the successor. |
 | `--no-bump` | TERM domain only: keep the authored `specVersion`. No-op elsewhere. |
 
-`--json`: `{ old_id, new_id, file, spec_version, retag: [{ req_id, repo, file, line, kind, level }] }`. On a requirement domain `spec_version` is the derived domain version after the supersession, and the same number is stamped as the predecessor's `supersededAtVersion`.
+`--json`: `{ old_id, new_id, file, spec_version, retagged: [{ req_id, repo, file, line, kind, level }] }`, the rewritten sites (`req_id` is the old id). On a requirement domain `spec_version` is the derived domain version after the supersession, and the same number is stamped as the predecessor's `supersededAtVersion`.
 
 Exit: 0 / 2. All guards run before the first byte is written.
 
 ### spec move
 
-Cross-domain supersede. Mints the successor as the next id in `<NEW-DOMAIN>` (which must exist), copies `statement`, `why`, `relates`, `cites`, `aliases`, `term`, and `section` (`--text` and `--why` override), flips the source to superseded with a cross-domain `supersededBy`, and prints the retag worklist. The successor carries no `issues`.
+Cross-domain supersede. Mints the successor as the next id in `<NEW-DOMAIN>` (which must exist), copies `statement`, `why`, `relates`, `cites`, `aliases`, `term`, and `section` (`--text` and `--why` override), flips the source to superseded with a cross-domain `supersededBy`, and rewrites every tag of the source to the successor as `spec supersede` does. The successor carries no `issues`.
 
-`--json`: `{ old_id, new_id, from_file, to_file, source_spec_version, target_spec_version, retag: [...] }`.
+`--json`: `{ old_id, new_id, from_file, to_file, source_spec_version, target_spec_version, retagged: [...] }`.
 
 Exit: 0 / 2 (non-Active source, or the target is the source's own domain).
 
@@ -667,12 +671,12 @@ MCP server over stdio. Register it as `{ "command": "spec", "args": ["mcp", "<pl
 | `spec_next_id` | `{ domain, next_id }`, nothing written |
 | `spec_get` | one `Requirement` row with `implemented_in` and `verified_in`, or `[]` for an unknown id; the `spec get --json` shape |
 | `spec_list` | `Requirement` rows in (key, seq) order, `domain` and `status` filters; the `spec list --json` shape |
-| `spec_supersede` | `{ old_id, new_id, file, spec_version, retag }`, the `spec supersede --json` shape; optional `why`, `relates`, `issue` arguments |
-| `spec_deprecate` | `{ id, file, reason, sites }`, the `spec deprecate --json` shape |
+| `spec_supersede` | `{ old_id, new_id, file, spec_version, retagged }`, the `spec supersede --json` shape; optional `why`, `relates`, `issue` arguments |
+| `spec_deprecate` | `{ id, file, reason, removed }`, the `spec deprecate --json` shape |
 | `spec_accept` | `{ id, file }`, the `spec accept --json` shape |
 | `spec_req` | `{ id, file, clauses? }`, the `spec req --text --json` shape; `domain` (key or prefix) and `text` required, optional `why`, `relates`, `issue`, `draft` |
 | `spec_amend` | `{ id, file, fields_changed }`, the `spec amend --json` shape; `id` required, optional `text`, `why`, `relates`, `issue` |
-| `spec_move` | `{ old_id, new_id, from_file, to_file, source_spec_version, target_spec_version, retag }`, the `spec move --json` shape; `id` and `newDomain` required, optional `text`, `why` |
+| `spec_move` | `{ old_id, new_id, from_file, to_file, source_spec_version, target_spec_version, retagged }`, the `spec move --json` shape; `id` and `newDomain` required, optional `text`, `why` |
 
 Every tool call reindexes fresh. stdout is the protocol channel; chrome goes to stderr. One prompt, `author_requirements` (`brief` required, `domain` optional), returns a static authoring playbook with the brief and the domain's charter substituted. The engine runs no model.
 

@@ -26,7 +26,7 @@ export const deprecateCommand = defineCommand({
     },
     json: {
       type: "boolean",
-      description: "Print { id, file, reason, sites } instead of text",
+      description: "Print { id, file, reason, removed } instead of text",
     },
   },
   async run({ args }) {
@@ -52,18 +52,16 @@ export const deprecateCommand = defineCommand({
 
     const result = await deprecate({ platformDir, id, reason }, cliFreshTags(platformDir));
     if (!result.ok) exitOnFailure("spec deprecate", result);
-    const { file, sites } = result;
+    const { file, removed } = result;
 
     if (args.json) {
-      console.log(JSON.stringify({ id, file, reason, sites }));
+      console.log(JSON.stringify({ id, file, reason, removed }));
       return;
     }
     console.log(`deprecated ${id} in ${file} — reason recorded`);
-    if (sites.length > 0) {
-      console.error(
-        `${sites.length} code tag(s) still bind ${id} — remove or retag them (spec check reports each as DEPRECATED_REFERENCED):`,
-      );
-      console.error(renderReqTags(sites, "text"));
+    if (removed.length > 0) {
+      console.log(`removed ${removed.length} tag(s) of ${id}:`);
+      console.log(renderReqTags(removed, "text"));
     }
   },
 });
