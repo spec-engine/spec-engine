@@ -20,7 +20,7 @@ are the "Requirement authoring standard" section of the
 
 - Domains describe product promises. A requirement belongs to the domain whose
   promise it protects.
-- `livesIn` records where the promise is enforced, not which domain owns it.
+- Implementing tags record where the promise is enforced, not which domain owns it.
 - A rule that protects no user-facing promise is a development convention in
   AGENTS.md or a CI script, not a requirement. A CI fence that protects a
   promise carries that promise's id: the fence function is tagged with it and
