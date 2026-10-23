@@ -282,8 +282,9 @@ title, state, and URL.
 
 ## For agents
 
-[AGENTS.md](AGENTS.md) is the machine-facing reference: the route → tag → check loop,
-the exit-code contract, and every `--json` shape. `spec mcp` exposes the same engine over
+The [agent reference](packages/site/src/content/docs/agent-reference.md) is the machine-facing reference: the model, the
+route → tag → check loop, the requirement authoring standard, the exit-code contract,
+and every `--json` shape. [AGENTS.md](AGENTS.md) holds the rules for changing the engine itself. `spec mcp` exposes the same engine over
 the Model Context Protocol.
 
 ## Status

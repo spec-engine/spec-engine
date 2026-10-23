@@ -7,6 +7,10 @@ description: Turn a rough brief or ticket into Spec Engine requirements — draf
 
 > A requirement is one rule of the product's behavior, stated from the user's point of view.
 
+The full requirement authoring standard is the "Requirement authoring
+standard" section of the agent reference
+(`packages/site/src/content/docs/agent-reference.md`); this skill applies it.
+
 This skill drives the real `spec` CLI (`spec req`, `spec query`,
 `spec domain list`) and never reimplements minting. It is the front half of
 the lifecycle: brief in, approved requirements out; the route → tag → check

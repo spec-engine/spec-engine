@@ -79,9 +79,9 @@ describe("architecture fences (scripts/arch-fences.sh)", () => {
     fenceHeld("DIST-012");
   });
 
-  // @spec DIST-013 unit
-  test("DIST-013: the README and AGENTS.md name SPEC.json, spec migrate, trusted-red, and --results", () => {
-    fenceHeld("DIST-013");
+  // @spec DIST-019 unit
+  test("DIST-019: the README and the agent reference name SPEC.json, spec migrate, trusted-red, and --results", () => {
+    fenceHeld("DIST-019");
   });
 
   // @spec DIST-014 unit
@@ -152,9 +152,9 @@ describe("architecture fences (scripts/arch-fences.sh)", () => {
     expect(stdout).toContain("authored-specVersion fence: OK");
   });
 
-  // @spec CHCK-030 unit
-  test("CHCK-030: the AGENTS.md diagnostic-code list equals the DiagnosticCode enum", () => {
-    fenceHeld("CHCK-030");
+  // @spec CHCK-053 unit
+  test("CHCK-053: the agent reference's diagnostic-code list equals the DiagnosticCode enum", () => {
+    fenceHeld("CHCK-053");
   });
 
   // @spec CHRT-007 unit

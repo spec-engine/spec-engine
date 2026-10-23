@@ -11,57 +11,21 @@ it("charges at current price", () => {}) // @spec BILLING-009 unit
 it("renews end to end", () => {})        // @spec BILLING-009 e2e
 ```
 
-## Scanned files
+## Which files and paths
 
-Code is read from any file named `Dockerfile` or `Dockerfile.<suffix>` and from these extensions:
-
-- `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`
-- `.sh`
-- `.lua`, `.luau`
-- `.go`
-- `.rs`
-- `.tf`
-- `.toml`
-- `.sql`
-- `.css`
-- `.yml`, `.yaml`
-- `.astro`
-
-Documentation is read from `.md` files.
-
-The tag regex ignores the comment leader, so each of these binds:
-
-| Leader | Where |
-| --- | --- |
-| `// @spec BILLING-009` | TypeScript, JavaScript, Go, Rust, Astro front-matter |
-| `# @spec BILLING-009` | shell, Terraform, TOML, YAML, Dockerfile |
-| `-- @spec BILLING-009` | Lua, Luau, SQL |
-| `/* @spec BILLING-009 */` | CSS |
-| an HTML comment | Astro template, Markdown |
-
-Dot-prefixed directories are skipped, except `.github/`.
-
-## Tag kind
-
-Kind is **path-derived**, never authored:
+The scanner reads common source extensions, Dockerfiles, and Markdown documents, and ignores the comment leader, so `//`, `#`, `--`, `/* */`, and an HTML comment all bind. A path is a test path when it follows a test-runner convention such as `.test.`, `__tests__/`, or `_test.go`. The exact extension list and test-path patterns are in the [Agent Reference](/agent-reference/#tags).
 
 | Location | Kind |
 | --- | --- |
-| `src/` or similar implementation path | **implements** |
-| `test/` or similar test path | **verifies** |
-| a docs path (e.g. `docs/*.md`) | **documents** |
+| implementation code | **implements** |
+| a test path | **verifies** |
+| a Markdown document | **documents** |
 
-A path is a test path when it contains one of these:
+Rust unit tests written inline under `#[cfg(test)]` live in the implementation file, so a tag there counts as **implements**; a verifying tag belongs in a `tests/` integration test or a `*_test.rs` file.
 
-| Convention | Substring | Example |
-| --- | --- | --- |
-| TypeScript and JavaScript runners | `.test.`, `.spec.`, `__tests__/`, `/tests/`, `/e2e/`, `.e2e.` | `test/renew.test.ts`, `src/renew.spec.ts` |
-| Go | `_test.go` | `renew_test.go` |
-| Rust | `/tests/`, `_test.rs` | `tests/renew.rs`, `src/renew_test.rs` |
-| Lua with busted | `_spec.lua`, `_test.lua`, `/spec/` | `spec/renew_spec.lua` |
-| Luau with TestEZ or Jest-Lua | `.spec.`, `.test.` | `renew.spec.luau`, `renew.test.luau` |
+## What to tag
 
-Rust unit tests written inline under `#[cfg(test)]` live in the implementation file, so a tag there counts as **implements**; a verifying tag belongs in a `tests/` integration test or a `*_test.rs` file. A path rule cannot see inside a file, and Spec Engine does not read attributes.
+A tag binds the one function that produces the behavior and the one test that proves it. Helpers, glue code, and configuration carry no tag. If you cannot name the behavior a line produces, do not tag it.
 
 ## Verification levels
 

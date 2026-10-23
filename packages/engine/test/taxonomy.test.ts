@@ -1,6 +1,4 @@
 // @spec CHRT-007 unit
-// @spec CHRT-008 unit
-// @spec CHRT-009 unit
 // @spec CHRT-013 unit
 import { describe, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
@@ -46,35 +44,10 @@ describe("TAXONOMY.md — per-domain charter structure", () => {
     expect(doc).toMatch(/does not belong/i);
   });
 
-  test("states the 3-digit requirement-id-format rule", async () => {
-    const doc = await loadTaxonomy();
-    expect(doc).toMatch(/3-digit|three-digit/i);
-  });
-
   test("does NOT carry the retired shadow-id backlog", async () => {
     const doc = await loadTaxonomy();
     expect(doc).not.toContain("Shadow-id promotion backlog");
     expect(doc).not.toContain("QURY-01/");
-  });
-});
-
-describe("TAXONOMY.md — requirement-authoring standard", () => {
-  test("teaches the fixed statement shapes with a filled example", async () => {
-    const doc = await loadTaxonomy();
-    expect(doc).toContain("shall");
-    expect(doc).toContain("When an unknown requirement id is passed");
-  });
-
-  test("states the read-alone rule in plain words", async () => {
-    const doc = await loadTaxonomy();
-    expect(doc).toContain("make sense on its own");
-  });
-
-  test("states the requirement-anatomy triple (verifying=tests, livesIn+implementing=files, issues=provenance)", async () => {
-    const doc = await loadTaxonomy();
-    expect(doc).toMatch(/verifying/i);
-    expect(doc).toMatch(/livesIn/);
-    expect(doc).toMatch(/provenance/i);
   });
 });
 

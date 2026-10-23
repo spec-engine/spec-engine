@@ -175,15 +175,15 @@ fence_docs01_readme_tokens() {
   echo "docs grep gate: OK"
 }
 
-# --- DIST-013: README + AGENTS.md describe the JSON model / migrate / trusted-red
-# @spec DIST-013
+# --- DIST-019: README + the agent reference describe the JSON model / migrate / trusted-red
+# @spec DIST-019
 fence_ma4_v13_doc_reference() {
   set -euo pipefail
   TOKENS='SPEC.json|spec migrate|trusted-red|--results'
   IFS='|'
   for tok in $TOKENS; do
-    grep -qF -- "$tok" README.md      || { echo "FAIL: README.md missing '$tok' token (DIST-013 doc gate)";      exit 1; }
-    grep -qF -- "$tok" AGENTS.md || { echo "FAIL: AGENTS.md missing '$tok' token (DIST-013 doc gate)"; exit 1; }
+    grep -qF -- "$tok" README.md      || { echo "FAIL: README.md missing '$tok' token (DIST-019 doc gate)";      exit 1; }
+    grep -qF -- "$tok" packages/site/src/content/docs/agent-reference.md || { echo "FAIL: the agent reference is missing '$tok' token (DIST-019 doc gate)"; exit 1; }
   done
   unset IFS
   printf 'the trusted-red gate ingests --results <junit.xml>\n' \
@@ -404,7 +404,7 @@ fence_stor04_no_spec_md_parse() {
 # buffer and diffs it byte-for-byte against the committed file — exit 1 on any
 # drift. So a hand-edit of GLOSSARY.md that the store did not produce fails CI
 # here, the same way docs-agents.test.ts fails when the CLI surface and
-# AGENTS.md disagree.
+# the agent reference disagree.
 # @spec CHCK-020
 fence_glossary_roundtrip() {
   if bun packages/engine/src/cli.ts glossary --check .; then
@@ -444,11 +444,11 @@ fence_no_authored_specversion() {
   echo "authored-specVersion fence: OK (no non-TERM envelope carries a counter)"
 }
 
-# --- CHCK-030: the AGENTS.md diagnostic-code list matches the DiagnosticCode enum
+# --- CHCK-053: the agent reference's diagnostic-code list matches the DiagnosticCode enum
 # The list is hand-written prose beside a machine-readable enum, so it drifts.
 # This compares the two sets (order and duplicates are prose's business,
 # membership is not).
-# @spec CHCK-030
+# @spec CHCK-053
 fence_agents_check_codes() {
   local enum_codes agents_codes
   enum_codes="$(grep -oE '^  [A-Z_]+: "' packages/shared/src/diagnostics.ts \
@@ -456,7 +456,7 @@ fence_agents_check_codes() {
   # The code list lives in the `spec check` bullet, between "Codes," and the
   # sentence that follows it. Every code is fenced in backticks.
   # shellcheck disable=SC2016
-  agents_codes="$(sed -n '/Codes, in `DiagnosticCode` order:/,/The four/p' AGENTS.md \
+  agents_codes="$(sed -n '/Codes, in `DiagnosticCode` order:/,/The four/p' packages/site/src/content/docs/agent-reference.md \
     | grep -oE '`[A-Z_]+`' | tr -d '`' | sort -u)"
   # Negative self-test: the extractor must find something on both sides.
   if [ -z "$enum_codes" ] || [ -z "$agents_codes" ]; then
@@ -464,11 +464,11 @@ fence_agents_check_codes() {
     exit 1
   fi
   if [ "$enum_codes" != "$agents_codes" ]; then
-    echo "FORBIDDEN: the AGENTS.md diagnostic-code list disagrees with the DiagnosticCode enum. Difference (< enum only, > AGENTS.md only):"
+    echo "FORBIDDEN: the agent reference's diagnostic-code list disagrees with the DiagnosticCode enum. Difference (< enum only, > reference only):"
     diff <(printf '%s\n' "$enum_codes") <(printf '%s\n' "$agents_codes") || true
     exit 1
   fi
-  echo "AGENTS check-codes fence: OK (list == DiagnosticCode enum)"
+  echo "agent reference check-codes fence: OK (list == DiagnosticCode enum)"
 }
 
 # --- CHRT-007: TAXONOMY.md per-domain charters are generated from the envelopes
@@ -502,7 +502,7 @@ run "SCHM-028 no CHECK, FK, or UNIQUE on domain fields"        fence_schm07_sche
 run "SCHM-029 DDL inline, no .sql files"                       fence_schm08_no_sql_files
 run "PROV-006 issue_id is never an identity"                   fence_prov02_issue_id_opacity
 run "DIST-012 README names spec init and NO_SPEC_CONFIG"       fence_docs01_readme_tokens
-run "DIST-013 README and AGENTS.md name the JSON model and the proof gate" fence_ma4_v13_doc_reference
+run "DIST-019 README and the agent reference name the JSON model and the proof gate" fence_ma4_v13_doc_reference
 run "DIST-014 no stale example config"                         fence_clean01_no_stale_example
 run "DIST-015 release-please opens the release PR"           fence_dist015_release_pr
 run "DIST-016 publish runs on release after every gate"      fence_dist016_publish_on_release
@@ -516,7 +516,7 @@ run "INDX-013 no SPEC.md parse path"                           fence_stor04_no_s
 run "AUTHOR-008 llm-free engine"                               fence_llmfree_engine
 run "CHCK-020 glossary round-trip"                             fence_glossary_roundtrip
 run "SCHM-020 no authored specVersion"                         fence_no_authored_specversion
-run "CHCK-030 AGENTS.md lists every diagnostic code"           fence_agents_check_codes
+run "CHCK-053 the agent reference lists every diagnostic code" fence_agents_check_codes
 run "CHRT-007 charters generated from the envelopes"           fence_taxonomy_charters
 run "SCHM-027 write seam under operations"                     fence_ops01_write_seam
 run "SCHM-030 every SPEC.json read parses through the shared schema" fence_schm030_schema_reads

@@ -1,7 +1,7 @@
 // Pure template: no I/O, model call, Date, or randomness, so output is
 // byte-stable and the engine stays LLM-free (fence_llmfree_engine). The EARS
 // shapes are repeated here because the prompt must teach the shape the
-// write-time validator enforces; the full standard is spec-engine/TAXONOMY.md.
+// write-time validator enforces; the full standard is in the agent reference.
 
 import { RULE_ZERO } from "@spec-engine/shared";
 
