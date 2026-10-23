@@ -37,7 +37,7 @@ export const IGNORE_SUBSTR = Object.freeze([
  * `dist/` ignores `src/dist/…` but not `src/mydist/…`. An `extra` token
  * matches only as a repo-relative prefix, a bare `generated` read as
  * `generated/`, so it never hides a same-named directory deeper in the tree.
- * @spec INDX-018
+ * @spec INDX-027
  */
 export function isPathIgnored(path: string, extra: readonly string[] = []): boolean {
   const anchored = `/${path}`;

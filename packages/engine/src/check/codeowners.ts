@@ -8,7 +8,7 @@ export interface CodeownersRule {
 }
 
 // Authored order is preserved: ownersForPath depends on it for last-match-wins.
-// @spec OWNER-002
+// @spec OWNER-003
 export function parseCodeowners(text: string): CodeownersRule[] {
   const rules: CodeownersRule[] = [];
   for (const raw of text.split("\n")) {

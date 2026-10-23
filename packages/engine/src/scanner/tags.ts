@@ -1,5 +1,6 @@
-// @spec INDX-010
-// @spec INDX-011
+// @spec INDX-024
+// @spec INDX-028
+// @spec INDX-025
 //
 // Comment style is irrelevant: the literal `@spec` token matches anywhere in
 // the line, even inside a string literal. The level token is recorded as
@@ -21,7 +22,7 @@ export const TEST_MATCH = Object.freeze([
   "/tests/",
   "/e2e/",
   ".e2e.",
-  // @spec INDX-015
+  // @spec INDX-025
   "_test.go",
   "_test.rs",
   "_spec.lua",

@@ -115,7 +115,7 @@ describe("extra ignore entries match as repo-relative prefixes", () => {
     fx.remove();
   });
 
-  // @spec INDX-018 unit
+  // @spec INDX-027 unit
   test("a package path or an ignore entry hides only the tree at the repo root", async () => {
     const [id] = (await (await fx.domain("ORD")).reqs(1)) as [string];
     const shop = await fx.member("shop", { ignore: ["vendor"] });

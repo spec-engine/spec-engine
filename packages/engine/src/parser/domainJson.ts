@@ -255,7 +255,7 @@ function flattenIssues(
 /**
  * One row per headword and per alias, so a citation by name resolves against
  * either.
- * @spec INDX-012
+ * @spec INDX-026
  */
 function flattenAliases(r: DomainRequirement, acc: TermAcc): void {
   const id = r.id;
@@ -277,7 +277,7 @@ function flattenAliases(r: DomainRequirement, acc: TermAcc): void {
 /**
  * `term_id` is not resolved here: a citation may name a term defined in
  * another domain, so the pipeline resolves it across the whole platform.
- * @spec INDX-012
+ * @spec INDX-026
  */
 function flattenCites(r: DomainRequirement, sourceFile: string, line: number, acc: TermAcc): void {
   const id = r.id;

@@ -55,6 +55,7 @@ export const getCommand = defineCommand({
       { platformDir, dbPath, fresh: !!args.fresh, json: !!args.json },
       (storage) => {
         const result = getRecord(storage, reqId);
+        // @spec MAP-007
         if (result.row === null) {
           console.error(
             result.platformEmpty

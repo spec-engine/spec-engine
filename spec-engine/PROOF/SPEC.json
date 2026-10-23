@@ -119,15 +119,16 @@
     },
     {
       "id": "PROOF-009",
-      "status": "active",
+      "status": "superseded",
       "statement": "The results reader shall accept JUnit XML as emitted by any test runner without per-runner configuration, and shall reject malformed XML as a usage error rather than a diagnostic.",
       "why": "A per-runner adapter zoo drifts as runners change, and a malformed results file silently read as no proofs would flip the gate's meaning.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "PROOF-017",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 10
     },
     {
       "id": "PROOF-010",
@@ -145,7 +146,7 @@
     },
     {
       "id": "PROOF-011",
-      "status": "active",
+      "status": "deprecated",
       "statement": "If a requirement's implementing code and its verifying test are both removed, then spec check shall fail even though the remaining suite is green.",
       "why": "A green suite must not hide a silently deleted proof; removal makes the requirement unproven.",
       "supersedes": null,
@@ -154,20 +155,22 @@
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Narrative of a scenario already covered by GUARD-024 and GUARD-025 (IMPL_LOST at error). Survivor: GUARD-025."
     },
     {
       "id": "PROOF-012",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec check runs without --results, it shall count a verifying @spec tag as coverage without proof of passing and shall emit the warning-severity PROOFS_UNCONFIRMED diagnostic.",
       "why": "Without a presence-only fallback every team not yet exporting JUnit results would hit a red gate on day one; the warning keeps proof-of-passing opt-in while signalling that presence is not proof.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "PROOF-018",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 11
     },
     {
       "id": "PROOF-013",
@@ -184,20 +187,21 @@
     },
     {
       "id": "PROOF-014",
-      "status": "active",
+      "status": "superseded",
       "statement": "When --results names a JUnit XML file, spec check shall correlate each verifying @spec tag to that file's test cases by normalized file path and mark the tag passing or failing from the correlated outcomes.",
       "why": "A tag correlated to nothing lets a red or deleted test count as proof — the gate passes on evidence that no longer exists.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "PROOF-019",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 12
     },
     {
       "id": "PROOF-015",
-      "status": "active",
+      "status": "deprecated",
       "statement": "While test results are supplied, spec check shall mark an active requirement PROVEN only when at least one verifying tag correlates to a passing test.",
       "why": "Presence is not proof — a requirement is only trusted when its verifying test actually passed, and a tag on a red test is a claim without evidence.",
       "supersedes": null,
@@ -205,18 +209,82 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "merged into PROOF-020"
     },
     {
       "id": "PROOF-016",
-      "status": "active",
+      "status": "superseded",
       "statement": "While test results are supplied, spec check shall report UNPROVEN_REQ for an active requirement whose verifying tags all fail or lack a correlated test.",
+      "why": "Presence is not proof — a tag on a red test, or on no test the results name, is a claim without evidence, and only an error row stops it from passing the gate.",
+      "supersedes": null,
+      "supersededBy": "PROOF-020",
+      "relates": [
+        "PROOF-015"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "supersededAtVersion": 13
+    },
+    {
+      "id": "PROOF-017",
+      "status": "active",
+      "statement": "The spec check command shall read a JUnit XML results file from any test runner without runner-specific configuration.",
+      "why": "A per-runner adapter zoo drifts as runners change, and a malformed results file silently read as no proofs would flip the gate's meaning.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "PROOF-018",
+      "status": "active",
+      "statement": "When spec check runs without --results, it shall report PROOFS_UNCONFIRMED at warning severity.",
+      "why": "Without a presence-only fallback every team not yet exporting JUnit results would hit a red gate on day one; the warning keeps proof-of-passing opt-in while signalling that presence is not proof.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "PROOF-019",
+      "status": "active",
+      "statement": "When --results names a JUnit XML file, spec check shall mark each verifying tag passing or failing from the outcomes recorded for its file's test cases.",
+      "why": "A tag correlated to nothing lets a red or deleted test count as proof — the gate passes on evidence that no longer exists.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "PROOF-020",
+      "status": "active",
+      "statement": "While test results are supplied, spec check shall report UNPROVEN_REQ for an Active requirement that has no verifying tag correlated to a passing test.",
       "why": "Presence is not proof — a tag on a red test, or on no test the results name, is a claim without evidence, and only an error row stops it from passing the gate.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [
         "PROOF-015"
       ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "PROOF-021",
+      "status": "active",
+      "statement": "If the results file is not well-formed XML, then spec check shall exit 2.",
+      "why": "If a broken results file were read as empty, every proof would silently count as missing or the gate would pass on no evidence.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
       "issues": [],
       "aliases": [],
       "cites": []

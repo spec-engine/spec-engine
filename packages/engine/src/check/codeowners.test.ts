@@ -1,4 +1,4 @@
-// @spec OWNER-002 unit
+// @spec OWNER-003 unit
 import { describe, expect, test } from "bun:test";
 import { matchesGlob, ownersForPath, parseCodeowners } from "./codeowners";
 

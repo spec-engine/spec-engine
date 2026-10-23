@@ -19,7 +19,7 @@ export interface GateResult {
 }
 
 /** An unknown repo name is a `usage` refusal; NOT_FOUND is reserved for the requirement. */
-// @spec GATE-008
+// @spec GATE-010
 export async function gate(input: GateInput, storage: Storage): Promise<GateResult | OpFailure> {
   const { platformDir, repo, reqId } = input;
   const result = await runIndex({ platformDir, storage });

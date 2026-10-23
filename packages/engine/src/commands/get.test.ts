@@ -60,7 +60,7 @@ async function exitCode(fn: () => Promise<void>): Promise<number> {
   }
 }
 
-// @spec MAP-003 unit
+// @spec MAP-006 unit
 describe("spec get", () => {
   test("a known id prints its record; --json is one object, byte-stable across runs", async () => {
     await run({
@@ -111,6 +111,7 @@ describe("spec get", () => {
     );
   });
 
+  // @spec MAP-007 unit
   test("an unknown id is [] on stdout, guidance on stderr, exit 0", async () => {
     const code = await exitCode(() =>
       run({ args: { reqId: "BILLING-999", platformDir, json: true, noPrompt: true }, rawArgs: [] }),

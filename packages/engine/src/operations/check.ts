@@ -155,7 +155,8 @@ async function governanceGate(
     ...requirementRemoved(base.reqs, change.reqs, (id) => base.relPathById.get(id) ?? null),
   );
 
-  // @spec OWNER-002
+  // @spec OWNER-003
+  // @spec OWNER-004
   const codeowners = parseCodeowners(readCodeownersText(platformDir) ?? "");
   const approvedBy = (input.approvedBy ?? "")
     .split(",")
@@ -184,7 +185,8 @@ async function governanceGate(
   }
 }
 
-// @spec GUARD-025
+// @spec GUARD-034
+// @spec GUARD-035
 const LOSS_SEVERITY: Record<
   Exclude<Loss["kind"], "REQUIREMENT_REMOVED">,
   Diagnostic["severity"]

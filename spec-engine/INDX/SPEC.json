@@ -102,67 +102,72 @@
     },
     {
       "id": "INDX-008",
-      "status": "active",
+      "status": "superseded",
       "statement": "If a parsed spec contains a duplicate id, a broken supersede reference, or an invalid status, then spec index shall complete the build and report a DUP_ID, BROKEN_SUPERSEDE, or BAD_STATUS diagnostic instead of rejecting the write.",
       "why": "A structural defect that aborted indexing would blind every read command over one bad entry; a diagnostic keeps the index usable while the defect stays visible where spec check gates it.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INDX-022",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 9
     },
     {
       "id": "INDX-009",
-      "status": "active",
+      "status": "superseded",
       "statement": "When invoked, spec index shall walk the spec directory and every member repo, rebuild the derived index, and report the build_id and row counts (repos, domains, requirements, tags, diagnostics).",
       "why": "Every other command reads this index; a rebuild that reported nothing would leave no way to confirm what was actually derived, so stale or partial indexes would go unnoticed.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INDX-023",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 10
     },
     {
       "id": "INDX-010",
-      "status": "active",
+      "status": "superseded",
       "statement": "The tag scanner shall recognize an @spec KEY-NNN tag anywhere in a line regardless of comment style, and shall record the optional trailing level token only when it is unit, integration, or e2e.",
       "why": "Tags are how code claims a requirement; a scanner picky about comment syntax would silently drop claims and understate coverage.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INDX-024",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 11
     },
     {
       "id": "INDX-011",
-      "status": "active",
+      "status": "superseded",
       "statement": "The scanner shall derive a tag's kind from its file path — a tag in a test file verifies, a tag in any other file implements — and the tag itself never states the kind.",
       "why": "A kind written into the tag would drift from the file's actual role; path derivation keeps tags one token long and impossible to mislabel.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INDX-025",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 12
     },
     {
       "id": "INDX-012",
-      "status": "active",
+      "status": "superseded",
       "statement": "The indexer shall resolve each requirement citation to a glossary term by TERM id or by exact term name or alias, and shall retain an unresolved citation so spec check can report it as UNDEFINED_TERM.",
       "why": "A citation dropped at resolution time would never surface as a defect — the requirement would silently cite nothing while spec check reported a clean glossary.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INDX-026",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 13
     },
     {
       "id": "INDX-013",
@@ -191,7 +196,7 @@
     },
     {
       "id": "INDX-015",
-      "status": "active",
+      "status": "deprecated",
       "statement": "When a tag's file ends in _test.go, _test.rs, _spec.lua, or _test.lua, or lives under a spec/ directory, the scanner shall classify the tag as verifies, alongside the .test., .spec., tests/, __tests__/, and e2e paths it already recognizes.",
       "why": "Go, Rust, busted, and the Roblox test runners name test files by their own conventions; a test tag classified as implements leaves the requirement UNVERIFIED_REQ and the coverage matrix wrong for every platform in those languages.",
       "supersedes": null,
@@ -199,7 +204,8 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "merged into INDX-025"
     },
     {
       "id": "INDX-016",
@@ -227,15 +233,16 @@
     },
     {
       "id": "INDX-018",
-      "status": "active",
+      "status": "superseded",
       "statement": "When a member's scan excludes an ignore entry or a sibling workspace package path, the scanner shall match the entry as a repo-relative path prefix.",
       "why": "A module tree that mirrors a package path at depth is never scanned, and its requirements report ORPHAN_REQ while the tags exist.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INDX-027",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 14
     },
     {
       "id": "INDX-019",
@@ -267,6 +274,90 @@
       "status": "active",
       "statement": "When walking a member for tags, the scanner shall read the .github directory and skip every other dot-prefixed entry.",
       "why": "A CI workflow file is often the only implementation of a promise, and a tag there is invisible while the directory is skipped; opening every dot directory would crawl .venv and tool caches.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INDX-022",
+      "status": "active",
+      "statement": "If a domain file holds a duplicate id, a broken supersede, or an invalid status, then spec index shall complete the build and report the matching diagnostic.",
+      "why": "A structural defect that aborted indexing would blind every read command over one bad entry; a diagnostic keeps the index usable while the defect stays visible where spec check gates it.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INDX-023",
+      "status": "active",
+      "statement": "When spec index runs, it shall report the build_id and the counts of repos, domains, requirements, tags, and diagnostics.",
+      "why": "Every other command reads this index; a rebuild that reported nothing would leave no way to confirm what was actually derived, so stale or partial indexes would go unnoticed.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INDX-024",
+      "status": "active",
+      "statement": "The tag scanner shall recognize a requirement tag written with any comment leader anywhere in a line.",
+      "why": "Tags are how code claims a requirement; a scanner picky about comment syntax would silently drop claims and understate coverage.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INDX-025",
+      "status": "active",
+      "statement": "The tag scanner shall classify a tag as verifying when its file path matches a supported test-path pattern, and as implementing otherwise.",
+      "why": "A kind written into the tag would drift from the file's actual role; path derivation keeps tags one token long and impossible to mislabel.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INDX-026",
+      "status": "active",
+      "statement": "The indexer shall resolve a term citation by TERM id, by headword, or by alias.",
+      "why": "A citation dropped at resolution time would never surface as a defect — the requirement would silently cite nothing while spec check reported a clean glossary.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INDX-027",
+      "status": "active",
+      "statement": "Where a member config lists ignore directories, the tag scanner shall skip each one as a prefix of the path from the repository root.",
+      "why": "A module tree that mirrors a package path at depth is never scanned, and its requirements report ORPHAN_REQ while the tags exist.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INDX-028",
+      "status": "active",
+      "statement": "The tag scanner shall record a level token only when it is unit, integration, or e2e.",
+      "why": "If any trailing word counted as a level, a typo or a stray word after a tag would show up as a test level in the coverage matrix.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

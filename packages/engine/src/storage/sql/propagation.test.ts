@@ -1,4 +1,4 @@
-// @spec PROP-005
+// @spec PROP-007
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";

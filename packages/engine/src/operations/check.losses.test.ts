@@ -1,5 +1,5 @@
 // @spec GUARD-024 unit
-// @spec GUARD-025 unit
+// @spec GUARD-034 unit
 // @spec GUARD-026 unit
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
@@ -66,6 +66,7 @@ describe("spec check reports guard's losses", () => {
     expect(failing).toBe(true);
   });
 
+  // @spec GUARD-035 unit
   test("losing the last verifying tag is a VERIFY_LOST warning against --base", async () => {
     writeFileSync(join(repo, "test", "billing.test.ts"), 'it("charges", () => {});\n');
     const { rows } = await runCheck("HEAD");

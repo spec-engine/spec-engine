@@ -173,16 +173,17 @@
     },
     {
       "id": "GUARD-013",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec guard is run, the spec CLI shall compare the requirement derivation at the given git ref (default HEAD) against the working tree, report every requirement about to be lost, and exit 1 when at least one loss is found and 0 when none is.",
       "why": "The derived index has no memory of what a change deletes — git is the memory, so a pre-commit diff of derivations is the only thing that catches a requirement being silently lost.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "GUARD-032",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 14
     },
     {
       "id": "GUARD-014",
@@ -265,16 +266,17 @@
     },
     {
       "id": "GUARD-020",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec guard --json is run, the spec CLI shall write loss rows to stdout sorted by (req_id, kind, file, line), byte-stable across runs with identical inputs, with all chrome on stderr.",
       "why": "Nondeterministic or chrome-polluted stdout breaks every consumer that diffs, snapshots, or parses the rows — the CI use the JSON mode exists for.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "GUARD-033",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 15
     },
     {
       "id": "GUARD-021",
@@ -331,15 +333,16 @@
     },
     {
       "id": "GUARD-025",
-      "status": "active",
+      "status": "superseded",
       "statement": "The spec check command shall report IMPL_LOST and SPEC_FILE_DELETED at error severity and VERIFY_LOST at warning severity.",
       "why": "Losing the last test is the same incompleteness as never having one; losing the last implementation or a spec file is a regression.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "GUARD-034",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 16
     },
     {
       "id": "GUARD-026",
@@ -408,6 +411,54 @@
       "status": "active",
       "statement": "When spec check runs with --ci and without --base in a git repository whose tracked files match HEAD, the spec check command shall print a stderr warning that names the --base merge-base command.",
       "why": "In CI the working tree equals HEAD, so the default loss diff is empty and every loss check passes with no signal that it never ran.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GUARD-032",
+      "status": "active",
+      "statement": "When spec guard finds a loss against the given git ref, HEAD by default, it shall report the loss and exit 1.",
+      "why": "The derived index has no memory of what a change deletes — git is the memory, so a pre-commit diff of derivations is the only thing that catches a requirement being silently lost.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GUARD-033",
+      "status": "active",
+      "statement": "When spec guard runs with --json, it shall print the loss rows sorted by requirement id, kind, file, and line.",
+      "why": "Nondeterministic or chrome-polluted stdout breaks every consumer that diffs, snapshots, or parses the rows — the CI use the JSON mode exists for.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GUARD-034",
+      "status": "active",
+      "statement": "The spec check command shall report IMPL_LOST and SPEC_FILE_DELETED at error severity.",
+      "why": "Losing the last test is the same incompleteness as never having one; losing the last implementation or a spec file is a regression.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GUARD-035",
+      "status": "active",
+      "statement": "The spec check command shall report VERIFY_LOST at warning severity.",
+      "why": "If a lost verifying tag failed the build, a change that moves or rewrites a test could not land without first restoring the old tag.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

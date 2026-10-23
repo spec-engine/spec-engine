@@ -371,37 +371,39 @@
     },
     {
       "id": "INIT-027",
-      "status": "active",
+      "status": "superseded",
       "statement": "When resolving the pin it writes, spec init shall use --specs when given, else the derived platform version — the maximum of the domains' derived versions — else spec-engine@1 with a printed note when no enclosing platform exists.",
       "why": "An authored default source is a second source of truth nothing bumps — new members get pinned below what the domains derived past, born drifted or falsely current.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-050",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 23
     },
     {
       "id": "INIT-028",
-      "status": "active",
+      "status": "superseded",
       "statement": "When discovery registers the canonical spec-engine row and the lone-repo self-member, it shall pin both to the derived platform version, so a lone repo is never reported drifted against its own working-tree domains.",
       "why": "A self-member pinned below its own domains' derived versions fires false DRIFT on the very repo that owns the specs — the gate cries wolf and trust in drift dies.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-051",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 24
     },
     {
       "id": "INIT-029",
-      "status": "active",
+      "status": "superseded",
       "statement": "If a domain SPEC.json encountered during the context walk is malformed, then context detection shall derive the platform version from the remaining domains.",
       "why": "A context walk that throws on one corrupt domain file takes every command down with it in that repo, while the corrupt file itself still surfaces loudly at parse and check time — detection stays usable and the defect is still reported.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-052",
       "relates": [],
       "issues": [
         {
@@ -411,7 +413,8 @@
       ],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 25
     },
     {
       "id": "INIT-030",
@@ -445,7 +448,7 @@
     },
     {
       "id": "INIT-032",
-      "status": "active",
+      "status": "deprecated",
       "statement": "When a declared member is present on disk without a spec-engine.member.json, the index shall emit one warning-severity NO_SPEC_CONFIG diagnostic naming the member and suggesting spec init <name>.",
       "why": "A member the platform file declares but nothing pins is scanned by nobody; without the diagnostic its tags vanish from coverage with exit 0 and no signal.",
       "supersedes": null,
@@ -458,7 +461,8 @@
         }
       ],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "merged into CHCK-059"
     },
     {
       "id": "INIT-033",
@@ -479,11 +483,11 @@
     },
     {
       "id": "INIT-034",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec init resolves the platform a directory belongs to, it shall take the root from platform-map's locate(), the nearest platform-map.json or .git boundary with a marker resolved through the parent directory or the per-user file, and accept that root only when it holds spec-engine/.",
       "why": "spec init must know where it is to pin correctly, and a second notion of the platform root beside platform-map's would let the pin and the map disagree about which platform a member belongs to.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-053",
       "relates": [],
       "issues": [
         {
@@ -492,15 +496,16 @@
         }
       ],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 26
     },
     {
       "id": "INIT-035",
-      "status": "active",
+      "status": "superseded",
       "statement": "Where a platform directory is a lone repository with no platform file, discovery shall register the map's one repo as a single coverage column, or one column per workspace package when it is a monorepo, so its @spec tags index with no member config and no CI gate.",
       "why": "If the lone-repo step needs any setup beyond having a spec-engine/ directory, the progressive-adoption ladder fails at first contact, and a monorepo whose packages collapse into one column cannot pin a package on its own.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-054",
       "relates": [],
       "issues": [
         {
@@ -509,7 +514,8 @@
         }
       ],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 27
     },
     {
       "id": "INIT-036",
@@ -530,7 +536,7 @@
     },
     {
       "id": "INIT-037",
-      "status": "active",
+      "status": "deprecated",
       "statement": "When discovering the members of a platform, the spec engine shall take membership and shape from platform-map's map() and take each member's pin from its spec-engine.member.json, so every package built on Spec Engine shares one platform model.",
       "why": "A second discovery heuristic beside platform-map's declaration would let Spec Engine and the other tools built on it disagree about which repositories are on the platform.",
       "supersedes": null,
@@ -543,15 +549,16 @@
         }
       ],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Architecture commentary (which library owns membership, one platform model); observable parts live in INIT-035, INIT-038, INIT-041."
     },
     {
       "id": "INIT-038",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec init targets a repository in the platform folder that the platform file does not list, the spec engine shall declare it through platform-map, a platform file entry and a marker, before writing its pin, so a user never runs a platform-map command.",
       "why": "A pin in an undeclared repository is inert: nothing scans the repository and the warning that would say so is the only trace, so the declaration and the pin have to be one step.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-055",
       "relates": [],
       "issues": [
         {
@@ -560,15 +567,16 @@
         }
       ],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 28
     },
     {
       "id": "INIT-039",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec init is given --platform for a checkout that carries a member marker but lives outside the platform folder, the spec engine shall record the checkout's location in platform-map's per-user file, so the member indexes from wherever it is cloned.",
       "why": "A declared member checked out elsewhere is reported missing and never scanned; without a spec-side way to record where it lives, the user is sent to a platform-map command.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-056",
       "relates": [],
       "issues": [
         {
@@ -577,7 +585,8 @@
         }
       ],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 29
     },
     {
       "id": "INIT-040",
@@ -599,15 +608,16 @@
     },
     {
       "id": "INIT-041",
-      "status": "active",
+      "status": "superseded",
       "statement": "Where a monorepo has files outside every workspace package, the spec engine shall scan them as one more coverage column, named by the directory for a lone repository, or root when the directory name is the reserved specs folder name, and by the member name for a declared member, without scanning any package's files twice.",
       "why": "The engine's own checkout is named after the reserved specs folder, so its root workspace is never scanned and the tags in its CI workflow are invisible to it. Repo-root code such as CI scripts, infrastructure, and migrations implements requirements too.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-057",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 30
     },
     {
       "id": "INIT-042",
@@ -698,6 +708,102 @@
       "status": "active",
       "statement": "If an onboarding file spec init would write already holds content the spec engine did not author, then spec init shall leave that content unchanged and print what to add instead.",
       "why": "A pre-commit hook, an MCP server entry, or instructions a team wrote are theirs; overwriting them breaks their tooling without warning.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-050",
+      "status": "active",
+      "statement": "When spec init resolves the pin it writes, it shall use --specs when given, else the platform version, else spec-engine@1 with a printed note.",
+      "why": "An authored default source is a second source of truth nothing bumps — new members get pinned below what the domains derived past, born drifted or falsely current.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-051",
+      "status": "active",
+      "statement": "Where a platform is a lone repository, the spec engine shall pin it to the platform version, so it never drifts against its own domains.",
+      "why": "A self-member pinned below its own domains' derived versions fires false DRIFT on the very repo that owns the specs — the gate cries wolf and trust in drift dies.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-052",
+      "status": "active",
+      "statement": "If a domain SPEC.json is malformed, then spec init shall derive the platform version from the remaining domains.",
+      "why": "A context walk that throws on one corrupt domain file takes every command down with it in that repo, while the corrupt file itself still surfaces loudly at parse and check time — detection stays usable and the defect is still reported.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-053",
+      "status": "active",
+      "statement": "When spec init runs, it shall pin the target to the nearest enclosing platform that holds a spec-engine/ directory.",
+      "why": "spec init must know where it is to pin correctly, and a second notion of the platform root beside platform-map's would let the pin and the map disagree about which platform a member belongs to.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-054",
+      "status": "active",
+      "statement": "Where a platform is a lone repository with no platform file, the spec engine shall index it as one coverage column, or one per workspace package in a monorepo.",
+      "why": "If the lone-repo step needs any setup beyond having a spec-engine/ directory, the progressive-adoption ladder fails at first contact, and a monorepo whose packages collapse into one column cannot pin a package on its own.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-055",
+      "status": "active",
+      "statement": "When spec init targets an undeclared repository in the platform folder, it shall declare the repository as a member before writing its pin.",
+      "why": "A pin in an undeclared repository is inert: nothing scans the repository and the warning that would say so is the only trace, so the declaration and the pin have to be one step.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-056",
+      "status": "active",
+      "statement": "When spec init runs with --platform for a member checkout outside the platform folder, it shall record the checkout's location for that user, so the member indexes from there.",
+      "why": "A declared member checked out elsewhere is reported missing and never scanned; without a spec-side way to record where it lives, the user is sent to a platform-map command.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-057",
+      "status": "active",
+      "statement": "Where a monorepo has files outside every workspace package, the spec engine shall scan those files once as one extra coverage column.",
+      "why": "The engine's own checkout is named after the reserved specs folder, so its root workspace is never scanned and the tags in its CI workflow are invisible to it. Repo-root code such as CI scripts, infrastructure, and migrations implements requirements too.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
