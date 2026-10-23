@@ -86,7 +86,7 @@ jobs:
       - name: smoke 7 — inverted CI assertion (CHCK-04 / CI-03)
         run: bash scripts/smoke/07-inverted-ci.sh
 
-      - name: smoke 8a — spec get / spec list against fixture (compiled binary) [MAP-003, MAP-004]
+      - name: smoke 8a — spec get / spec list against fixture (compiled binary) [MAP-006, MAP-004]
         run: bash scripts/smoke/08a-get-list.sh
 
       - name: smoke 8 — spec propagation against fixture (compiled binary) [PROP-03]

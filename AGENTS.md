@@ -45,14 +45,14 @@ Rules:
 - **Keep the planted defects in `fixtures/`.** They exist so `spec check` has
   something to catch.
 - **Exactly one `bun:sqlite` import**, in `packages/engine/src/storage/sqlite.ts`.
-  Enforced by `fence_d08_engine_internal` in `scripts/arch-fences.sh` (SCHM-025).
+  Enforced by `fence_d08_engine_internal` in `scripts/arch-fences.sh`.
 - **Every `SPEC.json` read parses through the shared schema.** `parseDomainText`
   in `packages/shared/src/domain.ts` is the one place bytes become a domain
   envelope, and every operation, check, and reader consumes the `SpecDomain`
   it returns. `JSON.parse` otherwise appears only in the readers that own
   their own schema (the member config, the root `package.json`, the HTTP
   body), and nothing in production source casts through `unknown`. Enforced
-  by `fence_schm030_schema_reads` (SCHM-030).
+  by `fence_schm030_schema_reads`.
 - **A test authors its platform through the operations.** `TestPlatform` in
   `packages/engine/src/testing/platform.ts` scaffolds domains, mints,
   supersedes, deprecates, moves, mints terms, and writes member configs by
@@ -62,10 +62,11 @@ Rules:
   after the fact) is planted with `plantEdit` in `src/testing/plant.ts`, which
   still writes through `validateAndWrite`. A schema-invalid file lives under
   `src/testing/fixtures/`. Nothing else writes a `SPEC.json` by hand: the
-  SCHM-035 fence scans every source file and every test. A rewrite of an
+  write-seam fence (`fence_val01_validate_and_write`) scans every source
+  file and every test. A rewrite of an
   existing file preserves its shape: unchanged entries stay byte-identical, a
   changed entry keeps its key order, and an appended entry takes the key order
-  of the last one (SCHM-031..034).
+  of the last one (SCHM-044).
 - **Membership is platform-map's; the pin is ours.** Which directories are
   members, and whether a repo is a monorepo, comes from
   `@spec-engine/platform-map` (`map()` and `locate()`, imported only in
@@ -90,10 +91,11 @@ Rules:
   copying the two `platform-map.json` files back: the checkout's own path
   carries a `spec-engine` segment, and only the engine platform is judged
   below its root.
-- **Every fence is a requirement.** Each `fence_*` function in
-  `scripts/arch-fences.sh` carries the `@spec` tag of the requirement it
-  enforces, and its `run` label starts with that id. `scripts/` is a
-  workspace package (`scripts/package.json`) with its own pin
+- **A fence runs under a descriptive label.** Each `fence_*` function in
+  `scripts/arch-fences.sh` runs under a `run` label that says what it
+  checks. A fence that backs a product requirement carries that
+  requirement's `@spec` tag. `scripts/` is a workspace package
+  (`scripts/package.json`) with its own pin
   (`scripts/spec-engine.member.json`) so those tags index; the scanner reads
   `.sh` files as code.
 - **The planted-fixture diagnostic baseline is one file**,
@@ -110,7 +112,7 @@ Rules:
   `foo.<aspect>.test.ts` (`check.ci.test.ts`, `sqlite.fts.test.ts`). Shared
   helpers and planted trees live in `packages/<pkg>/src/testing/`. Only a test
   of a package- or repo-wide invariant with no single file under test
-  (`architecture-fences`, `corpus-hygiene`, `taxonomy`, `npm-package`, the
+  (`architecture-fences`, `corpus-hygiene`, `npm-package`, the
   webapp import fence) lives in `packages/<pkg>/test/`. The tag scanner
   classifies a file as a test by the `.test.` substring, so a co-located tag
   still verifies; the engine-internal fences skip `*.test.ts` and

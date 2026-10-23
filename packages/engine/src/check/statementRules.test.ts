@@ -91,28 +91,11 @@ describe("STATEMENT_RULES", () => {
   });
 });
 
-test("the engine's own book breaks the rules only in the known statements", async () => {
+test("no Active requirement in the engine's own book breaks a statement rule", async () => {
   const config = readCheckConfig(REPO_ROOT);
   if (!config.ok) throw new Error(config.detail);
   const rows = await statementRuleRows(REPO_ROOT, config.config.statementRules, {
     statuses: new Set(["active"]),
   });
-  expect([...new Set(rows.map((r) => r.req_id))].sort()).toEqual([
-    "CHCK-031",
-    "DIST-007",
-    "DIST-014",
-    "DIST-015",
-    "DIST-017",
-    "DOMAIN-019",
-    "INDX-011",
-    "INDX-015",
-    "INIT-034",
-    "INIT-041",
-    "OWNER-002",
-    "PROP-005",
-    "REQ-050",
-    "REQ-051",
-    "SCHM-024",
-    "SCHM-025",
-  ]);
+  expect(rows.map((r) => r.req_id)).toEqual([]);
 });

@@ -11,7 +11,7 @@ function repo(): ReleaseFiles {
 }
 
 // @spec DIST-024 unit
-test("DIST-016: a publish job that does not wait for a gate is refused", () => {
+test("a publish job that does not wait for a gate is refused", () => {
   const f = repo();
   expect(checkPublishOnRelease(f)).toEqual([]);
   const job = f.workflow.jobs.publish;
@@ -20,7 +20,7 @@ test("DIST-016: a publish job that does not wait for a gate is refused", () => {
 });
 
 // @spec DIST-024 unit
-test("DIST-017: a version parity step after packing is refused", () => {
+test("a version parity step after packing is refused", () => {
   const f = repo();
   expect(checkVersionParity(f)).toEqual([]);
   const job = f.workflow.jobs.publish;

@@ -3,7 +3,7 @@
 // workflow and the JSON configs carry no scannable @spec tag, so each check
 // here is the tagged implementation and scripts/arch-fences.sh runs it.
 //
-// Usage: bun scripts/release-config.ts <DIST-015|DIST-016|DIST-017|DIST-018>
+// Usage: bun scripts/release-config.ts <release-pr|publish-on-release|version-parity|exact-pins>
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -140,10 +140,10 @@ export function checkExactPins(f: ReleaseFiles): string[] {
 }
 
 const CHECKS: Record<string, (f: ReleaseFiles) => string[]> = {
-  "DIST-015": checkReleasePr,
-  "DIST-016": checkPublishOnRelease,
-  "DIST-017": checkVersionParity,
-  "DIST-018": checkExactPins,
+  "release-pr": checkReleasePr,
+  "publish-on-release": checkPublishOnRelease,
+  "version-parity": checkVersionParity,
+  "exact-pins": checkExactPins,
 };
 
 function json<T>(path: string): T {

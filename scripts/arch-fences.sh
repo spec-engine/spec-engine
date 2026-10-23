@@ -33,7 +33,7 @@ run() {
   fi
 }
 
-# --- SCHM-025: bun:sqlite outside packages/engine --------------------------
+# --- bun:sqlite outside packages/engine --------------------------
 fence_d11_bun_sqlite() {
   # Match both double-quote and single-quote import shapes so Biome's
   # default formatter (or a hand-typed single-quote import in a new
@@ -51,7 +51,7 @@ engine_sources() {
   find packages/engine/src -name '*.ts' -type f -not -name '*.test.ts' -not -path '*/src/testing/*' "$@"
 }
 
-# --- SCHM-025: only storage/sqlite.ts may import bun:sqlite ----------------
+# --- only storage/sqlite.ts may import bun:sqlite ----------------
 fence_d08_engine_internal() {
   OFFENDERS=$(engine_sources \
     | grep -v 'storage/sqlite.ts' \
@@ -62,19 +62,19 @@ fence_d08_engine_internal() {
   fi
 }
 
-# --- SCHM-027: the write seam belongs to the operations layer --------------
+# --- the write seam belongs to the operations layer --------------
 # An HTTP route, an MCP tool, or a command may parse, call an operation, and
 # render. None of them may write a domain file or allocate an id itself: the
 # write seam and the id allocator are imported only under operations/.
 fence_ops01_write_seam() {
   OFFENDERS=$(grep -RlE --exclude='*.test.ts' 'validateAndWrite|nextRequirementId' packages/engine/src/server packages/engine/src/commands 2>/dev/null || true)
   if [ -n "$OFFENDERS" ]; then
-    echo "FORBIDDEN: a surface reaches the write seam directly instead of an operation (SCHM-027): $OFFENDERS"
+    echo "FORBIDDEN: a surface reaches the write seam directly instead of an operation: $OFFENDERS"
     exit 1
   fi
 }
 
-# --- SCHM-030: a SPEC.json is read only through the shared schema ----------
+# --- a SPEC.json is read only through the shared schema ----------
 # JSON.parse lives where a file's own schema lives: the domain reader in
 # shared, the member-config, package.json, and MCP config readers, and the HTTP body
 # reader. Nothing in production source casts through `unknown`.
@@ -83,13 +83,13 @@ fence_schm030_schema_reads() {
   OFFENDERS=$(grep -RnE --include='*.ts' --exclude='*.test.ts' --exclude-dir=testing 'JSON\.parse\(|as unknown as' packages/*/src 2>/dev/null \
     | awk -F: -v allowed="^($ALLOWED)$" '$0 ~ /as unknown as/ || $1 !~ allowed' || true)
   if [ -n "$OFFENDERS" ]; then
-    echo "FORBIDDEN: a SPEC.json read outside the shared schema, or a cast through unknown (SCHM-030):"
+    echo "FORBIDDEN: a SPEC.json read outside the shared schema, or a cast through unknown:"
     echo "$OFFENDERS"
     exit 1
   fi
 }
 
-# --- INIT-037: platform-map's map() and locate() enter through discover.ts --
+# --- platform-map's map() and locate() enter through discover.ts --
 # Membership and shape have one reader in the engine. operations/init.ts may
 # import the write half (planInit, applyInit, planLink, applyLink) and the
 # pure probes (detect, discover); nothing else in production source imports
@@ -116,23 +116,23 @@ fence_init037_platform_map_seam() {
   echo "platform-map seam fence: OK (readers: discover.ts; writers: operations/init.ts)"
 }
 
-# --- SCHM-028: no CHECK/FK/UNIQUE on domain fields -------------------------
+# --- no CHECK/FK/UNIQUE on domain fields -------------------------
 fence_schm07_schema_constraint() {
   if grep -E '(CHECK\(|FOREIGN KEY|^\s*UNIQUE\()' packages/shared/src/schema.ts; then
-    echo "FORBIDDEN: schema.ts contains CHECK/FK/UNIQUE constraints (SCHM-028)"
+    echo "FORBIDDEN: schema.ts contains CHECK/FK/UNIQUE constraints"
     exit 1
   fi
 }
 
-# --- SCHM-029: DDL must be inline TS strings (no .sql files) ---------------
+# --- DDL must be inline TS strings (no .sql files) ---------------
 fence_schm08_no_sql_files() {
   if find packages -name '*.sql' -type f | grep -q .; then
-    echo "FORBIDDEN: .sql files in packages/ (DDL must be inline TS strings, SCHM-029)"
+    echo "FORBIDDEN: .sql files in packages/ (DDL must be inline TS strings)"
     exit 1
   fi
 }
 
-# --- PROV-006: issue_id is never an identity construct ---------------------
+# --- issue_id is never an identity construct ---------------------
 # @spec PROV-007
 fence_prov02_issue_id_opacity() {
   PAT='(PRIMARY KEY[^,]*issue_id|issue_id[^,]*PRIMARY KEY|FOREIGN KEY[^)]*issue_id|issue_id[^)]*FOREIGN KEY|UNIQUE\([^)]*issue_id|CREATE[[:space:]]+(UNIQUE[[:space:]]+)?INDEX[^;]*\([^)]*issue_id|JOIN[^;]*ON[^;]*issue_id|GROUP BY[^;]*issue_id)'
@@ -140,7 +140,7 @@ fence_prov02_issue_id_opacity() {
     | grep -vE '^[[:space:]]*(--|//)' \
     | grep -nE "$PAT" || true)
   if [ -n "$OFFENDERS" ]; then
-    echo "FORBIDDEN: issue_id appears in an identity construct (PROV-006)"
+    echo "FORBIDDEN: issue_id appears in an identity construct"
     echo "$OFFENDERS"
     exit 1
   fi
@@ -159,7 +159,7 @@ fence_prov02_issue_id_opacity() {
   echo "issue_id-opacity gate: OK (fence green; self-tests tripped)"
 }
 
-# --- DIST-012: README references spec init + NO_SPEC_CONFIG ----------------
+# --- README references spec init + NO_SPEC_CONFIG ----------------
 fence_docs01_readme_tokens() {
   set -euo pipefail
   grep -q 'spec init' README.md         || { echo "FAIL: README.md missing 'spec init' token";        exit 1; }
@@ -167,14 +167,14 @@ fence_docs01_readme_tokens() {
   echo "docs grep gate: OK"
 }
 
-# --- DIST-019: README + the agent reference describe the JSON model / migrate / trusted-red
+# --- README + the agent reference describe the JSON model / migrate / trusted-red
 fence_ma4_v13_doc_reference() {
   set -euo pipefail
   TOKENS='SPEC.json|spec migrate|trusted-red|--results'
   IFS='|'
   for tok in $TOKENS; do
-    grep -qF -- "$tok" README.md      || { echo "FAIL: README.md missing '$tok' token (DIST-019 doc gate)";      exit 1; }
-    grep -qF -- "$tok" packages/site/src/content/docs/agent-reference.md || { echo "FAIL: the agent reference is missing '$tok' token (DIST-019 doc gate)"; exit 1; }
+    grep -qF -- "$tok" README.md      || { echo "FAIL: README.md missing '$tok' token (doc gate)";      exit 1; }
+    grep -qF -- "$tok" packages/site/src/content/docs/agent-reference.md || { echo "FAIL: the agent reference is missing '$tok' token (doc gate)"; exit 1; }
   done
   unset IFS
   printf 'the trusted-red gate ingests --results <junit.xml>\n' \
@@ -188,16 +188,16 @@ fence_ma4_v13_doc_reference() {
   echo "doc-reference gate: OK (all tokens in both docs; self-tests: positive tripped, negative clean)"
 }
 
-# --- DIST-014: spec-engine.config.example.json must stay deleted -----------
+# --- spec-engine.config.example.json must stay deleted -----------
 fence_clean01_no_stale_example() {
   if find . -name 'spec-engine.config.example.json' -not -path './node_modules/*' | grep -q .; then
-    echo "FORBIDDEN: spec-engine.config.example.json found in tree — spec init is the replacement (DIST-014)"
+    echo "FORBIDDEN: spec-engine.config.example.json found in tree — spec init is the replacement"
     find . -name 'spec-engine.config.example.json' -not -path './node_modules/*'
     exit 1
   fi
 }
 
-# --- TRK-004: engine internals never import @spec-engine/tracker / no ext net
+# --- engine internals never import @spec-engine/tracker / no ext net
 # @spec TRK-004
 fence_trk02_tracker_import() {
   INTERNAL_FILES=$(engine_sources \
@@ -215,7 +215,7 @@ fence_trk02_tracker_import() {
     | grep -E 'https?://' \
     | grep -vE '127\.0\.0\.1|localhost' || true)
   if [ -n "$HOSTS" ]; then
-    echo "FORBIDDEN: external http(s) host literal in packages/engine/src (TRK-004 no-external-net)"
+    echo "FORBIDDEN: external http(s) host literal in packages/engine/src (no-external-net)"
     echo "$HOSTS"
     exit 1
   fi
@@ -238,7 +238,7 @@ fence_trk02_tracker_import() {
   echo "tracker import fence: OK (surface excluded; internals guarded; indexer/ self-test tripped; no external host; loopback green; self-tests tripped)"
 }
 
-# --- AUTHOR-008: the engine stays LLM-free (no model SDK / inference call) --
+# --- the engine stays LLM-free (no model SDK / inference call) --
 # @spec AUTHOR-015
 fence_llmfree_engine() {
   # Mirror the tracker fence's host-literal scan: cat every engine source,
@@ -272,7 +272,7 @@ fence_llmfree_engine() {
   echo "llm-free engine fence: OK (no model SDK/inference in packages/engine/src; self-tests tripped)"
 }
 
-# --- TRK-007: query only, never a GraphQL mutation --------------------------
+# --- query only, never a GraphQL mutation --------------------------
 # @spec TRK-007
 fence_trk04_no_mutation() {
   MUT=$(find packages/tracker/src -name '*.ts' -type f -not -name '*.test.ts' -print0 \
@@ -289,7 +289,7 @@ fence_trk04_no_mutation() {
   echo "tracker no-mutation fence: OK (read-only; self-test tripped)"
 }
 
-# --- TRK-009: SPEC_TRACKER_TOKEN never logged -------------------------------
+# --- SPEC_TRACKER_TOKEN never logged -------------------------------
 # @spec TRK-009
 fence_trk06_no_token_log() {
   OFFENDERS=$(grep -REn --exclude='*.test.ts' 'console\.[a-z]+\([^)]*(SPEC_TRACKER_TOKEN|token)' packages/tracker/src 2>/dev/null || true)
@@ -304,7 +304,7 @@ fence_trk06_no_token_log() {
   echo "no-token-log fence: OK (no token in console.*; self-test tripped)"
 }
 
-# --- SCHM-035: no direct domain-file write outside validateAndWrite --------
+# --- no direct domain-file write outside validateAndWrite --------
 # Every source file in every package, the co-located tests and the helpers
 # under src/testing/ included. The only exemption is the planted trees under
 # src/testing/fixtures/, which are data, not code. A test authors its
@@ -316,7 +316,7 @@ fence_val01_validate_and_write() {
     | xargs -0 grep -nHE "$PAT" 2>/dev/null \
     | grep -vE '^[^:]+:[0-9]+:[[:space:]]*(//|\*|--)' || true)
   if [ -n "$OFFENDERS" ]; then
-    echo "FORBIDDEN: domain spec file written outside validateAndWrite (SCHM-035)"
+    echo "FORBIDDEN: domain spec file written outside validateAndWrite"
     echo "$OFFENDERS"
     exit 1
   fi
@@ -324,27 +324,27 @@ fence_val01_validate_and_write() {
     | grep -vE '^[[:space:]]*(//|\*|--)' \
     | grep -nE "$PAT" || true)
   if [ -z "$SELFTEST" ]; then
-    echo "FAIL: SCHM-035 fence self-test did not trip — pattern misses variable-path domain writes"
+    echo "FAIL: write-seam fence self-test did not trip — pattern misses variable-path domain writes"
     exit 1
   fi
   SELFTEST_TEST=$(printf '    writeFileSync(join(root, "spec-engine", key, "SPEC.json"), JSON.stringify(doc));\n' \
     | grep -vE '^[[:space:]]*(//|\*|--)' \
     | grep -nE "$PAT" || true)
   if [ -z "$SELFTEST_TEST" ]; then
-    echo "FAIL: SCHM-035 fence self-test did not trip — pattern misses a test's hand-written envelope"
+    echo "FAIL: write-seam fence self-test did not trip — pattern misses a test's hand-written envelope"
     exit 1
   fi
   NEGTEST=$(printf '    await Bun.write(doctorPath, renderDoctorMd(x));\n    writeFileSync(join(clone, "results.xml"), xml);\n' \
     | grep -vE '^[[:space:]]*(//|\*|--)' \
     | grep -nE "$PAT" || true)
   if [ -n "$NEGTEST" ]; then
-    echo "FAIL: SCHM-035 fence over-broad — it flagged a sanctioned non-spec write"
+    echo "FAIL: write-seam fence over-broad — it flagged a sanctioned non-spec write"
     exit 1
   fi
   echo "validateAndWrite seam fence: OK (fence green over every source and test; self-tests tripped; negative self-test clean)"
 }
 
-# --- INDX-013: the Markdown SPEC.md parse path stays removed ---------------
+# --- the Markdown SPEC.md parse path stays removed ---------------
 # @spec INDX-013
 fence_stor04_no_spec_md_parse() {
   PAT='(parseSpecFile|findSpecFiles)\(|\*\*/SPEC\.md|gray-matter|(Bun\.file|readFileSync|readFile|Bun\.Glob)\([^)]*SPEC\.md'
@@ -353,7 +353,7 @@ fence_stor04_no_spec_md_parse() {
     | grep -vE '^[[:space:]]*(//|\*|--)' \
     | grep -nE "$PAT" || true)
   if [ -n "$OFFENDERS" ]; then
-    echo "FORBIDDEN: SPEC.md parse path reintroduced (INDX-013)"
+    echo "FORBIDDEN: SPEC.md parse path reintroduced"
     echo "$OFFENDERS"
     exit 1
   fi
@@ -380,14 +380,14 @@ fence_stor04_no_spec_md_parse() {
   fi
   GM=$(grep -rn 'gray-matter' packages/engine || true)
   if [ -n "$GM" ]; then
-    echo "FORBIDDEN: gray-matter reintroduced into packages/engine (INDX-013)"
+    echo "FORBIDDEN: gray-matter reintroduced into packages/engine"
     echo "$GM"
     exit 1
   fi
   echo "no-SPEC.md-parse fence: OK (fence green; positive self-test tripped; negative self-test clean)"
 }
 
-# --- CHCK-020: committed GLOSSARY.md == generated from the TERM store -------
+# --- committed GLOSSARY.md == generated from the TERM store -------
 # The human-view drift gate. `spec glossary --check` regenerates GLOSSARY.md
 # from spec-engine/TERM/SPEC.json (a deterministic, LLM-free projection) into a
 # buffer and diffs it byte-for-byte against the committed file — exit 1 on any
@@ -404,7 +404,7 @@ fence_glossary_roundtrip() {
   fi
 }
 
-# --- SCHM-020: a requirement (non-TERM) domain carries NO authored specVersion
+# --- a requirement (non-TERM) domain carries NO authored specVersion
 # The domain version is the DAG-derived projection; an authored counter beside
 # it could be hand-edited to disagree with the supersede history, so the
 # corpus is gated to forbid one. The reserved TERM domain is the sole carrier
@@ -432,7 +432,7 @@ fence_no_authored_specversion() {
   echo "authored-specVersion fence: OK (no non-TERM envelope carries a counter)"
 }
 
-# --- CHCK-053: the agent reference's diagnostic-code list matches the DiagnosticCode enum
+# --- the agent reference's diagnostic-code list matches the DiagnosticCode enum
 # The list is hand-written prose beside a machine-readable enum, so it drifts.
 # This compares the two sets (order and duplicates are prose's business,
 # membership is not).
@@ -458,7 +458,7 @@ fence_agents_check_codes() {
   echo "agent reference check-codes fence: OK (list == DiagnosticCode enum)"
 }
 
-# --- CHRT-007: TAXONOMY.md per-domain charters are generated from the envelopes
+# --- TAXONOMY.md per-domain charters are generated from the envelopes
 # The envelope `scope` is canonical (it ships with adopters and feeds
 # `spec domain list` / `spec req`); the document is derived from it.
 fence_taxonomy_charters() {
@@ -470,41 +470,41 @@ fence_taxonomy_charters() {
   fi
 }
 
-# --- DIST-015..018: the release pipeline config --------------------------
+# --- the release pipeline config --------------------------
 # ci.yml and the JSON configs hold no scannable tag; scripts/release-config.ts
-# parses them and states each requirement's shape.
-fence_dist015_release_pr() { bun scripts/release-config.ts DIST-015; }
+# parses them and checks each one's shape.
+fence_dist015_release_pr() { bun scripts/release-config.ts release-pr; }
 # @spec DIST-024
-fence_dist016_publish_on_release() { bun scripts/release-config.ts DIST-016; }
+fence_dist016_publish_on_release() { bun scripts/release-config.ts publish-on-release; }
 # @spec DIST-024
-fence_dist017_version_parity() { bun scripts/release-config.ts DIST-017; }
-fence_dist018_exact_pins() { bun scripts/release-config.ts DIST-018; }
+fence_dist017_version_parity() { bun scripts/release-config.ts version-parity; }
+fence_dist018_exact_pins() { bun scripts/release-config.ts exact-pins; }
 
-run "SCHM-025 bun:sqlite outside the engine"                  fence_d11_bun_sqlite
-run "SCHM-025 bun:sqlite outside storage/sqlite.ts"           fence_d08_engine_internal
-run "SCHM-028 no CHECK, FK, or UNIQUE on domain fields"        fence_schm07_schema_constraint
-run "SCHM-029 DDL inline, no .sql files"                       fence_schm08_no_sql_files
-run "PROV-006 issue_id is never an identity"                   fence_prov02_issue_id_opacity
-run "DIST-012 README names spec init and NO_SPEC_CONFIG"       fence_docs01_readme_tokens
-run "DIST-019 README and the agent reference name the JSON model and the proof gate" fence_ma4_v13_doc_reference
-run "DIST-014 no stale example config"                         fence_clean01_no_stale_example
-run "DIST-015 release-please opens the release PR"           fence_dist015_release_pr
-run "DIST-016 publish runs on release after every gate"      fence_dist016_publish_on_release
-run "DIST-017 tag and package version match before packing"  fence_dist017_version_parity
-run "DIST-018 dependencies are exact pins, Renovate keeps them" fence_dist018_exact_pins
-run "TRK-004 engine internals never import the tracker or reach the network" fence_trk02_tracker_import
-run "TRK-007 tracker sends queries only"                       fence_trk04_no_mutation
-run "TRK-009 token never logged"                               fence_trk06_no_token_log
-run "SCHM-035 every SPEC.json write goes through validateAndWrite" fence_val01_validate_and_write
-run "INDX-013 no SPEC.md parse path"                           fence_stor04_no_spec_md_parse
-run "AUTHOR-008 llm-free engine"                               fence_llmfree_engine
-run "CHCK-020 glossary round-trip"                             fence_glossary_roundtrip
-run "SCHM-020 no authored specVersion"                         fence_no_authored_specversion
-run "CHCK-053 the agent reference lists every diagnostic code" fence_agents_check_codes
-run "CHRT-007 charters generated from the envelopes"           fence_taxonomy_charters
-run "SCHM-027 write seam under operations"                     fence_ops01_write_seam
-run "SCHM-030 every SPEC.json read parses through the shared schema" fence_schm030_schema_reads
-run "INIT-037 platform-map map() and locate() enter through discover.ts" fence_init037_platform_map_seam
+run "bun:sqlite outside the engine"                  fence_d11_bun_sqlite
+run "bun:sqlite outside storage/sqlite.ts"           fence_d08_engine_internal
+run "no CHECK, FK, or UNIQUE on domain fields"        fence_schm07_schema_constraint
+run "DDL inline, no .sql files"                       fence_schm08_no_sql_files
+run "issue_id is never an identity"                   fence_prov02_issue_id_opacity
+run "README names spec init and NO_SPEC_CONFIG"       fence_docs01_readme_tokens
+run "README and the agent reference name the JSON model and the proof gate" fence_ma4_v13_doc_reference
+run "no stale example config"                         fence_clean01_no_stale_example
+run "release-please opens the release PR"           fence_dist015_release_pr
+run "publish runs on release after every gate"      fence_dist016_publish_on_release
+run "tag and package version match before packing"  fence_dist017_version_parity
+run "dependencies are exact pins, Renovate keeps them" fence_dist018_exact_pins
+run "engine internals never import the tracker or reach the network" fence_trk02_tracker_import
+run "tracker sends queries only"                       fence_trk04_no_mutation
+run "token never logged"                               fence_trk06_no_token_log
+run "every SPEC.json write goes through validateAndWrite" fence_val01_validate_and_write
+run "no SPEC.md parse path"                           fence_stor04_no_spec_md_parse
+run "llm-free engine"                               fence_llmfree_engine
+run "glossary round-trip"                             fence_glossary_roundtrip
+run "no authored specVersion"                         fence_no_authored_specversion
+run "the agent reference lists every diagnostic code" fence_agents_check_codes
+run "charters generated from the envelopes"           fence_taxonomy_charters
+run "write seam under operations"                     fence_ops01_write_seam
+run "every SPEC.json read parses through the shared schema" fence_schm030_schema_reads
+run "platform-map map() and locate() enter through discover.ts" fence_init037_platform_map_seam
 
 if [ "$fail" -ne 0 ]; then
   echo ""

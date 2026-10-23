@@ -92,7 +92,7 @@ An operation takes typed input and returns typed data or a typed refusal. It nev
 | `newDomain`, `listDomains`, `setDomainGrammar` | platform dir, key | the scaffolded file, or `usage` / `conflict` / `invalid_domain_file`; the `{ key, scope }` rows; the written `grammar` / `grammarSeverity`, or `usage` / `not_found` / `invalid_domain_file` | `spec domain` | | |
 | `writeGlossary`, `migrateGlossary`, `checkGlossary` | platform dir | the generated count, the migrated count or a skip, clean or drift | `spec glossary` | | |
 
-Reads take an open `Storage` handle because the surface owns the handle's lifetime: the CLI and MCP open one per call through `withIndex`, the API keeps one for the life of the server. Writes take the platform directory because they edit `SPEC.json` files. A lifecycle write takes a fresh-tags callback for its worklist, so a one-shot surface cold-rebuilds a throwaway index while the API re-indexes into the handle it keeps. Every guard runs before the first byte is written (REQ-038 <!-- @spec REQ-075 -->), and `operations/parity.test.ts` proves each surface writes the same envelope.
+Reads take an open `Storage` handle because the surface owns the handle's lifetime: the CLI and MCP open one per call through `withIndex`, the API keeps one for the life of the server. Writes take the platform directory because they edit `SPEC.json` files. A lifecycle write takes a fresh-tags callback for its worklist, so a one-shot surface cold-rebuilds a throwaway index while the API re-indexes into the handle it keeps. Every guard runs before the first byte is written (REQ-075 <!-- @spec REQ-075 -->), and `operations/parity.test.ts` proves each surface writes the same envelope.
 
 ## The single seams
 
@@ -101,13 +101,13 @@ Each of these exists exactly once, and a grep fence in `scripts/arch-fences.sh` 
 | Seam | What goes through it | Fence |
 | --- | --- | --- |
 | `runIndex` | Every index build. One transaction, one `build_id` | reviewed, not fenced |
-| `validateAndWrite` | Every write of a `SPEC.json` file, a test's fixture included; a planted defect under `src/testing/fixtures/` is the only file written by hand | `SCHM-035 every SPEC.json write goes through validateAndWrite` |
-| `bun:sqlite` import | Only `storage/sqlite.ts` may import it | `SCHM-025 bun:sqlite outside storage/sqlite.ts`, `SCHM-025 bun:sqlite outside the engine` |
+| `validateAndWrite` | Every write of a `SPEC.json` file, a test's fixture included; a planted defect under `src/testing/fixtures/` is the only file written by hand | `every SPEC.json write goes through validateAndWrite` |
+| `bun:sqlite` import | Only `storage/sqlite.ts` may import it | `bun:sqlite outside storage/sqlite.ts`, `bun:sqlite outside the engine` |
 | `Storage` interface | Every read the CLI, API, and MCP make | the webapp import fence in `packages/webapp/test/import-fence.test.ts` |
-| Operations | The write seam and the id allocator are reached only through `operations/`; no command, route, or tool imports them. A test's fixture builder (`src/testing/platform.ts`) is one more caller of the same operations | `SCHM-027 write seam under operations` |
-| No model calls | The engine never runs an LLM. The MCP authoring prompt is a text template | `AUTHOR-008 llm-free engine` |
-| Derived versions | No authored `specVersion` on requirement domains | `SCHM-020 no authored specVersion` |
-| Generated docs | `GLOSSARY.md` and the TAXONOMY charters are regenerated, never hand-edited | `CHCK-020 glossary round-trip`, `CHRT-007 charters generated from the envelopes` |
+| Operations | The write seam and the id allocator are reached only through `operations/`; no command, route, or tool imports them. A test's fixture builder (`src/testing/platform.ts`) is one more caller of the same operations | `write seam under operations` |
+| No model calls | The engine never runs an LLM. The MCP authoring prompt is a text template | `llm-free engine` |
+| Derived versions | No authored `specVersion` on requirement domains | `no authored specVersion` |
+| Generated docs | `GLOSSARY.md` and the TAXONOMY charters are regenerated, never hand-edited | `glossary round-trip`, `charters generated from the envelopes` |
 
 ## Read path
 
@@ -144,7 +144,7 @@ The six headline invariants (cold-rebuild identity, `check --ci` builds fresh, o
 | Don't | Why | Do instead |
 | --- | --- | --- |
 | Write a value into the index that cannot be re-derived | A cold rebuild must give an identical result | Put truth in `SPEC.json` or a tag; express the report as a view |
-| Import `bun:sqlite` in a second file | Forks the storage contract and reds the SCHM-025 fence | Extend `Storage` and implement it in `storage/sqlite.ts` |
+| Import `bun:sqlite` in a second file | Forks the storage contract and reds the `bun:sqlite` fence | Extend `Storage` and implement it in `storage/sqlite.ts` |
 | `Bun.write` a spec file directly | Skips schema validation | Mutate the envelope and call `validateAndWrite` |
 | Use a ticket number as a requirement id or in a tag | Tickets are temporary; requirements outlive them | Mint with `spec req`, record the ticket with `--issue` |
 | "Fix" a defect under `fixtures/` | Those defects are what `spec check` exists to catch | Leave them. Tags under `fixtures/` never index |
