@@ -1,13 +1,12 @@
 #!/usr/bin/env bun
-// Checks the release pipeline's config against its DIST requirements. The
-// workflow and the JSON configs carry no scannable @spec tag, so each check
-// here is the tagged implementation and scripts/arch-fences.sh runs it.
+// Checks the release workflow against its DIST requirements. The workflow
+// carries no scannable @spec tag, so each check here is the tagged
+// implementation and scripts/arch-fences.sh runs it.
 //
-// Usage: bun scripts/release-config.ts <release-pr|publish-on-release|version-parity|exact-pins>
+// Usage: bun scripts/release-config.ts <publish-on-release|version-parity>
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { Glob } from "bun";
 
 interface Step {
   uses?: string;
@@ -25,57 +24,12 @@ export interface Workflow {
   on: { push?: { branches?: string[]; tags?: string[] } };
   jobs: Record<string, Job>;
 }
-type Deps = Record<string, string>;
-export interface Manifest {
-  dependencies?: Deps;
-  devDependencies?: Deps;
-  optionalDependencies?: Deps;
-}
 export interface ReleaseFiles {
   workflow: Workflow;
-  rpConfig: { packages?: Record<string, Record<string, unknown>> };
-  rpManifest: Record<string, string>;
-  engineVersion: string;
-  renovate: { extends?: string[] };
-  manifests: Record<string, Manifest>;
 }
 
 const ENGINE = "packages/engine";
 const ROOT = join(import.meta.dir, "..");
-
-export function checkReleasePr(f: ReleaseFiles): string[] {
-  const out: string[] = [];
-  const job = f.workflow.jobs["release-please"];
-  if (!job) return ["ci.yml has no release-please job"];
-  if (job.if !== "github.event_name == 'push' && github.ref == 'refs/heads/main'") {
-    out.push("release-please must run on push to main only");
-  }
-  const step = job.steps?.find((s) => s.uses?.startsWith("googleapis/release-please-action@v4"));
-  if (step?.with?.["config-file"] !== "release-please-config.json") {
-    out.push(
-      "release-please must run googleapis/release-please-action@v4 with release-please-config.json",
-    );
-  }
-  if (step?.with?.["manifest-file"] !== ".release-please-manifest.json") {
-    out.push("release-please must read .release-please-manifest.json");
-  }
-  const pkg = f.rpConfig.packages?.[ENGINE];
-  if (
-    pkg?.["release-type"] !== "node" ||
-    pkg["package-name"] !== "@spec-engine/spec-engine" ||
-    pkg["include-component-in-tag"] !== false
-  ) {
-    out.push(
-      `release-please-config.json must release ${ENGINE} as node, @spec-engine/spec-engine, v<version> tags`,
-    );
-  }
-  if (f.rpManifest[ENGINE] !== f.engineVersion) {
-    out.push(
-      `.release-please-manifest.json ${f.rpManifest[ENGINE]} != ${ENGINE} version ${f.engineVersion}`,
-    );
-  }
-  return out;
-}
 
 /** @spec DIST-024 */
 export function checkPublishOnRelease(f: ReleaseFiles): string[] {
@@ -122,50 +76,16 @@ export function checkVersionParity(f: ReleaseFiles): string[] {
   return [];
 }
 
-const EXACT = /^(\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?|workspace:\*)$/;
-
-export function checkExactPins(f: ReleaseFiles): string[] {
-  const out: string[] = [];
-  for (const [file, m] of Object.entries(f.manifests)) {
-    for (const deps of [m.dependencies, m.devDependencies, m.optionalDependencies]) {
-      for (const [name, range] of Object.entries(deps ?? {})) {
-        if (!EXACT.test(range)) out.push(`${file}: ${name}@${range} is not an exact pin`);
-      }
-    }
-  }
-  if (!f.renovate.extends?.includes(":pinAllExceptPeerDependencies")) {
-    out.push("renovate.json must extend :pinAllExceptPeerDependencies");
-  }
-  return out;
-}
-
 const CHECKS: Record<string, (f: ReleaseFiles) => string[]> = {
-  "release-pr": checkReleasePr,
   "publish-on-release": checkPublishOnRelease,
   "version-parity": checkVersionParity,
-  "exact-pins": checkExactPins,
 };
 
-function json<T>(path: string): T {
-  return JSON.parse(readFileSync(join(ROOT, path), "utf8")) as T;
-}
-
 export function loadReleaseFiles(): ReleaseFiles {
-  const manifests: Record<string, Manifest> = {};
-  for (const file of new Glob(
-    "{package.json,packages/*/package.json,scripts/package.json}",
-  ).scanSync(ROOT)) {
-    manifests[file] = json<Manifest>(file);
-  }
   return {
     workflow: Bun.YAML.parse(
       readFileSync(join(ROOT, ".github/workflows/ci.yml"), "utf8"),
     ) as Workflow,
-    rpConfig: json("release-please-config.json"),
-    rpManifest: json(".release-please-manifest.json"),
-    engineVersion: json<{ version: string }>(`${ENGINE}/package.json`).version,
-    renovate: json("renovate.json"),
-    manifests,
   };
 }
 

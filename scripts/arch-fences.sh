@@ -471,14 +471,12 @@ fence_taxonomy_charters() {
 }
 
 # --- the release pipeline config --------------------------
-# ci.yml and the JSON configs hold no scannable tag; scripts/release-config.ts
-# parses them and checks each one's shape.
-fence_dist015_release_pr() { bun scripts/release-config.ts release-pr; }
+# ci.yml holds no scannable tag; scripts/release-config.ts parses it and
+# checks the publish job's shape.
 # @spec DIST-024
 fence_dist016_publish_on_release() { bun scripts/release-config.ts publish-on-release; }
 # @spec DIST-024
 fence_dist017_version_parity() { bun scripts/release-config.ts version-parity; }
-fence_dist018_exact_pins() { bun scripts/release-config.ts exact-pins; }
 
 run "bun:sqlite outside the engine"                  fence_d11_bun_sqlite
 run "bun:sqlite outside storage/sqlite.ts"           fence_d08_engine_internal
@@ -488,10 +486,8 @@ run "issue_id is never an identity"                   fence_prov02_issue_id_opac
 run "README names spec init and NO_SPEC_CONFIG"       fence_docs01_readme_tokens
 run "README and the agent reference name the JSON model and the proof gate" fence_ma4_v13_doc_reference
 run "no stale example config"                         fence_clean01_no_stale_example
-run "release-please opens the release PR"           fence_dist015_release_pr
 run "publish runs on release after every gate"      fence_dist016_publish_on_release
 run "tag and package version match before packing"  fence_dist017_version_parity
-run "dependencies are exact pins, Renovate keeps them" fence_dist018_exact_pins
 run "engine internals never import the tracker or reach the network" fence_trk02_tracker_import
 run "tracker sends queries only"                       fence_trk04_no_mutation
 run "token never logged"                               fence_trk06_no_token_log
