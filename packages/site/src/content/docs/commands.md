@@ -35,7 +35,7 @@ This page groups the commands by task. The exact contract of each one (flags, `-
 
 ## Set up and serve
 
-- [`spec init`](/agent-reference/#spec-init): declare a member and write its pin. See [Platform Mapping](/platform-mapping/).
+- [`spec init`](/agent-reference/#spec-init): declare a member, write its pin, and install the agent surface (the agent reference in `AGENTS.md`, the `req-author` skill, the `spec` MCP entry, and a `spec guard` pre-commit hook). See [Platform Mapping](/platform-mapping/).
 - [`spec index`](/agent-reference/#spec-index): build the derived index; every other command builds it when needed.
 - [`spec migrate`](/agent-reference/#spec-migrate): strip the retired `livesIn` and `verifiedIn` fields from every `SPEC.json`.
 - [`spec serve`](/agent-reference/#spec-serve), [`spec mcp`](/agent-reference/#spec-mcp), [`spec docs`](/agent-reference/#spec-docs): the local webapp, the MCP server, and this site offline.
