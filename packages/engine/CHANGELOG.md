@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.10.0](https://github.com/spec-engine/spec-engine/compare/v0.9.0...v0.10.0) (2026-10-23)
+
+
+### Features
+
+* **check:** add six statement rules and extend the default jargon list ([0abf1c9](https://github.com/spec-engine/spec-engine/commit/0abf1c9d344399f6c8a5a92fef8f157fafb560e5))
+* **check:** duplicates.ignore lists reviewed pairs ([84f77c3](https://github.com/spec-engine/spec-engine/commit/84f77c3135144ace830c93a61b9e62d8cb48d3c1))
+* **check:** flag possible duplicate requirements by word overlap ([96db2c8](https://github.com/spec-engine/spec-engine/commit/96db2c85e62422873110a9d96fff822ef1d98e79))
+* **schema:** publish JSON Schemas and write $schema in scaffolds and migrate ([6c433cb](https://github.com/spec-engine/spec-engine/commit/6c433cbd51b1486772963155305a3de1cf54c8ea))
+* **spec:** mint the spec term command requirements and bind term.test.ts ([bf02072](https://github.com/spec-engine/spec-engine/commit/bf0207200d44149713793c4ce54a53238ccd0fb8))
+
+
+### Bug Fixes
+
+* **check:** scope RELATES_SUPERSEDED to live entries ([5bf157c](https://github.com/spec-engine/spec-engine/commit/5bf157cc57845c54c1b3d1ea75becececdf3959c))
+
 ## [0.9.0](https://github.com/spec-engine/spec-engine/compare/v0.8.1...v0.9.0) (2026-10-23)
 
 
