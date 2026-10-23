@@ -1,5 +1,5 @@
 // @spec DIST-005
-// @spec DIST-006
+// @spec DIST-026
 // @spec DIST-021
 // @spec DIST-008
 //
@@ -81,7 +81,7 @@ export function createDocsFetchHandler(root: string): (req: Request) => Response
  * The success exit stays below the try/catch, as in serve.ts's probe.
  * Exported so the unit suite can drive it against a temp docs root without
  * depending on a built site.
- * @spec DIST-006
+ * @spec DIST-026
  */
 export async function runProbe(root: string): Promise<void> {
   const server = Bun.serve({

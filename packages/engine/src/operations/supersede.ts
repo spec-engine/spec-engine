@@ -103,7 +103,7 @@ function successorFields(
 /**
  * The successor keeps the predecessor's headword and synonyms unless the
  * input names them.
- * @spec REQ-034
+ * @spec REQ-085
  */
 function applyTermOverrides(successor: SpecRequirement, input: SupersedeInput): void {
   const term = input.term?.trim();
@@ -112,7 +112,7 @@ function applyTermOverrides(successor: SpecRequirement, input: SupersedeInput): 
 }
 
 /** Flip the predecessor forward; the causing ticket rides along as provenance. */
-// @spec PROV-003
+// @spec PROV-008
 function flipPredecessor(req: SpecRequirement, newId: string, issue?: string): void {
   req.status = "superseded";
   req.supersededBy = newId;

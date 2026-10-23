@@ -71,7 +71,7 @@ describe("the agent reference", () => {
   });
 
   test("states the requirement-authoring standard", () => {
-    // @spec CHRT-024 unit
+    // @spec CHRT-032 unit
     const doc = readFileSync(AGENT_DOC, "utf8");
     expect(doc).toContain(RULE_ZERO);
     expect(doc).toContain("When an unknown requirement id is passed");
@@ -99,7 +99,7 @@ describe("the authoring playbook and the req-author skill", () => {
 
   test("the req-author SKILL.md exists with frontmatter + approval gate + rubric cross-ref + real-CLI dogfood", () => {
     // @spec AUTHOR-014 unit
-    // @spec AUTHOR-007 unit
+    // @spec AUTHOR-017 unit
     const skill = readOrEmpty(SKILL_MD);
     expect(skill).toContain("name:");
     expect(skill).toContain("description:");

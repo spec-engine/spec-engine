@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # The statement rules: spec req refuses a rule-breaking statement with exit 2, and spec lint and spec check report one already in the book.
 # @spec REQ-060
-# @spec CHCK-049
-# @spec CHCK-050
+# @spec CHCK-068
+# @spec CHCK-067
 # @spec CHCK-058
 source "$(dirname "$0")/_lib.sh"
 TMP=$(fixture_copy); trap 'rm -rf "$TMP"' EXIT

@@ -70,7 +70,7 @@ describe("writeAgentSurface", () => {
   });
 
   test("a second run writes nothing and leaves every file byte-identical", () => {
-    // @spec INIT-048 unit
+    // @spec INIT-061 unit
     run();
     const before = snapshot();
     expect(run().written).toEqual([]);
@@ -78,7 +78,7 @@ describe("writeAgentSurface", () => {
   });
 
   test("an existing block is replaced in place and the text around it is kept", () => {
-    // @spec INIT-048 unit
+    // @spec INIT-061 unit
     // @spec INIT-049 unit
     writeFileSync(
       join(repo, "AGENTS.md"),

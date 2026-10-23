@@ -56,7 +56,7 @@ describe("architecture fences (scripts/arch-fences.sh)", () => {
     fenceHeld("tag and package version match before packing");
   });
 
-  // @spec TRK-004 unit
+  // @spec TRK-010 unit
   test("engine internals never import the tracker and carry no external host literal", () => {
     fenceHeld("engine internals never import the tracker or reach the network");
     expect(stdout).toContain("tracker import fence: OK");
@@ -72,7 +72,7 @@ describe("architecture fences (scripts/arch-fences.sh)", () => {
     fenceHeld("token never logged");
   });
 
-  // @spec INDX-013 unit
+  // @spec INDX-029 unit
   test("no SPEC.md parse path exists in the engine", () => {
     fenceHeld("no SPEC.md parse path");
   });

@@ -94,7 +94,7 @@ export function resolveBind(args: {
  * cognitive-complexity ceiling; the two modes share no state.
  *
  * @spec SERV-011
- * @spec SERV-012
+ * @spec SERV-034
  */
 async function runProbe(): Promise<void> {
   const app = createApp();

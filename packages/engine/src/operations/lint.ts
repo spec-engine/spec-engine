@@ -20,7 +20,7 @@ export interface LintResult {
 }
 
 /**
- * @spec CHCK-050
+ * @spec CHCK-067
  * @spec CHCK-051
  */
 export async function lint(input: LintInput): Promise<LintResult | OpFailure> {

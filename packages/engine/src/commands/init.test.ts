@@ -1,5 +1,5 @@
 // @spec INIT-058
-// @spec INIT-016
+// @spec INIT-059
 // @spec INIT-017
 // @spec INIT-042
 // @spec INIT-019
@@ -393,7 +393,7 @@ describe("spec init --json — machine mode", () => {
 
   test("a member's agent_surface lists the files written, and a second run lists none", async () => {
     // @spec INIT-044 unit
-    // @spec INIT-048 unit
+    // @spec INIT-061 unit
     const platform = TestPlatform.at(tmp);
     await platform.domain("CORE");
     const member = platform.repository("api");

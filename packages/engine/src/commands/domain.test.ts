@@ -1,11 +1,11 @@
 // @spec DOMAIN-025
-// @spec DOMAIN-012
+// @spec DOMAIN-029
 // @spec DOMAIN-013
 // @spec DOMAIN-027
 // @spec DOMAIN-014
 // @spec DOMAIN-015
 // @spec DOMAIN-026
-// @spec DOMAIN-023
+// @spec DOMAIN-030
 // @spec REQ-071
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
@@ -225,7 +225,7 @@ describe("spec domain list", () => {
     expect(logs).toEqual(["ALPHA", "MIKE", "ZULU"]);
   });
 
-  // @spec DOMAIN-023 unit
+  // @spec DOMAIN-030 unit
   test("empty spec-engine/ → exit 0, zero output lines", async () => {
     mkdirSync(join(tmp, "spec-engine"), { recursive: true });
     await runDomainList(tmp);

@@ -73,15 +73,16 @@
     },
     {
       "id": "DIST-006",
-      "status": "active",
+      "status": "superseded",
       "statement": "When run with --probe, spec docs shall boot on an ephemeral loopback port, fetch /, and exit 0 only when the site title renders (exit 1 otherwise).",
       "why": "Without a mechanical boot check, a broken docs payload ships silently and is discovered by the first offline user.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "DIST-026",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 11
     },
     {
       "id": "DIST-007",
@@ -319,6 +320,18 @@
       "status": "active",
       "statement": "The docs site shall serve the JSON Schema for SPEC.json, check.json, and spec-engine.member.json under a versioned path, each file carrying its own URL as its $id.",
       "why": "Editors resolve a $schema URL over the network, so a missing or unversioned schema leaves adopters without validation or breaks them on a shape change.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DIST-026",
+      "status": "active",
+      "statement": "When run with --probe, spec docs shall exit 0 when its home page, served on a loopback port, renders the site title and exit 1 otherwise.",
+      "why": "Without a mechanical boot check, a broken docs payload ships silently and is discovered by the first offline user.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

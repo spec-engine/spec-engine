@@ -132,12 +132,12 @@ describe("docs --probe / missing-root exits", () => {
   }
 
   test("--probe: ephemeral loopback boot, GET /, exit 0 when the title renders", async () => {
-    // @spec DIST-006 unit
+    // @spec DIST-026 unit
     expect(await withExitCapture(() => runProbe(root))).toBe(0);
   });
 
   test("--probe: exit 1 when the served index lacks the site title", async () => {
-    // @spec DIST-006 unit
+    // @spec DIST-026 unit
     const bad = mkdtempSync(join(tmpdir(), "spec-docs-bad-"));
     try {
       writeFileSync(join(bad, "index.html"), "<title>Not the site</title>");

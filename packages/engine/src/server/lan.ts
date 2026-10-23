@@ -111,7 +111,7 @@ function plain(status: number, body: string, headers: Record<string, string> = {
  * @spec SERV-021
  * @spec SERV-022
  * @spec SERV-024
- * @spec SERV-025
+ * @spec SERV-035
  */
 export function lanGate(fetch: Fetch, { bindHost, token, allowWrites }: LanGateOptions): Fetch {
   return (req) => {

@@ -73,7 +73,7 @@ export async function newDomain(
 }
 
 /** Every domain with its charter sentence (null when unset), sorted by key. */
-// @spec DOMAIN-023
+// @spec DOMAIN-030
 export async function listDomains(platformDir: string) {
   return { ok: true as const, domains: await domainsWithScope(platformDir) };
 }

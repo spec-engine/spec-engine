@@ -2,7 +2,7 @@
   "$schema": "https://docs.spec-engine.dev/schema/v1/spec.json",
   "key": "SERV",
   "owner": null,
-  "updated": "2026-10-22",
+  "updated": "2026-10-23",
   "scope": "The spec serve local webapp and /api/* over the index. Belongs here: the server-rendered pages; the /api/* route contracts; loopback-only binding. Does not belong here: the one-model-one-seam promise (SCHM). Boundary case: loopback-only is SERV's promise even though the data model it serves is SCHM's.",
   "grammar": "ears",
   "requirements": [
@@ -155,15 +155,16 @@
     },
     {
       "id": "SERV-012",
-      "status": "active",
+      "status": "superseded",
       "statement": "When run with --probe, spec serve shall boot on an ephemeral loopback port, fetch /, and exit 0 only when the page renders (exit 1 otherwise).",
       "why": "Without a mechanical boot check, an asset-embedding regression ships silently and surfaces as a blank page on someone else's machine.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "SERV-034",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 12
     },
     {
       "id": "SERV-013",
@@ -328,15 +329,16 @@
     },
     {
       "id": "SERV-025",
-      "status": "active",
+      "status": "superseded",
       "statement": "While spec serve is bound to a non-loopback address without --allow-writes, the spec serve command shall refuse every write with 403: any non-GET request and any request that resolves provenance issues through the tracker.",
       "why": "A leaked token would otherwise let another device change the spec book or its tracker sidecar.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "SERV-035",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 13
     },
     {
       "id": "SERV-026",
@@ -431,6 +433,30 @@
       "status": "active",
       "statement": "When the all=1 query is absent, the Coverage and Requirements pages shall hide Superseded and Deprecated requirements and any domain left empty.",
       "why": "Superseded history soon outnumbers the live contract; an unfiltered default buries what the platform must satisfy now under dead versions.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SERV-034",
+      "status": "active",
+      "statement": "When run with --probe, spec serve shall exit 0 when its home page, served on a loopback port, renders and exit 1 otherwise.",
+      "why": "Without a mechanical boot check, an asset-embedding regression ships silently and surfaces as a blank page on someone else's machine.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SERV-035",
+      "status": "active",
+      "statement": "While spec serve is bound to a non-loopback address without --allow-writes, the server shall answer 403 to every non-GET request and every request that resolves provenance issues against the tracker.",
+      "why": "A leaked token would otherwise let another device change the spec book or its tracker sidecar.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

@@ -62,7 +62,7 @@ const read = (json: boolean) =>
   });
 
 describe("a read command over an invalid SPEC.json", () => {
-  // @spec INDX-017 unit
+  // @spec INDX-030 unit
   test("--json prints only the check --json rows on stdout, exit 1", async () => {
     expect(await exitCode(() => read(true))).toBe(1);
     expect(errs).toEqual([]);
@@ -72,7 +72,7 @@ describe("a read command over an invalid SPEC.json", () => {
     ]);
   });
 
-  // @spec INDX-017 unit
+  // @spec INDX-030 unit
   test("text mode prints only the rows on stderr, exit 1", async () => {
     expect(await exitCode(() => read(false))).toBe(1);
     expect(logs).toEqual([]);
@@ -82,7 +82,7 @@ describe("a read command over an invalid SPEC.json", () => {
 });
 
 describe("a lifecycle command's fresh-tags reindex over an invalid SPEC.json", () => {
-  // @spec INDX-017 unit
+  // @spec INDX-030 unit
   test("prints only the rows on stderr and exits 2", async () => {
     expect(await exitCode(() => cliFreshTags(fx.dir)("ORD-001"))).toBe(2);
     expect(logs).toEqual([]);

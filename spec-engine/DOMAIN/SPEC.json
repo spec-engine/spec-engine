@@ -162,16 +162,17 @@
     },
     {
       "id": "DOMAIN-012",
-      "status": "active",
+      "status": "superseded",
       "statement": "When normalization changed the input name, spec domain new shall print exactly one <raw> → <KEY> transformation line, and shall print no such line when the input was already canonical.",
       "why": "The author must see the silent transformation applied on their behalf; hiding it lets a surprising key scaffold a domain the author never intended to name.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "DOMAIN-029",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 16
     },
     {
       "id": "DOMAIN-013",
@@ -306,15 +307,16 @@
     },
     {
       "id": "DOMAIN-023",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec domain list runs, it shall print the domain keys sorted lexicographically, one per line, and exit 0.",
       "why": "Prefix resolution and scripted listings build on this output; an unstable order or an error exit on an empty platform would break both.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "DOMAIN-030",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 17
     },
     {
       "id": "DOMAIN-024",
@@ -372,6 +374,30 @@
       "status": "active",
       "statement": "When spec domain new scaffolds a domain, it shall write the published domain schema URL as the first key of the new SPEC.json.",
       "why": "A scaffold without the key leaves the author editing SPEC.json without completion or validation in the editor.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DOMAIN-029",
+      "status": "active",
+      "statement": "When spec domain new runs, the command shall print one <raw> → <KEY> line if and only if normalization changed the input name.",
+      "why": "The author must see the silent transformation applied on their behalf; hiding it lets a surprising key scaffold a domain the author never intended to name.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DOMAIN-030",
+      "status": "active",
+      "statement": "When spec domain list runs, the command shall print the domain keys in lexicographic order, one per line.",
+      "why": "Prefix resolution and scripted listings build on this output, and an unstable order breaks both.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

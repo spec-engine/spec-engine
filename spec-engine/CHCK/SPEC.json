@@ -658,27 +658,29 @@
     },
     {
       "id": "CHCK-049",
-      "status": "active",
+      "status": "superseded",
       "statement": "When an Active statement breaks a rule, spec check shall report STATEMENT_RULES at the rule's configured severity, error by default, one row per rule per statement.",
       "why": "A default looser than the write path would let the check pass a statement every authoring command refuses.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHCK-068",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 23
     },
     {
       "id": "CHCK-050",
-      "status": "active",
+      "status": "superseded",
       "statement": "spec lint shall print every finding for the platform, one domain, or one requirement, and exit 1 when there is any.",
       "why": "Without an on-demand report scoped to the work at hand, a sweep has no way to see what is left or prove it is finished.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHCK-067",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 22
     },
     {
       "id": "CHCK-051",
@@ -867,6 +869,30 @@
       "status": "active",
       "statement": "Where check.json turns duplicates off, spec check and the authoring commands shall report no possible duplicates.",
       "why": "A platform that dedups another way must be able to silence the check without regrading each row.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-067",
+      "status": "active",
+      "statement": "When spec lint runs on the platform, a domain, or a requirement, the command shall print every statement-rule finding in that scope.",
+      "why": "Without an on-demand report scoped to the work at hand, a sweep has no way to see what is left or prove it is finished.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-068",
+      "status": "active",
+      "statement": "When an Active statement breaks a rule, spec check shall report one STATEMENT_RULES row per rule, graded at the severity the authoring commands apply to that rule.",
+      "why": "A default looser than the write path would let the check pass a statement every authoring command refuses.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

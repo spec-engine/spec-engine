@@ -2,7 +2,7 @@
   "$schema": "https://docs.spec-engine.dev/schema/v1/spec.json",
   "key": "AUTHOR",
   "owner": null,
-  "updated": "2026-10-22",
+  "updated": "2026-10-23",
   "scope": "How a brief or ticket becomes well-formed requirements: the authoring playbook in the agent reference, the req-author skill, the MCP author_requirements prompt, and the rule that the engine runs no model. Belongs here: the authoring-workflow surfaces and the LLM-free engine fence. Does not belong here: the mint itself (REQ), the domain scaffold (DOMAIN), the charter doc (CHRT). Boundary case: the MCP prompt is engine code, but it owns only the template text; the write is REQ's promise.",
   "grammar": "ears",
   "requirements": [
@@ -91,15 +91,16 @@
     },
     {
       "id": "AUTHOR-007",
-      "status": "active",
+      "status": "superseded",
       "statement": "When an approved requirement is minted, the req-author skill shall write it through the real spec req CLI, never by editing SPEC.json directly.",
       "why": "A reimplemented mint path drifts from the shared schema and grammar checks spec req enforces, producing entries the indexer rejects or silently drops.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "AUTHOR-017",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 11
     },
     {
       "id": "AUTHOR-008",
@@ -210,6 +211,18 @@
       "status": "active",
       "statement": "Where an author_requirements request names a domain, spec mcp shall include that domain's charter in the returned playbook.",
       "why": "Without the charter in the prompt, the consuming model places requirements by guessing at domain boundaries, and misplacement mints durable ids in the wrong domain.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHOR-017",
+      "status": "active",
+      "statement": "When a requirement is approved, the req-author skill shall mint it with the spec req command.",
+      "why": "A reimplemented mint path drifts from the shared schema and grammar checks spec req enforces, producing entries the indexer rejects or silently drops.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

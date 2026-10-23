@@ -2,7 +2,7 @@
   "$schema": "https://docs.spec-engine.dev/schema/v1/spec.json",
   "key": "CHRT",
   "owner": "drea",
-  "updated": "2026-10-22",
+  "updated": "2026-10-23",
   "scope": "Domain charters and the requirement-authoring standard: the TAXONOMY.md charters, the authoring standard in the agent reference, the envelope scope field, and the CLI surfaces that show an author a charter (spec domain list --json, spec req). Belongs here: what tells an author whether a requirement belongs in a domain. Does not belong here: requirement lifecycle mechanics (REQ), the domain scaffold (DOMAIN). Boundary case: one domain's charter text is that domain's business; the rule that every charter has a scope sentence, both lists, and a boundary case is CHRT's.",
   "grammar": "ears",
   "requirements": [
@@ -308,15 +308,16 @@
     },
     {
       "id": "CHRT-024",
-      "status": "active",
+      "status": "superseded",
       "statement": "The agent reference shall state the requirement-authoring standard: rule 0, the authored rules, the five statement shapes, the one-promise lint, and the mechanical statement rules with their printed reasons.",
       "why": "Cold-read failures get written exactly when there is no standard to author against, and an agent in an adopter repository that never sees the standard authors requirements to its own taste.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHRT-032",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 10
     },
     {
       "id": "CHRT-025",
@@ -395,6 +396,18 @@
       "status": "active",
       "statement": "When check.json sets no severity for the trailing so-clause rule, spec check shall report its findings at warning severity.",
       "why": "A short consequence is often legitimate, and failing the gate on every borderline so-clause would push authors to delete useful context.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHRT-032",
+      "status": "active",
+      "statement": "The spec CLI shall ship the full requirement authoring standard, from rule 0 to each statement rule's printed reason, in the agent reference it installs and serves.",
+      "why": "Cold-read failures get written exactly when there is no standard to author against, and an agent in an adopter repository that never sees the standard authors requirements to its own taste.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

@@ -198,7 +198,7 @@ fence_clean01_no_stale_example() {
 }
 
 # --- engine internals never import @spec-engine/tracker / no ext net
-# @spec TRK-004
+# @spec TRK-010
 fence_trk02_tracker_import() {
   INTERNAL_FILES=$(engine_sources \
     -not -path 'packages/engine/src/commands/*' \
@@ -345,7 +345,7 @@ fence_val01_validate_and_write() {
 }
 
 # --- the Markdown SPEC.md parse path stays removed ---------------
-# @spec INDX-013
+# @spec INDX-029
 fence_stor04_no_spec_md_parse() {
   PAT='(parseSpecFile|findSpecFiles)\(|\*\*/SPEC\.md|gray-matter|(Bun\.file|readFileSync|readFile|Bun\.Glob)\([^)]*SPEC\.md'
   OFFENDERS=$(engine_sources -print0 \

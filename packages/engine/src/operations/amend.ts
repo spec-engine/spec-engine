@@ -117,14 +117,14 @@ function applyFields(
     req.relates = splitList(fields.relates);
     fieldsChanged.push("relates");
   }
-  // @spec REQ-034
+  // @spec REQ-085
   if (fields.term !== undefined) {
     req.term = fields.term;
     fieldsChanged.push("term");
     refValues.push(fields.term);
   }
   if (fields.issue !== undefined) {
-    // @spec PROV-003
+    // @spec PROV-008
     req.issues.push({ role: "amends-via", id: fields.issue });
     fieldsChanged.push("issue");
   }

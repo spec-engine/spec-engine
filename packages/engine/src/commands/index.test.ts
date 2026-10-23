@@ -152,7 +152,7 @@ describe("spec index over an invalid SPEC.json", () => {
       recursive: true,
     });
 
-  // @spec INDX-017 unit
+  // @spec INDX-030 unit
   test("--json prints only the refusal rows in the check --json shape, exit 1", async () => {
     const clone = cloneFixture(FIXTURE);
     try {
@@ -169,7 +169,7 @@ describe("spec index over an invalid SPEC.json", () => {
     }
   });
 
-  // @spec INDX-017 unit
+  // @spec INDX-030 unit
   test("text mode prints only the refusal rows on stderr, exit 1", async () => {
     const clone = cloneFixture(FIXTURE);
     try {

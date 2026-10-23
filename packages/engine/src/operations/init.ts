@@ -199,7 +199,7 @@ function link(canonical: string, platformRoot: string): { ok: true; userFile: st
 
 /**
  * @spec INIT-058
- * @spec INIT-016
+ * @spec INIT-059
  * @spec INIT-017
  * @spec INIT-050
  */

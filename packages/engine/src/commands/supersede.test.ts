@@ -249,7 +249,7 @@ describe("spec supersede — TERM successor carries term/aliases", () => {
     return terms;
   }
 
-  // @spec REQ-034 unit
+  // @spec REQ-085 unit
   test("successor carries the predecessor's term/aliases; predecessor flips to superseded", async () => {
     const terms = await writeTermDomain();
     await supersedeRun({

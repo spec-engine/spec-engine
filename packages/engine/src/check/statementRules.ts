@@ -81,7 +81,7 @@ export async function statementRuleRows(
 }
 
 /** The STATEMENT_RULES rows for every Active statement, graded per rule. */
-// @spec CHCK-049
+// @spec CHCK-068
 export async function statementRulesDiagnostics(
   platformDir: string,
   config: StatementRulesConfig | undefined,

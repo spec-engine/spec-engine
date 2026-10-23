@@ -74,7 +74,7 @@ const TOOL_AUTH =
 const TOOL_DRAFT =
   'BILLING-003 no-tool-statement: "We use" — naming the tool in use is a decision record, not a requirement';
 
-// @spec CHCK-050 unit
+// @spec CHCK-067 unit
 describe("spec lint scopes", () => {
   test("the platform: every finding, rule 0 on stderr, exit 1", async () => {
     expect(await lint({ target: fx.dir })).toBe(1);
