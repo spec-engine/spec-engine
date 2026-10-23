@@ -480,7 +480,7 @@
       "cites": []
     },
     {
-      "id": "GUARD-030",
+      "id": "GUARD-031",
       "status": "active",
       "statement": "When spec check runs with --ci and without --base in a git repository whose tracked files match HEAD, the spec check command shall print a stderr warning that names the --base merge-base command.",
       "why": "In CI the working tree equals HEAD, so the default loss diff is empty and every loss check passes with no signal that it never ran.",

@@ -2,7 +2,7 @@
 // @spec CHCK-043
 // @spec CHCK-014
 // @spec CHCK-025
-// @spec GUARD-030
+// @spec GUARD-031
 
 import { resolve } from "node:path";
 import { NotASpecPlatformError } from "@spec-engine/shared";
