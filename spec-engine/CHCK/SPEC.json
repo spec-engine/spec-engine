@@ -492,18 +492,19 @@
     },
     {
       "id": "CHCK-030",
-      "status": "active",
+      "status": "superseded",
       "statement": "The AGENTS.md spec check reference shall list every diagnostic code the engine can emit and no other, so an agent reading the reference sees the same code set the command produces.",
       "why": "An agent branching on a code missing from the reference, or on one that no longer exists, misreads the gate.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHCK-053",
       "relates": [],
       "livesIn": [
         "scripts/arch-fences.sh"
       ],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 14
     },
     {
       "id": "CHCK-031",
@@ -865,6 +866,22 @@
       "verifiedIn": [
         "packages/engine/src/commands/lint.test.ts"
       ]
+    },
+    {
+      "id": "CHCK-053",
+      "status": "active",
+      "statement": "The agent reference's spec check section shall list every diagnostic code the engine can emit and no other, so an agent reading the reference sees the same code set the command produces.",
+      "why": "An agent branching on a code missing from the reference, or on one that no longer exists, misreads the gate.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "scripts/arch-fences.sh"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": []
     }
   ],
   "grammarSeverity": "error"

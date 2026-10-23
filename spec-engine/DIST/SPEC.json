@@ -195,18 +195,19 @@
     },
     {
       "id": "DIST-013",
-      "status": "active",
+      "status": "superseded",
       "statement": "The README and AGENTS.md shall each name SPEC.json, spec migrate, trusted-red, and --results, so the shipped documentation describes the JSON model, the cutover command, and the proof gate.",
       "why": "Documentation that omits the model, the cutover, or the proof gate leaves an adopter on the retired Markdown format or without the trusted-red check.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "DIST-019",
       "relates": [],
       "livesIn": [
         "scripts/arch-fences.sh"
       ],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 6
     },
     {
       "id": "DIST-014",
@@ -284,6 +285,21 @@
         "renovate.json",
         "scripts/arch-fences.sh",
         "scripts/release-config.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DIST-019",
+      "status": "active",
+      "statement": "The README and the agent reference shall each name SPEC.json, spec migrate, trusted-red, and --results, so the shipped documentation describes the JSON model, the cutover command, and the proof gate.",
+      "why": "Documentation that omits the model, the cutover, or the proof gate leaves an adopter on the retired Markdown format or without the trusted-red check.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "scripts/arch-fences.sh"
       ],
       "issues": [],
       "aliases": [],

@@ -2,7 +2,7 @@
   "key": "CHRT",
   "owner": "drea",
   "updated": "2026-10-22",
-  "scope": "Domain charters and the requirement-authoring standard: TAXONOMY.md, the envelope scope field, and the CLI surfaces that show an author a charter (spec domain list --json, spec req). Belongs here: what tells an author whether a requirement belongs in a domain. Does not belong here: requirement lifecycle mechanics (REQ), the domain scaffold (DOMAIN). Boundary case: one domain's charter text is that domain's business; the rule that every charter has a scope sentence, both lists, and a boundary case is CHRT's.",
+  "scope": "Domain charters and the requirement-authoring standard: the TAXONOMY.md charters, the authoring standard in the agent reference, the envelope scope field, and the CLI surfaces that show an author a charter (spec domain list --json, spec req). Belongs here: what tells an author whether a requirement belongs in a domain. Does not belong here: requirement lifecycle mechanics (REQ), the domain scaffold (DOMAIN). Boundary case: one domain's charter text is that domain's business; the rule that every charter has a scope sentence, both lists, and a boundary case is CHRT's.",
   "grammar": "ears",
   "requirements": [
     {
@@ -126,26 +126,27 @@
     },
     {
       "id": "CHRT-008",
-      "status": "active",
+      "status": "superseded",
       "statement": "The spec-engine/TAXONOMY.md charter document shall state the requirement-id format rule: KEY-NNN with a three-digit, zero-padded number.",
       "why": "Inconsistent id formats break tag scanning and sorting, and the rule must live where authors look at minting time.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHRT-023",
       "relates": [],
       "livesIn": [
         "spec-engine/TAXONOMY.md"
       ],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 8
     },
     {
       "id": "CHRT-009",
-      "status": "active",
+      "status": "superseded",
       "statement": "The spec-engine/TAXONOMY.md charter document shall state the requirement-authoring standard: the statement as a testable promise, verifying tags as its tests, livesIn plus implementing tags as its realizing files, and issue links as provenance only.",
       "why": "Cold-read failures get written exactly when there is no standard to author against, and tests, files, and tickets get mistaken for the requirement's identity.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHRT-024",
       "relates": [],
       "livesIn": [
         "spec-engine/TAXONOMY.md"
@@ -153,7 +154,8 @@
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 9
     },
     {
       "id": "CHRT-010",
@@ -380,6 +382,38 @@
       "verifiedIn": [
         "packages/engine/src/authoring/statementRules.test.ts"
       ]
+    },
+    {
+      "id": "CHRT-023",
+      "status": "active",
+      "statement": "The agent reference shall state the requirement-id format rule: KEY-NNN with a three-digit, zero-padded number.",
+      "why": "Inconsistent id formats break tag scanning and sorting, and the rule must live where authors look at minting time.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/site/src/content/docs/agent-reference.md"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": []
+    },
+    {
+      "id": "CHRT-024",
+      "status": "active",
+      "statement": "The agent reference shall state the requirement-authoring standard: rule 0, the authored rules, the five statement shapes, the one-promise lint, and the mechanical statement rules with their printed reasons.",
+      "why": "Cold-read failures get written exactly when there is no standard to author against, and an agent in an adopter repository that never sees the standard authors requirements to its own taste.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/site/src/content/docs/agent-reference.md"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": []
     }
   ],
   "grammarSeverity": "error"

@@ -1,8 +1,8 @@
 {
   "key": "AUTHOR",
   "owner": null,
-  "updated": "2026-10-21",
-  "scope": "How a brief or ticket becomes well-formed requirements: the AGENTS.md authoring playbook, the req-author skill, the MCP author_requirements prompt, and the rule that the engine runs no model. Belongs here: the authoring-workflow surfaces and the LLM-free engine fence. Does not belong here: the mint itself (REQ), the domain scaffold (DOMAIN), the charter doc (CHRT). Boundary case: the MCP prompt is engine code, but it owns only the template text; the write is REQ's promise.",
+  "updated": "2026-10-22",
+  "scope": "How a brief or ticket becomes well-formed requirements: the authoring playbook in the agent reference, the req-author skill, the MCP author_requirements prompt, and the rule that the engine runs no model. Belongs here: the authoring-workflow surfaces and the LLM-free engine fence. Does not belong here: the mint itself (REQ), the domain scaffold (DOMAIN), the charter doc (CHRT). Boundary case: the MCP prompt is engine code, but it owns only the template text; the write is REQ's promise.",
   "grammar": "ears",
   "requirements": [
     {
@@ -76,18 +76,19 @@
     },
     {
       "id": "AUTHOR-005",
-      "status": "active",
+      "status": "superseded",
       "statement": "The AGENTS.md authoring playbook shall point at the TAXONOMY.md requirement-authoring standard rather than restating its rules.",
       "why": "A restated copy of the authoring rules drifts from the canonical one; authors then self-check against stale criteria and the two texts disagree silently.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "AUTHOR-012",
       "relates": [],
       "livesIn": [
         "AGENTS.md"
       ],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 6
     },
     {
       "id": "AUTHOR-006",
@@ -153,11 +154,11 @@
     },
     {
       "id": "AUTHOR-010",
-      "status": "active",
+      "status": "superseded",
       "statement": "The AGENTS.md authoring playbook shall document the brief-to-mint procedure: one requirement minted per behavior via spec req, with the originating ticket recorded as issue provenance only, never as a requirement id.",
       "why": "Without a written mint procedure, one-per-ticket or issue-id-tagged requirements get authored the moment work arrives as a vague ticket, and the corpus accumulates entries whose identity dies with the tracker.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "AUTHOR-013",
       "relates": [],
       "livesIn": [
         "AGENTS.md"
@@ -165,7 +166,8 @@
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 7
     },
     {
       "id": "AUTHOR-011",
@@ -182,6 +184,36 @@
       "aliases": [],
       "cites": [],
       "deprecatedReason": "The source carries no process markers; the comment rule in AGENTS.md is the control, and no scanner or ledger remains to ratchet."
+    },
+    {
+      "id": "AUTHOR-012",
+      "status": "active",
+      "statement": "The agent reference's brief-to-mint playbook shall refer to the requirement-authoring standard in the same document rather than restating its rules.",
+      "why": "A restated copy of the authoring rules drifts from the canonical one; authors then self-check against stale criteria and the two texts disagree silently.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/site/src/content/docs/agent-reference.md"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "AUTHOR-013",
+      "status": "active",
+      "statement": "The agent reference shall document the brief-to-mint procedure: one requirement minted per behavior via spec req, with the originating ticket recorded as issue provenance only, never as a requirement id.",
+      "why": "Without a written mint procedure, one-per-ticket or issue-id-tagged requirements get authored the moment work arrives as a vague ticket, and the corpus accumulates entries whose identity dies with the tracker.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/site/src/content/docs/agent-reference.md"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
   ],
   "grammarSeverity": "error"
