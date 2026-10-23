@@ -93,8 +93,8 @@ Rules:
   below its root.
 - **A fence runs under a descriptive label.** Each `fence_*` function in
   `scripts/arch-fences.sh` runs under a `run` label that says what it
-  checks. A fence that backs a product requirement carries that
-  requirement's `@spec` tag. `scripts/` is a workspace package
+  checks. A fence carries a `@spec` tag only when it backs an Active
+  requirement. `scripts/` is a workspace package
   (`scripts/package.json`) with its own pin
   (`scripts/spec-engine.member.json`) so those tags index; the scanner reads
   `.sh` files as code.
