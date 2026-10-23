@@ -79,7 +79,7 @@ With a git base ref, `check` also diffs the requirement set against that ref. Wi
 
 The three loss rows are the ones `spec guard` reports against the same ref; guard's own `REQUIREMENT_REMOVED` row is not repeated. See [Commands](/commands/#spec-guard-platformdir).
 
-Under `--ci` with no `--base`, a working tree whose tracked files equal `HEAD` makes every loss check pass vacuously, so `check` warns on stderr with the line to run instead: `spec check . --ci --base "$(git merge-base HEAD origin/<default>)"`. The exit code and stdout are unchanged. <!-- @spec GUARD-030 -->
+Under `--ci` with no `--base`, a working tree whose tracked files equal `HEAD` makes every loss check pass vacuously, so `check` warns on stderr with the line to run instead: `spec check . --ci --base "$(git merge-base HEAD origin/<default>)"`. The exit code and stdout are unchanged. <!-- @spec GUARD-031 -->
 
 ## Opt-in policy diagnostics
 
