@@ -11,4 +11,5 @@ export * from "./platform";
 export * from "./propagation";
 export * from "./report";
 export * from "./schema";
+export * from "./statementRules";
 export * from "./storage";
