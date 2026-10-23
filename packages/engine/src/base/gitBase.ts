@@ -72,6 +72,15 @@ export function gitLsTree(platformDir: string, ref: string, dir: string): string
     .map((l) => (prefix.length > 0 && l.startsWith(prefix) ? l.slice(prefix.length) : l));
 }
 
+// A committed .spec-engine/ index is rewritten by the check itself, so it is excluded.
+export function gitTreeMatchesHead(platformDir: string): boolean {
+  return (
+    Bun.spawnSync(["git", "diff", "--quiet", "HEAD", "--", ".", ":!.spec-engine"], {
+      cwd: platformDir,
+    }).exitCode === 0
+  );
+}
+
 export interface DiffEntry {
   status: string;
   path: string;

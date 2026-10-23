@@ -2,10 +2,12 @@
 // @spec CHCK-043
 // @spec CHCK-014
 // @spec CHCK-025
+// @spec GUARD-030
 
 import { resolve } from "node:path";
 import { NotASpecPlatformError } from "@spec-engine/shared";
 import { defineCommand } from "citty";
+import { gitTreeMatchesHead } from "../base/gitBase";
 import { renderDiagnostics } from "../check/format";
 import { proofsUnconfirmedWarning } from "../check/proven";
 import { EXIT, isContainedPath, resolveDbPath } from "../constants";
@@ -16,6 +18,9 @@ import { type CheckResult, check } from "../operations/check";
 import { exit } from "../stdout";
 import { jsonArg, noPromptArg, outArg, platformDirArg, resolvePlatformDir } from "./_args";
 import { assertContainedPath, handleInvalidDomainFiles } from "./_shared";
+
+export const CI_BASE_WARNING =
+  'spec check --ci: losses not checked, the working tree equals HEAD. In CI run: spec check . --ci --base "$(git merge-base HEAD origin/<default>)"';
 
 export const checkCommand = defineCommand({
   meta: {
@@ -108,6 +113,9 @@ export const checkCommand = defineCommand({
       return;
     }
 
+    if (args.ci && !args.base && gitTreeMatchesHead(platformDir)) {
+      console.error(CI_BASE_WARNING);
+    }
     const diagnostics = [...outcome.diagnostics];
     if (outcome.proofsUnconfirmed) {
       if (jsonMode) {

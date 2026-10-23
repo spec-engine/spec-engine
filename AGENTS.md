@@ -381,6 +381,11 @@ present on disk with no `spec-engine.member.json`.
   reports the `IMPL_LOST`, `VERIFY_LOST`, and `SPEC_FILE_DELETED` rows
   `spec guard` would report against that ref. Guard's `REQUIREMENT_REMOVED`
   rows are dropped; the removal check already reports that id.
+- Under `--ci` with no `--base`, a working tree whose tracked files equal
+  `HEAD` makes every loss check pass vacuously, so `check` warns on stderr
+  with the line to run instead:
+  `spec check . --ci --base "$(git merge-base HEAD origin/<default>)"`.
+  The exit code and stdout are unchanged. <!-- @spec GUARD-030 -->
 - Coverage counts only Active requirements: `ORPHAN_REQ` and
   `UNVERIFIED_REQ` fire for Active entries only. <!-- @spec CHCK-032 -->
 
@@ -972,6 +977,12 @@ echo | spec req bil                    # next unused BILLING id
 spec index . --json                    # rebuild the derived index
 spec check . --ci --json               # exit 1 ⇒ fix before PR
 spec guard . --json                    # exit 1 ⇒ this change deletes a live requirement
+```
+
+In CI the tree equals `HEAD`, so pass the merge base:
+
+```
+spec check . --ci --base "$(git merge-base HEAD origin/main)"
 ```
 
 When `spec guard` blocks you, relay the `🛑 spec-guard:` block verbatim to the
