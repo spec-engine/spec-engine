@@ -96,7 +96,7 @@ function canonicalize(repoDir: string): { ok: true; canonical: string } | OpFail
  * The spec-engine/ path-segment refusal. On the engine's own checkout only
  * the path below the platform root is judged, so the checkout's name never
  * counts.
- * @spec INIT-018
+ * @spec INIT-042
  * @spec INIT-030
  */
 function judgeSpecTree(

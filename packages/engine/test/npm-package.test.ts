@@ -5,6 +5,7 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { wrapperSource } from "../scripts/npm-wrapper";
+import { agentPayload } from "../src/operations/agentSurface";
 
 const ENGINE_ROOT = resolve(import.meta.dir, "..");
 const pkg = JSON.parse(readFileSync(join(ENGINE_ROOT, "package.json"), "utf8")) as {
@@ -78,5 +79,26 @@ describe("bin wrapper runtime guard", () => {
     expect(wrapperSource).not.toMatch(/^import /m);
     expect(wrapperSource).toContain("https://bun.sh");
     expect(wrapperSource).toContain("process.exit(1)");
+  });
+});
+
+describe("agent payload", () => {
+  test("dist/agent carries the reference, the skill, the MCP template, and the hook template", () => {
+    // @spec DIST-019 unit
+    const payload = agentPayload();
+    expect(Object.keys(payload).sort()).toEqual([
+      "AGENTS.md",
+      "mcp.json",
+      "pre-commit",
+      "skills/req-author/SKILL.md",
+    ]);
+    expect(payload["AGENTS.md"]?.startsWith("---")).toBe(false);
+    expect(payload["skills/req-author/SKILL.md"]).toBe(
+      readFileSync(resolve(ENGINE_ROOT, "../../.claude/skills/req-author/SKILL.md"), "utf8"),
+    );
+    expect(JSON.parse(payload["mcp.json"] ?? "")).toEqual({
+      mcpServers: { spec: { command: "spec", args: ["mcp", "."] } },
+    });
+    expect(payload["pre-commit"]).toBe("#!/bin/sh\nspec guard .\nexit $?\n");
   });
 });
