@@ -159,7 +159,7 @@ const TOOL_STATEMENT: readonly RegExp[] = [
 ];
 
 const MECHANISM: readonly RegExp[] = [
-  /\bvia\b/i,
+  /(?<![\w-])via\b/i,
   /\bby (?:means of|\w+ing)\b/i,
   /\bthrough the\b/i,
   /\busing\b/i,
