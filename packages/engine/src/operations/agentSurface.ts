@@ -25,7 +25,7 @@ function mcpTemplate(platformArg: string): string {
 
 /**
  * The `dist/agent/` payload, relative path to content.
- * @spec DIST-019
+ * @spec DIST-020
  */
 export function agentPayload(): Record<string, string> {
   const payload: Record<string, string> = {

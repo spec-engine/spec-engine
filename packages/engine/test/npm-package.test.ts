@@ -84,7 +84,7 @@ describe("bin wrapper runtime guard", () => {
 
 describe("agent payload", () => {
   test("dist/agent carries the reference, the skill, the MCP template, and the hook template", () => {
-    // @spec DIST-019 unit
+    // @spec DIST-020 unit
     const payload = agentPayload();
     expect(Object.keys(payload).sort()).toEqual([
       "AGENTS.md",
