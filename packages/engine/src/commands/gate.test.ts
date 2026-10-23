@@ -160,7 +160,7 @@ describe("spec gate (in-process)", () => {
     const { newId } = await TestPlatform.at(clone)
       .handle("BILLING")
       .supersede("BILLING-002", {
-        statement: "Test-fixture for VERSION_PIN gate reason.",
+        statement: "Stand-in for the VERSION_PIN gate reason.",
         why: "Locks the VERSION_PIN reason without disturbing the canonical fixture.",
         livesIn: ["test-version-pin.ts"],
       });

@@ -38,7 +38,7 @@ async function seed(domain: DomainHandle): Promise<string> {
 }
 
 beforeEach(async () => {
-  fx = TestPlatform.temp("spec-move-");
+  fx = TestPlatform.temp("spec-move-").statementRulesOff();
   platform = fx.dir;
   billing = await fx.domain("BILLING");
   await seed(billing);

@@ -84,7 +84,7 @@ describe("webapp editor — the create form forwards to POST /api/requirements",
   test("a create submit reports success with the new id and the requirement is queryable", async () => {
     const res = await postForm("/editor/create", {
       key: "BILLING",
-      statement: "When a refund is issued, reverse the tax previously collected.",
+      statement: "When a refund is issued, reverse the tax collected on the charge.",
       why: "Refund correctness.",
     });
     expect(res.status).toBe(200);
@@ -97,7 +97,7 @@ describe("webapp editor — the create form forwards to POST /api/requirements",
     const rows = (await getRes.json()) as Array<{ id: string; text: string; status: string }>;
     const added = rows.find((r) => r.id === "BILLING-010");
     expect(added).toBeDefined();
-    expect(added?.text).toBe("When a refund is issued, reverse the tax previously collected.");
+    expect(added?.text).toBe("When a refund is issued, reverse the tax collected on the charge.");
   });
 });
 

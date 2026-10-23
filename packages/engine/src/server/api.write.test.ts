@@ -79,7 +79,7 @@ describe("POST /api/requirements — create through validateAndWrite + runIndex"
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         key: "BILLING",
-        statement: "When a refund is issued, reverse the tax previously collected.",
+        statement: "When a refund is issued, reverse the tax collected on the charge.",
         why: "Refund correctness.",
       }),
     });
@@ -95,7 +95,7 @@ describe("POST /api/requirements — create through validateAndWrite + runIndex"
     const added = rows.find((r) => r.id === "BILLING-010");
     expect(added).toBeDefined();
     expect(added?.status).toBe("Active");
-    expect(added?.text).toBe("When a refund is issued, reverse the tax previously collected.");
+    expect(added?.text).toBe("When a refund is issued, reverse the tax collected on the charge.");
 
     const onDisk = readBilling().requirements.find((r) => r.id === "BILLING-010");
     expect(onDisk).toBeDefined();

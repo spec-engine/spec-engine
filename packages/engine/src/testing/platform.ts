@@ -5,7 +5,13 @@ import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { applyInit } from "@spec-engine/platform-map";
-import { type SpecCite, type SpecDomain, validateDomainFile } from "@spec-engine/shared";
+import {
+  type CheckConfig,
+  type SpecCite,
+  type SpecDomain,
+  STATEMENT_RULES,
+  validateDomainFile,
+} from "@spec-engine/shared";
 import { CANONICAL_SPECS_DIR, SPEC_FILENAME, specPaths } from "../constants";
 import type { FreshTags } from "../operations/_index";
 import type { OpFailure } from "../operations/_result";
@@ -307,6 +313,20 @@ export class TestPlatform extends FileTree {
       rmSync(specs, { recursive: true, force: true });
       cpSync(copy, specs, { recursive: true });
     };
+  }
+
+  /** Write the platform's check.json. */
+  checkConfig(config: CheckConfig): string {
+    return this.file(`${CANONICAL_SPECS_DIR}/check.json`, `${JSON.stringify(config)}\n`);
+  }
+
+  /** Turn every statement rule off, so a test of lifecycle mechanics can author placeholder text. */
+  statementRulesOff(): this {
+    this.checkConfig({
+      severity: [],
+      statementRules: { severity: Object.fromEntries(STATEMENT_RULES.map((r) => [r, "off"])) },
+    });
+    return this;
   }
 
   /** Absolute path of a domain's SPEC.json, scaffolded or not. */

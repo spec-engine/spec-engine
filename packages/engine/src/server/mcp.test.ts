@@ -19,7 +19,7 @@ const BILLING_SCOPE = "billing lifecycle: renewals, refunds, and invoice pricing
 // Two Active BILLING reqs → nextRequirementId reads SPEC.json and allocates
 // BILLING-003.
 beforeEach(async () => {
-  fx = TestPlatform.temp("spec-mcp-");
+  fx = TestPlatform.temp("spec-mcp-").statementRulesOff();
   platform = fx.dir;
   billing = await fx.domain("BILLING", { scope: BILLING_SCOPE });
   await billing.req({

@@ -92,7 +92,7 @@ beforeEach(async () => {
   process.env.SPEC_FLAGS = "query,editor,relations,provenance";
   tmp = mkdtempSync(join(tmpdir(), "spec-parity-"));
   platform = join(tmp, "platform");
-  fx = TestPlatform.at(platform);
+  fx = TestPlatform.at(platform).statementRulesOff();
   const billing = await fx.domain("BILLING", { scope: "billing" });
   const first = await billing.req({
     statement: "renewal charges use the current plan price",

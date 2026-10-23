@@ -87,7 +87,7 @@ describe("cold-rebuild equivalence over the JSON domain fixture", () => {
     const fx = TestPlatform.at(modFixture);
     const billing = await fx.domain("BILLING", { owner: "drea" });
     const { id } = await billing.req({
-      statement: "When a charge is made, compute tax per region at charge time.X",
+      statement: "When a charge is made, compute tax per region at charge time X.",
       why: "Compliance.",
       livesIn: ["tax.ts"],
     });
