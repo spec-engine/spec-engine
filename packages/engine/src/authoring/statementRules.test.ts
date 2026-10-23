@@ -96,7 +96,7 @@ test("a glossary term is never judged", async () => {
   expect(statementRulesRefusal(fx.dir, "TERM", BAD)).toBeNull();
 });
 
-// @spec CHCK-048 unit
+// @spec CHCK-057 unit
 describe("check.json governs the write path", () => {
   test("a rule set to off no longer refuses", () => {
     fx.checkConfig({ severity: [], statementRules: { severity: { "no-history": "off" } } });

@@ -168,8 +168,8 @@ describe("spec mcp — tool surface", () => {
   });
 });
 
-// @spec AUTHOR-008 unit
-// @spec AUTHOR-009 unit
+// @spec AUTHOR-015 unit
+// @spec AUTHOR-016 unit
 describe("spec mcp — author_requirements prompt", () => {
   function promptText(res: { messages: Array<{ content: unknown }> }): string {
     return (res.messages[0]?.content as { type: "text"; text: string }).text;

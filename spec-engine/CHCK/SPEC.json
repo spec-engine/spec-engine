@@ -320,16 +320,17 @@
     },
     {
       "id": "CHCK-025",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec check finds a sibling directory without a spec-engine.member.json, the command shall report NO_SPEC_CONFIG at warning severity.",
       "why": "Unrelated sibling repos in the same parent directory are legitimate; failing the gate on them would force every neighbor to join the platform.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHCK-059",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 19
     },
     {
       "id": "CHCK-026",
@@ -417,11 +418,11 @@
     },
     {
       "id": "CHCK-031",
-      "status": "active",
+      "status": "superseded",
       "statement": "When platform-map reports a diagnostic for the platform that is an error or a warning, or an info that means a repository's tags go unscanned, spec check shall surface it as a diagnostic row with the platform-map code, so a broken platform declaration fails the same gate a broken requirement does.",
       "why": "A platform whose declaration is broken silently scans the wrong set of repositories, and a separate tool's check that CI never runs is no gate.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHCK-055",
       "relates": [],
       "issues": [
         {
@@ -430,15 +431,16 @@
         }
       ],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 15
     },
     {
       "id": "CHCK-032",
-      "status": "active",
+      "status": "superseded",
       "statement": "The spec engine shall raise ORPHAN_REQ and UNVERIFIED_REQ only for Active requirements, and shall count only Active requirements in the coverage report.",
       "why": "A draft is a promise not yet agreed; reporting it as an orphan or counting it as uncovered would read an unreviewed candidate as a broken commitment.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHCK-056",
       "relates": [],
       "issues": [
         {
@@ -447,7 +449,8 @@
         }
       ],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 16
     },
     {
       "id": "CHCK-033",
@@ -535,19 +538,20 @@
     },
     {
       "id": "CHCK-040",
-      "status": "active",
+      "status": "superseded",
       "statement": "If a domain declares the ears grammar and the text after the first shall in an Active or Draft statement contains a semicolon followed by whitespace, then spec check shall report STATEMENT_GRAMMAR at the domain's declared severity.",
       "why": "A semicolon after the result usually chains a second behavior, which no single test proves, so a requirement passes review while half of it goes untested.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHCK-060",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 20
     },
     {
       "id": "CHCK-041",
-      "status": "active",
+      "status": "deprecated",
       "statement": "If a domain declares the ears grammar and an Active or Draft statement's result continues with a comma-and clause that names its own subject before another shall, then spec check shall report STATEMENT_GRAMMAR at the domain's declared severity.",
       "why": "A second subject with its own shall is a second promise hiding in one id, so supersession and coverage track two behaviors as one.",
       "supersedes": null,
@@ -555,11 +559,12 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "merged into CHCK-060"
     },
     {
       "id": "CHCK-042",
-      "status": "active",
+      "status": "deprecated",
       "statement": "If a domain declares the ears grammar and an Active or Draft statement carries a rationale connective, then spec check shall report STATEMENT_GRAMMAR at the domain's declared severity.",
       "why": "Rationale in the statement duplicates the why field and drifts from it, so a reader gets two reasons and the statement stops being a testable promise.",
       "supersedes": null,
@@ -567,23 +572,25 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "merged into CHCK-060"
     },
     {
       "id": "CHCK-043",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec check finds at least one error-severity diagnostic, the command shall exit 1.",
       "why": "CI branches on the exit code, not the output text; without this contract a red finding sails through the gate unnoticed.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHCK-061",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 21
     },
     {
       "id": "CHCK-044",
-      "status": "active",
+      "status": "deprecated",
       "statement": "When spec check finds only warning-severity diagnostics, the command shall exit 0.",
       "why": "A warning is advisory; failing the exit on warnings alone turns every advisory into a CI failure and teaches teams to silence the check.",
       "supersedes": null,
@@ -593,7 +600,8 @@
       ],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "merged into CHCK-061"
     },
     {
       "id": "CHCK-045",
@@ -636,15 +644,16 @@
     },
     {
       "id": "CHCK-048",
-      "status": "active",
+      "status": "superseded",
       "statement": "When check.json configures statement rules, every surface shall honor its maximum length, jargon list, exempt names, and per-rule severity, with off turning a rule off everywhere.",
       "why": "A rule tuned in one place and not another lets the write path and the check disagree on the same statement.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHCK-057",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 17
     },
     {
       "id": "CHCK-049",
@@ -684,8 +693,82 @@
     },
     {
       "id": "CHCK-052",
-      "status": "active",
+      "status": "superseded",
       "statement": "Where --json, spec lint shall print the findings as a sorted array.",
+      "why": "An agent sweeping the book parses the findings, and unsorted output makes every run look like a change.",
+      "supersedes": null,
+      "supersededBy": "CHCK-058",
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "supersededAtVersion": 18
+    },
+    {
+      "id": "CHCK-053",
+      "status": "deprecated",
+      "statement": "The agent reference's spec check section shall list every diagnostic code the engine can emit and no other, so an agent reading the reference sees the same code set the command produces.",
+      "why": "An agent branching on a code missing from the reference, or on one that no longer exists, misreads the gate.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "deprecatedReason": "A docs-sync gate on the agent reference enforced by a test; not product behavior."
+    },
+    {
+      "id": "CHCK-054",
+      "status": "active",
+      "statement": "When a domain file still carries a retired livesIn or verifiedIn key, spec check shall report one MIGRATION_PENDING warning for that file that names spec migrate.",
+      "why": "The engine reads and ignores the retired keys, so without a row the stale fields linger unnoticed until an unrelated write drops them.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-055",
+      "status": "active",
+      "statement": "When platform-map reports an error, a warning, or an unscanned repository for the platform, spec check shall report it as a row under the platform-map code.",
+      "why": "A platform whose declaration is broken silently scans the wrong set of repositories, and a separate tool's check that CI never runs is no gate.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-056",
+      "status": "active",
+      "statement": "The spec check command shall raise ORPHAN_REQ and UNVERIFIED_REQ for Active requirements only.",
+      "why": "A draft is a promise not yet agreed; reporting it as an orphan or counting it as uncovered would read an unreviewed candidate as a broken commitment.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-057",
+      "status": "active",
+      "statement": "When check.json configures statement rules, spec check, spec lint, and the authoring commands shall apply its length limit, jargon list, exempt names, and rule severities.",
+      "why": "A rule tuned in one place and not another lets the write path and the check disagree on the same statement.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-058",
+      "status": "active",
+      "statement": "When spec lint runs with --json, it shall print the findings as a sorted array.",
       "why": "An agent sweeping the book parses the findings, and unsorted output makes every run look like a change.",
       "supersedes": null,
       "supersededBy": null,
@@ -695,10 +778,10 @@
       "cites": []
     },
     {
-      "id": "CHCK-053",
+      "id": "CHCK-059",
       "status": "active",
-      "statement": "The agent reference's spec check section shall list every diagnostic code the engine can emit and no other, so an agent reading the reference sees the same code set the command produces.",
-      "why": "An agent branching on a code missing from the reference, or on one that no longer exists, misreads the gate.",
+      "statement": "When a declared member has no spec-engine.member.json, spec check shall report NO_SPEC_CONFIG at warning severity with a spec init suggestion for that member.",
+      "why": "Unrelated sibling repos in the same parent directory are legitimate; failing the gate on them would force every neighbor to join the platform.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
@@ -707,10 +790,34 @@
       "cites": []
     },
     {
-      "id": "CHCK-054",
+      "id": "CHCK-060",
       "status": "active",
-      "statement": "When a domain file still carries a retired livesIn or verifiedIn key, spec check shall report one MIGRATION_PENDING warning for that file that names spec migrate.",
-      "why": "The engine reads and ignores the retired keys, so without a row the stale fields linger unnoticed until an unrelated write drops them.",
+      "statement": "If a domain declares the ears grammar and an Active or Draft statement chains a second promise or states a rationale, then spec check shall report STATEMENT_GRAMMAR at the domain's declared severity.",
+      "why": "A semicolon after the result usually chains a second behavior, which no single test proves, so a requirement passes review while half of it goes untested.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-061",
+      "status": "active",
+      "statement": "The spec check command shall exit 1 when it reports an error-severity diagnostic and exit 0 otherwise.",
+      "why": "CI branches on the exit code, not the output text; without this contract a red finding sails through the gate unnoticed.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-062",
+      "status": "active",
+      "statement": "The coverage report shall count Active requirements only.",
+      "why": "If the coverage report counted Draft or ended requirements, its totals would overstate or understate what the platform has promised.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

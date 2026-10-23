@@ -68,7 +68,7 @@ describe("STATEMENT_RULES", () => {
     expect(await statementRulesDiagnostics(fx.dir, undefined)).toEqual([]);
   });
 
-  // @spec CHCK-048 unit
+  // @spec CHCK-057 unit
   test("a per-rule severity grades its rows and leaves the others at error", async () => {
     await billing.req({ statement: BAD });
     const rows = await statementRulesDiagnostics(fx.dir, { severity: { "no-history": "warning" } });

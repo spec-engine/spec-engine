@@ -1,7 +1,7 @@
 // packages/engine/scripts/npm-wrapper.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec DIST-009
+// @spec DIST-022
 //
 // Source of the published bin entry (dist/cli.js), exported as a string so
 // the guard-before-import ordering is unit-testable without running a build

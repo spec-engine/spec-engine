@@ -39,7 +39,8 @@ describe("buildCoverageReport", () => {
     ]);
   });
 
-  // @spec CHCK-032 unit
+  // @spec CHCK-056 unit
+  // @spec CHCK-062 unit
   test("non-Active requirements are excluded from every count", () => {
     const rows: CoverageRow[] = [
       row({ req_id: "A-001", req_status: "Superseded", implemented: 1, verified: 1 }),

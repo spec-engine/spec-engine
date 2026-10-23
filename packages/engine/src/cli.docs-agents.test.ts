@@ -70,11 +70,6 @@ describe("the agent reference", () => {
     expect(readFileSync(README, "utf8")).toContain(`](${REFERENCE_PATH})`);
   });
 
-  test("states the three-digit requirement-id format rule", () => {
-    // @spec CHRT-023 unit
-    expect(readFileSync(AGENT_DOC, "utf8")).toMatch(/three-digit zero-padded number/);
-  });
-
   test("states the requirement-authoring standard", () => {
     // @spec CHRT-024 unit
     const doc = readFileSync(AGENT_DOC, "utf8");
@@ -95,23 +90,6 @@ function readOrEmpty(path: string): string {
 }
 
 describe("the authoring playbook and the req-author skill", () => {
-  test("the agent reference carries the brief→mint authoring playbook section", () => {
-    // @spec AUTHOR-013 unit
-    const doc = readFileSync(AGENT_DOC, "utf8");
-    expect(doc).toContain("## Authoring requirements (brief → mint)");
-  });
-
-  test("the playbook refers to the authoring standard in the same document", () => {
-    // @spec AUTHOR-012 unit
-    const doc = readFileSync(AGENT_DOC, "utf8");
-    const playbook = doc.slice(doc.indexOf("## Authoring requirements (brief → mint)"));
-    expect(doc.indexOf("## Requirement authoring standard")).toBeGreaterThan(-1);
-    expect(playbook).toContain("requirement authoring standard above");
-    expect(playbook.slice(0, playbook.indexOf("## Command reference"))).not.toContain(
-      "| Always true |",
-    );
-  });
-
   test("the req-author skill opens with rule 0 and points at the agent reference", () => {
     const skill = readOrEmpty(SKILL_MD);
     expect(skill).toContain(`> ${RULE_ZERO}`);
@@ -120,7 +98,7 @@ describe("the authoring playbook and the req-author skill", () => {
   });
 
   test("the req-author SKILL.md exists with frontmatter + approval gate + rubric cross-ref + real-CLI dogfood", () => {
-    // @spec AUTHOR-006 unit
+    // @spec AUTHOR-014 unit
     // @spec AUTHOR-007 unit
     const skill = readOrEmpty(SKILL_MD);
     expect(skill).toContain("name:");

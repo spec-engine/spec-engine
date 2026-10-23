@@ -531,7 +531,7 @@ function describe(d: MapDiagnostic, mapped: PlatformMap): string {
  * The platform-map diagnostics `spec check` surfaces. Every error and warning
  * keeps its severity; an info diagnostic is promoted to a warning only when it
  * means a repository's tags are silently not being scanned.
- * @spec CHCK-031
+ * @spec CHCK-055
  */
 function surfaced(mapped: PlatformMap): PlatformDiagnostic[] {
   const out: PlatformDiagnostic[] = [];

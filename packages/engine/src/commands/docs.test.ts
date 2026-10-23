@@ -80,7 +80,7 @@ describe("createDocsFetchHandler routing", () => {
 
 describe("resolveDocsRootFrom fallback chain", () => {
   test("first candidate holding an index.html wins", () => {
-    // @spec DIST-007 unit
+    // @spec DIST-021 unit
     const empty = mkdtempSync(join(tmpdir(), "spec-docs-empty-"));
     try {
       expect(resolveDocsRootFrom([empty, root])).toBe(root);

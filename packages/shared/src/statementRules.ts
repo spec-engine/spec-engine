@@ -173,7 +173,7 @@ function hitsDetail(text: string, patterns: readonly RegExp[]): string | null {
 // @spec CHRT-019
 // @spec CHRT-020
 // @spec CHRT-021
-// @spec CHCK-048
+// @spec CHCK-057
 export function statementFindings(
   statement: string,
   config: StatementRulesConfig = {},

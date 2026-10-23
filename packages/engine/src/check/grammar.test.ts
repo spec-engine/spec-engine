@@ -176,9 +176,7 @@ describe("statement grammar — the write-time gate (spec req --text)", () => {
   });
 });
 
-// @spec CHCK-040 integration
-// @spec CHCK-041 integration
-// @spec CHCK-042 integration
+// @spec CHCK-060 integration
 describe("STATEMENT_GRAMMAR — the one-promise lint", () => {
   async function flagged(statement: string): Promise<string[]> {
     await declareGrammar("AUTH", "error");

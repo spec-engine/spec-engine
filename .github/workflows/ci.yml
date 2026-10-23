@@ -220,7 +220,6 @@ jobs:
       - name: build (astro build — fails on a missing asset/broken ref)
         run: bun run build:site
 
-  # @spec DIST-015
   release-please:
     name: release-please (release PR, tag, GitHub Release)
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -264,7 +263,7 @@ jobs:
   # starts no other workflow, so this run is the only one that can publish
   # it. `!cancelled()` keeps a skipped release-please (tag and PR runs) from
   # skipping publish; the gates are then checked by result.
-  # @spec DIST-016
+  # @spec DIST-024
   publish:
     name: publish to npm (on release, OIDC keyless)
     if: >-
@@ -291,7 +290,7 @@ jobs:
       - name: install (frozen lockfile)
         run: bun install --frozen-lockfile
 
-      # @spec DIST-017
+      # @spec DIST-024
       - name: tag ↔ package version parity
         env:
           RELEASE_TAG: ${{ needs.release-please.outputs.tag_name || github.ref_name }}

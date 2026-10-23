@@ -1,5 +1,5 @@
-// @spec DOMAIN-011
-// @spec DOMAIN-016
+// @spec DOMAIN-025
+// @spec DOMAIN-026
 // @spec REQ-026
 //
 // Domains are enumerated from the filesystem, never the derived index: the
@@ -64,7 +64,7 @@ export async function domainsWithScope(
 }
 
 export function scaffoldDomainObject(key: string, today: string): SpecDomain {
-  // @spec DOMAIN-019
+  // @spec DOMAIN-027
   // A requirement domain's version is derived from its supersede graph and the
   // schema rejects an authored one. Only TERM is seeded with specVersion 1:
   // that counter is the term-drift pin, since a revise adds no supersede edge.

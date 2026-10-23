@@ -82,9 +82,7 @@ describe("parseEarsStatement — rejections say what is missing, in plain words"
   });
 });
 
-// @spec CHCK-040 unit
-// @spec CHCK-041 unit
-// @spec CHCK-042 unit
+// @spec CHCK-060 unit
 describe("parseEarsStatement — one promise per statement", () => {
   test('"; " after shall rejects with the one-promise hint', () => {
     const r = parseEarsStatement(

@@ -43,7 +43,6 @@ export interface ReleaseFiles {
 const ENGINE = "packages/engine";
 const ROOT = join(import.meta.dir, "..");
 
-/** @spec DIST-015 */
 export function checkReleasePr(f: ReleaseFiles): string[] {
   const out: string[] = [];
   const job = f.workflow.jobs["release-please"];
@@ -78,7 +77,7 @@ export function checkReleasePr(f: ReleaseFiles): string[] {
   return out;
 }
 
-/** @spec DIST-016 */
+/** @spec DIST-024 */
 export function checkPublishOnRelease(f: ReleaseFiles): string[] {
   const out: string[] = [];
   const job = f.workflow.jobs.publish;
@@ -108,7 +107,7 @@ export function checkPublishOnRelease(f: ReleaseFiles): string[] {
   return out;
 }
 
-/** @spec DIST-017 */
+/** @spec DIST-024 */
 export function checkVersionParity(f: ReleaseFiles): string[] {
   const steps = f.workflow.jobs.publish?.steps ?? [];
   const parity = steps.findIndex(
@@ -125,7 +124,6 @@ export function checkVersionParity(f: ReleaseFiles): string[] {
 
 const EXACT = /^(\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?|workspace:\*)$/;
 
-/** @spec DIST-018 */
 export function checkExactPins(f: ReleaseFiles): string[] {
   const out: string[] = [];
   for (const [file, m] of Object.entries(f.manifests)) {

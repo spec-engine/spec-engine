@@ -84,16 +84,17 @@
     },
     {
       "id": "DIST-007",
-      "status": "active",
+      "status": "superseded",
       "statement": "The spec docs command shall locate its docs root relative to the installed module — the npm payload's dist/docs/ first, then a checkout's packages/site/dist — serving the same site from any working directory.",
       "why": "A cwd-relative asset lookup breaks the moment the CLI runs from any directory but the package root — the classic embedded-UI bug.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "DIST-021",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 7
     },
     {
       "id": "DIST-008",
@@ -109,20 +110,21 @@
     },
     {
       "id": "DIST-009",
-      "status": "active",
+      "status": "superseded",
       "statement": "When run under any non-Bun runtime, the published bin entry shall exit 1 with an actionable hint to install Bun, checking the runtime before importing the engine bundle so no module-resolution crash can precede the message.",
       "why": "The bundle statically imports bun:sqlite, which a Node module loader fails to resolve before any inline guard could run; the wrapper is the only enforcement point.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "DIST-022",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 8
     },
     {
       "id": "DIST-010",
-      "status": "active",
+      "status": "deprecated",
       "statement": "The published @spec-engine/spec-engine tarball shall contain only the built dist payload (bundle, bin wrapper, offline docs) plus the package manifest, README, and LICENSE.",
       "why": "A tarball carrying raw source and tests bloats every install and leaks repo internals into the registry.",
       "supersedes": null,
@@ -131,23 +133,25 @@
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Tarball file list is packaging layout guarded by the npm-package test, not behavior."
     },
     {
       "id": "DIST-011",
-      "status": "active",
+      "status": "superseded",
       "statement": "The published package manifest's dependencies shall never carry the workspace: protocol.",
       "why": "A single workspace:* string in published dependencies makes the package uninstallable for every consumer.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "DIST-023",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 9
     },
     {
       "id": "DIST-012",
-      "status": "active",
+      "status": "deprecated",
       "statement": "The README shall name spec init and the NO_SPEC_CONFIG diagnostic, so an adopter reading the warning can find the command that clears it.",
       "why": "An adopter who sees NO_SPEC_CONFIG with no documented command leaves the sibling repo unwired.",
       "supersedes": null,
@@ -155,7 +159,8 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "A docs-sync check on the README; not product behavior."
     },
     {
       "id": "DIST-013",
@@ -172,7 +177,7 @@
     },
     {
       "id": "DIST-014",
-      "status": "active",
+      "status": "deprecated",
       "statement": "The repository shall ship no spec-engine.config.example.json, so spec init stays the only path that authors a member config.",
       "why": "A stale example config gets copied by hand and carries fields spec init no longer writes.",
       "supersedes": null,
@@ -180,11 +185,12 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Absence of a repo file; spec init as the only authoring path is covered by INIT-015."
     },
     {
       "id": "DIST-015",
-      "status": "active",
+      "status": "deprecated",
       "statement": "When a commit lands on main, the release-please job shall open or update one release pull request that bumps the packages/engine version, the release manifest, and packages/engine/CHANGELOG.md from the conventional commits since the last release.",
       "why": "Without it a release depends on a hand bump and a hand tag: a missed bump publishes under a stale version and the changelog is never written.",
       "supersedes": null,
@@ -192,23 +198,25 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Release CI process for this repo (release-please job); not product behavior."
     },
     {
       "id": "DIST-016",
-      "status": "active",
+      "status": "superseded",
       "statement": "When the release pull request merges or a v* tag is pushed, the CI publish job shall publish @spec-engine/spec-engine to npm through keyless OIDC, in the same workflow run, only after every gate job in that run passes.",
       "why": "A tag release-please creates with GITHUB_TOKEN triggers no other workflow, so a publish left to a tag-push run never fires; a publish that skips a gate ships an unvalidated artifact.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "DIST-024",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 10
     },
     {
       "id": "DIST-017",
-      "status": "active",
+      "status": "deprecated",
       "statement": "If the release tag does not match the packages/engine package version, then the CI publish job shall fail before packing.",
       "why": "npm versions are immutable: a mismatched publish burns the version number and ships the content under the wrong release.",
       "supersedes": null,
@@ -216,11 +224,12 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "merged into DIST-024"
     },
     {
       "id": "DIST-018",
-      "status": "active",
+      "status": "deprecated",
       "statement": "The repository shall declare every dependency as an exact version and carry a Renovate config that keeps those pins exact and current.",
       "why": "A range resolves to whatever the registry serves on install day, so two installs of one commit diverge; exact pins nobody updates rot into unpatched versions.",
       "supersedes": null,
@@ -228,13 +237,27 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Dependency-pinning and Renovate hygiene for this repo; not product behavior."
     },
     {
       "id": "DIST-019",
-      "status": "active",
+      "status": "deprecated",
       "statement": "The README and the agent reference shall each name SPEC.json, spec migrate, trusted-red, and --results, so the shipped documentation describes the JSON model, the cutover command, and the proof gate.",
       "why": "Documentation that omits the model, the cutover, or the proof gate leaves an adopter on the retired Markdown format or without the trusted-red check.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "deprecatedReason": "A docs-sync check on README and the agent reference; not product behavior."
+    },
+    {
+      "id": "DIST-020",
+      "status": "active",
+      "statement": "The published npm package shall carry the agent reference, the req-author skill, an MCP server template, and a pre-commit hook template in an agent folder of its payload.",
+      "why": "An adopter installing from npm gets only the CLI otherwise, and spec init has no bundled reference, skill, or templates to install into the repository.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
@@ -243,10 +266,46 @@
       "cites": []
     },
     {
-      "id": "DIST-020",
+      "id": "DIST-021",
       "status": "active",
-      "statement": "The published npm package shall carry the agent reference, the req-author skill, an MCP server template, and a pre-commit hook template in an agent folder of its payload.",
-      "why": "An adopter installing from npm gets only the CLI otherwise, and spec init has no bundled reference, skill, or templates to install into the repository.",
+      "statement": "The spec docs command shall serve the same documentation site from any working directory.",
+      "why": "A cwd-relative asset lookup breaks the moment the CLI runs from any directory but the package root — the classic embedded-UI bug.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DIST-022",
+      "status": "active",
+      "statement": "When the published spec command runs under a runtime other than Bun, it shall exit 1 with a hint to install Bun.",
+      "why": "The bundle statically imports bun:sqlite, which a Node module loader fails to resolve before any inline guard could run; the wrapper is the only enforcement point.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DIST-023",
+      "status": "active",
+      "statement": "The published spec package shall install from the npm registry without a repository checkout.",
+      "why": "A single workspace:* string in published dependencies makes the package uninstallable for every consumer.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DIST-024",
+      "status": "active",
+      "statement": "When a release is cut, the engine shall publish to npm only after every CI gate has passed.",
+      "why": "A tag release-please creates with GITHUB_TOKEN triggers no other workflow, so a publish left to a tag-push run never fires; a publish that skips a gate ships an unvalidated artifact.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

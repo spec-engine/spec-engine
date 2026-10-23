@@ -87,7 +87,7 @@ FROM drift d
 ORDER BY d.repo, d.source_file, d.line
 `;
 
-// @spec CHCK-032
+// @spec CHCK-056
 // @spec PROOF-011
 export const Q4_ORPHAN_REQ_SQL = `
 SELECT
@@ -111,7 +111,7 @@ WHERE r.status = 'Active'
 ORDER BY r.key, r.seq
 `;
 
-// @spec CHCK-032
+// @spec CHCK-056
 // @spec CHCK-035
 export const Q5_UNVERIFIED_REQ_SQL = `
 SELECT

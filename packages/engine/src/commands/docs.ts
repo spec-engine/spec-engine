@@ -1,6 +1,6 @@
 // @spec DIST-005
 // @spec DIST-006
-// @spec DIST-007
+// @spec DIST-021
 // @spec DIST-008
 //
 // Asset paths resolve from import.meta.url, never cwd: the CLI runs from any

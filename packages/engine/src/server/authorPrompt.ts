@@ -5,8 +5,8 @@
 
 import { RULE_ZERO } from "@spec-engine/shared";
 
-// @spec AUTHOR-008
-// @spec AUTHOR-009
+// @spec AUTHOR-015
+// @spec AUTHOR-016
 export function renderAuthorPrompt(opts: {
   brief: string;
   domain?: string | undefined;

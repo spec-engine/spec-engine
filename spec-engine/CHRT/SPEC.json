@@ -91,7 +91,7 @@
     },
     {
       "id": "CHRT-007",
-      "status": "active",
+      "status": "deprecated",
       "statement": "The spec-engine/TAXONOMY.md charter document shall carry, for every domain, a scope sentence plus belongs-here and does-not-belong-here lists with at least one named boundary case.",
       "why": "Without a written charter an author cannot tell whether a new requirement belongs in a domain, so the taxonomy silently re-rots after every reorg.",
       "supersedes": null,
@@ -100,7 +100,8 @@
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Content rule for a repo document (TAXONOMY.md); not product behavior."
     },
     {
       "id": "CHRT-008",
@@ -170,7 +171,7 @@
     },
     {
       "id": "CHRT-013",
-      "status": "active",
+      "status": "deprecated",
       "statement": "The spec-engine/TAXONOMY.md charter document shall catalogue the platform's headline invariants in a table naming, for each, the owning domain and the requirement id that records it.",
       "why": "An invariant not tied to a requirement id is folklore — nothing gates it, and the next reorg silently drops it.",
       "supersedes": null,
@@ -179,7 +180,8 @@
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Content rule for a repo document (invariants table); not product behavior."
     },
     {
       "id": "CHRT-014",
@@ -291,7 +293,7 @@
     },
     {
       "id": "CHRT-023",
-      "status": "active",
+      "status": "deprecated",
       "statement": "The agent reference shall state the requirement-id format rule: KEY-NNN with a three-digit, zero-padded number.",
       "why": "Inconsistent id formats break tag scanning and sorting, and the rule must live where authors look at minting time.",
       "supersedes": null,
@@ -299,7 +301,8 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Says a document states the id format; if the format matters, mint it as an engine refusal in SCHM."
     },
     {
       "id": "CHRT-024",

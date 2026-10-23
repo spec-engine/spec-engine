@@ -17,7 +17,7 @@ const PLATFORM_CODES: ReadonlySet<DiagnosticCode> = new Set<DiagnosticCode>([
 export function collectDiagnostics(storage: Storage): Diagnostic[] {
   const semantic = storage.listSemanticDiagnostics();
   const repoNames = new Set(storage.listRepos().map((r) => r.name));
-  // @spec CHCK-031
+  // @spec CHCK-055
   const repoOf = (p: ParseDiagnostic): string | null =>
     PLATFORM_CODES.has(p.code) && repoNames.has(p.source_file) ? p.source_file : null;
 
