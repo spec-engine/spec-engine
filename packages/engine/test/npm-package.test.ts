@@ -26,6 +26,12 @@ describe("published manifest hygiene", () => {
     expect(pkg.private).toBeUndefined();
   });
 
+  test("only the dist payload ships (files whitelist + dist-anchored bin)", () => {
+    // @spec DIST-023 unit
+    expect(pkg.files).toEqual(["dist"]);
+    expect(pkg.bin?.spec).toBe("./dist/cli.js");
+  });
+
   test("published dependencies never carry the workspace: protocol", () => {
     // @spec DIST-023 unit
     // Workspace packages bundle into dist/impl.js at prepack; only registry
