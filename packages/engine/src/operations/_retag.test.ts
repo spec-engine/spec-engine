@@ -9,7 +9,7 @@ import { deprecate } from "./deprecate";
 import { supersede } from "./supersede";
 
 describe("retagLine", () => {
-  // @spec REQ-065 unit
+  // @spec REQ-086 unit
   test("points the old id at the new one, keeping the level and the line tail", () => {
     expect(retagLine(`it("x"); // ${T} OLD-1 unit trailing`, "OLD-1", "NEW-2", false)).toBe(
       `it("x"); // ${T} NEW-2 unit trailing`,
@@ -85,7 +85,7 @@ describe("lifecycle commands rewrite tags across a member", () => {
 
   afterEach(() => fx.remove());
 
-  // @spec REQ-065 integration
+  // @spec REQ-086 integration
   test("supersede rewrites every site once and a second lookup finds none", async () => {
     const r = await supersede(
       { platformDir: fx.dir, id: "BILLING-001", statement: STATEMENTS[2] },

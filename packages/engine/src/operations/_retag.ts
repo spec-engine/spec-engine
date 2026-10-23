@@ -46,8 +46,7 @@ export function retagLine(
  * Rewrite every indexed tag site of `oldId` in place: to `newId`, or removed
  * when `newId` is null. Returns the sites as they stood before the rewrite and
  * reindexes through `freshTags` again so the caller's index sees the result.
- * @spec REQ-065
- * @spec REQ-066
+ * @spec REQ-086
  * @spec REQ-067
  */
 export async function applyRetag(

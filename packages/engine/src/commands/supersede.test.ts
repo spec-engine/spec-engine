@@ -88,7 +88,7 @@ async function expectExit2(fn: () => Promise<void>): Promise<void> {
 
 describe("spec supersede — happy path", () => {
   // @spec REQ-074
-  // @spec REQ-065 integration
+  // @spec REQ-086 integration
   // The fixture already holds one superseded edge (derived version 2); this
   // supersede adds the second, so the died-at version is 3.
   test("flips old entry, mints successor with copied fields, reports the derived version, retags the sites", async () => {
