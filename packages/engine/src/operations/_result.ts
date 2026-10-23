@@ -12,7 +12,7 @@ export type OpReason =
 
 /** A notice worth a stderr line. `kind` lets a surface keep its own wording per class. */
 export interface OpWarning {
-  kind: "grammar" | "ref" | "index";
+  kind: "grammar" | "ref" | "index" | "statement";
   text: string;
 }
 

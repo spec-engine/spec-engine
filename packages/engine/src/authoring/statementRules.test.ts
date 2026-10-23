@@ -7,7 +7,10 @@ import { mint } from "../operations/mint";
 import { move } from "../operations/move";
 import { supersede } from "../operations/supersede";
 import { type DomainHandle, TestPlatform } from "../testing/platform";
-import { statementRulesRefusal } from "./statementRules";
+import { statementRulesVerdict } from "./statementRules";
+
+const statementRulesRefusal = (dir: string, key: string, statement: string) =>
+  statementRulesVerdict(dir, key, statement).refusal;
 
 const BAD = "The endpoint previously answered 404";
 const GOOD = "The endpoint answers 404 for an unknown id.";
@@ -99,11 +102,23 @@ describe("check.json governs the write path", () => {
     ).toBeNull();
   });
 
-  test("a warning-severity rule still refuses", () => {
+  test("a warning-severity rule writes and reports the finding as a warning", () => {
+    // @spec REQ-069 unit
     fx.checkConfig({ severity: [], statementRules: { severity: { "no-history": "warning" } } });
+    const verdict = statementRulesVerdict(
+      fx.dir,
+      "BILLING",
+      "The endpoint previously answered 404.",
+    );
+    expect(verdict.refusal).toBeNull();
+    expect(verdict.warnings.map((w) => w.text)).toEqual([expect.stringContaining("no-history:")]);
+  });
+
+  test("a rule with no configured severity refuses", () => {
+    fx.checkConfig({ severity: [], statementRules: {} });
     expect(
       statementRulesRefusal(fx.dir, "BILLING", "The endpoint previously answered 404."),
-    ).not.toBeNull();
+    ).toContain("no-history:");
   });
 
   test("maxLength, jargon, and exemptNames apply at write time", () => {

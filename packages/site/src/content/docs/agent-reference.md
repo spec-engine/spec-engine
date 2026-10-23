@@ -110,7 +110,7 @@ A domain envelope may declare `grammar: "ears"` with `grammarSeverity: "warning"
 
 ### The statement rules
 
-Every domain is judged by these rules, whatever its grammar. `spec req`, `amend`, `supersede`, `move` (with new text), and `accept` refuse a statement that breaks an enabled rule: exit 2, one `<rule>: <detail> — <reason>` line per finding, rule 0 last. There is no override flag; the `statementRules` block of `check.json` tunes a rule or turns it off. `spec check` reports an Active statement that breaks one as `STATEMENT_RULES`, one row per rule per statement. The TERM domain is never judged.
+Every domain is judged by these rules, whatever its grammar. `spec req`, `amend`, `supersede`, `move` (with new text), and `accept` refuse a statement that breaks a rule graded `error` (the default): exit 2, one `<rule>: <detail> — <reason>` line per finding, rule 0 last. A rule graded `warning` writes the statement and prints the same finding lines on stderr. There is no override flag; the `statementRules` block of `check.json` grades a rule, tunes it, or turns it off. `spec check` reports an Active statement that breaks one as `STATEMENT_RULES`, one row per rule per statement. The TERM domain is never judged.
 
 | Rule | Reports | Printed reason |
 | --- | --- | --- |
@@ -266,7 +266,7 @@ Codes, in `DiagnosticCode` order:
 | `SUPERSEDED_REFERENCED` | error | Code still tags a superseded requirement (retag to the successor) |
 | `DEPRECATED_REFERENCED` | error | Code still tags a deprecated requirement |
 | `STATEMENT_GRAMMAR` | per domain, default warning | A statement fails its domain's declared grammar |
-| `STATEMENT_RULES` | warning; per rule from `statementRules.severity` | An Active statement breaks a statement rule: one row per rule per statement, the detail `<rule>: <detail> — <reason>` |
+| `STATEMENT_RULES` | error; per rule from `statementRules.severity` | An Active statement breaks a statement rule: one row per rule per statement, the detail `<rule>: <detail> — <reason>` |
 | `DRAFT_REFERENCED` | error on a verifying tag, warning on an implementing or documenting tag | A tag references a Draft requirement |
 | `GLOSSARY_DRIFT` | warning | The committed glossary differs from the one generated from the term store |
 | `ORPHAN_REQ` | error | An Active requirement has no implementing tag |
@@ -344,7 +344,7 @@ The eight codes before them are platform-map's, surfaced with the platform-map c
 
 - `maxLength` defaults to 280. `jargon` replaces the default list (`seam`, `seams`, `rung`, `rungs`, `residue`, `matrix entry`, `stage runner`, `the stage`).
 - `exemptNames` are product names `no-file-path` never reports. A name ending in `/` exempts every path under it.
-- `severity` maps a rule to `error`, `warning`, or `off`. `off` turns the rule off everywhere. Any other value still refuses a write; it grades the `STATEMENT_RULES` row, and the `severity` array regrades by code after it.
+- `severity` maps a rule to `error`, `warning`, or `off`. A rule with no entry is `error`. `error` refuses the write and grades the `STATEMENT_RULES` row error; `warning` writes, prints the finding on stderr, and grades the row warning; `off` turns the rule off everywhere. The `severity` array regrades by code after it.
 - The rules: `one-sentence`, `length`, `no-file-path`, `no-test-narration`, `no-toolchain-layout`, `no-history`, `no-jargon`, `no-tool-statement`. Unknown keys exit 2.
 
 ### spec guard

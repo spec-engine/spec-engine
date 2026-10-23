@@ -5,7 +5,7 @@ import {
   grammarWarningText,
   judgeStatementGrammar,
 } from "../authoring/grammar";
-import { statementRulesRefusal } from "../authoring/statementRules";
+import { statementRulesVerdict } from "../authoring/statementRules";
 import { gitShow, newestReleaseTag } from "../base/gitBase";
 import { displayStatus, locateEntry, splitList } from "./_envelope";
 import { fail, type OpFailure, type OpWarning } from "./_result";
@@ -155,8 +155,9 @@ export async function amend(input: AmendInput): Promise<AmendResult | OpFailure>
       }
       warnings.push({ kind: "grammar", text: grammarWarningText("", verdict).slice(2) });
     }
-    const refusal = statementRulesRefusal(platformDir, key, fields.statement);
-    if (refusal !== null) return fail("usage", refusal);
+    const rules = statementRulesVerdict(platformDir, key, fields.statement);
+    if (rules.refusal !== null) return fail("usage", rules.refusal);
+    warnings.push(...rules.warnings);
   }
 
   const { fieldsChanged, refValues } = applyFields(req, fields);

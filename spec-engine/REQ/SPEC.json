@@ -803,7 +803,7 @@
     {
       "id": "REQ-060",
       "status": "active",
-      "statement": "When a new statement breaks an enabled rule, spec req, amend, supersede, move, and accept shall refuse with exit 2 and print each finding.",
+      "statement": "When a new statement breaks a rule graded error, spec req, amend, supersede, move, and accept shall refuse with exit 2 and print each finding.",
       "why": "A rule that only reports after the write lets every bad statement into the book, and the sweep never ends.",
       "supersedes": null,
       "supersededBy": null,
@@ -901,6 +901,18 @@
       "status": "active",
       "statement": "When spec deprecate is run with a reason on an Active or Draft requirement, the spec CLI shall set the entry's status to deprecated and record the reason on the entry.",
       "why": "Without a command, end-of-life was a hand edit with the reason lost in a code comment that dies with the code — the entry itself is the only place the reason survives deletion.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-069",
+      "status": "active",
+      "statement": "When a new statement breaks a rule graded warning, spec req, amend, supersede, move, and accept shall write the statement and print each finding on stderr.",
+      "why": "A team sweeping an existing book needs to keep authoring while the old statements are fixed, without turning the rule off everywhere.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

@@ -15,7 +15,7 @@ import {
   grammarWarningText,
   judgeStatementGrammar,
 } from "../authoring/grammar";
-import { statementRulesRefusal } from "../authoring/statementRules";
+import { statementRulesVerdict } from "../authoring/statementRules";
 import { deriveDomainVersion } from "../parser/domainJson";
 import type { ReqTagRow } from "../resolve/format";
 import {
@@ -167,8 +167,9 @@ export async function move(
       }
       warnings.push({ kind: "grammar", text: grammarWarningText("", verdict).slice(2) });
     }
-    const refusal = statementRulesRefusal(platformDir, targetKey, fields.statement);
-    if (refusal !== null) return fail("usage", refusal);
+    const rules = statementRulesVerdict(platformDir, targetKey, fields.statement);
+    if (rules.refusal !== null) return fail("usage", rules.refusal);
+    warnings.push(...rules.warnings);
   }
   warnings.push(...unresolvableRefWarnings(platformDir, [fields.statement, fields.why]));
 

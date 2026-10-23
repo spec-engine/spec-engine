@@ -649,8 +649,8 @@
     {
       "id": "CHCK-049",
       "status": "active",
-      "statement": "When an Active statement breaks a rule, spec check shall report STATEMENT_RULES at warning severity by default, one row per rule per statement.",
-      "why": "Statements written before the rules existed would otherwise sit in the book unreported until someone happens to edit them.",
+      "statement": "When an Active statement breaks a rule, spec check shall report STATEMENT_RULES at the rule's configured severity, error by default, one row per rule per statement.",
+      "why": "A default looser than the write path would let the check pass a statement every authoring command refuses.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

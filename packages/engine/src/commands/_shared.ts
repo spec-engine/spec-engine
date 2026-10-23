@@ -72,7 +72,7 @@ export function handleStorageUnavailable(e: unknown, dbPath: string): void {
 export function printWarnings(cmdName: string, warnings: OpWarning[] | undefined): void {
   for (const w of warnings ?? []) {
     if (w.kind === "ref") console.error(`spec req: warning — ${w.text}`);
-    else if (w.kind === "grammar") console.error(`${cmdName}: ${w.text}`);
+    else if (w.kind === "grammar" || w.kind === "statement") console.error(`${cmdName}: ${w.text}`);
     else console.error(w.text);
   }
 }

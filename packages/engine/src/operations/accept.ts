@@ -1,8 +1,8 @@
 import { validateAndWrite } from "@spec-engine/shared";
 import { localToday } from "../authoring/edit";
-import { statementRulesRefusal } from "../authoring/statementRules";
+import { statementRulesVerdict } from "../authoring/statementRules";
 import { displayStatus, locateEntry } from "./_envelope";
-import { fail, type OpFailure } from "./_result";
+import { fail, type OpFailure, type OpWarning } from "./_result";
 
 export interface AcceptInput {
   platformDir: string;
@@ -13,6 +13,7 @@ export interface AcceptResult {
   ok: true;
   id: string;
   file: string;
+  warnings: OpWarning[];
 }
 
 /**
@@ -32,8 +33,8 @@ export async function accept(input: AcceptInput): Promise<AcceptResult | OpFailu
     return fail("conflict", `${id} is ${displayStatus(req.status)} — only a Draft entry accepts`);
   }
 
-  const refusal = statementRulesRefusal(platformDir, located.key, req.statement);
-  if (refusal !== null) return fail("usage", refusal);
+  const rules = statementRulesVerdict(platformDir, located.key, req.statement);
+  if (rules.refusal !== null) return fail("usage", rules.refusal);
 
   req.status = "active";
   domain.updated = localToday();
@@ -43,5 +44,5 @@ export async function accept(input: AcceptInput): Promise<AcceptResult | OpFailu
       diagnostics: res.diagnostics,
     });
   }
-  return { ok: true, id, file: relFile };
+  return { ok: true, id, file: relFile, warnings: rules.warnings };
 }
