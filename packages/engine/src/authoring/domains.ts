@@ -74,7 +74,7 @@ export function scaffoldDomainObject(key: string, today: string): SpecDomain {
   // schema rejects an authored one. Only TERM is seeded with specVersion 1:
   // that counter is the term-drift pin, since a revise adds no supersede edge.
   // Key order here is immaterial: validateAndWrite rebuilds it.
-  // @spec DOMAIN-025
+  // @spec DOMAIN-028
   return {
     $schema: SCHEMA_URLS.spec,
     key,

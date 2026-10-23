@@ -1,4 +1,4 @@
-// @spec INIT-050
+// @spec INIT-058
 // @spec INIT-016
 // @spec INIT-017
 // @spec INIT-042
@@ -439,7 +439,7 @@ describe("spec init × ignore field", () => {
     });
   });
 
-  // @spec SCHM-043 unit
+  // @spec SCHM-047 unit
   test("--force keeps the existing $schema value in place", async () => {
     writeFileSync(
       join(tmp, "spec-engine.member.json"),

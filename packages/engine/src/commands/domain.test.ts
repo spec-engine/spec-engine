@@ -128,7 +128,7 @@ describe("spec domain new — normalization", () => {
 });
 
 describe("spec domain new — scaffold shape", () => {
-  // @spec DOMAIN-025 unit
+  // @spec DOMAIN-028 unit
   test("the domain schema URL is the first key of a scaffolded SPEC.json", async () => {
     await runDomainNew("FIRST", tmp);
     const raw = await Bun.file(join(tmp, "spec-engine", "FIRST", "SPEC.json")).text();

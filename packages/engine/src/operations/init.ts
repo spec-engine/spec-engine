@@ -198,7 +198,7 @@ function link(canonical: string, platformRoot: string): { ok: true; userFile: st
 }
 
 /**
- * @spec INIT-050
+ * @spec INIT-058
  * @spec INIT-016
  * @spec INIT-017
  * @spec INIT-050
@@ -345,8 +345,8 @@ function preservedIgnore(
 }
 
 /**
- * @spec INIT-050
- * @spec SCHM-043
+ * @spec INIT-058
+ * @spec SCHM-047
  */
 async function write(
   configPath: string,

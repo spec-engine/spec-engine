@@ -19,7 +19,7 @@ export const SCHEMA_OUT_DIR = `${import.meta.dir}/../../site/public/schema/v1`;
  * File name to bytes for every published schema, generated from the zod
  * schemas the engine parses with. `io: "input"` describes the file as
  * authored, before defaults and transforms apply.
- * @spec SCHM-041
+ * @spec SCHM-045
  */
 export function renderJsonSchemas(): Record<string, string> {
   const out: Record<string, string> = {};
@@ -31,7 +31,7 @@ export function renderJsonSchemas(): Record<string, string> {
   return out;
 }
 
-// @spec DIST-021
+// @spec DIST-025
 if (import.meta.main) {
   for (const [file, text] of Object.entries(renderJsonSchemas())) {
     await Bun.write(`${SCHEMA_OUT_DIR}/${file}`, text);
