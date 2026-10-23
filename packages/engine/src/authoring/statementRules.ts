@@ -16,7 +16,7 @@ export interface StatementRulesVerdict {
  * @spec REQ-060
  * @spec REQ-069
  * @spec CHRT-022
- * @spec CHCK-048
+ * @spec CHCK-057
  */
 export function statementRulesVerdict(
   platformDir: string,

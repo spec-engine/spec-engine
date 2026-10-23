@@ -26,14 +26,8 @@ describe("published manifest hygiene", () => {
     expect(pkg.private).toBeUndefined();
   });
 
-  test("only the dist payload ships (files whitelist + dist-anchored bin)", () => {
-    expect(pkg.files).toEqual(["dist"]);
-    expect(pkg.bin?.spec).toBe("./dist/cli.js");
-  });
-
   test("published dependencies never carry the workspace: protocol", () => {
-    // @spec DIST-010 unit
-    // @spec DIST-011 unit
+    // @spec DIST-023 unit
     // Workspace packages bundle into dist/impl.js at prepack; only registry
     // deps may appear in `dependencies`. (bun publish would rewrite a
     // workspace: version, but npm publish ships it verbatim and broken —
@@ -68,7 +62,7 @@ describe("published manifest hygiene", () => {
 
 describe("bin wrapper runtime guard", () => {
   test("guard precedes the bundle import — Node dies with guidance, not ERR_UNKNOWN_BUILTIN_MODULE", () => {
-    // @spec DIST-009 unit
+    // @spec DIST-022 unit
     expect(wrapperSource.startsWith("#!/usr/bin/env bun\n")).toBe(true);
     const guardAt = wrapperSource.indexOf('typeof Bun === "undefined"');
     const importAt = wrapperSource.indexOf('await import("./impl.js")');

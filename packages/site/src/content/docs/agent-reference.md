@@ -88,7 +88,6 @@ The rules every new requirement is written against. The statement shapes and the
 
 ### Requirement id format
 
-<!-- @spec CHRT-023 -->
 
 - Ids are `KEY-NNN`: the domain key, a hyphen, and a three-digit zero-padded number (`BILLING-010`).
 - Ids are permanent. A requirement is superseded or deprecated, never renumbered and never deleted.
@@ -125,9 +124,7 @@ Every domain is judged by these rules, whatever its grammar. `spec req`, `amend`
 
 ## Authoring requirements (brief → mint)
 
-<!-- @spec AUTHOR-013 -->
 
-<!-- @spec AUTHOR-012 -->
 
 The procedure for turning a brief or ticket into requirements. Each draft is written to the requirement authoring standard above.
 
@@ -253,7 +250,6 @@ Integrity, coverage, drift, and governance diagnostics.
 
 Exit: 0 clean or warnings only / 1 any error-severity row / 2 usage.
 
-<!-- @spec CHCK-053 -->
 
 Codes, in `DiagnosticCode` order:
 
@@ -311,7 +307,7 @@ The eight codes before them are platform-map's, surfaced with the platform-map c
 - Term citations: `UNDEFINED_TERM`, `SUPERSEDED_TERM_REFERENCED`, and `TERM_DRIFT` clear with `spec term confirm`.
 - Losses: whenever a base ref resolves (`--base`, else `HEAD`), `check` reports the `IMPL_LOST`, `VERIFY_LOST`, and `SPEC_FILE_DELETED` rows `spec guard` would report against that ref. Guard's `REQUIREMENT_REMOVED` rows are dropped; the removal check already reports that id.
 - Under `--ci` with no `--base`, a working tree whose tracked files equal `HEAD` makes every loss check pass vacuously, so `check` warns on stderr with the line to run instead: `spec check . --ci --base "$(git merge-base HEAD origin/<default>)"`. The exit code and stdout are unchanged. <!-- @spec GUARD-031 -->
-- Coverage counts only Active requirements: `ORPHAN_REQ` and `UNVERIFIED_REQ` fire for Active entries only. <!-- @spec CHCK-032 -->
+- Coverage counts only Active requirements: `ORPHAN_REQ` and `UNVERIFIED_REQ` fire for Active entries only. <!-- @spec CHCK-056 -->
 
 #### check.json
 

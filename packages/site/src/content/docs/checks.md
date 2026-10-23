@@ -17,7 +17,7 @@ spec check . --ci --base "$(git merge-base HEAD origin/main)"
 
 ## Integrity and coverage
 
-Always on. A duplicate id, a broken or cyclic supersede chain, a tag that names no requirement or a superseded or deprecated one, an Active requirement with no implementing tag (`ORPHAN_REQ`) or no verifying tag (`UNVERIFIED_REQ`), and a member pinned behind a changed requirement (`DRIFT`). Coverage counts only Active requirements: a draft never raises `ORPHAN_REQ` or `UNVERIFIED_REQ`. <!-- @spec CHCK-032 -->
+Always on. A duplicate id, a broken or cyclic supersede chain, a tag that names no requirement or a superseded or deprecated one, an Active requirement with no implementing tag (`ORPHAN_REQ`) or no verifying tag (`UNVERIFIED_REQ`), and a member pinned behind a changed requirement (`DRIFT`). Coverage counts only Active requirements: a draft never raises `ORPHAN_REQ` or `UNVERIFIED_REQ`. <!-- @spec CHCK-056 -->
 
 ## Proof of passing (`--results`)
 

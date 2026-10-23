@@ -101,7 +101,7 @@ describe("statementFindings", () => {
   });
 });
 
-// @spec CHCK-048 unit
+// @spec CHCK-057 unit
 describe("statementFindings under a configuration", () => {
   test("maxLength replaces the 280-character default", () => {
     expect(rulesOf("A user signs in.", { maxLength: 10 })).toEqual(["length"]);

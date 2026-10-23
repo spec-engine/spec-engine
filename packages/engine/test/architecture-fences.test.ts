@@ -74,37 +74,32 @@ describe("architecture fences (scripts/arch-fences.sh)", () => {
     expect(stdout).toContain("issue_id-opacity gate: OK");
   });
 
-  // @spec DIST-012 unit
   test("DIST-012: the README names spec init and NO_SPEC_CONFIG", () => {
     fenceHeld("DIST-012");
   });
 
-  // @spec DIST-019 unit
   test("DIST-019: the README and the agent reference name SPEC.json, spec migrate, trusted-red, and --results", () => {
     fenceHeld("DIST-019");
   });
 
-  // @spec DIST-014 unit
   test("DIST-014: no spec-engine.config.example.json ships in the tree", () => {
     fenceHeld("DIST-014");
   });
 
-  // @spec DIST-015 unit
   test("DIST-015: release-please runs on main and releases packages/engine under v<version> tags", () => {
     fenceHeld("DIST-015");
   });
 
-  // @spec DIST-016 unit
+  // @spec DIST-024 unit
   test("DIST-016: publish runs on a v* tag or a release-please release, after every gate job", () => {
     fenceHeld("DIST-016");
   });
 
-  // @spec DIST-017 unit
+  // @spec DIST-024 unit
   test("DIST-017: the release tag is checked against the package version before packing", () => {
     fenceHeld("DIST-017");
   });
 
-  // @spec DIST-018 unit
   test("DIST-018: every dependency is an exact pin and Renovate is told to keep it so", () => {
     fenceHeld("DIST-018");
   });
@@ -130,7 +125,7 @@ describe("architecture fences (scripts/arch-fences.sh)", () => {
     fenceHeld("INDX-013");
   });
 
-  // @spec AUTHOR-008 unit
+  // @spec AUTHOR-015 unit
   test("AUTHOR-008: the runner emits the llm-free engine fence OK marker", () => {
     fenceHeld("AUTHOR-008");
     expect(stdout).toContain("llm-free engine fence: OK");
@@ -152,12 +147,10 @@ describe("architecture fences (scripts/arch-fences.sh)", () => {
     expect(stdout).toContain("authored-specVersion fence: OK");
   });
 
-  // @spec CHCK-053 unit
   test("CHCK-053: the agent reference's diagnostic-code list equals the DiagnosticCode enum", () => {
     fenceHeld("CHCK-053");
   });
 
-  // @spec CHRT-007 unit
   test("CHRT-007: the TAXONOMY charters equal the envelope scope fields", () => {
     fenceHeld("CHRT-007");
   });

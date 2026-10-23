@@ -147,16 +147,17 @@
     },
     {
       "id": "DOMAIN-011",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec domain new receives a name, it shall normalize it before validation — uppercase plus strip all whitespace — and shall never convert spaces to dashes.",
       "why": "A dash is the key/sequence separator in requirement ids; a dashed key scaffolds a domain whose entries silently parse to zero requirements.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "DOMAIN-025",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 13
     },
     {
       "id": "DOMAIN-012",
@@ -212,16 +213,17 @@
     },
     {
       "id": "DOMAIN-016",
-      "status": "active",
+      "status": "superseded",
       "statement": "When enumerating domains, the engine shall treat each child directory of spec-engine/ containing a SPEC.json as a domain, reading the filesystem only — never the derived index or a cache file.",
       "why": "Canonical truth is the git spec location; a second derived store would let the domain listing drift from what actually exists on disk.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "DOMAIN-026",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 14
     },
     {
       "id": "DOMAIN-017",
@@ -252,16 +254,17 @@
     },
     {
       "id": "DOMAIN-019",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec domain new <KEY> scaffolds, it shall write spec-engine/<KEY>/SPEC.json as a complete valid envelope — key, owner null, the current local-timezone date, and no authored specVersion for a requirement domain (only the reserved TERM domain seeds specVersion 1) — so spec index ingests it immediately with zero diagnostics.",
       "why": "A scaffold the indexer cannot parse yields a domain with zero requirements and no error; a UTC date stamps evening authors with tomorrow; and an authored specVersion on a requirement domain plants a second version counter free to drift from the derived one.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "DOMAIN-027",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 15
     },
     {
       "id": "DOMAIN-020",
@@ -313,7 +316,7 @@
     },
     {
       "id": "DOMAIN-024",
-      "status": "active",
+      "status": "deprecated",
       "statement": "When spec domain list runs on a platform with zero domains, it shall print empty output and exit 0.",
       "why": "An empty platform is a valid starting state; an error exit there would break scripted listings before the first domain exists.",
       "supersedes": null,
@@ -321,6 +324,43 @@
       "relates": [
         "DOMAIN-023"
       ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "deprecatedReason": "merged into DOMAIN-023"
+    },
+    {
+      "id": "DOMAIN-025",
+      "status": "active",
+      "statement": "When spec domain new receives a name, it shall uppercase the name and remove all whitespace before validating it.",
+      "why": "A dash is the key/sequence separator in requirement ids; a dashed key scaffolds a domain whose entries silently parse to zero requirements.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DOMAIN-026",
+      "status": "active",
+      "statement": "The spec engine shall treat each spec-engine/ subdirectory that holds a SPEC.json as a domain.",
+      "why": "Canonical truth is the git spec location; a second derived store would let the domain listing drift from what actually exists on disk.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DOMAIN-027",
+      "status": "active",
+      "statement": "When spec domain new scaffolds a domain, it shall write a SPEC.json that spec index ingests with zero diagnostics.",
+      "why": "A scaffold the indexer cannot parse yields a domain with zero requirements and no error; a UTC date stamps evening authors with tomorrow; and an authored specVersion on a requirement domain plants a second version counter free to drift from the derived one.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
       "issues": [],
       "aliases": [],
       "cites": []

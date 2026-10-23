@@ -40,7 +40,7 @@ function definedFields(options: NewDomainOptions): Partial<NewDomainOptions> {
  * index).
  * @spec DOMAIN-014
  * @spec DOMAIN-015
- * @spec DOMAIN-019
+ * @spec DOMAIN-027
  */
 export async function newDomain(
   platformDir: string,
@@ -74,7 +74,6 @@ export async function newDomain(
 
 /** Every domain with its charter sentence (null when unset), sorted by key. */
 // @spec DOMAIN-023
-// @spec DOMAIN-024
 export async function listDomains(platformDir: string) {
   return { ok: true as const, domains: await domainsWithScope(platformDir) };
 }

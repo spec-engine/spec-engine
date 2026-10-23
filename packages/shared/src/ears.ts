@@ -48,9 +48,7 @@ const RATIONALE_RE = /\b(because|so that|in order to)\b/i;
 /** The one-promise lint over a statement that already has an EARS shape; null when clean.
  *  A trailing ", so <consequence>" is legal: it names an observable result, not a reason.
  *  A bare ", and shall <more>" continues the same subject and is not flagged. */
-// @spec CHCK-040
-// @spec CHCK-041
-// @spec CHCK-042
+// @spec CHCK-060
 function onePromiseProblem(statement: string, response: string): string | null {
   if (/;\s/.test(response)) {
     return 'joins a second clause with "; " after "shall" — split it into its own requirement';

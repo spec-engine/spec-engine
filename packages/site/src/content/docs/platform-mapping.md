@@ -104,7 +104,7 @@ platform-map reports what it finds as diagnostics on the map. `spec check` surfa
 | `UNMATCHED_PATTERN` | info | not surfaced | A workspace glob matched no package |
 | `AMBIGUOUS_ECOSYSTEM` | info | not surfaced | A repo has manifests from more than one ecosystem |
 
-The rule behind the table: every platform-map error and warning keeps its severity, and an info diagnostic is promoted to a warning only when it means a repository's tags are silently not being scanned. <!-- @spec CHCK-031 --> A row's `source_file` is the diagnostic's subject; `repo` is the subject when it names a member of the platform. A message that would tell you to run a platform-map command is reworded to the `spec init` form that does the same. `NO_SPEC_CONFIG` stays Spec Engine's own code, because the pin is Spec Engine's own file.
+The rule behind the table: every platform-map error and warning keeps its severity, and an info diagnostic is promoted to a warning only when it means a repository's tags are silently not being scanned. <!-- @spec CHCK-055 --> A row's `source_file` is the diagnostic's subject; `repo` is the subject when it names a member of the platform. A message that would tell you to run a platform-map command is reworded to the `spec init` form that does the same. `NO_SPEC_CONFIG` stays Spec Engine's own code, because the pin is Spec Engine's own file.
 
 ## Where `spec init` may write
 

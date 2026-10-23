@@ -3,7 +3,7 @@
 # @spec REQ-060
 # @spec CHCK-049
 # @spec CHCK-050
-# @spec CHCK-052
+# @spec CHCK-058
 source "$(dirname "$0")/_lib.sh"
 TMP=$(fixture_copy); trap 'rm -rf "$TMP"' EXIT
 FILE=spec-engine/BILLING/SPEC.json

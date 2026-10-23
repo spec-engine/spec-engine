@@ -48,7 +48,7 @@ export const lintCommand = defineCommand({
     }
     const result = await lint({ platformDir, target, all: !!args.all });
     if (!result.ok) exitOnFailure("spec lint", result);
-    // @spec CHCK-052
+    // @spec CHCK-058
     if (args.json) {
       console.log(
         JSON.stringify(

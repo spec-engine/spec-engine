@@ -167,7 +167,6 @@ fence_prov02_issue_id_opacity() {
 }
 
 # --- DIST-012: README references spec init + NO_SPEC_CONFIG ----------------
-# @spec DIST-012
 fence_docs01_readme_tokens() {
   set -euo pipefail
   grep -q 'spec init' README.md         || { echo "FAIL: README.md missing 'spec init' token";        exit 1; }
@@ -176,7 +175,6 @@ fence_docs01_readme_tokens() {
 }
 
 # --- DIST-019: README + the agent reference describe the JSON model / migrate / trusted-red
-# @spec DIST-019
 fence_ma4_v13_doc_reference() {
   set -euo pipefail
   TOKENS='SPEC.json|spec migrate|trusted-red|--results'
@@ -198,7 +196,6 @@ fence_ma4_v13_doc_reference() {
 }
 
 # --- DIST-014: spec-engine.config.example.json must stay deleted -----------
-# @spec DIST-014
 fence_clean01_no_stale_example() {
   if find . -name 'spec-engine.config.example.json' -not -path './node_modules/*' | grep -q .; then
     echo "FORBIDDEN: spec-engine.config.example.json found in tree — spec init is the replacement (DIST-014)"
@@ -249,7 +246,7 @@ fence_trk02_tracker_import() {
 }
 
 # --- AUTHOR-008: the engine stays LLM-free (no model SDK / inference call) --
-# @spec AUTHOR-008
+# @spec AUTHOR-015
 fence_llmfree_engine() {
   # Mirror the tracker fence's host-literal scan: cat every engine source,
   # STRIP comment lines (a header comment naming a token must not self-trip
@@ -448,7 +445,6 @@ fence_no_authored_specversion() {
 # The list is hand-written prose beside a machine-readable enum, so it drifts.
 # This compares the two sets (order and duplicates are prose's business,
 # membership is not).
-# @spec CHCK-053
 fence_agents_check_codes() {
   local enum_codes agents_codes
   enum_codes="$(grep -oE '^  [A-Z_]+: "' packages/shared/src/diagnostics.ts \
@@ -474,7 +470,6 @@ fence_agents_check_codes() {
 # --- CHRT-007: TAXONOMY.md per-domain charters are generated from the envelopes
 # The envelope `scope` is canonical (it ships with adopters and feeds
 # `spec domain list` / `spec req`); the document is derived from it.
-# @spec CHRT-007
 fence_taxonomy_charters() {
   if bun scripts/gen-charters.ts --check; then
     echo "charter generation fence: OK (TAXONOMY.md == envelope scope fields)"
@@ -487,13 +482,11 @@ fence_taxonomy_charters() {
 # --- DIST-015..018: the release pipeline config --------------------------
 # ci.yml and the JSON configs hold no scannable tag; scripts/release-config.ts
 # parses them and states each requirement's shape.
-# @spec DIST-015
 fence_dist015_release_pr() { bun scripts/release-config.ts DIST-015; }
-# @spec DIST-016
+# @spec DIST-024
 fence_dist016_publish_on_release() { bun scripts/release-config.ts DIST-016; }
-# @spec DIST-017
+# @spec DIST-024
 fence_dist017_version_parity() { bun scripts/release-config.ts DIST-017; }
-# @spec DIST-018
 fence_dist018_exact_pins() { bun scripts/release-config.ts DIST-018; }
 
 run "SCHM-025 bun:sqlite outside the engine"                  fence_d11_bun_sqlite

@@ -434,7 +434,7 @@ export function buildMcpServer(platformDir: string): McpServer {
   );
 
   // A static playbook template: the engine runs no model; the client's does.
-  // @spec AUTHOR-008
+  // @spec AUTHOR-015
   server.registerPrompt(
     "author_requirements",
     {

@@ -105,7 +105,7 @@ test("--all judges Draft requirements too", async () => {
   expect(logs).toEqual([HISTORY, TOOL_DRAFT]);
 });
 
-// @spec CHCK-052 unit
+// @spec CHCK-058 unit
 test("--json prints the findings as a sorted array", async () => {
   expect(await lint({ target: fx.dir, json: true })).toBe(1);
   const rows = JSON.parse(logs.join("\n"));

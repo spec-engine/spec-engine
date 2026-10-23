@@ -306,7 +306,7 @@ function buildRows(input: BuildRowsInput): IndexRows {
       severity: "warning",
     });
   }
-  // @spec CHCK-031
+  // @spec CHCK-055
   for (const d of platformDiagnostics) {
     diagnostics.push({
       code: d.code,

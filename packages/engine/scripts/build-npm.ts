@@ -1,8 +1,7 @@
 // packages/engine/scripts/build-npm.ts
 //
 // Dogfood (spec self-consumes this repo — see spec-engine/):
-// @spec DIST-010
-// @spec DIST-011
+// @spec DIST-023
 //
 // Builds the publishable npm payload for @spec-engine/spec-engine (single
 // bundled package — webapp and docs ship INSIDE the CLI). Wired to `prepack`,

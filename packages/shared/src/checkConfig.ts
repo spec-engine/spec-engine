@@ -19,7 +19,7 @@ export const SeverityRuleSchema = z
   })
   .strict();
 
-// @spec CHCK-048
+// @spec CHCK-057
 export const StatementRulesConfigSchema = z
   .object({
     maxLength: z.number().int().positive().optional(),

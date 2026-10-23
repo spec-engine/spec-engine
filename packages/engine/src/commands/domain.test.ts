@@ -1,10 +1,10 @@
-// @spec DOMAIN-011
+// @spec DOMAIN-025
 // @spec DOMAIN-012
 // @spec DOMAIN-013
-// @spec DOMAIN-019
+// @spec DOMAIN-027
 // @spec DOMAIN-014
 // @spec DOMAIN-015
-// @spec DOMAIN-016
+// @spec DOMAIN-026
 // @spec DOMAIN-023
 // @spec DOMAIN-018
 
@@ -128,7 +128,7 @@ describe("spec domain new — normalization", () => {
 });
 
 describe("spec domain new — scaffold shape", () => {
-  // @spec DOMAIN-019
+  // @spec DOMAIN-027
   test("scaffold is a JSON envelope with the canonical empty shape (no specVersion)", async () => {
     await runDomainNew("VALID", tmp);
     const raw = await Bun.file(join(tmp, "spec-engine", "VALID", "SPEC.json")).text();
@@ -145,7 +145,7 @@ describe("spec domain new — scaffold shape", () => {
     expect("specVersion" in obj).toBe(false);
   });
 
-  // @spec DOMAIN-019
+  // @spec DOMAIN-027
   test("the reserved TERM domain scaffolds WITH specVersion 1", async () => {
     await runDomainNew("TERM", tmp);
     const obj = JSON.parse(await Bun.file(join(tmp, "spec-engine", "TERM", "SPEC.json")).text());
@@ -215,7 +215,7 @@ describe("spec domain list", () => {
     expect(logs).toEqual(["ALPHA", "MIKE", "ZULU"]);
   });
 
-  // @spec DOMAIN-024 unit
+  // @spec DOMAIN-023 unit
   test("empty spec-engine/ → exit 0, zero output lines", async () => {
     mkdirSync(join(tmp, "spec-engine"), { recursive: true });
     await runDomainList(tmp);

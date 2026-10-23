@@ -1,5 +1,5 @@
 // @spec CHCK-012
-// @spec CHCK-043
+// @spec CHCK-061
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";

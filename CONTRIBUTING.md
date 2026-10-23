@@ -94,8 +94,7 @@ CI releases and publishes, keyless:
   approve pull requests" is on (release-please opens its PR with `GITHUB_TOKEN`), and
   the Renovate GitHub App is installed on the repository.
 
-<!-- @spec DIST-015 -->
-<!-- @spec DIST-016 -->
+<!-- @spec DIST-024 -->
 Release loop:
 
 1. Merge pull requests with conventional-commit titles (`feat:`, `fix:`, `feat!:`).
@@ -104,7 +103,7 @@ Release loop:
    A `Release-As: x.y.z` commit footer overrides the computed version.
 3. Merging the release PR tags `v<version>`, creates the GitHub Release, and publishes
    in that same run. A tag pushed with `GITHUB_TOKEN` starts no other workflow.
-   <!-- @spec DIST-017 --> The publish job refuses a tag that does not match the
+   <!-- @spec DIST-024 --> The publish job refuses a tag that does not match the
    package version and re-runs the pack rehearsal (file list is `dist/` +
    `package.json`/`README.md`/`LICENSE` only; no `workspace:*` survives in the
    manifest) before uploading.
@@ -112,7 +111,6 @@ Release loop:
 A hand-pushed `v<version>` tag still re-runs every gate and publishes, for a release
 cut outside release-please.
 
-<!-- @spec DIST-018 -->
 Dependencies are exact pins. Renovate (`renovate.json`) keeps them exact and current:
 one weekly PR for grouped minor and patch updates, a separate PR per major, and a
 weekly `bun.lock` maintenance PR.
