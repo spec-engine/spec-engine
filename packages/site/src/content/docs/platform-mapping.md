@@ -43,7 +43,7 @@ A member is a name in the platform file's `members` list. Nothing else makes a d
 
 `spec init <name>` is the one command that makes a repository a member. It declares the repository through platform-map's `init` (an entry in the platform file and a marker in the repository), then writes the repository's `spec-engine.member.json`. Run on a repository that is already declared, it only writes the pin, and puts back a missing marker. <!-- @spec INIT-055 -->
 
-A declared member that has no `spec-engine.member.json` is a member without a pin. The index reports it as `NO_SPEC_CONFIG`, one warning per member, and suggests `spec init <name>`. <!-- @spec CHCK-059 --> When stdin is a terminal and `--no-prompt` is absent, an index-building command offers to run `spec init <name>` before it proceeds, for each declared member without a pin and for each undeclared repository in the platform folder. <!-- @spec INIT-033 -->
+A declared member that has no `spec-engine.member.json` is a member without a pin. The index reports it as `NO_SPEC_CONFIG`, one warning per member, and suggests `spec init <name>`. <!-- @spec CHCK-059 --> When stdin is a terminal and `--no-prompt` is absent, an index-building command offers to run `spec init <name>` before it proceeds, for each declared member without a pin and for each undeclared repository in the platform folder. <!-- @spec INIT-060 -->
 
 A member's pin is the `specs` string in its `spec-engine.member.json`, one platform-wide scalar `spec-engine@N`.
 

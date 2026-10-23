@@ -2,7 +2,7 @@
   "$schema": "https://docs.spec-engine.dev/schema/v1/spec.json",
   "key": "PROV",
   "owner": null,
-  "updated": "2026-10-22",
+  "updated": "2026-10-23",
   "scope": "The spec provenance matrix and the issue-link model, with issue_id an opaque external payload. Belongs here: the matrix rows and their sort and render; the role:ID parse into (req_id, issue_id, role); issue_id is projected only, never a key. Does not belong here: resolving an issue id to a title (TRK); requirement identity or routing. Boundary case: an issue id shaped like KEY-NNN stays an opaque string and is never resolved against the requirements table.",
   "grammar": "ears",
   "requirements": [
@@ -34,15 +34,16 @@
     },
     {
       "id": "PROV-003",
-      "status": "active",
+      "status": "superseded",
       "statement": "When an authoring command is run with an issue flag, the spec CLI shall record the ticket id as provenance on the entry — created on a new requirement, supersedes-via on a superseded predecessor, amends-via on an amendment — never as identity or routing.",
       "why": "The engine warned about missing supersedes-via provenance while offering no way to write it — provenance the tool demands but cannot record is provenance that never exists.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "PROV-008",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 5
     },
     {
       "id": "PROV-004",
@@ -91,6 +92,18 @@
       "status": "active",
       "statement": "The spec engine shall treat an issue id as an opaque string, storing and displaying it verbatim.",
       "why": "An issue id rewritten on the way in or out no longer matches the tracker, so the provenance matrix stops pointing at the ticket that caused the change.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "PROV-008",
+      "status": "active",
+      "statement": "When spec req, supersede, amend, or move runs with --issue, the spec CLI shall record the ticket id on each entry it writes, under the provenance role that matches the command.",
+      "why": "The engine warned about missing supersedes-via provenance while offering no way to write it — provenance the tool demands but cannot record is provenance that never exists.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

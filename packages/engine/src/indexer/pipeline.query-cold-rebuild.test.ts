@@ -25,7 +25,7 @@ afterEach(() => {
   rmSync(clone, { recursive: true, force: true });
 });
 
-// @spec QURY-009 unit
+// @spec QURY-011 unit
 describe("spec query cold-rebuild", () => {
   test("warm index: searchFts('renewal charge') top hit is BILLING-009", async () => {
     const s = openStorage(dbPath);

@@ -267,7 +267,7 @@ describe("spec amend — release gate", () => {
 // entry's glossary fields in place (same id, no specVersion bump), mirroring
 // --text/--why on a requirement. ─────────────────────────────────────
 describe("spec amend — TERM fields in place", () => {
-  // @spec REQ-034 unit
+  // @spec REQ-085 unit
   test("--term/--aliases/--def revise the fields in place; same id, specVersion untouched", async () => {
     const terms = await fx.terms();
     const term = await fx.term({

@@ -9,7 +9,7 @@
 // of the coverage view.
 //
 // @spec QURY-008
-// @spec QURY-009
+// @spec QURY-011
 // @spec QURY-010
 const FTS_OPERATORS = new Set(["AND", "OR", "NOT", "NEAR"]);
 const FTS_SYNTAX = /["()*:^]/;

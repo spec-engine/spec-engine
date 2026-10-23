@@ -456,15 +456,16 @@
     },
     {
       "id": "REQ-034",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec supersede or spec amend targets a TERM id, it shall operate exactly as on a requirement, carrying the term headword and aliases through the successor and amend shapes.",
       "why": "A shift in a term's meaning must supersede or revise-with-bump, never silently redefine; excluding TERM ids from the lifecycle machinery would leave meaning changes untracked.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "REQ-085",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 37
     },
     {
       "id": "REQ-035",
@@ -1105,6 +1106,18 @@
       "status": "active",
       "statement": "When an authoring command runs with --json, the spec CLI shall list each possible duplicate's id and score in a possible_duplicates array.",
       "why": "An agent authoring through --json reads stdout only and would never see the stderr warning.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-085",
+      "status": "active",
+      "statement": "When spec supersede or spec amend targets a TERM id, the spec CLI shall carry the term headword and aliases onto the entry it writes.",
+      "why": "A shift in a term's meaning must supersede or revise-with-bump, never silently redefine; excluding TERM ids from the lifecycle machinery would leave meaning changes untracked.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

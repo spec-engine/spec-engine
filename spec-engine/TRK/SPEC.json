@@ -2,7 +2,7 @@
   "$schema": "https://docs.spec-engine.dev/schema/v1/spec.json",
   "key": "TRK",
   "owner": null,
-  "updated": "2026-10-21",
+  "updated": "2026-10-23",
   "scope": "The @spec-engine/tracker package: the offline noop adapter and the optional read-only Linear integration that resolves an opaque issue_id to a title and URL. Belongs here: the adapter interface and noop default; the single read query; SPEC_TRACKER_TOKEN handling and the no-token short-circuit; the sidecar cache; the isolation boundary (engine internals never import the tracker, no network on the derivation path). Does not belong here: how a display surface labels expired-cache data (PROV); the provenance matrix and issue-id opacity (PROV); any write back to the tracker. Boundary case: resolving an issue id is TRK's; the opacity of that id inside the index is PROV's.",
   "grammar": "ears",
   "requirements": [
@@ -50,16 +50,17 @@
     },
     {
       "id": "TRK-004",
-      "status": "active",
+      "status": "superseded",
       "statement": "While building or checking the derived index, the spec engine shall perform no network access, so spec index and spec check produce identical results with or without connectivity.",
       "why": "If the derivation path reached the network or the tracker, spec index and spec check could hang, leak, or vary by network state — breaking the offline-deterministic guarantee adopters depend on.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "TRK-010",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 7
     },
     {
       "id": "TRK-005",
@@ -123,6 +124,18 @@
       "relates": [
         "TRK-008"
       ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "TRK-010",
+      "status": "active",
+      "statement": "While spec index or spec check builds the derived index, the spec engine shall make no network request.",
+      "why": "If the derivation path reached the network or the tracker, spec index and spec check could hang, leak, or vary by network state — breaking the offline-deterministic guarantee adopters depend on.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
       "issues": [],
       "aliases": [],
       "cites": []

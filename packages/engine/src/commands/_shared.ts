@@ -35,7 +35,7 @@ export function handleNotAPlatform(e: unknown): never {
  * A refused index build prints its INVALID_DOMAIN_FILE rows and nothing else
  * (the `check --json` rows on stdout under `json`, text rows on stderr
  * otherwise) and exits `code`; anything else falls through.
- * @spec INDX-017
+ * @spec INDX-030
  */
 export async function handleInvalidDomainFiles(
   e: unknown,

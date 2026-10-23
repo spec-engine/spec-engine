@@ -207,16 +207,17 @@
     },
     {
       "id": "INIT-016",
-      "status": "active",
+      "status": "superseded",
       "statement": "Where no REPO argument is given, spec init shall target the current directory.",
       "why": "Onboarding must work from inside the repo being onboarded; requiring an explicit path adds friction at the exact moment the CLI is teaching the contract.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-059",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 32
     },
     {
       "id": "INIT-017",
@@ -468,11 +469,11 @@
     },
     {
       "id": "INIT-033",
-      "status": "active",
+      "status": "superseded",
       "statement": "While stdin is a TTY and --no-prompt is absent, index-building commands shall offer to run spec init <name> for each declared member without a pin and for each undeclared repository in the platform folder, instead of only the warning.",
       "why": "The moment discovery finds a repository that is not scanned is the one moment the CLI can teach the membership contract; losing it leaves the warning as the only, easily-ignored signal.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-060",
       "relates": [],
       "issues": [
         {
@@ -481,7 +482,8 @@
         }
       ],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 33
     },
     {
       "id": "INIT-034",
@@ -695,15 +697,16 @@
     },
     {
       "id": "INIT-048",
-      "status": "active",
+      "status": "superseded",
       "statement": "When AGENTS.md already holds the agent-reference markers, spec init shall replace only the text between them, so a second run with the same bundle changes no file.",
       "why": "A re-run that appends a second block or rewrites unchanged files duplicates the reference and churns every adopter's diff on each upgrade.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-061",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 34
     },
     {
       "id": "INIT-049",
@@ -818,6 +821,42 @@
       "status": "active",
       "statement": "When spec init scaffolds a member, it shall write spec-engine.member.json containing exactly { \"$schema\": \"<member schema URL>\", \"specs\": \"spec-engine@<N>\" }, pretty-printed with a trailing newline, and print the absolute path plus the resolved pin.",
       "why": "The config is the member's explicit opt-in that discovery parses; a shape that deviates from the config schema is silently skipped and the repo's tags never index.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-059",
+      "status": "active",
+      "statement": "When spec init runs with no REPO argument, the command shall target the current directory.",
+      "why": "Onboarding must work from inside the repo being onboarded; requiring an explicit path adds friction at the exact moment the CLI is teaching the contract.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-060",
+      "status": "active",
+      "statement": "While stdin is a TTY and --no-prompt is absent, an index-building command shall offer to run spec init <name> for each declared member without a pin and each undeclared repository in the platform folder.",
+      "why": "The moment discovery finds a repository that is not scanned is the one moment the CLI can teach the membership contract; losing it leaves the warning as the only, easily-ignored signal.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-061",
+      "status": "active",
+      "statement": "When AGENTS.md already holds the agent-reference markers, spec init shall replace only the text between them, so an unchanged bundle changes no file.",
+      "why": "A re-run that appends a second block or rewrites unchanged files duplicates the reference and churns every adopter's diff on each upgrade.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

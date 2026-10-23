@@ -58,7 +58,7 @@ Without `--base`, `check` diffs against `HEAD`, which in a CI checkout already h
 
 ## Requirement authoring standard
 
-<!-- @spec CHRT-024 -->
+<!-- @spec CHRT-032 -->
 
 The rules every new requirement is written against. The statement shapes and the statement rules are also checked at write time and by `spec check`.
 

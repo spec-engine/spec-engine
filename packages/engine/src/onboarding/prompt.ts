@@ -26,7 +26,7 @@ interface Offer extends NamedDir {
  * `--no-prompt`, or a non-TTY stdin. A refused offer exits 1 with the
  * remediation; an accepted one runs `spec init` inline and moves on. The
  * offers are a snapshot taken once; the outer command rediscovers afterwards.
- * @spec INIT-033
+ * @spec INIT-060
  */
 export async function maybePromptForOnboarding(opts: MaybePromptOpts): Promise<void> {
   if (opts.args.ci) return;

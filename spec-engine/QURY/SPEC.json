@@ -2,7 +2,7 @@
   "$schema": "https://docs.spec-engine.dev/schema/v1/spec.json",
   "key": "QURY",
   "owner": null,
-  "updated": "2026-10-22",
+  "updated": "2026-10-23",
   "scope": "The spec query full-text retrieval command. Belongs here: FTS5 MATCH semantics; rank-ascending results; superseded exclusion; --limit bounds. Does not belong here: file-to-requirement resolution (RSLV). Boundary case: a bare AND or OR is an FTS5 grammar error and a QURY exit-2 contract.",
   "grammar": "ears",
   "requirements": [
@@ -116,22 +116,35 @@
     },
     {
       "id": "QURY-009",
-      "status": "active",
+      "status": "superseded",
       "statement": "When the search text and a requirement's wording differ only by word inflection, spec query shall still match — 'renewal charge' shall return a requirement whose text says 'renews'.",
       "why": "When retrieval demands the author's exact wording, everyday inflection differences silently return nothing and duplicates get minted for requirements that already exist.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "QURY-011",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 7
     },
     {
       "id": "QURY-010",
       "status": "active",
       "statement": "When searching requirements, spec query shall exclude superseded and deprecated requirements from the results.",
       "why": "A superseded statement surfacing as live sends an agent to build against a contract that no longer holds.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "QURY-011",
+      "status": "active",
+      "statement": "When the search text and a requirement's wording differ only by word inflection, spec query shall return that requirement.",
+      "why": "When retrieval demands the author's exact wording, everyday inflection differences silently return nothing and duplicates get minted for requirements that already exist.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

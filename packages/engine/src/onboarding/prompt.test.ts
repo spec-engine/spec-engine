@@ -1,4 +1,4 @@
-// @spec INIT-033
+// @spec INIT-060
 //
 // `process.exit` is stubbed to throw ExitError so a test can assert the exit
 // code without terminating the suite.

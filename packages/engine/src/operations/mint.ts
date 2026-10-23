@@ -102,7 +102,7 @@ export async function mint(input: MintInput, scan: DuplicateScan): Promise<MintR
     supersededBy: null,
     // @spec REQ-077
     relates: splitList(input.relates ?? []),
-    // @spec PROV-003
+    // @spec PROV-008
     issues: input.issue ? [{ role: "created", id: input.issue }] : [],
     aliases: [],
     cites: input.cites ?? [],

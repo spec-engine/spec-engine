@@ -124,7 +124,7 @@ describe("lanGate", () => {
   });
 
   test("writes are 403 without --allow-writes", async () => {
-    // @spec SERV-025 unit
+    // @spec SERV-035 unit
     const post = new Request(`${BASE}/editor/create`, authed({ method: "POST" }));
     expect((await gate()(post)).status).toBe(403);
     const resolve = new Request(`${BASE}/api/provenance?resolve=1`, authed());
@@ -133,7 +133,7 @@ describe("lanGate", () => {
   });
 
   test("writes pass with --allow-writes", async () => {
-    // @spec SERV-025 unit
+    // @spec SERV-035 unit
     const post = new Request(`${BASE}/editor/create`, authed({ method: "POST" }));
     expect((await gate(true)(post)).status).toBe(200);
   });

@@ -223,7 +223,7 @@ describe("serveCommand --host / --token", () => {
   });
 
   test("--probe ignores --host and stays on loopback", async () => {
-    // @spec SERV-012 integration
+    // @spec SERV-034 integration
     expect(await runServe({ probe: true, host: "192.168.0.10" })).toBe(0);
     expect(logs.join("\n")).toContain("serve --probe OK");
   });
@@ -247,7 +247,7 @@ describe("spec serve — pre-index guidance", () => {
 });
 
 describe("spec serve — probe branch + bind-failure branch", () => {
-  // @spec SERV-012 unit
+  // @spec SERV-034 unit
   test("--probe binds loopback:0, self-fetches the placeholder, exits 0", async () => {
     const code = await runServe({ probe: true });
     expect(code).toBe(0);

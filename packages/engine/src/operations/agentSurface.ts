@@ -71,7 +71,7 @@ function writeIfChanged(path: string, content: string, out: AgentSurfaceResult):
 
 /**
  * @spec INIT-044
- * @spec INIT-048
+ * @spec INIT-061
  * @spec INIT-049
  */
 function writeReferenceBlock(dir: string, out: AgentSurfaceResult): void {

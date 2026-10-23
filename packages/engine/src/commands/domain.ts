@@ -34,7 +34,7 @@ export const domainNewCommand = defineCommand({
     const raw = args.name;
     const platformDir = resolvePlatformDir(args);
 
-    // @spec DOMAIN-012
+    // @spec DOMAIN-029
     const key = normalizeDomainKey(raw);
     if (key !== raw) {
       console.log(`spec domain: normalized "${raw}" → ${key}`);

@@ -23,7 +23,7 @@ beforeEach(async () => {
 
 afterEach(() => fx.remove());
 
-// @spec CHCK-049 unit
+// @spec CHCK-068 unit
 describe("STATEMENT_RULES", () => {
   test("an Active statement gets one error row per rule it breaks", async () => {
     const { id } = await billing.req({ statement: BAD });

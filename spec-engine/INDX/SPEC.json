@@ -2,7 +2,7 @@
   "$schema": "https://docs.spec-engine.dev/schema/v1/spec.json",
   "key": "INDX",
   "owner": null,
-  "updated": "2026-10-22",
+  "updated": "2026-10-23",
   "scope": "The derivation pipeline and index lifecycle: cold-rebuild identity, build_id determinism, structural integrity at index time, and spec index. Belongs here: deleting .spec-engine/ and rebuilding yields an identical result; build_id is deterministic for identical inputs; index-time structural checks; spec index itself. Does not belong here: check severities (CHCK); the SPEC.json envelope shape (SCHM). Boundary case: cold-rebuild identity is INDX's promise even though the model it rebuilds is defined in SCHM.",
   "grammar": "ears",
   "requirements": [
@@ -172,15 +172,16 @@
     },
     {
       "id": "INDX-013",
-      "status": "active",
+      "status": "superseded",
       "statement": "The spec engine shall derive requirements from SPEC.json files only, so a SPEC.md file in a domain directory is never parsed as a spec.",
       "why": "A revived Markdown parse path makes two files compete for the same domain, and the index silently reads whichever one the code found first.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INDX-029",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 15
     },
     {
       "id": "INDX-014",
@@ -222,15 +223,16 @@
     },
     {
       "id": "INDX-017",
-      "status": "active",
+      "status": "superseded",
       "statement": "When an index build refuses on an invalid domain file, the spec command that requested it shall print only the INVALID_DOMAIN_FILE rows, naming the file and the failing field, and exit 1.",
       "why": "The root cause has to be the only thing on screen.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INDX-030",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 16
     },
     {
       "id": "INDX-018",
@@ -359,6 +361,30 @@
       "status": "active",
       "statement": "The tag scanner shall record a level token only when it is unit, integration, or e2e.",
       "why": "If any trailing word counted as a level, a typo or a stray word after a tag would show up as a test level in the coverage matrix.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INDX-029",
+      "status": "active",
+      "statement": "If a domain directory holds a SPEC.md file, then the spec engine shall derive no requirement from it.",
+      "why": "A revived Markdown parse path makes two files compete for the same domain, and the index silently reads whichever one the code found first.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INDX-030",
+      "status": "active",
+      "statement": "When an index build refuses on an invalid domain file, the spec command that requested it shall print only the INVALID_DOMAIN_FILE rows, each naming the file and the failing field.",
+      "why": "The root cause has to be the only thing on screen.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
