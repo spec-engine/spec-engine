@@ -2,7 +2,7 @@
   "$schema": "https://docs.spec-engine.dev/schema/v1/spec.json",
   "key": "INIT",
   "owner": "drea",
-  "updated": "2026-10-22",
+  "updated": "2026-10-23",
   "scope": "Membership, discovery, and onboarding, plus the adoption rungs. Belongs here: spec init pin authoring; member discovery; the three adoption rungs (a lone repo; plus the CI gate; plus a second repo sharing requirements). Does not belong here: check severities (CHCK). Boundary case: each rung is its own INIT requirement, independently testable.",
   "grammar": "ears",
   "requirements": [
@@ -193,16 +193,17 @@
     },
     {
       "id": "INIT-015",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec init scaffolds a member, it shall write spec-engine.member.json containing exactly { \"specs\": \"spec-engine@<N>\" }, pretty-printed with a trailing newline, and print the absolute path plus the resolved pin.",
       "why": "The config is the member's explicit opt-in that discovery parses; a shape that deviates from the config schema is silently skipped and the repo's tags never index.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-058",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 31
     },
     {
       "id": "INIT-016",
@@ -805,6 +806,18 @@
       "status": "active",
       "statement": "Where a monorepo has files outside every workspace package, the spec engine shall scan those files once as one extra coverage column.",
       "why": "The engine's own checkout is named after the reserved specs folder, so its root workspace is never scanned and the tags in its CI workflow are invisible to it. Repo-root code such as CI scripts, infrastructure, and migrations implements requirements too.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-058",
+      "status": "active",
+      "statement": "When spec init scaffolds a member, it shall write spec-engine.member.json containing exactly { \"$schema\": \"<member schema URL>\", \"specs\": \"spec-engine@<N>\" }, pretty-printed with a trailing newline, and print the absolute path plus the resolved pin.",
+      "why": "The config is the member's explicit opt-in that discovery parses; a shape that deviates from the config schema is silently skipped and the repo's tags never index.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

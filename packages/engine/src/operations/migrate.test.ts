@@ -32,7 +32,7 @@ test("strips livesIn and verifiedIn from the files that carry them and a second 
   expect(spec("LEGACY")).toBe(migrated);
 });
 
-// @spec SCHM-044 unit
+// @spec SCHM-048 unit
 test("adds the $schema key as the first key of every SPEC.json, check.json, and member config that lacks one", async () => {
   const cleanBefore = JSON.parse(spec("CLEAN"));
   const checkJson = fx.file("spec-engine/check.json", '{ "severity": [] }\n');
@@ -65,7 +65,7 @@ test("adds the $schema key as the first key of every SPEC.json, check.json, and 
   });
 });
 
-// @spec SCHM-043 unit
+// @spec SCHM-047 unit
 test("a $schema key that is not first stays where it is through a migrate rewrite", async () => {
   const member = await fx.member("api");
   const body = '{\n  "specs": "spec-engine@1",\n  "$schema": "./local.json"\n}\n';
@@ -75,7 +75,7 @@ test("a $schema key that is not first stays where it is through a migrate rewrit
 });
 
 // @spec CHCK-054 unit
-// @spec CHCK-055 unit
+// @spec CHCK-063 unit
 test("each file carrying a retired key or lacking $schema gets one MIGRATION_PENDING warning naming which, until spec migrate runs", async () => {
   const row = (source_file: string, detail: string) => ({
     code: "MIGRATION_PENDING" as const,

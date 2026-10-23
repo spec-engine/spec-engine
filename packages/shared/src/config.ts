@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /** The member config: the pin and the scan-skip prefixes. Every key the engine knows is declared here; membership lives in platform-map's files. */
 export const SpecConfigSchema = z.object({
-  // @spec SCHM-042
+  // @spec SCHM-046
   $schema: z.string().optional(),
   specs: z
     .string()

@@ -90,7 +90,7 @@ function pendingDetail(file: PendingFile): string {
  * One MIGRATION_PENDING warning per file that still carries a retired key or
  * lacks the `$schema` key, the detail naming which.
  * @spec CHCK-054
- * @spec CHCK-055
+ * @spec CHCK-063
  */
 export async function migrationPendingDiagnostics(platformDir: string): Promise<Diagnostic[]> {
   return (await pendingFiles(platformDir)).map((file) => ({
@@ -145,7 +145,7 @@ async function migrateConfig(platformDir: string, file: PendingFile): Promise<Op
  * which files carry them; the write seam does the stripping and puts a new
  * `$schema` key first.
  * @spec SCHM-039
- * @spec SCHM-044
+ * @spec SCHM-048
  */
 export async function migrate(platformDir: string): Promise<MigrateResult | OpFailure> {
   const files: string[] = [];

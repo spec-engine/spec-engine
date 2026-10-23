@@ -4,7 +4,7 @@ import { SpecConfigSchema } from "./config";
 import { renderJsonSchemas, SCHEMA_OUT_DIR } from "./jsonSchema";
 import { SCHEMA_URLS } from "./schemaUrl";
 
-// @spec SCHM-041 unit
+// @spec SCHM-045 unit
 test("the committed JSON Schema files equal a fresh generation from the zod schemas", async () => {
   const rendered = renderJsonSchemas();
   expect(Object.keys(rendered).sort()).toEqual(["check.json", "member.json", "spec.json"]);
@@ -13,7 +13,7 @@ test("the committed JSON Schema files equal a fresh generation from the zod sche
   }
 });
 
-// @spec DIST-021 unit
+// @spec DIST-025 unit
 test("each published schema carries its own versioned URL as $id and a title", () => {
   for (const [name, url] of Object.entries(SCHEMA_URLS)) {
     const doc = JSON.parse(renderJsonSchemas()[`${name}.json`] ?? "{}");
@@ -23,7 +23,7 @@ test("each published schema carries its own versioned URL as $id and a title", (
   }
 });
 
-// @spec SCHM-042 unit
+// @spec SCHM-046 unit
 test("check.json and the member config accept a $schema key and still refuse other unknown keys", () => {
   expect(CheckConfigSchema.safeParse({ $schema: SCHEMA_URLS.check }).success).toBe(true);
   expect(CheckConfigSchema.safeParse({ $schemas: "x" }).success).toBe(false);

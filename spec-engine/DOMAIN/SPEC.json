@@ -2,7 +2,7 @@
   "$schema": "https://docs.spec-engine.dev/schema/v1/spec.json",
   "key": "DOMAIN",
   "owner": null,
-  "updated": "2026-10-22",
+  "updated": "2026-10-23",
   "scope": "Domain lifecycle: spec domain new, spec domain list, and charter editing. Belongs here: the born-valid scaffold; the domain list output; the scope field on the envelope. Does not belong here: requirement authoring (REQ). Boundary case: minting a requirement id is REQ; scaffolding the domain that holds it is DOMAIN.",
   "grammar": "ears",
   "requirements": [
@@ -360,6 +360,18 @@
       "status": "active",
       "statement": "When spec domain new scaffolds a domain, it shall write a SPEC.json that spec index ingests with zero diagnostics.",
       "why": "A scaffold the indexer cannot parse yields a domain with zero requirements and no error; a UTC date stamps evening authors with tomorrow; and an authored specVersion on a requirement domain plants a second version counter free to drift from the derived one.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DOMAIN-028",
+      "status": "active",
+      "statement": "When spec domain new scaffolds a domain, it shall write the published domain schema URL as the first key of the new SPEC.json.",
+      "why": "A scaffold without the key leaves the author editing SPEC.json without completion or validation in the editor.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

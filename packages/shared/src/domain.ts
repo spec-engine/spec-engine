@@ -66,7 +66,7 @@ export const SpecRequirementSchema = z
 // `.strict()` on both objects: an unknown key (`__proto__`, a typo) rejects.
 export const SpecDomainSchema = z
   .object({
-    // @spec SCHM-042
+    // @spec SCHM-046
     $schema: z.string().optional(),
     key: z.string().regex(KEY_RE),
     owner: z.string().nullable().optional(),
@@ -246,7 +246,7 @@ function shapeLike(template: JsonObject | undefined, next: JsonObject): JsonObje
  * The validated domain rendered onto the existing file's raw object, entries
  * in the validated order, matched to raw entries by id (duplicates in turn).
  * @spec SCHM-044
- * @spec SCHM-043
+ * @spec SCHM-047
  */
 function preserveShape(raw: JsonObject, rawDomain: SpecDomain, domain: SpecDomain): JsonObject {
   const before = orderDomain(rawDomain) as ProjectedDomain;
@@ -270,7 +270,7 @@ function preserveShape(raw: JsonObject, rawDomain: SpecDomain, domain: SpecDomai
     patchFields(rawEntry, before.requirements[idx] as JsonObject, entry);
     return rawEntry;
   });
-  // @spec SCHM-044
+  // @spec SCHM-048
   if (before.$schema === undefined && next.$schema !== undefined) {
     const { $schema, ...rest } = raw;
     return { $schema, ...rest };

@@ -2,7 +2,7 @@
   "$schema": "https://docs.spec-engine.dev/schema/v1/spec.json",
   "key": "DIST",
   "owner": null,
-  "updated": "2026-10-22",
+  "updated": "2026-10-23",
   "scope": "The npm distribution surface: what the published @spec-engine/spec-engine artifact contains and the CLI surfaces that exist only because of it (spec docs, the non-Bun runtime guard). Belongs here: tarball-content promises; the bin wrapper's runtime guard; the offline docs command. Does not belong here: the webapp routes the artifact embeds (SERV); the compiled-binary channel (CI-owned); the docs site content (packages/site). Boundary case: spec docs binds loopback like spec serve, but it is a distribution surface over static files, so the promise lives here.",
   "grammar": "ears",
   "requirements": [
@@ -307,6 +307,18 @@
       "status": "active",
       "statement": "When a release is cut, the engine shall publish to npm only after every CI gate has passed.",
       "why": "A tag release-please creates with GITHUB_TOKEN triggers no other workflow, so a publish left to a tag-push run never fires; a publish that skips a gate ships an unvalidated artifact.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DIST-025",
+      "status": "active",
+      "statement": "The docs site shall serve the JSON Schema for SPEC.json, check.json, and spec-engine.member.json under a versioned path, each file carrying its own URL as its $id.",
+      "why": "Editors resolve a $schema URL over the network, so a missing or unversioned schema leaves adopters without validation or breaks them on a shape change.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

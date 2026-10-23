@@ -138,8 +138,8 @@ describe("validateAndWrite preserves an existing file's shape", () => {
     expect(await Bun.file(target).text()).toBe(text(handShaped()));
   });
 
-  // @spec SCHM-042 unit
-  // @spec SCHM-043 unit
+  // @spec SCHM-046 unit
+  // @spec SCHM-047 unit
   test("a $schema key after the first position parses and stays in place through a changed write", async () => {
     const { key, ...rest } = handShaped();
     const withSchema = { key, $schema: "./local.json", ...rest };
@@ -152,7 +152,7 @@ describe("validateAndWrite preserves an existing file's shape", () => {
     expect(parseDomainText(text({ ...withSchema, $schemas: "x" }), SRC).ok).toBe(false);
   });
 
-  // @spec SCHM-044 unit
+  // @spec SCHM-048 unit
   test("a $schema key added to a file that lacks one is written first", async () => {
     const domain = await writeAndLoad();
     expect((await validateAndWrite(target, { ...domain, $schema: "u" }, SRC)).ok).toBe(true);
