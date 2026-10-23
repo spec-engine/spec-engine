@@ -1,4 +1,5 @@
 {
+  "$schema": "https://docs.spec-engine.dev/schema/v1/spec.json",
   "key": "DOMAIN",
   "owner": null,
   "updated": "2026-10-22",
@@ -321,6 +322,18 @@
       "relates": [
         "DOMAIN-023"
       ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DOMAIN-025",
+      "status": "active",
+      "statement": "When spec domain new scaffolds a domain, it shall write the published domain schema URL as the first key of the new SPEC.json.",
+      "why": "A scaffold without the key leaves the author editing SPEC.json without completion or validation in the editor.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
       "issues": [],
       "aliases": [],
       "cites": []

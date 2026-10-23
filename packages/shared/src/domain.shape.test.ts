@@ -140,6 +140,27 @@ describe("validateAndWrite preserves an existing file's shape", () => {
     expect(await Bun.file(target).text()).toBe(text(handShaped()));
   });
 
+  // @spec SCHM-042 unit
+  // @spec SCHM-043 unit
+  test("a $schema key after the first position parses and stays in place through a changed write", async () => {
+    const { key, ...rest } = handShaped();
+    const withSchema = { key, $schema: "./local.json", ...rest };
+    await Bun.write(target, text(withSchema));
+    const parsed = parseDomainText(await Bun.file(target).text(), SRC);
+    if (!parsed.ok) throw new Error("a $schema key must parse");
+    parsed.data.updated = "2026-02-02";
+    expect((await validateAndWrite(target, parsed.data, SRC)).ok).toBe(true);
+    expect(await Bun.file(target).text()).toBe(text({ ...withSchema, updated: "2026-02-02" }));
+    expect(parseDomainText(text({ ...withSchema, $schemas: "x" }), SRC).ok).toBe(false);
+  });
+
+  // @spec SCHM-044 unit
+  test("a $schema key added to a file that lacks one is written first", async () => {
+    const domain = await writeAndLoad();
+    expect((await validateAndWrite(target, { ...domain, $schema: "u" }, SRC)).ok).toBe(true);
+    expect(await Bun.file(target).text()).toBe(text({ $schema: "u", ...handShaped() }));
+  });
+
   // @spec SCHM-034 unit
   test("a rewrite that does not re-parse to the validated domain is refused", async () => {
     const domain = await writeAndLoad();

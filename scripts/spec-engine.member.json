@@ -1,3 +1,4 @@
 {
+  "$schema": "https://docs.spec-engine.dev/schema/v1/member.json",
   "specs": "spec-engine@20"
 }

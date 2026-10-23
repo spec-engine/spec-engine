@@ -1,4 +1,5 @@
 {
+  "$schema": "https://docs.spec-engine.dev/schema/v1/spec.json",
   "key": "INIT",
   "owner": "drea",
   "updated": "2026-10-22",
@@ -192,16 +193,17 @@
     },
     {
       "id": "INIT-015",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec init scaffolds a member, it shall write spec-engine.member.json containing exactly { \"specs\": \"spec-engine@<N>\" }, pretty-printed with a trailing newline, and print the absolute path plus the resolved pin.",
       "why": "The config is the member's explicit opt-in that discovery parses; a shape that deviates from the config schema is silently skipped and the repo's tags never index.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-050",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 23
     },
     {
       "id": "INIT-016",
@@ -698,6 +700,18 @@
       "status": "active",
       "statement": "If an onboarding file spec init would write already holds content the spec engine did not author, then spec init shall leave that content unchanged and print what to add instead.",
       "why": "A pre-commit hook, an MCP server entry, or instructions a team wrote are theirs; overwriting them breaks their tooling without warning.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-050",
+      "status": "active",
+      "statement": "When spec init scaffolds a member, it shall write spec-engine.member.json containing exactly { \"$schema\": \"<member schema URL>\", \"specs\": \"spec-engine@<N>\" }, pretty-printed with a trailing newline, and print the absolute path plus the resolved pin.",
+      "why": "The config is the member's explicit opt-in that discovery parses; a shape that deviates from the config schema is silently skipped and the repo's tags never index.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

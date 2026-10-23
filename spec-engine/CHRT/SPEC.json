@@ -1,4 +1,5 @@
 {
+  "$schema": "https://docs.spec-engine.dev/schema/v1/spec.json",
   "key": "CHRT",
   "owner": "drea",
   "updated": "2026-10-22",

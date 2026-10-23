@@ -1,4 +1,4 @@
-// @spec INIT-015
+// @spec INIT-050
 // @spec INIT-016
 // @spec INIT-017
 // @spec INIT-042
@@ -277,7 +277,9 @@ describe("spec init — write seam + stdout summary", () => {
     const code = await runInit({ repo: tmp });
     expect(code).toBe(0);
     const body = await Bun.file(join(tmp, "spec-engine.member.json")).text();
-    expect(body).toBe(`{\n  "specs": "spec-engine@1"\n}\n`);
+    expect(body).toBe(
+      `{\n  "$schema": "https://docs.spec-engine.dev/schema/v1/member.json",\n  "specs": "spec-engine@1"\n}\n`,
+    );
     expect(body.endsWith("\n")).toBe(true);
   });
 
@@ -368,7 +370,10 @@ describe("spec init --json — machine mode", () => {
     expect(obj.pin).toBe("spec-engine@1");
     expect(typeof obj.source).toBe("string");
     const written = await Bun.file(join(tmp, "spec-engine.member.json")).text();
-    expect(JSON.parse(written)).toEqual({ specs: "spec-engine@1" });
+    expect(JSON.parse(written)).toEqual({
+      $schema: "https://docs.spec-engine.dev/schema/v1/member.json",
+      specs: "spec-engine@1",
+    });
   });
 
   test("already-configured emits {action:'already-configured', path, pin, extra_fields}", async () => {
@@ -427,7 +432,23 @@ describe("spec init × ignore field", () => {
     const code = await runInit({ repo: tmp, force: true, specs: "spec-engine@3" });
     expect(code).toBe(0);
     const written = JSON.parse(await Bun.file(join(tmp, "spec-engine.member.json")).text());
-    expect(written).toEqual({ specs: "spec-engine@3", ignore: ["generated"] });
+    expect(written).toEqual({
+      $schema: "https://docs.spec-engine.dev/schema/v1/member.json",
+      specs: "spec-engine@3",
+      ignore: ["generated"],
+    });
+  });
+
+  // @spec SCHM-043 unit
+  test("--force keeps the existing $schema value in place", async () => {
+    writeFileSync(
+      join(tmp, "spec-engine.member.json"),
+      JSON.stringify({ $schema: "./local.json", specs: "spec-engine@2" }),
+    );
+    expect(await runInit({ repo: tmp, force: true, specs: "spec-engine@3" })).toBe(0);
+    expect(await Bun.file(join(tmp, "spec-engine.member.json")).text()).toBe(
+      `{\n  "$schema": "./local.json",\n  "specs": "spec-engine@3"\n}\n`,
+    );
   });
 
   test("--force still refuses on genuinely unknown extra fields", async () => {
@@ -592,6 +613,7 @@ describe("spec init declares a repository through platform-map", () => {
     expect(
       JSON.parse(await Bun.file(join(tmp, "inner", "member", "spec-engine.member.json")).text()),
     ).toEqual({
+      $schema: "https://docs.spec-engine.dev/schema/v1/member.json",
       specs: "spec-engine@1",
     });
     expect(logs.some((m) => m.includes("falling back to spec-engine@1"))).toBe(true);
@@ -668,7 +690,9 @@ describe("spec init — INIT-030 the engine scaffolds its own members", () => {
     const code = await runInit({ repo: join(platform.dir, "scripts") });
     expect(code).toBe(0);
     const written = await Bun.file(join(platform.dir, "scripts", "spec-engine.member.json")).text();
-    expect(written).toBe(`{\n  "specs": "spec-engine@1"\n}\n`);
+    expect(written).toBe(
+      `{\n  "$schema": "https://docs.spec-engine.dev/schema/v1/member.json",\n  "specs": "spec-engine@1"\n}\n`,
+    );
   });
 
   test("the engine's own spec-engine/ tree is still refused", async () => {

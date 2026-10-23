@@ -1,4 +1,5 @@
 {
+  "$schema": "https://docs.spec-engine.dev/schema/v1/spec.json",
   "key": "CHCK",
   "owner": null,
   "updated": "2026-10-22",
@@ -711,6 +712,18 @@
       "status": "active",
       "statement": "When a domain file still carries a retired livesIn or verifiedIn key, spec check shall report one MIGRATION_PENDING warning for that file that names spec migrate.",
       "why": "The engine reads and ignores the retired keys, so without a row the stale fields linger unnoticed until an unrelated write drops them.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-055",
+      "status": "active",
+      "statement": "If a SPEC.json, check.json, or spec-engine.member.json lacks a $schema key, then spec check shall report one MIGRATION_PENDING warning for that file that names the missing key.",
+      "why": "Without the warning an adopter never learns that spec migrate would add editor validation to the files written before the key existed.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

@@ -1,4 +1,5 @@
 {
+  "$schema": "https://docs.spec-engine.dev/schema/v1/spec.json",
   "key": "DIST",
   "owner": null,
   "updated": "2026-10-22",
@@ -247,6 +248,18 @@
       "status": "active",
       "statement": "The published npm package shall carry the agent reference, the req-author skill, an MCP server template, and a pre-commit hook template in an agent folder of its payload.",
       "why": "An adopter installing from npm gets only the CLI otherwise, and spec init has no bundled reference, skill, or templates to install into the repository.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "DIST-021",
+      "status": "active",
+      "statement": "The docs site shall serve the JSON Schema for SPEC.json, check.json, and spec-engine.member.json under a versioned path, each file carrying its own URL as its $id.",
+      "why": "Editors resolve a $schema URL over the network, so a missing or unversioned schema leaves adopters without validation or breaks them on a shape change.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

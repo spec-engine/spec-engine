@@ -7,7 +7,12 @@
 
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { parseDomainText, type SpecDomain, type SpecRequirement } from "@spec-engine/shared";
+import {
+  parseDomainText,
+  SCHEMA_URLS,
+  type SpecDomain,
+  type SpecRequirement,
+} from "@spec-engine/shared";
 import { gitEnv } from "../base/gitBase";
 import { specPaths } from "../constants";
 
@@ -69,7 +74,9 @@ export function scaffoldDomainObject(key: string, today: string): SpecDomain {
   // schema rejects an authored one. Only TERM is seeded with specVersion 1:
   // that counter is the term-drift pin, since a revise adds no supersede edge.
   // Key order here is immaterial: validateAndWrite rebuilds it.
+  // @spec DOMAIN-025
   return {
+    $schema: SCHEMA_URLS.spec,
     key,
     owner: null,
     ...(key === "TERM" ? { specVersion: 1 } : {}),

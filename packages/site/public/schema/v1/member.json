@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docs.spec-engine.dev/schema/v1/member.json",
+  "title": "Spec Engine member configuration (spec-engine.member.json)",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "specs": {
+      "type": "string",
+      "pattern": "^spec-engine@\\d+$"
+    },
+    "ignore": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": [
+    "specs"
+  ]
+}

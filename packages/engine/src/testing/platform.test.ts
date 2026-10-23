@@ -101,7 +101,11 @@ describe("TestPlatform authors every spec file through the operations", () => {
       files: { "src/renew.ts": "export const renew = 1;\n" },
     });
     const config = JSON.parse(readFileSync(join(api.dir, "spec-engine.member.json"), "utf8"));
-    expect(config).toEqual({ specs: "spec-engine@3", ignore: ["generated"] });
+    expect(config).toEqual({
+      $schema: "https://docs.spec-engine.dev/schema/v1/member.json",
+      specs: "spec-engine@3",
+      ignore: ["generated"],
+    });
     expect(existsSync(join(api.dir, "src", "renew.ts"))).toBe(true);
     expect(JSON.parse(readFileSync(join(api.dir, "platform-map.json"), "utf8"))).toEqual({
       platform: basename(fx.dir),
@@ -109,6 +113,7 @@ describe("TestPlatform authors every spec file through the operations", () => {
     });
     const plain = await fx.member("web");
     expect(JSON.parse(readFileSync(join(plain.dir, "spec-engine.member.json"), "utf8"))).toEqual({
+      $schema: "https://docs.spec-engine.dev/schema/v1/member.json",
       specs: "spec-engine@1",
     });
     expect(JSON.parse(readFileSync(join(fx.dir, "platform-map.json"), "utf8"))).toEqual({

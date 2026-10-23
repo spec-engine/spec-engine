@@ -16,11 +16,14 @@ beforeEach(() => {
 
 afterEach(() => fx.remove());
 
+const SPEC_URL = "https://docs.spec-engine.dev/schema/v1/spec.json";
+
 // @spec SCHM-039 unit
-test("strips livesIn and verifiedIn from the files that carry them and leaves the rest byte-identical", async () => {
-  const clean = spec("CLEAN");
-  expect(await migrate(fx.dir)).toEqual({ ok: true, files: ["spec-engine/LEGACY/SPEC.json"] });
-  expect(spec("CLEAN")).toBe(clean);
+test("strips livesIn and verifiedIn from the files that carry them and a second run writes nothing", async () => {
+  expect(await migrate(fx.dir)).toEqual({
+    ok: true,
+    files: ["spec-engine/CLEAN/SPEC.json", "spec-engine/LEGACY/SPEC.json"],
+  });
   const legacy = JSON.parse(spec("LEGACY")).requirements[0];
   expect(Object.keys(legacy)).toEqual(["id", "status", "statement", "why", "relates", "issues"]);
 
@@ -29,19 +32,69 @@ test("strips livesIn and verifiedIn from the files that carry them and leaves th
   expect(spec("LEGACY")).toBe(migrated);
 });
 
+// @spec SCHM-044 unit
+test("adds the $schema key as the first key of every SPEC.json, check.json, and member config that lacks one", async () => {
+  const cleanBefore = JSON.parse(spec("CLEAN"));
+  const checkJson = fx.file("spec-engine/check.json", '{ "severity": [] }\n');
+  const emptyCheck = "{}\n";
+  const member = await fx.member("api");
+  const pin = member.file("spec-engine.member.json", '{\n  "specs": "spec-engine@1"\n}\n');
+
+  expect(await migrate(fx.dir)).toEqual({
+    ok: true,
+    files: [
+      "spec-engine/CLEAN/SPEC.json",
+      "spec-engine/LEGACY/SPEC.json",
+      "spec-engine/check.json",
+      "api/spec-engine.member.json",
+    ],
+  });
+  expect(JSON.parse(spec("CLEAN"))).toEqual({ $schema: SPEC_URL, ...cleanBefore });
+  expect(Object.keys(JSON.parse(spec("LEGACY")))[0]).toBe("$schema");
+  expect(readFileSync(checkJson, "utf8")).toBe(
+    '{\n  "$schema": "https://docs.spec-engine.dev/schema/v1/check.json", "severity": [] }\n',
+  );
+  expect(readFileSync(pin, "utf8")).toBe(
+    '{\n  "$schema": "https://docs.spec-engine.dev/schema/v1/member.json",\n  "specs": "spec-engine@1"\n}\n',
+  );
+
+  fx.file("spec-engine/check.json", emptyCheck);
+  await migrate(fx.dir);
+  expect(JSON.parse(readFileSync(checkJson, "utf8"))).toEqual({
+    $schema: "https://docs.spec-engine.dev/schema/v1/check.json",
+  });
+});
+
+// @spec SCHM-043 unit
+test("a $schema key that is not first stays where it is through a migrate rewrite", async () => {
+  const member = await fx.member("api");
+  const body = '{\n  "specs": "spec-engine@1",\n  "$schema": "./local.json"\n}\n';
+  const pin = member.file("spec-engine.member.json", body);
+  await migrate(fx.dir);
+  expect(readFileSync(pin, "utf8")).toBe(body);
+});
+
 // @spec CHCK-054 unit
-test("each file still carrying a retired key gets one MIGRATION_PENDING warning until spec migrate runs", async () => {
+// @spec CHCK-055 unit
+test("each file carrying a retired key or lacking $schema gets one MIGRATION_PENDING warning naming which, until spec migrate runs", async () => {
+  const row = (source_file: string, detail: string) => ({
+    code: "MIGRATION_PENDING" as const,
+    severity: "warning" as const,
+    repo: null,
+    source_file,
+    line: null,
+    req_id: null,
+    detail,
+  });
   expect(await migrationPendingDiagnostics(fx.dir)).toEqual([
-    {
-      code: "MIGRATION_PENDING",
-      severity: "warning",
-      repo: null,
-      source_file: "spec-engine/LEGACY/SPEC.json",
-      line: null,
-      req_id: null,
-      detail:
-        "spec-engine/LEGACY/SPEC.json still carries the retired livesIn or verifiedIn fields; run spec migrate to strip them",
-    },
+    row(
+      "spec-engine/CLEAN/SPEC.json",
+      `spec-engine/CLEAN/SPEC.json has no $schema key; run spec migrate to add ${SPEC_URL}`,
+    ),
+    row(
+      "spec-engine/LEGACY/SPEC.json",
+      `spec-engine/LEGACY/SPEC.json still carries the retired livesIn or verifiedIn fields and has no $schema key; run spec migrate to strip them and add ${SPEC_URL}`,
+    ),
   ]);
   await migrate(fx.dir);
   expect(await migrationPendingDiagnostics(fx.dir)).toEqual([]);
