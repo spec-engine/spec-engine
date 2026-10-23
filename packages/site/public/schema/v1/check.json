@@ -116,7 +116,13 @@
               "no-toolchain-layout",
               "no-history",
               "no-jargon",
-              "no-tool-statement"
+              "no-tool-statement",
+              "one-promise",
+              "no-mechanism",
+              "no-contrast",
+              "no-document-content",
+              "where-takes-a-feature",
+              "no-trailing-commentary"
             ]
           },
           "additionalProperties": {
