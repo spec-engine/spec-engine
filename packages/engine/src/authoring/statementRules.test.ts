@@ -44,17 +44,28 @@ function expectRefusal(result: { ok: boolean; reason?: string; detail?: string }
 describe("a statement that breaks a rule is refused before the write", () => {
   test("req", async () => {
     const before = await billing.raw();
-    expectRefusal(await mint({ platformDir: fx.dir, key: "BILLING", statement: BAD, why: "" }));
+    expectRefusal(
+      await mint({ platformDir: fx.dir, key: "BILLING", statement: BAD, why: "" }, async () => []),
+    );
     expect(await billing.raw()).toBe(before);
   });
 
   test("amend", async () => {
-    expectRefusal(await amend({ platformDir: fx.dir, id: activeId, fields: { statement: BAD } }));
+    expectRefusal(
+      await amend(
+        { platformDir: fx.dir, id: activeId, fields: { statement: BAD } },
+        async () => [],
+      ),
+    );
   });
 
   test("supersede", async () => {
     expectRefusal(
-      await supersede({ platformDir: fx.dir, id: activeId, statement: BAD }, async () => []),
+      await supersede(
+        { platformDir: fx.dir, id: activeId, statement: BAD },
+        async () => [],
+        async () => [],
+      ),
     );
   });
 
@@ -62,6 +73,7 @@ describe("a statement that breaks a rule is refused before the write", () => {
     expectRefusal(
       await move(
         { platformDir: fx.dir, id: activeId, targetKey: "LEDGER", statement: BAD },
+        async () => [],
         async () => [],
       ),
     );
@@ -78,12 +90,15 @@ describe("a statement that breaks a rule is refused before the write", () => {
   });
 
   test("a passing statement writes", async () => {
-    const minted = await mint({
-      platformDir: fx.dir,
-      key: "BILLING",
-      statement: GOOD,
-      why: "",
-    });
+    const minted = await mint(
+      {
+        platformDir: fx.dir,
+        key: "BILLING",
+        statement: GOOD,
+        why: "",
+      },
+      async () => [],
+    );
     expect(minted.ok).toBe(true);
   });
 });

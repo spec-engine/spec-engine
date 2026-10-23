@@ -1,11 +1,19 @@
 import { defineCommand, type ParsedArgs } from "citty";
+import { duplicateRefs } from "../check/duplicates";
 import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
+import { coldDuplicateScan } from "../operations/_index";
 import { type SupersedeInput, supersede, supersedeTarget } from "../operations/supersede";
 import { ID_RE } from "../parser/grammar";
 import { renderReqTags } from "../resolve/format";
 import { listFlag, platformDirArg, resolvePlatformDir } from "./_args";
-import { cliFreshTags, exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
+import {
+  cliFreshTags,
+  exitOnFailure,
+  handleNotAPlatform,
+  printDuplicates,
+  printWarnings,
+} from "./_shared";
 import { askLine } from "./req";
 
 /**
@@ -143,14 +151,23 @@ export const supersedeCommand = defineCommand({
     const result = await supersede(
       inputFromArgs(args, rawArgs, platformDir, id, statement),
       cliFreshTags(platformDir),
+      coldDuplicateScan(platformDir, "never"),
     );
     if (!result.ok) exitOnFailure("spec supersede", result);
     printWarnings("spec supersede", result.warnings);
+    printDuplicates(result.possibleDuplicates);
 
     const { newId, file, specVersion, retagged } = result;
     if (args.json) {
       console.log(
-        JSON.stringify({ old_id: id, new_id: newId, file, spec_version: specVersion, retagged }),
+        JSON.stringify({
+          old_id: id,
+          new_id: newId,
+          file,
+          spec_version: specVersion,
+          retagged,
+          possible_duplicates: duplicateRefs(result.possibleDuplicates),
+        }),
       );
     } else {
       console.log(`superseded ${id} → ${newId} in ${file}`);

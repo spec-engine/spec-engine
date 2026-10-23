@@ -99,6 +99,19 @@ describe("webapp editor — the create form forwards to POST /api/requirements",
     expect(added).toBeDefined();
     expect(added?.text).toBe("When a refund is issued, reverse the tax collected on the charge.");
   });
+
+  // @spec REQ-070 integration
+  test("a create submit that repeats an Active statement saves and names the possible duplicate", async () => {
+    const res = await postForm("/editor/create", {
+      key: "BILLING",
+      statement: "When a charge fails, retry on a schedule and notify the customer by email.",
+    });
+    expect(res.status).toBe(200);
+    const bodyHtml = await res.text();
+    expect(bodyHtml).toContain("BILLING-010");
+    expect(bodyHtml).toContain("Possible duplicate of");
+    expect(bodyHtml).toContain('<a href="/requirements/BILLING-002"><code>BILLING-002</code></a>');
+  });
 });
 
 describe("webapp editor — the amend form forwards to PUT /api/requirements/:id", () => {

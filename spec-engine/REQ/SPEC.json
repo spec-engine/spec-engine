@@ -919,6 +919,30 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "REQ-070",
+      "status": "active",
+      "statement": "When an authored statement's words overlap an Active requirement's at or above the duplicate threshold, the spec engine shall name that requirement as a possible duplicate without refusing the write.",
+      "why": "Two requirements for one behavior split coverage and drift apart; the author needs to see the overlap while the new entry is still cheap to fold.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-071",
+      "status": "active",
+      "statement": "When an authoring command runs with --json, the spec CLI shall list each possible duplicate's id and score in a possible_duplicates array.",
+      "why": "An agent authoring through --json reads stdout only and would never see the stderr warning.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
   ],
   "grammarSeverity": "error"

@@ -115,6 +115,7 @@ describe("spec amend", () => {
       id: ACTIVE,
       file: "spec-engine/BILLING/SPEC.json",
       fields_changed: ["requirement", "why"],
+      possible_duplicates: [],
     });
   });
 

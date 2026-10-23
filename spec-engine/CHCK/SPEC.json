@@ -717,6 +717,42 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "CHCK-055",
+      "status": "active",
+      "statement": "When two Active requirements' statements overlap at or above the duplicate threshold, spec check shall report one POSSIBLE_DUPLICATE warning on the higher id naming the other id and the score.",
+      "why": "Duplicates minted before write-time detection, or by hand, stay invisible unless the gate lists them.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-056",
+      "status": "active",
+      "statement": "Where check.json sets a duplicates threshold, spec check and the authoring commands shall use that threshold in place of 0.5.",
+      "why": "A platform whose statements share boilerplate needs a stricter threshold to keep the warnings worth reading.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHCK-057",
+      "status": "active",
+      "statement": "Where check.json turns duplicates off, spec check and the authoring commands shall report no possible duplicates.",
+      "why": "A platform that dedups another way must be able to silence the check without regrading each row.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
   ],
   "grammarSeverity": "error"

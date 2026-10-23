@@ -1,5 +1,6 @@
 import type { Storage } from "@spec-engine/shared";
 import { InvalidDomainFilesError, NotASpecPlatformError } from "@spec-engine/shared";
+import type { PossibleDuplicate } from "../check/duplicates";
 import { renderDiagnostics } from "../check/format";
 import { EXIT, isContainedPath } from "../constants";
 import { formatNotASpecPlatform } from "../indexer/discover";
@@ -74,6 +75,14 @@ export function printWarnings(cmdName: string, warnings: OpWarning[] | undefined
     if (w.kind === "ref") console.error(`spec req: warning — ${w.text}`);
     else if (w.kind === "grammar" || w.kind === "statement") console.error(`${cmdName}: ${w.text}`);
     else console.error(w.text);
+  }
+}
+
+/** One stderr line per possible duplicate; the write already landed. */
+// @spec REQ-070
+export function printDuplicates(dups: readonly PossibleDuplicate[]): void {
+  for (const d of dups) {
+    console.error(`possible duplicate of ${d.id} (${d.score.toFixed(2)}): ${d.statement}`);
   }
 }
 

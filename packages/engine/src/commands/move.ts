@@ -1,12 +1,20 @@
 import { defineCommand, type ParsedArgs } from "citty";
 import { normalizeDomainKey } from "../authoring/domains";
+import { duplicateRefs } from "../check/duplicates";
 import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
+import { coldDuplicateScan } from "../operations/_index";
 import { type MoveInput, move } from "../operations/move";
 import { ID_RE } from "../parser/grammar";
 import { renderReqTags } from "../resolve/format";
 import { platformDirArg, resolvePlatformDir } from "./_args";
-import { cliFreshTags, exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
+import {
+  cliFreshTags,
+  exitOnFailure,
+  handleNotAPlatform,
+  printDuplicates,
+  printWarnings,
+} from "./_shared";
 
 /** Flags to the operation's input. An absent flag leaves the field to be copied from the source. */
 function inputFromArgs(
@@ -86,9 +94,11 @@ export const moveCommand = defineCommand({
     const result = await move(
       inputFromArgs(args, platformDir, id, targetKey),
       cliFreshTags(platformDir),
+      coldDuplicateScan(platformDir, "never"),
     );
     if (!result.ok) exitOnFailure("spec move", result);
     printWarnings("spec move", result.warnings);
+    printDuplicates(result.possibleDuplicates);
 
     const { newId, fromFile, toFile, sourceSpecVersion, targetSpecVersion, retagged } = result;
     const sourceKey = id.slice(0, id.indexOf("-"));
@@ -102,6 +112,7 @@ export const moveCommand = defineCommand({
           source_spec_version: sourceSpecVersion,
           target_spec_version: targetSpecVersion,
           retagged,
+          possible_duplicates: duplicateRefs(result.possibleDuplicates),
         }),
       );
     } else {

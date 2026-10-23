@@ -12,7 +12,7 @@ import {
   validateDomainFile,
 } from "@spec-engine/shared";
 import { CANONICAL_SPECS_DIR, SPEC_FILENAME, specPaths } from "../constants";
-import type { FreshTags } from "../operations/_index";
+import type { DuplicateScan, FreshTags } from "../operations/_index";
 import type { OpFailure } from "../operations/_result";
 import { type AmendFields, type AmendResult, amend } from "../operations/amend";
 import { type DeprecateResult, deprecate } from "../operations/deprecate";
@@ -34,6 +34,7 @@ import {
 
 /** A fixture has no index; a lifecycle write asks for none. */
 const noTags: FreshTags = async () => [];
+const noDuplicates: DuplicateScan = async () => [];
 
 /** An operation refusal is a test-setup bug, so it throws with the typed reason. */
 function unwrap<T extends { ok: true }>(result: T | OpFailure, what: string): T {
@@ -172,16 +173,19 @@ export class DomainHandle {
   async req(input: RequirementInput = {}): Promise<MintResult> {
     const id = await this.nextId();
     return unwrap(
-      await mint({
-        platformDir: this.platform.dir,
-        key: this.key,
-        statement: input.statement ?? placeholderStatement(id),
-        why: input.why ?? "",
-        issue: input.issue,
-        status: input.status,
-        relates: input.relates,
-        cites: input.cites,
-      }),
+      await mint(
+        {
+          platformDir: this.platform.dir,
+          key: this.key,
+          statement: input.statement ?? placeholderStatement(id),
+          why: input.why ?? "",
+          issue: input.issue,
+          status: input.status,
+          relates: input.relates,
+          cites: input.cites,
+        },
+        noDuplicates,
+      ),
       `mint in ${this.key}`,
     );
   }
@@ -222,6 +226,7 @@ export class DomainHandle {
           noBump: input.noBump,
         },
         noTags,
+        noDuplicates,
       ),
       `supersede ${id}`,
     );
@@ -236,7 +241,10 @@ export class DomainHandle {
 
   /** Amend in place. */
   async amend(id: string, fields: AmendFields): Promise<AmendResult> {
-    return unwrap(await amend({ platformDir: this.platform.dir, id, fields }), `amend ${id}`);
+    return unwrap(
+      await amend({ platformDir: this.platform.dir, id, fields }, noDuplicates),
+      `amend ${id}`,
+    );
   }
 
   /** Cross-domain supersede into `targetKey`, which must already be scaffolded. */
@@ -255,6 +263,7 @@ export class DomainHandle {
           why: input.why,
         },
         noTags,
+        noDuplicates,
       ),
       `move ${id} to ${targetKey}`,
     );

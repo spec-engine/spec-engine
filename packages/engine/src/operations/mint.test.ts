@@ -36,12 +36,15 @@ describe("round-trip: mint writes JSON the index reads back", () => {
     const id = await nextRequirementId(tmp, "BILLING");
     expect(id).toBe("BILLING-001");
 
-    const minted = await mint({
-      platformDir: tmp,
-      key: "BILLING",
-      statement: "Charge renewals at the current plan price.",
-      why: "Revenue correctness",
-    });
+    const minted = await mint(
+      {
+        platformDir: tmp,
+        key: "BILLING",
+        statement: "Charge renewals at the current plan price.",
+        why: "Revenue correctness",
+      },
+      async () => [],
+    );
     expect(minted.ok).toBe(true);
     if (!minted.ok) return;
     expect(minted.id).toBe(id);
@@ -62,12 +65,15 @@ describe("round-trip: mint writes JSON the index reads back", () => {
   test("the written SPEC.json indexes to the authored requirement as an Active row", async () => {
     await scaffoldPlatform();
     const id = await nextRequirementId(tmp, "BILLING");
-    const minted = await mint({
-      platformDir: tmp,
-      key: "BILLING",
-      statement: "Charge renewals at the current plan price.",
-      why: "Revenue correctness",
-    });
+    const minted = await mint(
+      {
+        platformDir: tmp,
+        key: "BILLING",
+        statement: "Charge renewals at the current plan price.",
+        why: "Revenue correctness",
+      },
+      async () => [],
+    );
     expect(minted.ok && minted.id === id).toBe(true);
 
     const dbPath = join(tmp, "index.sqlite");

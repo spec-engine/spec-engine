@@ -26,9 +26,11 @@ import {
 } from "@spec-engine/shared";
 import type { Context, Hono } from "hono";
 import { listDomainKeys, normalizeDomainKey } from "../authoring/domains";
+import { duplicateRefs, scanDuplicates } from "../check/duplicates";
 import { sortDiagnostics } from "../check/format";
 import { derivePlatformVersion, platformMode, platformName } from "../indexer/discover";
 import { runIndex } from "../indexer/pipeline";
+import type { DuplicateScan } from "../operations/_index";
 import { type OpFailure, STATUS_FOR_REASON } from "../operations/_result";
 import { accept } from "../operations/accept";
 import { type AmendFields, amend } from "../operations/amend";
@@ -309,6 +311,13 @@ export function mountApi(
   platformDir: string = process.cwd(),
   bindHost: string = DEFAULT_BIND_HOST,
 ): Hono {
+  const scanIndexed: DuplicateScan = async (statement, exclude) =>
+    scanDuplicates(storage, platformDir, statement, exclude);
+  const scanReindexed: DuplicateScan = async (statement, exclude) => {
+    await runIndex({ platformDir, storage });
+    return scanIndexed(statement, exclude);
+  };
+
   // A derived-index response must never be cached across reindexes. The header
   // is set before next() so it survives a thrown handler: headers set before
   // next() land on Hono's 500 too, while a set after next() is unreachable.
@@ -409,10 +418,12 @@ export function mountApi(
       }
 
       return withWriteLock(async () => {
-        const r = await mint({ platformDir, key, ...mintFieldsFromBody(body) });
+        const r = await mint({ platformDir, key, ...mintFieldsFromBody(body) }, scanReindexed);
         if (!r.ok) return failureResponse(c, r);
-        await runIndex({ platformDir, storage });
-        return c.json({ ok: true, id: r.id }, 201);
+        return c.json(
+          { ok: true, id: r.id, possible_duplicates: duplicateRefs(r.possibleDuplicates) },
+          201,
+        );
       });
     }),
   );
@@ -439,10 +450,13 @@ export function mountApi(
         if (fields === null) {
           return c.json({ error: "nothing to amend — provide statement, why, or relates" }, 400);
         }
-        const r = await amend({ platformDir, id, fields });
+        const r = await amend({ platformDir, id, fields }, scanReindexed);
         if (!r.ok) return failureResponse(c, r);
-        await runIndex({ platformDir, storage });
-        return c.json({ ok: true, id }, 200);
+        if (fields.statement === undefined) await runIndex({ platformDir, storage });
+        return c.json(
+          { ok: true, id, possible_duplicates: duplicateRefs(r.possibleDuplicates) },
+          200,
+        );
       });
     }),
   );
@@ -477,6 +491,7 @@ export function mountApi(
             await runIndex({ platformDir, storage });
             return storage.listTags({ req_id: reqId });
           },
+          scanIndexed,
         );
         if (!r.ok) return failureResponse(c, r);
         return c.json(
@@ -487,6 +502,7 @@ export function mountApi(
             file: r.file,
             spec_version: r.specVersion,
             retagged: r.retagged,
+            possible_duplicates: duplicateRefs(r.possibleDuplicates),
           },
           201,
         );
@@ -530,6 +546,7 @@ export function mountApi(
             await runIndex({ platformDir, storage });
             return storage.listTags({ req_id: reqId });
           },
+          scanIndexed,
         );
         if (!r.ok) return failureResponse(c, r);
         return c.json(
@@ -542,6 +559,7 @@ export function mountApi(
             source_spec_version: r.sourceSpecVersion,
             target_spec_version: r.targetSpecVersion,
             retagged: r.retagged,
+            possible_duplicates: duplicateRefs(r.possibleDuplicates),
           },
           201,
         );

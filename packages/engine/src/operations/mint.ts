@@ -14,8 +14,10 @@ import {
   judgeStatementGrammar,
 } from "../authoring/grammar";
 import { statementRulesVerdict } from "../authoring/statementRules";
+import type { PossibleDuplicate } from "../check/duplicates";
 import { specPaths } from "../constants";
 import { readEnvelope, splitList } from "./_envelope";
+import type { DuplicateScan } from "./_index";
 import { fail, type OpFailure, type OpWarning } from "./_result";
 
 export interface MintInput {
@@ -41,6 +43,7 @@ export interface MintResult {
   file: string;
   /** The parsed EARS clauses when the statement conforms; absent otherwise. */
   clauses?: EarsClauses;
+  possibleDuplicates: PossibleDuplicate[];
   warnings: OpWarning[];
 }
 
@@ -62,9 +65,11 @@ export function unresolvableRefWarnings(platformDir: string, fieldValues: string
  * write. Fails `not_found` when the domain has no SPEC.json, `usage` when the
  * domain's grammar severity refuses the statement, `invalid_domain_file` when
  * the shared validator rejects the resulting envelope.
+ * @param scan how this surface finds the possible duplicates after the write.
  * @spec SCHM-024
+ * @spec REQ-070
  */
-export async function mint(input: MintInput): Promise<MintResult | OpFailure> {
+export async function mint(input: MintInput, scan: DuplicateScan): Promise<MintResult | OpFailure> {
   const { platformDir, key } = input;
   const { abs: specPath, rel: relFile } = specPaths(platformDir, key);
   if (!existsSync(specPath)) {
@@ -111,8 +116,9 @@ export async function mint(input: MintInput): Promise<MintResult | OpFailure> {
       warnings,
     });
   }
+  const possibleDuplicates = await scan(input.statement, [id]);
   const parsed = parseEarsStatement(input.statement);
   return parsed.ok
-    ? { ok: true, id, file: relFile, clauses: parsed.clauses, warnings }
-    : { ok: true, id, file: relFile, warnings };
+    ? { ok: true, id, file: relFile, clauses: parsed.clauses, possibleDuplicates, warnings }
+    : { ok: true, id, file: relFile, possibleDuplicates, warnings };
 }

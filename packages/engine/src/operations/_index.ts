@@ -10,6 +10,7 @@
 import { existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { Storage, Tag } from "@spec-engine/shared";
+import { type PossibleDuplicate, scanDuplicates } from "../check/duplicates";
 import { CANONICAL_SPECS_DIR, defaultIndexPath, SPEC_FILENAME } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
 import { runIndex } from "../indexer/pipeline";
@@ -99,4 +100,29 @@ export type FreshTags = (reqId: string) => Promise<Tag[]>;
 export function coldFreshTags(platformDir: string): FreshTags {
   return (reqId) =>
     withIndex({ platformDir, build: "fresh" }, (h) => h.storage.listTags({ req_id: reqId }));
+}
+
+/** The possible duplicates of a statement just written, minus the ids `exclude` names. */
+export type DuplicateScan = (statement: string, exclude: string[]) => Promise<PossibleDuplicate[]>;
+
+/**
+ * The scan a one-shot surface hands to an authoring operation. `fresh`
+ * cold-rebuilds the index first; `never` reads the index a preceding
+ * `coldFreshTags` call already rebuilt. The scan only advises, so a refused
+ * build or an unavailable database yields no candidates instead of failing
+ * a write that already landed.
+ */
+export function coldDuplicateScan(
+  platformDir: string,
+  build: "fresh" | "never" = "fresh",
+): DuplicateScan {
+  return async (statement, exclude) => {
+    try {
+      return await withIndex({ platformDir, build }, (h) =>
+        scanDuplicates(h.storage, platformDir, statement, exclude),
+      );
+    } catch {
+      return [];
+    }
+  };
 }

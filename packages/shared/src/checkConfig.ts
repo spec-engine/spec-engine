@@ -31,15 +31,25 @@ export const StatementRulesConfigSchema = z
   })
   .strict();
 
+// @spec CHCK-057
+export const DuplicatesConfigSchema = z
+  .object({
+    threshold: z.number().min(0).max(1).optional(),
+    off: z.boolean().optional(),
+  })
+  .strict();
+
 export const CheckConfigSchema = z
   .object({
     severity: z.array(SeverityRuleSchema).default([]),
     statementRules: StatementRulesConfigSchema.optional(),
+    duplicates: DuplicatesConfigSchema.optional(),
   })
   .strict();
 
 export type SeverityRule = z.infer<typeof SeverityRuleSchema>;
 export type CheckConfig = z.infer<typeof CheckConfigSchema>;
+export type DuplicatesConfig = z.infer<typeof DuplicatesConfigSchema>;
 
 export type ParseCheckConfigResult =
   | { ok: true; config: CheckConfig }

@@ -90,6 +90,7 @@ describe("lifecycle commands rewrite tags across a member", () => {
     const r = await supersede(
       { platformDir: fx.dir, id: "BILLING-001", statement: STATEMENTS[2] },
       coldFreshTags(fx.dir),
+      async () => [],
     );
     expect(r.ok).toBe(true);
     if (!r.ok) return;
