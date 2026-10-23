@@ -1,6 +1,21 @@
 {
   "$schema": "https://docs.spec-engine.dev/schema/v1/check.json",
   "severity": [{ "code": "UNVERIFIED_REQ", "severity": "error" }],
+  "duplicates": {
+    "ignore": [
+      "CHCK-033/CHCK-007",
+      "CHCK-034/CHCK-033",
+      "CHCK-060/CHCK-008",
+      "CHCK-069/CHCK-061",
+      "GUARD-016/GUARD-015",
+      "GUARD-029/GUARD-023",
+      "GUARD-035/CHCK-035",
+      "GUARD-035/GUARD-034",
+      "REQ-069/REQ-060",
+      "SCHM-038/SCHM-037",
+      "SERV-034/DIST-026"
+    ]
+  },
   "statementRules": {
     "exemptNames": [
       "SPEC.json",

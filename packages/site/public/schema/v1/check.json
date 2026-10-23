@@ -148,6 +148,13 @@
         },
         "off": {
           "type": "boolean"
+        },
+        "ignore": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9]*-\\d+\\/[A-Z][A-Z0-9]*-\\d+$"
+          }
         }
       },
       "additionalProperties": false

@@ -12,7 +12,7 @@ import {
 } from "@spec-engine/shared";
 import { gitLsTree, gitRefResolves, gitShow } from "../base/gitBase";
 import { parseCodeowners } from "../check/codeowners";
-import { duplicateDiagnostics, duplicateThreshold } from "../check/duplicates";
+import { duplicateDiagnostics, duplicateThreshold, ignoredPairs } from "../check/duplicates";
 import { statementGrammarDiagnostics } from "../check/grammar";
 import { changedRules, partialPropagation } from "../check/propagation-teeth";
 import { provenDetermination } from "../check/proven";
@@ -256,7 +256,10 @@ export async function check(input: CheckInput, storage: Storage): Promise<CheckR
     ...(await statementRulesDiagnostics(platformDir, checkConfig.config.statementRules)),
   );
   const threshold = duplicateThreshold(checkConfig.config.duplicates);
-  if (threshold !== null) diagnostics.push(...duplicateDiagnostics(storage, threshold));
+  if (threshold !== null) {
+    const ignored = ignoredPairs(checkConfig.config.duplicates);
+    diagnostics.push(...duplicateDiagnostics(storage, threshold, ignored));
+  }
   // @spec CHCK-029
   diagnostics.push(...(await supersedesPointerDiagnostics(platformDir)));
   diagnostics.push(...(await migrationPendingDiagnostics(platformDir)));

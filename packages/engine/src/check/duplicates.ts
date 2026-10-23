@@ -155,6 +155,18 @@ export function duplicateThreshold(config: DuplicatesConfig | undefined): number
   return config?.threshold ?? DEFAULT_DUPLICATE_THRESHOLD;
 }
 
+const pairKey = (a: string, b: string): string => (a < b ? `${a}/${b}` : `${b}/${a}`);
+
+/** The `duplicates.ignore` pairs, each keyed independent of the order it was written in. */
+export function ignoredPairs(config: DuplicatesConfig | undefined): Set<string> {
+  return new Set(
+    (config?.ignore ?? []).map((entry) => {
+      const [a, b] = entry.split("/") as [string, string];
+      return pairKey(a, b);
+    }),
+  );
+}
+
 /**
  * The Active requirements an authored statement may duplicate, read from an
  * index that already holds the write. An unreadable check.json yields none:
@@ -172,7 +184,10 @@ export function scanDuplicates(
   const threshold = duplicateThreshold(config.config.duplicates);
   if (threshold === null) return [];
   const active = activeRequirements(storage);
-  const candidates = duplicateCandidates(storage, statement, active, new Set(exclude));
+  const ignored = ignoredPairs(config.config.duplicates);
+  const candidates = duplicateCandidates(storage, statement, active, new Set(exclude)).filter(
+    (c) => !exclude.some((id) => ignored.has(pairKey(id, c.id))),
+  );
   return possibleDuplicates(statement, candidates, threshold);
 }
 
@@ -181,7 +196,11 @@ const higher = (a: Requirement, b: Requirement): boolean =>
 
 /** One warning per unordered pair of Active requirements at or above the threshold, on the higher id. */
 // @spec CHCK-064
-export function duplicateDiagnostics(storage: Storage, threshold: number): Diagnostic[] {
+export function duplicateDiagnostics(
+  storage: Storage,
+  threshold: number,
+  ignored: ReadonlySet<string> = new Set(),
+): Diagnostic[] {
   const active = activeRequirements(storage);
   const seen = new Set<string>();
   const rows: Diagnostic[] = [];
@@ -190,8 +209,9 @@ export function duplicateDiagnostics(storage: Storage, threshold: number): Diagn
     for (const dup of possibleDuplicates(req.text, candidates, threshold)) {
       const other = active.get(dup.id) as Requirement;
       const [hi, lo] = higher(req, other) ? [req, other] : [other, req];
-      const pair = `${hi.id} ${lo.id}`;
-      if (seen.has(pair)) continue;
+      const pair = pairKey(hi.id, lo.id);
+      // @spec CHCK-071
+      if (seen.has(pair) || ignored.has(pair)) continue;
       seen.add(pair);
       rows.push({
         code: DiagnosticCode.POSSIBLE_DUPLICATE,

@@ -31,11 +31,17 @@ export const StatementRulesConfigSchema = z
   })
   .strict();
 
+const BARE_ID = ID_RE.source.slice(1, -1);
+const duplicatePair = z
+  .string()
+  .regex(new RegExp(`^${BARE_ID}/${BARE_ID}$`), "must be two requirement ids joined by /");
+
 // @spec CHCK-066
 export const DuplicatesConfigSchema = z
   .object({
     threshold: z.number().min(0).max(1).optional(),
     off: z.boolean().optional(),
+    ignore: z.array(duplicatePair).optional(),
   })
   .strict();
 

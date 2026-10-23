@@ -158,6 +158,25 @@ describe("against an index", () => {
     ).toEqual([]);
   });
 
+  // @spec CHCK-071 integration
+  test("a pair under duplicates ignore, in either order, silences check and the authoring scan", async () => {
+    await platformWithNearDuplicates();
+    fx.checkConfig({ severity: [], duplicates: { ignore: ["BILLING-001/BILLING-003"] } });
+    const rows = await withIndex({ platformDir: fx.dir, build: "reset" }, async (h) => {
+      const r = await check({ platformDir: fx.dir }, h.storage);
+      if (!r.ok) throw new Error(r.detail);
+      return r.diagnostics.filter((d) => d.code === DiagnosticCode.POSSIBLE_DUPLICATE);
+    });
+    expect(rows).toEqual([]);
+    fx.checkConfig({ severity: [], duplicates: { ignore: ["BILLING-003/BILLING-001"] } });
+    expect(
+      await coldDuplicateScan(fx.dir)(
+        "When a refund is issued, the billing service shall reverse the charge.",
+        ["BILLING-003"],
+      ),
+    ).toEqual([]);
+  });
+
   // @spec REQ-083 integration
   test("the authoring scan names Active matches only, minus the excluded ids", async () => {
     await platformWithNearDuplicates();
