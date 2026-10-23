@@ -773,6 +773,98 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "CHCK-048",
+      "status": "active",
+      "statement": "When check.json configures statement rules, every surface shall honor its maximum length, jargon list, exempt names, and per-rule severity, with off turning a rule off everywhere.",
+      "why": "A rule tuned in one place and not another lets the write path and the check disagree on the same statement.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/shared/src/checkConfig.ts",
+        "packages/engine/src/authoring/statementRules.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/engine/src/authoring/statementRules.test.ts"
+      ]
+    },
+    {
+      "id": "CHCK-049",
+      "status": "active",
+      "statement": "When an Active statement breaks a rule, spec check shall report STATEMENT_RULES at warning severity by default, one row per rule per statement.",
+      "why": "Statements written before the rules existed would otherwise sit in the book unreported until someone happens to edit them.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/check/statementRules.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/engine/src/check/statementRules.test.ts"
+      ]
+    },
+    {
+      "id": "CHCK-050",
+      "status": "active",
+      "statement": "spec lint shall print every finding for the platform, one domain, or one requirement, and exit 1 when there is any.",
+      "why": "Without an on-demand report scoped to the work at hand, a sweep has no way to see what is left or prove it is finished.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/lint.ts",
+        "packages/engine/src/commands/lint.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/engine/src/commands/lint.test.ts"
+      ]
+    },
+    {
+      "id": "CHCK-051",
+      "status": "active",
+      "statement": "spec lint shall check Active requirements by default and Draft requirements too under --all.",
+      "why": "A draft that breaks a rule is refused only at accept, so an author reviewing drafts early needs a way to see those findings first.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/lint.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/engine/src/commands/lint.test.ts"
+      ]
+    },
+    {
+      "id": "CHCK-052",
+      "status": "active",
+      "statement": "Where --json, spec lint shall print the findings as a sorted array.",
+      "why": "An agent sweeping the book parses the findings, and unsorted output makes every run look like a change.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/lint.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/engine/src/commands/lint.test.ts"
+      ]
     }
   ],
   "grammarSeverity": "error"
