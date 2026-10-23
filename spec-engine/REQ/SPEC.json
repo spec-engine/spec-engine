@@ -1038,6 +1038,54 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "REQ-079",
+      "status": "active",
+      "statement": "When spec term runs with a name and a definition, the spec engine shall append a TERM entry holding the headword, the definition, and any aliases.",
+      "why": "If authoring dropped the headword or aliases, citations by name or synonym would resolve to nothing.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-080",
+      "status": "active",
+      "statement": "When spec term runs without a definition, it shall print the next unused TERM id and write nothing.",
+      "why": "If the id query wrote to the store, an agent probing for the next id would mint an empty term.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-081",
+      "status": "active",
+      "statement": "When spec term list runs, it shall print every term with its id and status.",
+      "why": "If the list omitted a term or its status, an author could mint a duplicate or cite a superseded term.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-082",
+      "status": "active",
+      "statement": "When spec term revise runs with a new definition, the spec engine shall rewrite the definition in place and advance the TERM domain's version.",
+      "why": "If a revision kept the version, citing requirements would never show TERM_DRIFT and would keep pointing at the old meaning.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
   ],
   "grammarSeverity": "error"
