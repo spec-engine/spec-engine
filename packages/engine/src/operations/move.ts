@@ -16,6 +16,7 @@ import {
   judgeStatementGrammar,
 } from "../authoring/grammar";
 import { statementRulesVerdict } from "../authoring/statementRules";
+import type { PossibleDuplicate } from "../check/duplicates";
 import { deriveDomainVersion } from "../parser/domainJson";
 import type { ReqTagRow } from "../resolve/format";
 import {
@@ -26,7 +27,7 @@ import {
   type SuccessorFields,
   successorEntry,
 } from "./_envelope";
-import type { FreshTags } from "./_index";
+import type { DuplicateScan, FreshTags } from "./_index";
 import { fail, type OpFailure, type OpWarning } from "./_result";
 import { applyRetag } from "./_retag";
 import { unresolvableRefWarnings } from "./mint";
@@ -54,6 +55,7 @@ export interface MoveResult {
   targetSpecVersion: number | null;
   /** The source's tag sites, rewritten to the successor. */
   retagged: ReqTagRow[];
+  possibleDuplicates: PossibleDuplicate[];
   warnings: OpWarning[];
 }
 
@@ -142,12 +144,16 @@ function validateBoth(m: MoveTarget): Diagnostic[] {
 /**
  * @param freshTags how this surface derives current tags for the retag
  *   after the write.
+ * @param scan how this surface finds the successor's possible duplicates
+ *   after the retag.
  * @spec REQ-075
  * @spec SCHM-043
+ * @spec REQ-070
  */
 export async function move(
   input: MoveInput,
   freshTags: FreshTags,
+  scan: DuplicateScan,
 ): Promise<MoveResult | OpFailure> {
   const { platformDir, id, targetKey } = input;
   const m = await locateMove(platformDir, id, targetKey);
@@ -194,6 +200,7 @@ export async function move(
   await validateAndWrite(source.specPath, source.domain, source.relFile);
 
   const retagged = await applyRetag(platformDir, id, newId, freshTags);
+  const possibleDuplicates = await scan(fields.statement, [id, newId]);
   return {
     ok: true,
     oldId: id,
@@ -203,6 +210,7 @@ export async function move(
     sourceSpecVersion,
     targetSpecVersion,
     retagged,
+    possibleDuplicates,
     warnings,
   };
 }

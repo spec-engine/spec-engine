@@ -7,7 +7,9 @@ import {
 } from "../authoring/grammar";
 import { statementRulesVerdict } from "../authoring/statementRules";
 import { gitShow, newestReleaseTag } from "../base/gitBase";
+import type { PossibleDuplicate } from "../check/duplicates";
 import { displayStatus, locateEntry, splitList } from "./_envelope";
+import type { DuplicateScan } from "./_index";
 import { fail, type OpFailure, type OpWarning } from "./_result";
 import { unresolvableRefWarnings } from "./mint";
 
@@ -37,6 +39,8 @@ export interface AmendResult {
   file: string;
   /** Sorted names of the fields that changed: requirement, why, relates, term, issue, aliases. */
   fieldsChanged: string[];
+  /** Empty unless the amend changed the statement. */
+  possibleDuplicates: PossibleDuplicate[];
   warnings: OpWarning[];
 }
 
@@ -132,11 +136,16 @@ function applyFields(
 }
 
 /**
+ * @param scan how this surface finds the possible duplicates after the write.
  * @spec REQ-044
  * @spec REQ-076
  * @spec SCHM-043
+ * @spec REQ-070
  */
-export async function amend(input: AmendInput): Promise<AmendResult | OpFailure> {
+export async function amend(
+  input: AmendInput,
+  scan: DuplicateScan,
+): Promise<AmendResult | OpFailure> {
   const { platformDir, id, fields } = input;
   const located = await locateEntry(platformDir, id);
   if (!located.ok) return located;
@@ -170,5 +179,14 @@ export async function amend(input: AmendInput): Promise<AmendResult | OpFailure>
       warnings,
     });
   }
-  return { ok: true, id, file: relFile, fieldsChanged: [...fieldsChanged].sort(), warnings };
+  const possibleDuplicates =
+    fields.statement === undefined ? [] : await scan(fields.statement, [id]);
+  return {
+    ok: true,
+    id,
+    file: relFile,
+    fieldsChanged: [...fieldsChanged].sort(),
+    possibleDuplicates,
+    warnings,
+  };
 }

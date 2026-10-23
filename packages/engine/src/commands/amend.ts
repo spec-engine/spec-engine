@@ -1,10 +1,12 @@
 import { defineCommand, type ParsedArgs } from "citty";
+import { duplicateRefs } from "../check/duplicates";
 import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
+import { coldDuplicateScan } from "../operations/_index";
 import { type AmendFields, amend } from "../operations/amend";
 import { ID_RE } from "../parser/grammar";
 import { jsonArg, listFlag, platformDirArg, relatesArg, resolvePlatformDir } from "./_args";
-import { exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
+import { exitOnFailure, handleNotAPlatform, printDuplicates, printWarnings } from "./_shared";
 
 const amendArgs = {
   id: {
@@ -54,11 +56,19 @@ export const amendCommand = defineCommand({
 
     const fields = fieldsFromArgs(args, rawArgs);
 
-    const result = await amend({ platformDir, id, fields });
+    const result = await amend({ platformDir, id, fields }, coldDuplicateScan(platformDir));
     if (!result.ok) exitOnFailure("spec amend", result);
     printWarnings("spec amend", result.warnings);
+    printDuplicates(result.possibleDuplicates);
     if (args.json) {
-      console.log(JSON.stringify({ id, file: result.file, fields_changed: result.fieldsChanged }));
+      console.log(
+        JSON.stringify({
+          id,
+          file: result.file,
+          fields_changed: result.fieldsChanged,
+          possible_duplicates: duplicateRefs(result.possibleDuplicates),
+        }),
+      );
     } else {
       console.log(`amended ${id} in ${result.file} (${result.fieldsChanged.join(", ")})`);
     }

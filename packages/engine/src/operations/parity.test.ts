@@ -6,6 +6,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { Storage } from "@spec-engine/shared";
 import { Hono } from "hono";
+import { duplicateRefs } from "../check/duplicates";
 import { acceptCommand } from "../commands/accept";
 import { amendCommand } from "../commands/amend";
 import { deprecateCommand } from "../commands/deprecate";
@@ -22,7 +23,7 @@ import { commitAndTag } from "../testing/git";
 import { entryOf, plantEdit } from "../testing/plant";
 import { STATEMENTS, TestPlatform } from "../testing/platform";
 import { SPEC_TOKEN, specTag } from "../testing/specTag";
-import { coldFreshTags, withIndex } from "./_index";
+import { coldDuplicateScan, coldFreshTags, withIndex } from "./_index";
 import { accept } from "./accept";
 import { amend } from "./amend";
 import { check } from "./check";
@@ -307,14 +308,24 @@ describe("write operations leave the same envelope from every surface", () => {
     const results: Record<string, unknown> = {};
     const snapshots = await writeThrough(["BILLING"], {
       operation: async () => {
-        const r = await mint({
-          platformDir: platform,
-          key: "BILLING",
-          statement,
-          why: "w",
-        });
+        const r = await mint(
+          {
+            platformDir: platform,
+            key: "BILLING",
+            statement,
+            why: "w",
+          },
+          coldDuplicateScan(platform),
+        );
         expect(r.ok).toBe(true);
-        if (r.ok) results.operation = { id: r.id, file: r.file, clauses: r.clauses };
+        if (r.ok) {
+          results.operation = {
+            id: r.id,
+            file: r.file,
+            clauses: r.clauses,
+            possible_duplicates: duplicateRefs(r.possibleDuplicates),
+          };
+        }
       },
       cli: async () => {
         results.cli = JSON.parse(
@@ -337,7 +348,7 @@ describe("write operations leave the same envelope from every surface", () => {
           }),
         });
         expect(posted.status).toBe(201);
-        expect(posted.body).toEqual({ ok: true, id: "BILLING-004" });
+        results.api = posted.body;
       },
       mcp: async () => {
         results.mcp = await mcpJson("spec_req", {
@@ -348,9 +359,18 @@ describe("write operations leave the same envelope from every surface", () => {
       },
     });
     expectAllEqual(snapshots);
-    expect((results.operation as { id: string }).id).toBe("BILLING-004");
+    expect(results.operation).toMatchObject({
+      id: "BILLING-004",
+      possible_duplicates: [{ id: "BILLING-003", score: 0.86 }],
+    });
     expect(results.cli).toEqual(results.operation);
     expect(results.mcp).toEqual(results.operation);
+    const op = results.operation as { id: string; possible_duplicates: unknown };
+    expect(results.api).toEqual({
+      ok: true,
+      id: op.id,
+      possible_duplicates: op.possible_duplicates,
+    });
   });
 
   // @spec SCHM-043 unit
@@ -358,13 +378,23 @@ describe("write operations leave the same envelope from every surface", () => {
     const results: Record<string, unknown> = {};
     const snapshots = await writeThrough(["BILLING"], {
       operation: async () => {
-        const r = await amend({
-          platformDir: platform,
-          id: "BILLING-003",
-          fields: { why: null },
-        });
+        const r = await amend(
+          {
+            platformDir: platform,
+            id: "BILLING-003",
+            fields: { why: null },
+          },
+          coldDuplicateScan(platform),
+        );
         expect(r.ok).toBe(true);
-        if (r.ok) results.operation = { id: r.id, file: r.file, fields_changed: r.fieldsChanged };
+        if (r.ok) {
+          results.operation = {
+            id: r.id,
+            file: r.file,
+            fields_changed: r.fieldsChanged,
+            possible_duplicates: duplicateRefs(r.possibleDuplicates),
+          };
+        }
       },
       cli: async () => {
         results.cli = JSON.parse(
@@ -396,11 +426,14 @@ describe("write operations leave the same envelope from every surface", () => {
 
     // The release gate refuses on every surface.
     commitAndTag(platform, "v1.0.0");
-    const released = await amend({
-      platformDir: platform,
-      id: "BILLING-002",
-      fields: { why: "x" },
-    });
+    const released = await amend(
+      {
+        platformDir: platform,
+        id: "BILLING-002",
+        fields: { why: "x" },
+      },
+      coldDuplicateScan(platform),
+    );
     expect(released.ok).toBe(false);
     if (!released.ok) expect(released.reason).toBe("conflict");
     const putReleased = await apiJson("/api/requirements/BILLING-002", {
@@ -426,6 +459,7 @@ describe("write operations leave the same envelope from every surface", () => {
             why: "w",
           },
           fresh(),
+          coldDuplicateScan(platform, "never"),
         );
         expect(r.ok).toBe(true);
         if (r.ok) {
@@ -435,6 +469,7 @@ describe("write operations leave the same envelope from every surface", () => {
             file: r.file,
             spec_version: r.specVersion,
             retagged: r.retagged,
+            possible_duplicates: duplicateRefs(r.possibleDuplicates),
           };
         }
       },
@@ -476,6 +511,7 @@ describe("write operations leave the same envelope from every surface", () => {
     const refused = await supersede(
       { platformDir: platform, id: "BILLING-002", statement: successor },
       fresh(),
+      coldDuplicateScan(platform, "never"),
     );
     expect(refused.ok).toBe(false);
     if (!refused.ok) expect(refused.reason).toBe("conflict");
@@ -528,13 +564,16 @@ describe("write operations leave the same envelope from every surface", () => {
   // @spec REQ-039 integration
   test("draft mint: the operation and the HTTP POST write byte-identical Draft entries", async () => {
     const restore = fx.snapshotSpecs();
-    const direct = await mint({
-      platformDir: platform,
-      key: "BILLING",
-      statement,
-      why: "w",
-      status: "draft",
-    });
+    const direct = await mint(
+      {
+        platformDir: platform,
+        key: "BILLING",
+        statement,
+        why: "w",
+        status: "draft",
+      },
+      coldDuplicateScan(platform),
+    );
     expect(direct.ok).toBe(true);
     const afterDirect = await read("BILLING");
 
@@ -551,13 +590,16 @@ describe("write operations leave the same envelope from every surface", () => {
   // @spec REQ-040 integration
   // @spec REQ-041 integration
   test("accept: operation, CLI, HTTP POST, and MCP promote the same Draft identically", async () => {
-    const drafted = await mint({
-      platformDir: platform,
-      key: "BILLING",
-      statement,
-      why: "w",
-      status: "draft",
-    });
+    const drafted = await mint(
+      {
+        platformDir: platform,
+        key: "BILLING",
+        statement,
+        why: "w",
+        status: "draft",
+      },
+      coldDuplicateScan(platform),
+    );
     if (!drafted.ok) throw new Error(drafted.detail);
     const id = drafted.id;
     const results: Record<string, unknown> = {};
@@ -609,6 +651,7 @@ describe("write operations leave the same envelope from every surface", () => {
             targetKey: "AUTH",
           },
           fresh(),
+          coldDuplicateScan(platform, "never"),
         );
         expect(r.ok).toBe(true);
         if (r.ok) {
@@ -620,6 +663,7 @@ describe("write operations leave the same envelope from every surface", () => {
             source_spec_version: r.sourceSpecVersion,
             target_spec_version: r.targetSpecVersion,
             retagged: r.retagged,
+            possible_duplicates: duplicateRefs(r.possibleDuplicates),
           };
         }
       },
@@ -763,13 +807,16 @@ const RELATES_TABLE: Record<string, Record<string, () => Promise<unknown>>> = {
   mint: {
     operation: async () =>
       expectOk(
-        await mint({
-          platformDir: platform,
-          key: "BILLING",
-          statement: REFUND,
-          why: "w",
-          relates: ["BILLING-001, BILLING-003"],
-        }),
+        await mint(
+          {
+            platformDir: platform,
+            key: "BILLING",
+            statement: REFUND,
+            why: "w",
+            relates: ["BILLING-001, BILLING-003"],
+          },
+          coldDuplicateScan(platform),
+        ),
       ),
     cli: () =>
       runCli(reqCommand, {
@@ -797,11 +844,14 @@ const RELATES_TABLE: Record<string, Record<string, () => Promise<unknown>>> = {
   amend: {
     operation: async () =>
       expectOk(
-        await amend({
-          platformDir: platform,
-          id: "BILLING-003",
-          fields: { relates: ["BILLING-001,BILLING-002"] },
-        }),
+        await amend(
+          {
+            platformDir: platform,
+            id: "BILLING-003",
+            fields: { relates: ["BILLING-001,BILLING-002"] },
+          },
+          coldDuplicateScan(platform),
+        ),
       ),
     cli: () => runCli(amendCommand, { id: "BILLING-003", relates: "BILLING-001, BILLING-002" }),
     api: () =>
@@ -816,6 +866,7 @@ const RELATES_TABLE: Record<string, Record<string, () => Promise<unknown>>> = {
         await supersede(
           { platformDir: platform, id: "BILLING-003", statement: REFUND, relates: ["BILLING-001"] },
           coldFreshTags(platform),
+          coldDuplicateScan(platform, "never"),
         ),
       ),
     cli: () =>

@@ -333,12 +333,15 @@ describe("spec req — domain with no SPEC.json", () => {
     // with a typed failure the command turns into exit 2.
     mkdirSync(join(tmp, "spec-engine", "GHOST"), { recursive: true });
     const { mint } = await import("../operations/mint");
-    const result = await mint({
-      platformDir: tmp,
-      key: "GHOST",
-      statement: STATEMENTS[0],
-      why: "",
-    });
+    const result = await mint(
+      {
+        platformDir: tmp,
+        key: "GHOST",
+        statement: STATEMENTS[0],
+        why: "",
+      },
+      async () => [],
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason).toBe("not_found");
@@ -421,8 +424,26 @@ describe("spec req — field-flag authoring", () => {
       id: "BILLING-010",
       file: "spec-engine/BILLING/SPEC.json",
       clauses: expect.any(Object),
+      possible_duplicates: [],
     });
     expect(added().statement).toBe(STATEMENTS[1]);
+  });
+
+  // @spec REQ-070 integration
+  // @spec REQ-071 integration
+  test("--text naming an existing statement warns of each duplicate on stderr and still writes", async () => {
+    setIsTTY(undefined);
+    await reqRun({
+      args: { domainPrefix: "BILLING", platformDir: tmp, text: STATEMENTS[0], json: true },
+      rawArgs: [],
+    });
+    expect(added().statement).toBe(STATEMENTS[0]);
+    const dups = errs.filter((line) => line.startsWith("possible duplicate of "));
+    expect(dups).toHaveLength(9);
+    expect(dups[0]).toBe(`possible duplicate of BILLING-001 (1.00): ${STATEMENTS[0]}`);
+    const out = JSON.parse(logs[0] ?? "");
+    expect(out.possible_duplicates).toHaveLength(9);
+    expect(out.possible_duplicates[0]).toEqual({ id: "BILLING-001", score: 1 });
   });
 
   test("TTY + --text skips the interactive flow entirely (flags win)", async () => {

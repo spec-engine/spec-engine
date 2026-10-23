@@ -94,6 +94,7 @@ async function renderResult(res: Response): Promise<ReturnType<typeof html>> {
     id?: string;
     error?: string;
     diagnostics?: Diagnostic[];
+    possible_duplicates?: { id: string; score: number }[];
   };
 
   if (res.ok && data.ok) {
@@ -103,6 +104,14 @@ async function renderResult(res: Response): Promise<ReturnType<typeof html>> {
         ${navBar("editor")}
         <h1>Saved</h1>
         <p class="success">Requirement <code>${data.id}</code> was written.</p>
+        ${(data.possible_duplicates ?? []).map(
+          (d) =>
+            html`<p class="warning">
+              Possible duplicate of
+              <a href="/requirements/${encodeURIComponent(d.id)}"><code>${d.id}</code></a>
+              (${d.score.toFixed(2)})
+            </p>`,
+        )}
         <p><a href="/requirements/${encodeURIComponent(data.id ?? "")}">View requirement</a></p>
         <p><a href="/editor">Back to editor</a></p>
       `,
