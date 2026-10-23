@@ -75,7 +75,7 @@
     },
     {
       "id": "SERV-006",
-      "status": "active",
+      "status": "deprecated",
       "statement": "Where a feature's flag is not enabled, the webapp shall refuse every surface of that feature — the page serves a coming-soon document and its endpoints respond 404.",
       "why": "Hiding the nav link while leaving endpoints live is how the ungated editor write plane happened; a flag that only hides UI is a lie about what is reachable.",
       "supersedes": null,
@@ -83,19 +83,21 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "merged into SERV-032"
     },
     {
       "id": "SERV-007",
-      "status": "active",
+      "status": "superseded",
       "statement": "When the SPEC_FLAGS environment variable lists a feature key, spec serve shall enable that feature's nav link, page, and endpoints together.",
       "why": "Trying an unfinished feature must never require a code edit, and enabling one surface without the others gives a half-working feature that reads as broken.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "SERV-032",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 10
     },
     {
       "id": "SERV-008",
@@ -113,7 +115,7 @@
     },
     {
       "id": "SERV-009",
-      "status": "active",
+      "status": "deprecated",
       "statement": "The spec serve /api/* read routes — coverage / report / requirements / query / resolve / relations / propagation — shall each return the same deterministic JSON shape as the corresponding CLI --json command.",
       "why": "The webapp and external clients bind to these shapes; a route that drifted from its CLI twin would fork the one engine into two contracts.",
       "supersedes": null,
@@ -122,7 +124,8 @@
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "merged into SCHM-041"
     },
     {
       "id": "SERV-010",
@@ -177,20 +180,21 @@
     },
     {
       "id": "SERV-014",
-      "status": "active",
+      "status": "superseded",
       "statement": "When rendering the Coverage and Requirements pages without ?all=1, the webapp shall list only requirements that are neither Superseded nor Deprecated, omitting any domain left with no listed requirement.",
       "why": "Superseded history soon outnumbers the live contract; an unfiltered default buries what the platform must satisfy now under dead versions.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "SERV-033",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 11
     },
     {
       "id": "SERV-015",
-      "status": "active",
+      "status": "deprecated",
       "statement": "When the query string carries all=1, the Coverage and Requirements pages shall list the full ledger, Superseded and Deprecated requirements included.",
       "why": "The supersede model keeps history precisely so it can be audited; a filter with no escape hatch makes dead versions unreachable in the UI.",
       "supersedes": null,
@@ -198,7 +202,8 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "merged into SERV-033"
     },
     {
       "id": "SERV-016",
@@ -358,7 +363,7 @@
     },
     {
       "id": "SERV-028",
-      "status": "active",
+      "status": "deprecated",
       "statement": "When the spec mcp server receives a spec_req tool call, the spec mcp command shall author the requirement through the mint operation and return the spec req --json shape.",
       "why": "An agent on MCP cannot mint a requirement, or mints one through forked logic that writes a different envelope than spec req.",
       "supersedes": null,
@@ -366,11 +371,12 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "merged into SCHM-043"
     },
     {
       "id": "SERV-029",
-      "status": "active",
+      "status": "deprecated",
       "statement": "When the spec mcp server receives a spec_amend tool call, the spec mcp command shall revise the requirement through the amend operation and return the spec amend --json shape.",
       "why": "An agent on MCP cannot amend an unshipped requirement, or amends it under different gates than spec amend.",
       "supersedes": null,
@@ -378,13 +384,40 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "merged into SCHM-043"
     },
     {
       "id": "SERV-030",
-      "status": "active",
+      "status": "deprecated",
       "statement": "When the spec mcp server receives a spec_move tool call, the spec mcp command shall move the requirement through the move operation and return the spec move --json shape.",
       "why": "An agent on MCP cannot move a requirement across domains, or moves it without the retag worklist spec move returns.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "deprecatedReason": "merged into SCHM-043"
+    },
+    {
+      "id": "SERV-031",
+      "status": "deprecated",
+      "statement": "When spec serve receives POST /api/requirements/:id/move with the editor feature enabled, the spec serve command shall move the requirement through the move operation under the write lock and return the spec move --json shape.",
+      "why": "An HTTP client cannot move a requirement across domains, or two concurrent writes race on the same next id.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "deprecatedReason": "merged into SCHM-043"
+    },
+    {
+      "id": "SERV-032",
+      "status": "active",
+      "statement": "The spec serve command shall serve a feature's nav link, page, and endpoints only when SPEC_FLAGS lists that feature's key.",
+      "why": "Trying an unfinished feature must never require a code edit, and enabling one surface without the others gives a half-working feature that reads as broken.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
@@ -393,10 +426,10 @@
       "cites": []
     },
     {
-      "id": "SERV-031",
+      "id": "SERV-033",
       "status": "active",
-      "statement": "When spec serve receives POST /api/requirements/:id/move with the editor feature enabled, the spec serve command shall move the requirement through the move operation under the write lock and return the spec move --json shape.",
-      "why": "An HTTP client cannot move a requirement across domains, or two concurrent writes race on the same next id.",
+      "statement": "When the all=1 query is absent, the Coverage and Requirements pages shall hide Superseded and Deprecated requirements and any domain left empty.",
+      "why": "Superseded history soon outnumbers the live contract; an unfiltered default buries what the platform must satisfy now under dead versions.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

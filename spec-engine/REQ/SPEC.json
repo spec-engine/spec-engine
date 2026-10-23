@@ -256,7 +256,7 @@
     },
     {
       "id": "REQ-019",
-      "status": "active",
+      "status": "deprecated",
       "statement": "The spec CLI shall expose neither a spec new nor a spec id subcommand.",
       "why": "The noun-verb surface (spec domain new, spec req) replaced them; resurrecting the old spellings would fork the authoring path into two diverging front doors.",
       "supersedes": null,
@@ -264,7 +264,8 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "States the absence of removed commands (history, rule 5)."
     },
     {
       "id": "REQ-020",
@@ -359,29 +360,31 @@
     },
     {
       "id": "REQ-027",
-      "status": "active",
+      "status": "superseded",
       "statement": "If spec req is run against a directory containing no spec-engine/ directory, then it shall print the friendly not-a-platform guidance and exit 2.",
       "why": "A raw throw at the platform boundary buries the fix; exit 2 keeps the usage error distinct from the exit-1 code CI reserves for check --ci gate failures.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "REQ-071",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 29
     },
     {
       "id": "REQ-028",
-      "status": "active",
+      "status": "superseded",
       "statement": "The authoring commands — spec req / domain / supersede / amend / deprecate — shall exit only 0 or 2, leaving exit 1 reserved for spec check --ci data-level failures.",
       "why": "A CI script branching on exit codes would misread an authoring usage error as a spec-gate failure if the authoring surface ever emitted exit 1.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "REQ-072",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 30
     },
     {
       "id": "REQ-029",
@@ -411,16 +414,17 @@
     },
     {
       "id": "REQ-031",
-      "status": "active",
+      "status": "superseded",
       "statement": "When scanning requirement text for @-refs, the engine shall match @<relative/path> only when preceded by start-of-string or whitespace and containing at least one slash, resolving it against the platform root and never matching emails, @spec tags, or version pins.",
       "why": "Requirement text points at code; a looser pattern would flag everyday @ usage (emails, tags, pins) as broken file references and drown the real ones in noise.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "REQ-073",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 31
     },
     {
       "id": "REQ-032",
@@ -437,7 +441,7 @@
     },
     {
       "id": "REQ-033",
-      "status": "active",
+      "status": "deprecated",
       "statement": "Where a glossary term is authored via spec term, the engine shall store it as a requirement row — definition in statement, headword in term, synonyms in aliases — never in a parallel schema.",
       "why": "A parallel term schema would need its own lifecycle, index path, and drift logic, all free to diverge from the one set of guarantees requirements already carry.",
       "supersedes": null,
@@ -446,7 +450,8 @@
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Storage-model statement (never in a parallel schema); terms' observable behavior is in REQ-034 and the TERM commands."
     },
     {
       "id": "REQ-034",
@@ -476,16 +481,17 @@
     },
     {
       "id": "REQ-036",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec supersede or spec move emits any version — supersede's --json spec_version, move's source and target versions, or the persisted supersededAtVersion stamp — it shall take that number from the freshly-reindexed supersede history, never an incremented authored counter.",
       "why": "A self-incremented number would let the version a lineage records diverge from the derived number pins, drift, and gate compare against — resurrecting the two-sources-of-truth split the derived model closes.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "REQ-074",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 32
     },
     {
       "id": "REQ-037",
@@ -503,15 +509,16 @@
     },
     {
       "id": "REQ-038",
-      "status": "active",
+      "status": "superseded",
       "statement": "When a lifecycle command is invoked through any surface, the spec engine shall run every guard before the first byte is written.",
       "why": "A half-applied supersede, move, deprecate, or term edit leaves one envelope flipped and the other unwritten, and no surface can tell a refused change from a partial one.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "REQ-075",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 33
     },
     {
       "id": "REQ-039",
@@ -652,15 +659,16 @@
     },
     {
       "id": "REQ-048",
-      "status": "active",
+      "status": "superseded",
       "statement": "When a lifecycle command targets an id whose prefix names no domain file holding that entry, the spec CLI shall locate the entry by scanning every domain file.",
       "why": "An id minted or moved under another key is otherwise unreachable by every command, forcing adopters to remint by codemod outside the validated seam.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "REQ-076",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 34
     },
     {
       "id": "REQ-049",
@@ -676,27 +684,29 @@
     },
     {
       "id": "REQ-050",
-      "status": "active",
+      "status": "superseded",
       "statement": "When a requirement is authored or amended through the CLI, the HTTP API, or the MCP server with a relates list, the spec engine shall build relates from every entry, splitting each value on commas and trimming.",
       "why": "Cross-references the engine accepts but no surface forwards can only be authored by scripts outside the validating seam.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "REQ-077",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 35
     },
     {
       "id": "REQ-051",
-      "status": "active",
+      "status": "superseded",
       "statement": "When a requirement is amended or superseded through the CLI, the HTTP API, or the MCP server with a relates list, the spec engine shall replace the target's relates with that list, an empty list clearing it.",
       "why": "One idiom for both lists keeps livesIn and relates authoring interchangeable; a diverging rule is a surprise at the write seam.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "REQ-078",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 36
     },
     {
       "id": "REQ-052",
@@ -898,8 +908,33 @@
     },
     {
       "id": "REQ-068",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec deprecate is run with a reason on an Active or Draft requirement, the spec CLI shall set the entry's status to deprecated and record the reason on the entry.",
+      "why": "Without a command, end-of-life was a hand edit with the reason lost in a code comment that dies with the code — the entry itself is the only place the reason survives deletion.",
+      "supersedes": null,
+      "supersededBy": "REQ-070",
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "supersededAtVersion": 28
+    },
+    {
+      "id": "REQ-069",
+      "status": "active",
+      "statement": "When a new statement breaks a rule graded warning, spec req, amend, supersede, move, and accept shall write the statement and print each finding on stderr.",
+      "why": "A team sweeping an existing book needs to keep authoring while the old statements are fixed, without turning the rule off everywhere.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-070",
+      "status": "active",
+      "statement": "When spec deprecate runs with a reason on an Active or Draft requirement, it shall mark the entry deprecated with that reason recorded on it.",
       "why": "Without a command, end-of-life was a hand edit with the reason lost in a code comment that dies with the code — the entry itself is the only place the reason survives deletion.",
       "supersedes": null,
       "supersededBy": null,
@@ -909,10 +944,94 @@
       "cites": []
     },
     {
-      "id": "REQ-069",
+      "id": "REQ-071",
       "status": "active",
-      "statement": "When a new statement breaks a rule graded warning, spec req, amend, supersede, move, and accept shall write the statement and print each finding on stderr.",
-      "why": "A team sweeping an existing book needs to keep authoring while the old statements are fixed, without turning the rule off everywhere.",
+      "statement": "If a spec command runs in a directory with no spec-engine/ directory, then it shall print the not-a-platform guidance and exit 2.",
+      "why": "A raw throw at the platform boundary buries the fix; exit 2 keeps the usage error distinct from the exit-1 code CI reserves for check --ci gate failures.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-072",
+      "status": "active",
+      "statement": "Every spec authoring command shall exit with 0 or 2 only, never 1.",
+      "why": "A CI script branching on exit codes would misread an authoring usage error as a spec-gate failure if the authoring surface ever emitted exit 1.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-073",
+      "status": "active",
+      "statement": "When a statement or why holds an @ followed by a relative path containing a slash, the spec engine shall treat it as a file reference resolved from the platform root.",
+      "why": "Requirement text points at code; a looser pattern would flag everyday @ usage (emails, tags, pins) as broken file references and drown the real ones in noise.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-074",
+      "status": "active",
+      "statement": "When spec supersede or spec move reports a version, it shall report the derived domain version after the change.",
+      "why": "A self-incremented number would let the version a lineage records diverge from the derived number pins, drift, and gate compare against — resurrecting the two-sources-of-truth split the derived model closes.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-075",
+      "status": "active",
+      "statement": "If a lifecycle command refuses for any reason, then the spec engine shall leave every SPEC.json unchanged.",
+      "why": "A half-applied supersede, move, deprecate, or term edit leaves one envelope flipped and the other unwritten, and no surface can tell a refused change from a partial one.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-076",
+      "status": "active",
+      "statement": "When a lifecycle command targets an id held in a domain other than its prefix, it shall act on the entry where it is held.",
+      "why": "An id minted or moved under another key is otherwise unreachable by every command, forcing adopters to remint by codemod outside the validated seam.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-077",
+      "status": "active",
+      "statement": "When any authoring surface receives a relates list, the spec engine shall split each value on commas and trim each entry.",
+      "why": "Cross-references the engine accepts but no surface forwards can only be authored by scripts outside the validating seam.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-078",
+      "status": "active",
+      "statement": "When an amend, supersede, or move receives a relates list, the spec engine shall replace the target's relates with it, an empty list clearing it.",
+      "why": "One idiom for both lists keeps livesIn and relates authoring interchangeable; a diverging rule is a surprise at the write seam.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

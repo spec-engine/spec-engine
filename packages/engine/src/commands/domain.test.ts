@@ -6,7 +6,7 @@
 // @spec DOMAIN-015
 // @spec DOMAIN-026
 // @spec DOMAIN-023
-// @spec DOMAIN-018
+// @spec REQ-071
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";

@@ -30,7 +30,6 @@ export function displayStatus(raw: string): string {
  * file is absent (the detail defaults to the phrasing `spec amend` has always
  * used; a caller may word its own), `invalid_domain_file` when the bytes are
  * not JSON or the envelope fails the schema.
- * @spec SCHM-030
  */
 export async function readEnvelope(
   platformDir: string,
@@ -81,7 +80,7 @@ async function scanForEntry(
  * The domain file and the entry an id names: the prefix's domain first, then
  * every other domain file. `not_found` when no file holds the entry; an
  * invalid prefix file still refuses as `invalid_domain_file`.
- * @spec REQ-048
+ * @spec REQ-076
  */
 export async function locateEntry(
   platformDir: string,
@@ -99,7 +98,7 @@ export async function locateEntry(
 }
 
 /** Split each value on commas, trim, and drop empties. */
-// @spec REQ-050
+// @spec REQ-077
 export function splitList(values: readonly string[]): string[] {
   return values
     .flatMap((v) => v.split(","))

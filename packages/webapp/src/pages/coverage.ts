@@ -85,8 +85,7 @@ export function mountCoverage(app: Hono): void {
     const reqs = await apiJson<Requirement[]>(app, "/api/requirements");
     const titleOf = new Map(reqs.map((r) => [r.id, r.text]));
 
-    // @spec SERV-014
-    // @spec SERV-015
+    // @spec SERV-033
     // The toggle is a plain link so the filter works without JS.
     const showAll = c.req.query("all") === "1";
     const visible = showAll

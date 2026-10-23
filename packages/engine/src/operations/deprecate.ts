@@ -25,9 +25,9 @@ export interface DeprecateResult {
 /**
  * Only an Active or Draft entry deprecates: a superseded entry is already
  * history, a deprecated one is done.
- * @spec REQ-068
- * @spec REQ-038
- * @spec SCHM-024
+ * @spec REQ-070
+ * @spec REQ-075
+ * @spec SCHM-043
  */
 export async function deprecate(
   input: DeprecateInput,

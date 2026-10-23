@@ -10,8 +10,7 @@
 //
 // @spec QURY-008
 // @spec QURY-009
-// @spec QURY-006
-// @spec QURY-004
+// @spec QURY-010
 const FTS_OPERATORS = new Set(["AND", "OR", "NOT", "NEAR"]);
 const FTS_SYNTAX = /["()*:^]/;
 

@@ -117,7 +117,7 @@ function successorFields(input: MoveInput, req: SpecRequirement): SuccessorField
  * derived from its own supersede graph: the source gains one edge, the target
  * gains none. The TERM domain bumps its authored `specVersion` unless `noBump`.
  * Both sides advance `updated`.
- * @spec REQ-036
+ * @spec REQ-074
  */
 function versionSide(domain: SpecDomain, key: string, noBump: boolean): number | null {
   domain.updated = localToday();
@@ -142,8 +142,8 @@ function validateBoth(m: MoveTarget): Diagnostic[] {
 /**
  * @param freshTags how this surface derives current tags for the retag
  *   after the write.
- * @spec REQ-038
- * @spec SCHM-024
+ * @spec REQ-075
+ * @spec SCHM-043
  */
 export async function move(
   input: MoveInput,

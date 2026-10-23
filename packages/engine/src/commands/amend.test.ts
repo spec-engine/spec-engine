@@ -161,8 +161,8 @@ describe("spec amend", () => {
     expect(req?.why).toBe("see @missing/file.ts");
   });
 
-  // @spec REQ-050 unit
-  // @spec REQ-051 unit
+  // @spec REQ-077 unit
+  // @spec REQ-078 unit
   test("--relates replaces relates with every comma-split value; an empty value clears it", async () => {
     await amendRun({
       args: { id: ACTIVE, platformDir: tmp, relates: "BILLING-001" },

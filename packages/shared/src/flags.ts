@@ -4,8 +4,7 @@
 // newer binary.
 
 /** The only registration step: nav, pages, and endpoints all read this map. */
-// @spec SERV-006
-// @spec SERV-007
+// @spec SERV-032
 export const FEATURES = {
   glossary: { label: "Glossary" },
   relations: { label: "Relations" },

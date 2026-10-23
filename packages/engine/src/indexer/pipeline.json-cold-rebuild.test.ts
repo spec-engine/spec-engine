@@ -117,7 +117,7 @@ describe("cold-rebuild equivalence over the JSON domain fixture", () => {
   });
 });
 
-// @spec SCHM-016 unit
+// @spec SCHM-042 unit
 // @spec SCHM-017 unit
 describe("TERM derived-table build_id coverage", () => {
   async function writeTermFixture(root: string): Promise<void> {

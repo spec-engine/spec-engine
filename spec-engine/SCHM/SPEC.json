@@ -131,7 +131,7 @@
     },
     {
       "id": "SCHM-010",
-      "status": "active",
+      "status": "deprecated",
       "statement": "Where a domain envelope declares grammar and grammarSeverity, the shared schema shall validate and preserve both fields through every read and write.",
       "why": "A silently stripped declaration turns the grammar check off without anyone noticing — config that vanishes on the next write is worse than no config.",
       "supersedes": null,
@@ -139,11 +139,12 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "merged into SCHM-042"
     },
     {
       "id": "SCHM-011",
-      "status": "active",
+      "status": "deprecated",
       "statement": "The spec engine shall derive every coverage answer from the scanned @spec tags at read time, never from authored or materialized coverage data.",
       "why": "Stored coverage can keep reporting implemented or verified for tags that no longer exist — drift the tags themselves can never correct.",
       "supersedes": null,
@@ -152,24 +153,26 @@
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Architecture rule (no materialized coverage); the observable half is MAP-002. Survivor: MAP-002."
     },
     {
       "id": "SCHM-012",
-      "status": "active",
+      "status": "superseded",
       "statement": "The CLI/webapp/MCP read surfaces shall return identical data for the same query over the same platform state.",
       "why": "Forked read logic drifts silently; the moment two surfaces disagree about coverage or requirements, neither can be trusted.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "SCHM-041",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 13
     },
     {
       "id": "SCHM-013",
-      "status": "active",
+      "status": "deprecated",
       "statement": "The spec engine shall parse each spec-engine/<DOMAIN>/SPEC.json file as a domain envelope of requirements whose statuses are active, superseded, draft, or deprecated.",
       "why": "An unrecognized status leaves coverage, drift, and gate projections undefined for that requirement, so lifecycle answers become guesses.",
       "supersedes": null,
@@ -178,7 +181,8 @@
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Restates the schema (file location and status enum); the behavior is INDX-008 (BAD_STATUS) and INDX-016."
     },
     {
       "id": "SCHM-014",
@@ -195,7 +199,7 @@
     },
     {
       "id": "SCHM-015",
-      "status": "active",
+      "status": "deprecated",
       "statement": "If any envelope touched by a write operation fails schema validation, then the spec CLI shall persist no changes to any SPEC.json file.",
       "why": "A half-written or malformed envelope on disk corrupts the derived index at the next build — the exact spec-code disagreement the tool exists to prevent.",
       "supersedes": null,
@@ -204,20 +208,22 @@
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "merged into REQ-075"
     },
     {
       "id": "SCHM-016",
-      "status": "active",
+      "status": "superseded",
       "statement": "When a domain envelope carrying term, aliases, cites, or section fields is written and re-read, the spec engine shall preserve those fields unchanged.",
       "why": "A field the serializer silently strips vanishes on the next write, so glossary data authored today is gone tomorrow with no diagnostic.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "SCHM-042",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 14
     },
     {
       "id": "SCHM-017",
@@ -259,7 +265,7 @@
     },
     {
       "id": "SCHM-020",
-      "status": "active",
+      "status": "deprecated",
       "statement": "If an authored specVersion field appears in a requirement (non-TERM) domain's SPEC.json, then the CI fence shall fail the build.",
       "why": "An authored counter beside the derived version is two sources of truth that silently disagree; a pin resolving against the authored number honors nothing else in the system.",
       "supersedes": null,
@@ -268,11 +274,12 @@
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "A CI fence stated as a requirement; the behavior is SCHM-018."
     },
     {
       "id": "SCHM-021",
-      "status": "active",
+      "status": "deprecated",
       "statement": "Where the reserved TERM domain exists, its SPEC.json envelope shall carry an authored specVersion serving as the pin that term citations drift against.",
       "why": "Term revisions happen in place with no supersede chain to derive from; without the authored counter TERM_DRIFT has no pin to compare and revised definitions go unflagged.",
       "supersedes": null,
@@ -280,7 +287,8 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Restates a schema field; the observable behavior is CHCK-018 and spec term revise."
     },
     {
       "id": "SCHM-022",
@@ -309,19 +317,20 @@
     },
     {
       "id": "SCHM-024",
-      "status": "active",
+      "status": "superseded",
       "statement": "When a requirement is authored or amended through the CLI, the HTTP API, or the MCP server, the spec engine shall write the same envelope for the same inputs.",
       "why": "A second copy of the authoring logic in any surface silently produces a different SPEC.json than the CLI, and the index cannot tell which one is true.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "SCHM-043",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 15
     },
     {
       "id": "SCHM-025",
-      "status": "active",
+      "status": "deprecated",
       "statement": "The spec engine shall import bun:sqlite from exactly one file, storage/sqlite.ts, so every read and write of the derived index passes through the single Storage seam.",
       "why": "A second import forks the storage contract, and the CLI, webapp, and MCP can then disagree over the same index.",
       "supersedes": null,
@@ -329,7 +338,8 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "A grep fence naming an internal file; not product behavior."
     },
     {
       "id": "SCHM-026",
@@ -346,7 +356,7 @@
     },
     {
       "id": "SCHM-027",
-      "status": "active",
+      "status": "deprecated",
       "statement": "The spec engine shall reach the validating write seam and the requirement id allocator only through the operations layer, so a command, an HTTP route, and an MCP tool cannot write a domain file on their own.",
       "why": "A surface that writes directly forks the lifecycle rules, and the same verb then behaves differently on the CLI, the API, and MCP.",
       "supersedes": null,
@@ -354,11 +364,12 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Internal layering rule (operations layer); the observable result is SCHM-024."
     },
     {
       "id": "SCHM-028",
-      "status": "active",
+      "status": "deprecated",
       "statement": "The derived index schema shall declare no CHECK, FOREIGN KEY, or UNIQUE constraint on a domain field, so a spec defect lands as a diagnostic row instead of a failed insert.",
       "why": "A database constraint turns a duplicate id or a bad status into an index crash, and the defect is never reported as a diagnostic.",
       "supersedes": null,
@@ -366,11 +377,12 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Internal DDL detail; the observable result is INDX-008. Survivor: INDX-008."
     },
     {
       "id": "SCHM-029",
-      "status": "active",
+      "status": "deprecated",
       "statement": "The spec engine shall carry the derived index DDL as inline TypeScript strings in the shared package, never as .sql files, so the published bundle ships its schema with no sidecar file.",
       "why": "A .sql sidecar is missed by the bundler, and the installed CLI then fails to open or create an index.",
       "supersedes": null,
@@ -378,11 +390,12 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Internal build detail (DDL as TypeScript strings); no user observes it."
     },
     {
       "id": "SCHM-030",
-      "status": "active",
+      "status": "deprecated",
       "statement": "The spec engine shall parse a SPEC.json through the shared schema before reading any field from it, so no code path handles an unvalidated envelope.",
       "why": "A domain file read as loose JSON reaches every operation as a cast, so a malformed file is caught only at the write seam and each reader re-derives the envelope shape by hand.",
       "supersedes": null,
@@ -390,23 +403,25 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Internal parse-before-read rule enforced by a fence; the observable result is INDX-016."
     },
     {
       "id": "SCHM-031",
-      "status": "active",
+      "status": "superseded",
       "statement": "When the validating write seam rewrites an existing SPEC.json, it shall leave every unchanged entry byte-identical.",
       "why": "A one-field write that reserialises forty entries buries the change in a whole-file diff, and adopters trim by hand.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "SCHM-044",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 16
     },
     {
       "id": "SCHM-032",
-      "status": "active",
+      "status": "deprecated",
       "statement": "When the validating write seam changes an existing entry, it shall patch the entry in its existing key order and add a defaulted field only where the file already carries that key.",
       "why": "A reordered or null-padded entry reads as a change where none happened.",
       "supersedes": null,
@@ -414,11 +429,12 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "merged into SCHM-044"
     },
     {
       "id": "SCHM-033",
-      "status": "active",
+      "status": "deprecated",
       "statement": "When the validating write seam appends an entry to an existing SPEC.json, it shall give the entry the key order of the last existing entry.",
       "why": "A new entry in a foreign shape breaks the file's uniformity on every mint.",
       "supersedes": null,
@@ -426,11 +442,12 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "merged into SCHM-044"
     },
     {
       "id": "SCHM-034",
-      "status": "active",
+      "status": "deprecated",
       "statement": "If a shape-preserving write does not re-parse to the validated domain, then the write seam shall refuse the write.",
       "why": "Byte preservation must never cost a requirement.",
       "supersedes": null,
@@ -438,11 +455,12 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Internal self-check of the write path; unreachable unless the engine has a bug."
     },
     {
       "id": "SCHM-035",
-      "status": "active",
+      "status": "deprecated",
       "statement": "The spec engine shall write every SPEC.json, including one a test creates, through the single validating write seam.",
       "why": "A test that serializes an envelope by hand restates the shape from memory, so a schema change leaves the suite proving a file the engine would never write. A planted-defect fixture under src/testing/fixtures/ is data, not code, and is the only file written by hand.",
       "supersedes": null,
@@ -450,7 +468,8 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Repo rule about how tests write files, enforced by a fence; not product behavior."
     },
     {
       "id": "SCHM-036",
@@ -506,6 +525,54 @@
       "status": "active",
       "statement": "The spec engine shall show the same implementing and verifying sites for a requirement on spec get, the GET /api/requirements/:id route, the spec_get MCP tool, and the webapp requirement page.",
       "why": "A surface that drops or reorders the sites tells an agent and a person different stories about where the requirement is built.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-041",
+      "status": "active",
+      "statement": "When the CLI, the webapp, and the MCP server answer the same query over the same platform, they shall return the same data.",
+      "why": "Forked read logic drifts silently; the moment two surfaces disagree about coverage or requirements, neither can be trusted.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-042",
+      "status": "active",
+      "statement": "When a spec command rewrites a SPEC.json, it shall preserve every envelope and entry field it was not asked to change.",
+      "why": "A field the serializer silently strips vanishes on the next write, so glossary data authored today is gone tomorrow with no diagnostic.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-043",
+      "status": "active",
+      "statement": "When an authoring request arrives through the CLI, the HTTP API, or the MCP server, the spec engine shall write the same envelope and return the same --json shape.",
+      "why": "A second copy of the authoring logic in any surface silently produces a different SPEC.json than the CLI, and the index cannot tell which one is true.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-044",
+      "status": "active",
+      "statement": "When a spec command rewrites a SPEC.json, it shall leave unchanged entries byte-identical and keep the key order the file already uses for changed or appended entries.",
+      "why": "A one-field write that reserialises forty entries buries the change in a whole-file diff, and adopters trim by hand.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

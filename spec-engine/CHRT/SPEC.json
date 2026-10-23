@@ -132,7 +132,7 @@
     },
     {
       "id": "CHRT-010",
-      "status": "active",
+      "status": "deprecated",
       "statement": "When a domain envelope carrying a scope field is written and re-read, the spec engine shall preserve the scope field unchanged.",
       "why": "A charter that cannot ride the envelope exists only in one repo's doc, so every adopter loses the placement guidance that keeps requirements in the right domain.",
       "supersedes": null,
@@ -141,7 +141,8 @@
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "merged into SCHM-042"
     },
     {
       "id": "CHRT-011",

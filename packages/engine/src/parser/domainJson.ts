@@ -1,4 +1,3 @@
-// @spec SCHM-013
 // @spec INDX-016
 //
 // Pure: no DB driver import and no `Bun.file`. The pipeline owns the file read.

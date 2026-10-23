@@ -1,5 +1,5 @@
 // @spec QURY-005
-// @spec QURY-006
+// @spec QURY-010
 
 import { DEFAULT_QUERY_LIMIT, LIMIT_MAX } from "@spec-engine/shared";
 import { defineCommand } from "citty";

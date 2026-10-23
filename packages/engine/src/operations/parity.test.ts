@@ -140,7 +140,7 @@ afterEach(async () => {
   else process.env.SPEC_FLAGS = priorFlags;
 });
 
-// @spec SCHM-012 integration
+// @spec SCHM-041 integration
 describe("read operations answer identically on every surface", () => {
   test("query", async () => {
     const viaCli = await withIndex({ platformDir: platform, build: "fresh" }, (h) => {
@@ -296,13 +296,13 @@ function expectAllEqual(snapshots: Record<string, string[]>): void {
   }
 }
 
-// @spec SCHM-024 integration
+// @spec SCHM-043 integration
 describe("write operations leave the same envelope from every surface", () => {
   const statement = "When a refund is issued, the billing service shall reverse the charge.";
   const apiHeaders = { "content-type": "application/json" };
   const fresh = () => coldFreshTags(platform);
 
-  // @spec SERV-028 unit
+  // @spec SCHM-043 unit
   test("mint: operation, CLI, HTTP POST, and MCP write byte-identical entries", async () => {
     const results: Record<string, unknown> = {};
     const snapshots = await writeThrough(["BILLING"], {
@@ -353,7 +353,7 @@ describe("write operations leave the same envelope from every surface", () => {
     expect(results.mcp).toEqual(results.operation);
   });
 
-  // @spec SERV-029 unit
+  // @spec SCHM-043 unit
   test("amend: operation, CLI, HTTP PUT, and MCP apply the same field semantics and gates", async () => {
     const results: Record<string, unknown> = {};
     const snapshots = await writeThrough(["BILLING"], {
@@ -412,7 +412,7 @@ describe("write operations leave the same envelope from every surface", () => {
     await mcpRefuses("spec_amend", { id: "BILLING-002", why: "x" });
   });
 
-  // @spec REQ-038 integration
+  // @spec REQ-075 integration
   test("supersede: operation, CLI, HTTP POST, and MCP write the same envelope and retag", async () => {
     const successor = "When a renewal is charged, the billing service shall use the plan price.";
     const results: Record<string, unknown> = {};
@@ -597,8 +597,7 @@ describe("write operations leave the same envelope from every surface", () => {
     expect(await read("BILLING")).toBe(before);
   });
 
-  // @spec SERV-030 unit
-  // @spec SERV-031 unit
+  // @spec SCHM-043 unit
   test("move: operation, CLI, HTTP POST, and MCP write the same two envelopes and retag", async () => {
     const results: Record<string, unknown> = {};
     const snapshots = await writeThrough(["BILLING", "AUTH"], {
@@ -838,9 +837,9 @@ const RELATES_TABLE: Record<string, Record<string, () => Promise<unknown>>> = {
   },
 };
 
-// @spec SCHM-024 integration
-// @spec REQ-050 integration
-// @spec REQ-051 integration
+// @spec SCHM-043 integration
+// @spec REQ-077 integration
+// @spec REQ-078 integration
 describe("a relates list reaches every surface of every write operation", () => {
   for (const [operation, surfaces] of Object.entries(RELATES_TABLE)) {
     test(`${operation}: ${Object.keys(surfaces).join(", ")} write the same envelope`, async () => {

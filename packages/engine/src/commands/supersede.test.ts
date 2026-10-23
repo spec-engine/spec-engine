@@ -87,7 +87,7 @@ async function expectExit2(fn: () => Promise<void>): Promise<void> {
 }
 
 describe("spec supersede — happy path", () => {
-  // @spec REQ-036
+  // @spec REQ-074
   // @spec REQ-065 integration
   // The fixture already holds one superseded edge (derived version 2); this
   // supersede adds the second, so the died-at version is 3.
@@ -156,7 +156,7 @@ describe("spec supersede — happy path", () => {
     expect("binds" in (succ ?? {})).toBe(false);
   });
 
-  // @spec REQ-036
+  // @spec REQ-074
   test("--no-bump is a no-op on a requirement domain — the version stays DAG-derived", async () => {
     await supersedeRun({
       args: { id: ACTIVE, platformDir: platform, text: STATEMENTS[5], noBump: true },
@@ -205,7 +205,7 @@ describe("spec supersede — the successor keeps what nobody chose to drop", () 
     expect(succ?.issues).toEqual([{ role: "created", id: "ENG-9" }]);
   });
 
-  // @spec REQ-051 unit
+  // @spec REQ-078 unit
   test("--relates replaces the copied relates; an empty value clears it", async () => {
     await supersedeRun({
       args: { id: ACTIVE, platformDir: platform, text: STATEMENTS[0], relates: "" },
@@ -218,7 +218,7 @@ describe("spec supersede — the successor keeps what nobody chose to drop", () 
 });
 
 describe("spec supersede — an id held outside its prefix's domain", () => {
-  // @spec REQ-048 unit
+  // @spec REQ-076 unit
   // @spec REQ-049 unit
   test("supersede AUTHUI-01 held in AUTH mints the successor in AUTH", async () => {
     const auth = await fx.domain("AUTH");

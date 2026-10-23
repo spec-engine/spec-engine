@@ -321,7 +321,7 @@ export function buildMcpServer(platformDir: string): McpServer {
     },
   );
 
-  // @spec SERV-028
+  // @spec SCHM-043
   server.registerTool(
     "spec_req",
     {
@@ -360,7 +360,7 @@ export function buildMcpServer(platformDir: string): McpServer {
     },
   );
 
-  // @spec SERV-029
+  // @spec SCHM-043
   server.registerTool(
     "spec_amend",
     {
@@ -391,7 +391,7 @@ export function buildMcpServer(platformDir: string): McpServer {
     },
   );
 
-  // @spec SERV-030
+  // @spec SCHM-043
   server.registerTool(
     "spec_move",
     {

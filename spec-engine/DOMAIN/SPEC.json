@@ -241,7 +241,7 @@
     },
     {
       "id": "DOMAIN-018",
-      "status": "active",
+      "status": "deprecated",
       "statement": "If spec domain list runs where spec-engine/ is missing or not a directory, then it shall print the friendly not-a-platform message and exit 2.",
       "why": "A raw throw at the boundary buries the fix; the guidance-plus-exit-2 contract keeps the failure actionable and lets scripts branch on the usage code.",
       "supersedes": null,
@@ -250,7 +250,8 @@
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "merged into REQ-071"
     },
     {
       "id": "DOMAIN-019",

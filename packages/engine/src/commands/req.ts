@@ -2,8 +2,8 @@
 // @spec REQ-023
 // @spec REQ-024
 // @spec REQ-025
-// @spec REQ-027
-// @spec REQ-028
+// @spec REQ-071
+// @spec REQ-072
 // @spec REQ-029
 // @spec REQ-026
 // @spec REQ-030

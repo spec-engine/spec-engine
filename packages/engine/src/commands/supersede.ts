@@ -51,7 +51,7 @@ function splitAliases(raw: string): string[] {
 
 /**
  * Flags to the operation's input. An absent flag leaves the field to be copied from the predecessor.
- * @spec REQ-051
+ * @spec REQ-078
  */
 function inputFromArgs(
   args: SupersedeArgs,

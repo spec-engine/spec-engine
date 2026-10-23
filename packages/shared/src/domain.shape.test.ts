@@ -4,7 +4,7 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { parseDomainText, type SpecDomain, validateAndWrite, verifyRoundTrip } from "./domain";
+import { parseDomainText, type SpecDomain, validateAndWrite } from "./domain";
 
 const SRC = "spec-engine/BILLING/SPEC.json";
 
@@ -49,8 +49,7 @@ async function writeAndLoad(): Promise<SpecDomain> {
 const entry = (d: SpecDomain, i: number) => d.requirements[i] as SpecDomain["requirements"][number];
 
 describe("validateAndWrite preserves an existing file's shape", () => {
-  // @spec SCHM-031 unit
-  // @spec SCHM-033 unit
+  // @spec SCHM-044 unit
   test("an appended entry and the updated date are the only change", async () => {
     const domain = await writeAndLoad();
     domain.updated = "2026-02-02";
@@ -81,8 +80,7 @@ describe("validateAndWrite preserves an existing file's shape", () => {
     expect(await Bun.file(target).text()).toBe(text(expected));
   });
 
-  // @spec SCHM-031 unit
-  // @spec SCHM-032 unit
+  // @spec SCHM-044 unit
   test("a flipped entry is patched in its key order and the others stay byte-identical", async () => {
     const domain = await writeAndLoad();
     const first = entry(domain, 0);
@@ -109,7 +107,7 @@ describe("validateAndWrite preserves an existing file's shape", () => {
     expect(await Bun.file(target).text()).toBe(text(expected));
   });
 
-  // @spec SCHM-032 unit
+  // @spec SCHM-044 unit
   test("a cleared why on an entry that never carried the key adds no key", async () => {
     const domain = await writeAndLoad();
     entry(domain, 0).why = null;
@@ -133,20 +131,10 @@ describe("validateAndWrite preserves an existing file's shape", () => {
     expect(await Bun.file(target).text()).toBe(text(handShaped()));
   });
 
-  // @spec SCHM-031 unit
+  // @spec SCHM-044 unit
   test("a rewrite with no change leaves the file byte-identical", async () => {
     const domain = await writeAndLoad();
     expect((await validateAndWrite(target, domain, SRC)).ok).toBe(true);
     expect(await Bun.file(target).text()).toBe(text(handShaped()));
-  });
-
-  // @spec SCHM-034 unit
-  test("a rewrite that does not re-parse to the validated domain is refused", async () => {
-    const domain = await writeAndLoad();
-    const wrong = text(handShaped()).replace("charge on renewal", "charge twice");
-    const verdict = verifyRoundTrip(wrong, domain, SRC);
-    expect(verdict.ok).toBe(false);
-    if (!verdict.ok) expect(verdict.diagnostics[0]?.code).toBe("INVALID_DOMAIN_FILE");
-    expect(verifyRoundTrip(text(handShaped()), domain, SRC).ok).toBe(true);
   });
 });

@@ -1,4 +1,3 @@
-// @spec SCHM-013 unit
 // @spec INDX-016 unit
 
 import { describe, expect, test } from "bun:test";

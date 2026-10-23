@@ -1,4 +1,4 @@
-// @spec SCHM-010 unit
+// @spec SCHM-042 unit
 
 import { describe, expect, test } from "bun:test";
 import { parseEarsStatement } from "./ears";

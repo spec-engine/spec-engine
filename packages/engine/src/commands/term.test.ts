@@ -1,5 +1,3 @@
-// @spec REQ-033 unit
-
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -178,7 +176,6 @@ describe("spec term — non-TTY id query", () => {
 });
 
 describe("spec term revise — in-place definition edit with version bump", () => {
-  // @spec SCHM-021 unit
   test("revises the statement in place (same id) and bumps envelope specVersion", async () => {
     await writeTermDomain(tmp);
     await termRun({

@@ -300,7 +300,7 @@ function parseQueryLimit(
  * the webapp's import fence forbids it importing `@spec-engine/tracker`; it
  * reads the decorated text instead.
  *
- * @spec SERV-009
+ * @spec SCHM-041
  * @spec SERV-010
  */
 export function mountApi(
@@ -495,7 +495,7 @@ export function mountApi(
   );
 
   // --- POST /api/requirements/:id/move ------------------------------------
-  // @spec SERV-031
+  // @spec SCHM-043
   app.post(
     "/api/requirements/:id/move",
     guarded(async function moveRequirement(c) {
@@ -621,7 +621,7 @@ export function mountApi(
   app.get(
     "/api/query",
     guarded((c) => {
-      // @spec SERV-006
+      // @spec SERV-032
       if (!featureEnabled("query")) {
         return c.json({ error: featureDisabledMessage("query") }, 404);
       }
@@ -643,7 +643,7 @@ export function mountApi(
   app.get(
     "/api/relations",
     guarded((c) => {
-      // @spec SERV-006
+      // @spec SERV-032
       if (!featureEnabled("relations")) {
         return c.json({ error: featureDisabledMessage("relations") }, 404);
       }
@@ -666,7 +666,7 @@ export function mountApi(
   app.get(
     "/api/provenance",
     guarded(async (c) => {
-      // @spec SERV-006
+      // @spec SERV-032
       if (!featureEnabled("provenance")) {
         return c.json({ error: featureDisabledMessage("provenance") }, 404);
       }
@@ -695,7 +695,7 @@ export function mountApi(
   app.get(
     "/api/provenance/by-issue",
     guarded((c) => {
-      // @spec SERV-006
+      // @spec SERV-032
       if (!featureEnabled("provenance")) {
         return c.json({ error: featureDisabledMessage("provenance") }, 404);
       }

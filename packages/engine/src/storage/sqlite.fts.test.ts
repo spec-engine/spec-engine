@@ -40,7 +40,7 @@ describe("storage.searchFts against canonical platform-fixture", () => {
     }
   });
 
-  // @spec QURY-006 unit
+  // @spec QURY-010 unit
   test("superseded requirements never surface: BILLING-001 shares BILLING-009's text but is excluded", async () => {
     const storage = await buildFixtureStorage();
     try {

@@ -1,4 +1,3 @@
-// @spec SCHM-011
 // @spec PROP-004
 //
 // The derived index's schema vocabulary: SCHEMA_VERSION and the DDL, inline TS
@@ -38,7 +37,7 @@
 
 // Any change to the DDL bumps this number. A DB whose stored version differs is
 // wiped and rebuilt on open; the index is derived, so no migration exists.
-// @spec SCHM-016
+// @spec SCHM-042
 export const SCHEMA_VERSION = 11;
 
 /**

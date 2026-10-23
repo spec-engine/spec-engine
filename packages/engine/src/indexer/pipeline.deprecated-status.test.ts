@@ -1,7 +1,7 @@
 // The gate's DEPRECATED fail reason is covered in gate-classify.test.ts.
 //
 // @spec CHCK-007 integration
-// @spec QURY-004 integration
+// @spec QURY-010 integration
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { rmSync } from "node:fs";

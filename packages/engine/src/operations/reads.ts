@@ -15,7 +15,7 @@ export interface QueryResult {
 }
 
 /** Full-text retrieval. Fails with `usage` on an FTS5 grammar error. */
-// @spec SCHM-012
+// @spec SCHM-041
 export function query(storage: Storage, text: string, limit: number): QueryResult | OpFailure {
   let hits: FtsHit[];
   try {
@@ -35,7 +35,7 @@ export function query(storage: Storage, text: string, limit: number): QueryResul
 }
 
 /** Requirements tagged in the given platform-relative files. */
-// @spec SCHM-012
+// @spec SCHM-041
 export function resolveFiles(storage: Storage, files: string[]) {
   const rows = storage.resolveByFiles(files);
   return {
@@ -66,14 +66,14 @@ export interface ReqTagsResult {
 }
 
 /** Every tag site for one requirement across all repos. */
-// @spec SCHM-012
+// @spec SCHM-041
 export function reqTags(storage: Storage, reqId: string): ReqTagsResult {
   const rows = toReqTagRows(storage.listTags({ req_id: reqId }));
   return { ok: true, rows, known: storage.getRequirement(reqId) !== null };
 }
 
 /** Per-member migration state for a superseded requirement. */
-// @spec SCHM-012
+// @spec SCHM-041
 export function propagation(storage: Storage, reqId: string) {
   const rows = storage.propagationFor(reqId);
   return {
@@ -84,19 +84,19 @@ export function propagation(storage: Storage, reqId: string) {
 }
 
 /** Per-domain coverage rollup over Active requirements. */
-// @spec SCHM-012
+// @spec SCHM-041
 export function coverageReport(storage: Storage) {
   return { ok: true as const, rows: buildCoverageReport(storage.coverageMatrix()) };
 }
 
 /** The requirement-by-repo coverage matrix, unsorted; the renderer owns the order. */
-// @spec SCHM-012
+// @spec SCHM-041
 export function coverageMatrix(storage: Storage) {
   return { ok: true as const, rows: storage.coverageMatrix() };
 }
 
 /** Every `relates` link, unsorted; the renderer owns the order. */
-// @spec SCHM-012
+// @spec SCHM-041
 export function relations(storage: Storage) {
   return { ok: true as const, rows: storage.listRelations() };
 }
@@ -105,7 +105,7 @@ export function relations(storage: Storage) {
  * The provenance matrix, or the rows linked to one opaque issue id when given.
  * The issue id is a bound filter value, never a key.
  */
-// @spec SCHM-012
+// @spec SCHM-041
 export function provenance(storage: Storage, issueId?: string) {
   const rows = issueId ? storage.provenanceByIssue(issueId) : storage.provenanceMatrix();
   return { ok: true as const, rows };

@@ -62,7 +62,7 @@ export function unresolvableRefWarnings(platformDir: string, fieldValues: string
  * write. Fails `not_found` when the domain has no SPEC.json, `usage` when the
  * domain's grammar severity refuses the statement, `invalid_domain_file` when
  * the shared validator rejects the resulting envelope.
- * @spec SCHM-024
+ * @spec SCHM-043
  */
 export async function mint(input: MintInput): Promise<MintResult | OpFailure> {
   const { platformDir, key } = input;
@@ -95,7 +95,7 @@ export async function mint(input: MintInput): Promise<MintResult | OpFailure> {
     why: input.why || null,
     supersedes: null,
     supersededBy: null,
-    // @spec REQ-050
+    // @spec REQ-077
     relates: splitList(input.relates ?? []),
     // @spec PROV-003
     issues: input.issue ? [{ role: "created", id: input.issue }] : [],

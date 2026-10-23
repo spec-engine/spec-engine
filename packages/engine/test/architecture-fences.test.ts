@@ -41,29 +41,24 @@ describe("architecture fences (scripts/arch-fences.sh)", () => {
     expect(stdout).toContain("All architecture fences green.");
   });
 
-  // @spec SCHM-025 unit
   test("SCHM-025: bun:sqlite is imported from storage/sqlite.ts and nowhere else", () => {
     fenceHeld("SCHM-025");
     expect(stdout.match(/── fence: SCHM-025 /g)).toHaveLength(2);
   });
 
-  // @spec SCHM-035 unit
   test("SCHM-035: every SPEC.json write, tests included, goes through validateAndWrite", () => {
     fenceHeld("SCHM-035");
     expect(stdout).toContain("validateAndWrite seam fence: OK");
   });
 
-  // @spec SCHM-027 unit
   test("SCHM-027: the write seam and the id allocator are reached only under operations/", () => {
     fenceHeld("SCHM-027");
   });
 
-  // @spec SCHM-028 unit
   test("SCHM-028: the DDL declares no CHECK, FOREIGN KEY, or UNIQUE constraint on a domain field", () => {
     fenceHeld("SCHM-028");
   });
 
-  // @spec SCHM-029 unit
   test("SCHM-029: the DDL is inline TypeScript, never a .sql file", () => {
     fenceHeld("SCHM-029");
   });
@@ -136,7 +131,6 @@ describe("architecture fences (scripts/arch-fences.sh)", () => {
     fenceHeld("CHCK-020");
   });
 
-  // @spec SCHM-020 unit
   test("SCHM-020: the authored-specVersion fence trips on a planted non-TERM specVersion", () => {
     // Mirror the fence's detector against a planted non-TERM envelope.
     const offender = '{ "key": "BILLING", "specVersion": 2, "updated": "x", "requirements": [] }';

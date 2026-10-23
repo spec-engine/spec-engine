@@ -1,4 +1,4 @@
-// @spec REQ-031
+// @spec REQ-073
 //
 // A candidate counts as a file ref only when, after stripping trailing `.`
 // (sentence-final punctuation), it contains at least one `/`. The slash rule

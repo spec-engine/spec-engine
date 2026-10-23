@@ -49,7 +49,7 @@
     },
     {
       "id": "QURY-004",
-      "status": "active",
+      "status": "deprecated",
       "statement": "When searching requirements, spec query shall exclude deprecated requirements from the results.",
       "why": "Dead guidance surfacing as live sends an agent to build against a promise that no longer holds.",
       "supersedes": null,
@@ -57,7 +57,8 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "merged into QURY-010"
     },
     {
       "id": "QURY-005",
@@ -74,15 +75,16 @@
     },
     {
       "id": "QURY-006",
-      "status": "active",
+      "status": "superseded",
       "statement": "When searching requirements, spec query shall exclude superseded requirements from the results.",
       "why": "A superseded statement surfacing as live sends an agent to build against a contract that no longer holds.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "QURY-010",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 6
     },
     {
       "id": "QURY-007",
@@ -121,6 +123,18 @@
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "QURY-010",
+      "status": "active",
+      "statement": "When searching requirements, spec query shall exclude superseded and deprecated requirements from the results.",
+      "why": "A superseded statement surfacing as live sends an agent to build against a contract that no longer holds.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
       "aliases": [],
       "cites": []
     }
