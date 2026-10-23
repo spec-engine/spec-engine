@@ -77,6 +77,7 @@ function setIsTTY(value: boolean | undefined): void {
   Object.defineProperty(process.stdin, "isTTY", { value, configurable: true });
 }
 
+// @spec REQ-079 unit
 describe("spec term — author", () => {
   test("`spec term <name> --def` appends TERM-001 with term/statement, status active", async () => {
     await writeTermDomain(tmp);
@@ -119,6 +120,7 @@ describe("spec term — author", () => {
   });
 });
 
+// @spec REQ-081 unit
 describe("spec term list — enumerate", () => {
   test("lists both terms' ids + names after authoring, sorted by id", async () => {
     await writeTermDomain(tmp);
@@ -153,6 +155,7 @@ describe("spec term list — enumerate", () => {
   });
 });
 
+// @spec REQ-080 unit
 describe("spec term — non-TTY id query", () => {
   test("no --def, non-TTY → prints the next unused TERM id, zero writes", async () => {
     await writeTermDomain(tmp);
@@ -175,6 +178,7 @@ describe("spec term — non-TTY id query", () => {
   });
 });
 
+// @spec REQ-082 unit
 describe("spec term revise — in-place definition edit with version bump", () => {
   test("revises the statement in place (same id) and bumps envelope specVersion", async () => {
     await writeTermDomain(tmp);

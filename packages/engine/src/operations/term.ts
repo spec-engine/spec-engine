@@ -24,7 +24,10 @@ function invalidFile(res: { diagnostics: Diagnostic[] }, warnings?: OpWarning[])
   });
 }
 
-/** The next unused TERM id. `TERM-001` when the store does not exist yet. Nothing is written. */
+/**
+ * The next unused TERM id. `TERM-001` when the store does not exist yet. Nothing is written.
+ * @spec REQ-080
+ */
 export async function nextTermId(platformDir: string): Promise<{ ok: true; nextId: string }> {
   return { ok: true, nextId: await nextRequirementId(platformDir, TERM_KEY) };
 }
@@ -47,6 +50,7 @@ export interface MintTermResult {
 /**
  * Append an Active term. `not_found` when the platform has no TERM store.
  * @spec SCHM-043
+ * @spec REQ-079
  */
 export async function mintTerm(input: MintTermInput): Promise<MintTermResult | OpFailure> {
   const { platformDir } = input;
@@ -82,7 +86,10 @@ export interface TermListRow {
   status: string;
 }
 
-/** Every entry in the TERM store, sorted by id. An absent store lists nothing. */
+/**
+ * Every entry in the TERM store, sorted by id. An absent store lists nothing.
+ * @spec REQ-081
+ */
 export async function listTerms(
   platformDir: string,
 ): Promise<{ ok: true; rows: TermListRow[] } | OpFailure> {
@@ -120,6 +127,7 @@ export interface ReviseTermResult {
  * Active or Draft term revises; a superseded term is history.
  * @spec REQ-075
  * @spec SCHM-043
+ * @spec REQ-082
  */
 export async function reviseTerm(input: ReviseTermInput): Promise<ReviseTermResult | OpFailure> {
   const { platformDir, id, definition } = input;
