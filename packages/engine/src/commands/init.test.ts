@@ -1,7 +1,7 @@
 // @spec INIT-015
 // @spec INIT-016
 // @spec INIT-017
-// @spec INIT-018
+// @spec INIT-042
 // @spec INIT-019
 // @spec INIT-036
 // @spec INIT-020
@@ -289,19 +289,26 @@ describe("spec init — write seam + stdout summary", () => {
   });
 });
 
-describe("spec init — refuse on platform dir (contains spec-engine/)", () => {
-  test("REPO containing spec-engine/ as a child is refused with exit 2", async () => {
+describe("spec init on a platform dir (contains spec-engine/)", () => {
+  test("writes the agent surface and no member config", async () => {
+    // @spec INIT-043 unit
     mkdirSync(join(tmp, "spec-engine"), { recursive: true });
-    const code = await runInit({ repo: tmp });
-    expect(code).toBe(2);
-    expect(
-      errs.some(
-        (m) =>
-          m.includes("spec init:") &&
-          m.includes("is a platform dir") &&
-          m.includes("contains spec-engine/"),
-      ),
-    ).toBe(true);
+    mkdirSync(join(tmp, ".git", "hooks"), { recursive: true });
+    const code = await runInit({ repo: tmp, json: true });
+    expect(code).toBe(0);
+    const obj = JSON.parse(logs[0] ?? "");
+    expect(obj.action).toBe("surface-only");
+    expect(obj.agent_surface.map((p: string) => p.slice(tmp.length + 1))).toEqual([
+      "AGENTS.md",
+      ".claude/skills/req-author/SKILL.md",
+      ".mcp.json",
+      ".git/hooks/pre-commit",
+    ]);
+    expect(existsSync(join(tmp, "spec-engine.member.json"))).toBe(false);
+    expect(JSON.parse(await Bun.file(join(tmp, ".mcp.json")).text()).mcpServers.spec.args).toEqual([
+      "mcp",
+      ".",
+    ]);
   });
 });
 
@@ -377,6 +384,26 @@ describe("spec init --json — machine mode", () => {
     expect((obj.path as string).endsWith("spec-engine.member.json")).toBe(true);
     expect(obj.pin).toBe("spec-engine@3");
     expect(obj.extra_fields).toEqual(["customField"]);
+  });
+
+  test("a member's agent_surface lists the files written, and a second run lists none", async () => {
+    // @spec INIT-044 unit
+    // @spec INIT-048 unit
+    const platform = TestPlatform.at(tmp);
+    await platform.domain("CORE");
+    const member = platform.repository("api");
+    mkdirSync(join(member.dir, ".git", "hooks"), { recursive: true });
+    expect(await runInit({ repo: member.dir, json: true })).toBe(0);
+    const first = JSON.parse(logs[0] ?? "");
+    expect(first.action).toBe("wrote");
+    expect(first.agent_surface).toHaveLength(4);
+    expect(await Bun.file(join(member.dir, ".git", "hooks", "pre-commit")).text()).toContain(
+      "spec guard ..",
+    );
+    expect(await runInit({ repo: member.dir, json: true })).toBe(0);
+    const second = JSON.parse(logs[1] ?? "");
+    expect(second.action).toBe("already-configured");
+    expect(second.agent_surface).toEqual([]);
   });
 });
 

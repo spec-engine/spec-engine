@@ -19,11 +19,15 @@
 //                  dynamic import of impl.js.
 //   dist/docs/   — the prebuilt Starlight site (packages/site), so
 //                  `spec docs` serves documentation fully offline.
+//   dist/agent/  — the agent surface `spec init` installs: AGENTS.md,
+//                  skills/req-author/, mcp.json, pre-commit.
+// @spec DIST-019
 
 import { existsSync } from "node:fs";
 import { chmod, cp, rename, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { $ } from "bun";
+import { agentPayload } from "../src/operations/agentSurface";
 import { wrapperSource } from "./npm-wrapper";
 
 const engineDir = resolve(import.meta.dir, "..");
@@ -74,4 +78,9 @@ if (!existsSync(join(siteOut, "index.html"))) {
 }
 await cp(siteOut, join(dist, "docs"), { recursive: true });
 
-console.error("build:npm: dist/impl.js + dist/cli.js + dist/docs/ ready");
+for (const [rel, content] of Object.entries(agentPayload())) {
+  await Bun.write(join(dist, "agent", rel), content);
+}
+await chmod(join(dist, "agent", "pre-commit"), 0o755);
+
+console.error("build:npm: dist/impl.js + dist/cli.js + dist/docs/ + dist/agent/ ready");

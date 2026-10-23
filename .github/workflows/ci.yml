@@ -152,6 +152,9 @@ jobs:
       - name: "smoke 27 — statement rules: spec req refuses (exit 2), spec lint and spec check report a planted statement (compiled binary) [REQ-060 / CHCK-049 / CHCK-050]"
         run: bash scripts/smoke/27-lint.sh
 
+      - name: "smoke 28 — spec init installs the agent surface into a fixture member, re-run is a no-op (compiled binary) [INIT-044..INIT-049]"
+        run: bash scripts/smoke/28-init-agent-surface.sh
+
       - name: secret-scan against compiled binary (T-1-02 mitigation)
         run: |
           if strings dist/spec 2>/dev/null | grep -E '(AKIA[0-9A-Z]{16}|sk-[a-zA-Z0-9]{20,}|xox[bp]-[a-zA-Z0-9-]+|ghp_[a-zA-Z0-9]{36}|AIza[0-9A-Za-z_-]{35})' >/dev/null 2>&1; then
