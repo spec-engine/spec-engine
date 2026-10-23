@@ -6,6 +6,19 @@
 // from the ref, not the working tree, so a deleted domain file still surfaces
 // its removed ids.
 
+// Git exports GIT_DIR, GIT_WORK_TREE, and GIT_INDEX_FILE to hooks, and any of
+// them overrides discovery from `cwd`, so a spawn from inside a hook would read
+// the hook's repository instead of the platform dir's. GIT_CONFIG_* carries
+// configuration, not a repository location, and is kept.
+// @spec GUARD-030
+export function gitEnv(): Record<string, string | undefined> {
+  return Object.fromEntries(
+    Object.entries(process.env).filter(
+      ([k]) => !k.startsWith("GIT_") || k.startsWith("GIT_CONFIG"),
+    ),
+  );
+}
+
 // @spec GUARD-027
 export function isSafeRef(ref: string): boolean {
   return /^[A-Za-z0-9._/][A-Za-z0-9._/-]*$/.test(ref);
@@ -24,7 +37,10 @@ export function isSafeRef(ref: string): boolean {
  * changes mid-process (tests re-init repos).
  */
 export function gitRepoPrefix(platformDir: string): string {
-  const proc = Bun.spawnSync(["git", "rev-parse", "--show-prefix"], { cwd: platformDir });
+  const proc = Bun.spawnSync(["git", "rev-parse", "--show-prefix"], {
+    cwd: platformDir,
+    env: gitEnv(),
+  });
   if (proc.exitCode !== 0) return "";
   return proc.stdout.toString().trim();
 }
@@ -40,6 +56,7 @@ export function gitRefResolves(platformDir: string, ref: string): boolean {
   if (!isSafeRef(ref)) return false;
   const proc = Bun.spawnSync(["git", "rev-parse", "--verify", "--quiet", `${ref}^{commit}`], {
     cwd: platformDir,
+    env: gitEnv(),
   });
   return proc.exitCode === 0;
 }
@@ -51,7 +68,10 @@ export function gitRefResolves(platformDir: string, ref: string): boolean {
 export function gitShow(platformDir: string, ref: string, relPath: string): string | null {
   if (!isSafeRef(ref)) return null;
   const full = `${gitRepoPrefix(platformDir)}${relPath}`;
-  const proc = Bun.spawnSync(["git", "show", `${ref}:${full}`], { cwd: platformDir });
+  const proc = Bun.spawnSync(["git", "show", `${ref}:${full}`], {
+    cwd: platformDir,
+    env: gitEnv(),
+  });
   if (proc.exitCode !== 0) return null;
   return proc.stdout.toString();
 }
@@ -61,7 +81,7 @@ export function gitLsTree(platformDir: string, ref: string, dir: string): string
   const prefix = gitRepoPrefix(platformDir);
   const proc = Bun.spawnSync(
     ["git", "ls-tree", "-r", "--name-only", ref, "--", `${prefix}${dir}`],
-    { cwd: platformDir },
+    { cwd: platformDir, env: gitEnv() },
   );
   if (proc.exitCode !== 0) return [];
   return proc.stdout
@@ -88,9 +108,7 @@ export function gitDiffNameStatus(platformDir: string, ref: string): DiffEntry[]
   if (!isSafeRef(ref)) return [];
   const proc = Bun.spawnSync(
     ["git", "diff", "--name-status", "--no-renames", "--relative", ref, "--"],
-    {
-      cwd: platformDir,
-    },
+    { cwd: platformDir, env: gitEnv() },
   );
   if (proc.exitCode !== 0) return [];
   const rows: DiffEntry[] = [];
@@ -109,7 +127,7 @@ export function gitDiffNameStatus(platformDir: string, ref: string): DiffEntry[]
 export function newestReleaseTag(platformDir: string): string | null {
   const proc = Bun.spawnSync(
     ["git", "tag", "--list", "v*", "--merged", "HEAD", "--sort=-v:refname"],
-    { cwd: platformDir },
+    { cwd: platformDir, env: gitEnv() },
   );
   if (proc.exitCode !== 0) return null;
   const tag = proc.stdout.toString().split("\n")[0]?.trim() ?? "";

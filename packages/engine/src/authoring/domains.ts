@@ -8,6 +8,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { parseDomainText, type SpecDomain, type SpecRequirement } from "@spec-engine/shared";
+import { gitEnv } from "../base/gitBase";
 import { specPaths } from "../constants";
 
 export { KEY_RE } from "@spec-engine/shared";
@@ -104,7 +105,7 @@ async function headMaxSeq(platformDir: string, key: string): Promise<number> {
     // where the platform sits inside the repo.
     const proc = Bun.spawn(
       ["git", "-C", join(platformDir, "spec-engine", key), "show", "HEAD:./SPEC.json"],
-      { stdout: "pipe", stderr: "ignore" },
+      { stdout: "pipe", stderr: "ignore", env: gitEnv() },
     );
     const text = await new Response(proc.stdout).text();
     if ((await proc.exited) !== 0) return 0;

@@ -5,6 +5,7 @@ import { rmSync } from "node:fs";
 import { resolve } from "node:path";
 import type { Diagnostic } from "@spec-engine/shared";
 import { cloneFixture } from "../testing/cloneFixture";
+import { gitTestEnv } from "../testing/git";
 import { entryOf, plantEdit } from "../testing/plant";
 import { TestPlatform } from "../testing/platform";
 import { checkCommand } from "./check";
@@ -49,7 +50,11 @@ type RunFn = (ctx: { args: Record<string, unknown>; rawArgs: string[] }) => Prom
 const checkRun = (checkCommand as unknown as { run: RunFn }).run;
 
 function git(...args: string[]): void {
-  const r = Bun.spawnSync(["git", "-C", platformDir, ...args], { stdout: "pipe", stderr: "pipe" });
+  const r = Bun.spawnSync(["git", "-C", platformDir, ...args], {
+    stdout: "pipe",
+    stderr: "pipe",
+    env: gitTestEnv(),
+  });
   if (r.exitCode !== 0) throw new Error(`git ${args.join(" ")}: ${r.stderr.toString()}`);
 }
 

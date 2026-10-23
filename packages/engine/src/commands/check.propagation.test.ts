@@ -8,27 +8,12 @@ import { rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { Diagnostic } from "@spec-engine/shared";
 import { cloneFixture } from "../testing/cloneFixture";
+import { git, gitTestEnv } from "../testing/git";
 import { entryOf, plantEdit } from "../testing/plant";
 import { checkCommand } from "./check";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "platform-fixture");
 const FIXTURE_REPO = resolve(import.meta.dir, "..", "..", "..", "..");
-
-const GIT_ENV = {
-  ...process.env,
-  GIT_AUTHOR_NAME: "spec-check Test",
-  GIT_AUTHOR_EMAIL: "test@spec.local",
-  GIT_COMMITTER_NAME: "spec-check Test",
-  GIT_COMMITTER_EMAIL: "test@spec.local",
-};
-
-function git(cwd: string, ...args: string[]): void {
-  if (!cwd) throw new Error("git helper needs a cwd; refusing to run in the process cwd");
-  const proc = Bun.spawnSync(["git", ...args], { cwd, env: GIT_ENV });
-  if (proc.exitCode !== 0) {
-    throw new Error(`git ${args.join(" ")} failed: ${proc.stderr.toString()}`);
-  }
-}
 
 class ExitError extends Error {
   constructor(public code: number) {
@@ -133,6 +118,7 @@ function junit(taxPass: boolean, reportsPass: boolean): string {
 function fixtureClean(): boolean {
   const proc = Bun.spawnSync(["git", "status", "--porcelain", "fixtures/platform-fixture/"], {
     cwd: FIXTURE_REPO,
+    env: gitTestEnv(),
   });
   return proc.stdout.toString().trim() === "";
 }
