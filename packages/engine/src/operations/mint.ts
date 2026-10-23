@@ -13,6 +13,7 @@ import {
   grammarWarningText,
   judgeStatementGrammar,
 } from "../authoring/grammar";
+import { statementRulesRefusal } from "../authoring/statementRules";
 import { specPaths } from "../constants";
 import { readEnvelope, splitList } from "./_envelope";
 import { fail, type OpFailure, type OpWarning } from "./_result";
@@ -85,6 +86,8 @@ export async function mint(input: MintInput): Promise<MintResult | OpFailure> {
     }
     warnings.push({ kind: "grammar", text: grammarWarningText("", verdict).slice(2) });
   }
+  const refusal = statementRulesRefusal(platformDir, key, input.statement);
+  if (refusal !== null) return fail("usage", refusal, { warnings });
 
   const file = await readEnvelope(platformDir, key);
   if (!file.ok) {

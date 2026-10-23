@@ -31,7 +31,7 @@ const HISTORY = "BILLING-001";
 const SUCCESSOR = "BILLING-003";
 
 beforeEach(async () => {
-  fx = TestPlatform.temp("spec-supersede-");
+  fx = TestPlatform.temp("spec-supersede-").statementRulesOff();
   platform = fx.dir;
   billing = await fx.domain("BILLING", { owner: "drea" });
   const ancient = await billing.req({ statement: "ancient truth", why: "history" });

@@ -34,7 +34,7 @@ beforeEach(async () => {
   fx = TestPlatform.temp("spec-fresh-");
   platform = fx.dir;
   ord = await fx.domain("ORD");
-  await ord.req({ statement: "orders reserve inventory", why: "w" });
+  await ord.req({ statement: "Orders reserve inventory.", why: "w" });
   await fx.member("api", {
     files: { "src/a.ts": `export const a = 1; ${specTag("ORD-001")}` },
   });
@@ -63,7 +63,7 @@ afterEach(() => {
 });
 
 async function appendOrd002(): Promise<void> {
-  const minted = await ord.req({ statement: "refunds reverse inventory", why: "w" });
+  const minted = await ord.req({ statement: "Refunds reverse inventory.", why: "w" });
   expect(minted.id).toBe("ORD-002");
 }
 

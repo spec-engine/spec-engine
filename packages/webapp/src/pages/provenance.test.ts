@@ -395,7 +395,7 @@ describe("status filtering: live-contract default + ?all=1 toggle", () => {
     try {
       const fx = TestPlatform.at(root);
       const gone = await fx.domain("GONE");
-      const old = await gone.req({ statement: "The old promise this domain used to make." });
+      const old = await gone.req({ statement: "The old promise this domain made." });
       // Dangling successor on purpose: pointing at LIVE-001 would put GONE-001
       // into LIVE-001's version-history panel (the lineage KEEPS predecessors
       // by design), defeating the hidden-domain assertion below. No operation
