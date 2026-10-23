@@ -1,8 +1,10 @@
-# TAXONOMY — domain charters & the requirement-authoring standard
+# TAXONOMY — domain charters
 
-Two jobs: the charter of every domain (what belongs in it), and the rules every
-new requirement is written against. An author, human or agent, reads a domain's
-charter here to decide whether a new requirement belongs in it.
+The charter of every domain: what belongs in it. An author, human or agent,
+reads a domain's charter here to decide whether a new requirement belongs in
+it. The rules every new requirement is written against, and the id format,
+are the "Requirement authoring standard" section of the
+[agent reference](../packages/site/src/content/docs/agent-reference.md).
 
 - Terminology is canonical per [GLOSSARY.md](../GLOSSARY.md): a *domain* is the
   concept, a *spec* is the `spec-engine/<KEY>/SPEC.json` artifact recording it,
@@ -24,17 +26,6 @@ charter here to decide whether a new requirement belongs in it.
   promise carries that promise's id: the fence function is tagged with it and
   the fence label starts with it. There is no ARCH domain.
 
-## Requirement id format
-
-<!-- @spec CHRT-008 -->
-
-- Ids are `KEY-NNN`, a 3-digit zero-padded number: `CHRT-007`, `BILLING-010`.
-- Two-digit shorthand in old planning notes (`CHRT-01`) is a label, never a real id.
-- Ids are permanent. A requirement is superseded or deprecated, never renumbered
-  and never deleted.
-
----
-
 ## Per-domain charters
 
 Each entry: the domain's scope sentence, a **belongs here** list, and a
@@ -48,7 +39,7 @@ Run `bun scripts/gen-charters.ts` after changing a domain's scope.
 ### AUTHOR
 
 **Scope.** How a brief or ticket becomes well-formed requirements: the
-AGENTS.md authoring playbook, the req-author skill, the MCP
+authoring playbook in the agent reference, the req-author skill, the MCP
 author_requirements prompt, and the rule that the engine runs no model.
 
 - **Belongs here:** the authoring-workflow surfaces and the LLM-free engine
@@ -70,9 +61,10 @@ that GLOSSARY_DRIFT enforces.
 
 ### CHRT
 
-**Scope.** Domain charters and the requirement-authoring standard:
-TAXONOMY.md, the envelope scope field, and the CLI surfaces that show an
-author a charter (spec domain list --json, spec req).
+**Scope.** Domain charters and the requirement-authoring standard: the
+TAXONOMY.md charters, the authoring standard in the agent reference, the
+envelope scope field, and the CLI surfaces that show an author a charter (spec
+domain list --json, spec req).
 
 - **Belongs here:** what tells an author whether a requirement belongs in a
   domain.
@@ -284,77 +276,6 @@ title and URL.
   that id inside the index is PROV's.
 
 <!-- END GENERATED CHARTERS -->
-
----
-
-## Requirement authoring standard
-
-<!-- @spec CHRT-009 -->
-
-The rules every new requirement is written against. The `req-author` skill
-applies them. The statement-shape rule is also checked at write time and by
-`spec check`.
-
-0. **A requirement is one rule of the product's behavior, stated from the
-   user's point of view.** The statement rules are the regex half of this
-   rule: `spec req`, `amend`, `supersede`, `move`, and `accept` refuse a
-   statement that is more than one sentence or has no closing period, runs
-   past 280 characters, names a repository file or folder, describes how a
-   test is written, describes CI or tooling layout, tells how the
-   requirement changed, uses a configured jargon word, or names the tool in
-   use. `spec check` reports an Active statement that breaks one as
-   `STATEMENT_RULES`, and `spec lint` lists every finding. `check.json`
-   tunes the length, the jargon list, the exempt names, and each rule's
-   severity. The judgment half stays with the author.
-1. **One behavior per requirement.** A ticket usually splits into several
-   requirements. Never mint one requirement per ticket.
-2. **Write the statement in the fixed shape.** Pick the sentence shape that
-   matches the situation (the word "shall" separates who acts from the
-   observable result):
-
-   | Situation | Shape | Example |
-   |---|---|---|
-   | Always true | The `<system>` shall `<result>` | The spec CLI shall write JSON output to stdout only. |
-   | Triggered by an event | When `<trigger>`, the `<system>` shall `<result>` | When an unknown requirement id is passed, spec resolve shall print `[]` and exit 0. |
-   | Only in a certain state | While `<state>`, the `<system>` shall `<result>` | While the index file is missing, read commands shall rebuild it before answering. |
-   | Handling something going wrong | If `<failure>`, then the `<system>` shall `<result>` | If the results file cannot be parsed, then spec check shall report the file and exit 2. |
-   | Only when a feature is present | Where `<feature>`, the `<system>` shall `<result>` | Where a member config lists ignore directories, the scanner shall skip them. |
-
-   If your statement fits no row, you have not yet decided what triggers the
-   behavior or what observably happens — which is the problem the shape exists
-   to catch.
-
-   A statement may end with a trailing `so <observable consequence>` clause
-   ("…shall report NO_SPEC_CONFIG at warning severity, so a lone warning never
-   fails the gate") when the consequence is itself observable. Rationale —
-   *why the behavior exists* — still belongs in the why, never in the
-   statement.
-
-   One promise per statement. A result that chains two behaviors with `and`,
-   or that sets two severities, is two requirements; a single test must be
-   able to prove the whole statement. The mechanical part of this rule is a
-   lint inside the same EARS check, run at write time and by `spec check`: a
-   `; ` after the first `shall`, a `, and <subject> shall` second clause, and
-   a rationale connective (`because`, `so that`, `in order to`) each fail it.
-   It is a regex, not a reading: a statement that passes can still chain two
-   behaviors, and the reviewer still owns that call. Prefer `When`, `If … then`, and the
-   bare `shall` form; use `While` and `Where` only when a state or a feature
-   is what gates the behavior.
-3. **It must make sense on its own.** A reader seeing only this one statement —
-   in search results, in a report — understands it. If it says "the
-   normalization" or "that prefix" without naming the subject, it fails.
-4. **Describe what it does, not how.** Say what a user or calling agent
-   observes. If renaming an internal function would make the statement wrong,
-   it is written at the wrong level.
-5. **No expiration dates.** No "currently", no "the new behavior", no
-   references to things that were removed.
-6. **The why states what breaks.** Answer "what goes wrong if this stops being
-   true" — never restate the requirement in different words.
-7. **Three link types, three jobs.** Tests prove it. Code implements it.
-   Tickets are only history — never an id, never proof.
-8. **File it where the promise lives, and search first.** Pick the domain
-   whose charter covers this behavior, and run `spec query` before minting —
-   if something close exists, amend it instead.
 
 ---
 

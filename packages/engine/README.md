@@ -69,4 +69,4 @@ bun build --compile --minify --target=bun-darwin-arm64 packages/engine/src/cli.t
 - Requirements are not issues. A tracker ticket is ephemeral; a `KEY-NNN` requirement is durable. One issue fans out into several requirements. Never use an issue number as a requirement id.
 - A non-platform directory gets a friendly message and exit 2, and leaves no `.spec-engine/` artifact. A failed pre-flight leaves nothing behind.
 
-See the repo `AGENTS.md` for the `@spec` protocol, exit codes, and `--json` schemas.
+See the Agent Reference page of the docs (`spec docs`) for the `@spec` protocol, exit codes, and `--json` schemas.

@@ -44,7 +44,7 @@ export const DEFAULT_JARGON: readonly string[] = [
   "the stage",
 ];
 
-const REASONS: Record<StatementRule, string> = {
+export const STATEMENT_RULE_REASONS: Record<StatementRule, string> = {
   "one-sentence": "a statement is one testable sentence",
   length: "a sentence a reader holds at once",
   "no-file-path": "which file holds what is layout, not behaviour",
@@ -195,7 +195,7 @@ export function statementFindings(
   for (const rule of STATEMENT_RULES) {
     const detail = details[rule];
     if (detail !== null && config.severity?.[rule] !== "off") {
-      findings.push({ rule, detail, reason: REASONS[rule] });
+      findings.push({ rule, detail, reason: STATEMENT_RULE_REASONS[rule] });
     }
   }
   return findings;
