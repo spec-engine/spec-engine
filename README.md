@@ -20,6 +20,8 @@ in one command.
 
 ## The idea
 
+Spec Engine helps developers, product teams, and agents write better specs and keep them current, so the software changes accurately.
+
 Everything in Spec Engine follows from eight statements:
 
 1. A requirement represents a single behavior.

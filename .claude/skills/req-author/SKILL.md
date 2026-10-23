@@ -5,6 +5,8 @@ description: Turn a rough brief or ticket into Spec Engine requirements — draf
 
 # req-author
 
+> A requirement is one rule of the product's behavior, stated from the user's point of view.
+
 This skill drives the real `spec` CLI (`spec req`, `spec query`,
 `spec domain list`) and never reimplements minting. It is the front half of
 the lifecycle: brief in, approved requirements out; the route → tag → check
@@ -48,6 +50,12 @@ loop consumes what it produces.
    two drafts. Prefer `When`, `If … then`, and the bare `shall` form; `While`
    and `Where` only when a state or feature gates the behavior. Rationale
    belongs in the why, never in the statement.
+
+   The statement rules are checked the same way: one sentence ending in a
+   period, at most 280 characters, and no repository file or folder, test
+   mechanics, CI or tooling layout, history, project jargon, or tool choice.
+   `spec req` refuses a draft that breaks one; `spec lint <KEY-NNN> .` lists
+   the findings for an existing requirement.
 
 3. **Write a why that names what breaks.** The `why` answers "what goes wrong
    if this stops being true" — never a restatement of the statement in

@@ -36,6 +36,7 @@ description: Diagnostic codes and what they mean
 | `RELATES_SUPERSEDED` | warning | A `relates` entry points at a superseded requirement |
 | `SELF_RELATES` | warning | A `relates` entry names its own requirement (dropped, but surfaced) |
 | `UNKNOWN_ROLE` | warning | An `issues` entry uses a role outside `created` / `supersedes-via` / `amends-via` — surfaced and dropped, never stored |
+| `STATEMENT_RULES` | warning (per rule from `statementRules.severity`) | An active statement breaks a statement rule: one row per rule per statement, the detail `<rule>: <detail> — <reason>`. Glossary terms are never judged |
 
 Coverage counts only active requirements: a draft never raises `ORPHAN_REQ` or `UNVERIFIED_REQ`. <!-- @spec CHCK-032 -->
 
@@ -101,3 +102,31 @@ The three loss rows are the ones `spec guard` reports against the same ref; guar
 - `off` drops the row from every output.
 - Exit 1 follows the graded severities, on every surface.
 - A file that fails the schema exits 2 with `spec-engine/check.json: <path>: <reason>`.
+
+### Statement rules (`statementRules`)
+
+A requirement is one rule of the product's behavior, stated from the user's point of view. The statement rules are the part of that a pattern can catch. `spec req`, `amend`, `supersede`, `move` (with new text), and `accept` refuse a statement that breaks an enabled rule (exit 2, no override flag), `spec check` reports an active one as `STATEMENT_RULES`, and `spec lint` lists every finding.
+
+| Rule | Reports |
+| --- | --- |
+| `one-sentence` | more than one sentence, no closing period, or a line break |
+| `length` | over `maxLength` characters (280 by default) |
+| `no-file-path` | a repository path or file name |
+| `no-test-narration` | how a test is written |
+| `no-toolchain-layout` | CI or tooling layout |
+| `no-history` | how the requirement changed |
+| `no-jargon` | a word from the jargon list |
+| `no-tool-statement` | which tool is in use |
+
+```json
+{ "statementRules": {
+    "maxLength": 280,
+    "jargon": ["seam", "rung"],
+    "exemptNames": ["SPEC.json", "spec-engine/"],
+    "severity": { "no-jargon": "off", "length": "error" }
+} }
+```
+
+- `jargon` replaces the default list (`seam`, `seams`, `rung`, `rungs`, `residue`, `matrix entry`, `stage runner`, `the stage`).
+- `exemptNames` are product names `no-file-path` never reports; a name ending in `/` exempts every path under it.
+- `severity` maps a rule to `error`, `warning`, or `off`. `off` turns the rule off everywhere; any other value still refuses a write and grades the `STATEMENT_RULES` row.

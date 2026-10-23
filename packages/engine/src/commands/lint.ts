@@ -22,6 +22,7 @@ function splitPositionals(args: { target?: string | undefined; platformDir?: str
   return { target, platformDir: resolvePlatformDir({ platformDir }) };
 }
 
+// @spec CHCK-050
 export const lintCommand = defineCommand({
   meta: {
     name: "lint",

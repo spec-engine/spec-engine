@@ -180,6 +180,12 @@ Promote a Draft requirement to Active — same ID, every other field untouched, 
 
 **Exit codes:** 0 / 2
 
+### `spec lint [KEY | KEY-NNN] [platformDir] [--all]`
+
+Print every statement-rule finding for the platform, one domain, or one requirement as `<id> <rule>: <detail> — <reason>`, then rule 0 on stderr. Active requirements by default; `--all` adds drafts. `--json` prints a sorted array of `{ req_id, rule, detail, reason, source_file, line }`. Reads `SPEC.json` directly and honors `check.json` `statementRules`. The same rules refuse a write in `spec req`, `amend`, `supersede`, `move`, and `accept`.
+
+**Exit codes:** 0 clean / 1 any finding / 2 usage, unknown domain or id
+
 ### `spec serve [platformDir] [--port N] [--host IP] [--token T] [--allow-writes]`
 
 Launch the local webapp over the derived index on `127.0.0.1`, or on a private `--host` address that requires the printed token and is read-only unless `--allow-writes`. `--probe` smoke-tests and exits.

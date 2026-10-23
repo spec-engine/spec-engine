@@ -315,7 +315,6 @@ export class TestPlatform extends FileTree {
     };
   }
 
-  /** Write the platform's check.json. */
   checkConfig(config: CheckConfig): string {
     return this.file(`${CANONICAL_SPECS_DIR}/check.json`, `${JSON.stringify(config)}\n`);
   }
