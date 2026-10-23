@@ -9,6 +9,7 @@ import { join, resolve } from "node:path";
 import type { IndexResult, Storage } from "@spec-engine/shared";
 import { runIndex } from "../indexer/pipeline";
 import { openStorage } from "../storage/sqlite";
+import { TestPlatform } from "../testing/platform";
 import { collectDiagnostics } from "./sqlDiagnostics";
 
 const FIXTURE = resolve(import.meta.dir, "..", "..", "..", "..", "fixtures", "relates-fixture");
@@ -95,4 +96,27 @@ describe("spec check surfaces relations when the target changed", () => {
       .sort();
     expect(codes).toEqual(["BROKEN_RELATES", "RELATES_SUPERSEDED", "SELF_RELATES"]);
   });
+});
+
+// @spec CHCK-070 unit
+test("RELATES_SUPERSEDED reports Active and Draft entries, never a deprecated one", async () => {
+  const fx = TestPlatform.temp("spec-relates-live-");
+  const db = openStorage(join(fx.dir, "index.sqlite"));
+  try {
+    const rel = await fx.domain("REL");
+    const target = (await rel.req()).id;
+    const active = (await rel.req({ relates: [target] })).id;
+    const draft = (await rel.req({ relates: [target], status: "draft" })).id;
+    const deprecated = (await rel.req({ relates: [target] })).id;
+    await rel.supersede(target);
+    await rel.deprecate(deprecated);
+    await runIndex({ platformDir: fx.dir, storage: db });
+    const flagged = collectDiagnostics(db)
+      .filter((d) => d.code === "RELATES_SUPERSEDED")
+      .map((d) => d.req_id);
+    expect(flagged).toEqual([active, draft]);
+  } finally {
+    db.close();
+    fx.remove();
+  }
 });

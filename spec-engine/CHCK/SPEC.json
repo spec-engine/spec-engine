@@ -911,6 +911,18 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "CHCK-070",
+      "status": "active",
+      "statement": "If an Active or Draft requirement relates to a superseded requirement, then spec check shall report RELATES_SUPERSEDED at warning severity.",
+      "why": "A live requirement that points at a dead promise misleads readers, and a warning on a deprecated entry can never be cleared, which teaches readers to skip the code.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
   ],
   "grammarSeverity": "error"

@@ -296,7 +296,7 @@ Codes, in `DiagnosticCode` order:
 | `DRIFT` | error | A member is pinned behind the version at which a requirement it references changed |
 | `NO_SPEC_CONFIG` | warning | A declared member is present on disk with no `spec-engine.member.json` |
 | `BROKEN_RELATES` | warning | A `relates` entry names a nonexistent requirement |
-| `RELATES_SUPERSEDED` | warning | A `relates` entry names a superseded requirement |
+| `RELATES_SUPERSEDED` | warning | An Active or Draft requirement's `relates` entry names a superseded requirement |
 | `CYCLIC_SUPERSEDE` | error | A circular supersession chain |
 | `SELF_RELATES` | warning | A `relates` entry names its own requirement (dropped, but surfaced) |
 | `UNKNOWN_ROLE` | warning | An `issues` entry uses a role outside `created` / `supersedes-via` / `amends-via` (surfaced and dropped, never stored) |

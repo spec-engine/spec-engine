@@ -150,6 +150,7 @@ WHERE r.id IS NULL
 ORDER BY rel.source_file, rel.line, rel.from_id, rel.to_id
 `;
 
+// @spec CHCK-070
 export const Q7_RELATES_SUPERSEDED_SQL = `
 SELECT
   'RELATES_SUPERSEDED'                                        AS code,
@@ -163,7 +164,9 @@ SELECT
   'warning'                                                   AS severity
 FROM relations rel
 JOIN requirements r ON r.id = rel.to_id
+JOIN requirements f ON f.id = rel.from_id
 WHERE r.status = 'Superseded'
+  AND f.status IN ('Active', 'Draft')
 ORDER BY rel.source_file, rel.line, rel.from_id, rel.to_id
 `;
 
