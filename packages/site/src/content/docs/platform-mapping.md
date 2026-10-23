@@ -119,7 +119,9 @@ The rule behind the table: every platform-map error and warning keeps its severi
 | A directory under no platform | The `spec-engine@1` fallback pin |
 | A declared member's checkout outside the platform folder, with `--platform <dir>` | The per-user location file, then the pin |
 
-It resolves symlinks, locates the platform root, and refuses two targets with exit 2: a directory inside a `spec-engine/` tree, because a pin there registers the requirement source as a member of itself, and the platform root itself, because the root is not a member. <!-- @spec INIT-018 -->
+It resolves symlinks, locates the platform root, and refuses a directory inside a `spec-engine/` tree with exit 2, because a pin there registers the requirement source as a member of itself. <!-- @spec INIT-042 -->
+
+The platform root itself is not a member: `spec init` writes only the agent surface there and no pin. <!-- @spec INIT-043 -->
 
 The refusal reads every path segment for the name `spec-engine`. On the engine's own checkout, whose root package is named `@spec-engine/spec-engine`, only the path below the platform root is judged, so a checkout named `spec-engine` can still scaffold its own packages. <!-- @spec INIT-030 -->
 
