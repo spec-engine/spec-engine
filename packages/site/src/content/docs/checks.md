@@ -1,131 +1,45 @@
 ---
 title: Integrity Checks
-description: Diagnostic codes and what they mean
+description: What spec check reports and how to run it in CI
 ---
 
-`spec check` runs cross-repo integrity, coverage, and drift diagnostics. Error-severity diagnostics drive exit 1; warnings alone exit 0. `--ci` forces a cold rebuild (deletes the DB first — correctness never trusts a warm index).
+`spec check` reads every `SPEC.json` and every tag on the platform and reports what does not hold together: a tag on a requirement that no longer exists, a requirement nothing implements or tests, a member pinned behind a change, a change that deletes a promise. Error-severity diagnostics exit 1; warnings alone exit 0.
 
-## Always-on diagnostics
+Every code, its severity, and its condition is in the [Agent Reference](/agent-reference/#spec-check), which is the one copy of that list. This page explains the groups and how to run them.
 
-| Code | Severity | Condition |
-| --- | --- | --- |
-| `INVALID_DOMAIN_FILE` | error | A `SPEC.json` fails the structural schema (bad JSON, malformed `key`/`id`, missing `statement`, unknown envelope key). The index build refuses, and `spec check` prints only these rows, one per failing field across every invalid file |
-| `DUP_ID` | error | The same requirement ID appears twice |
-| `BROKEN_SUPERSEDE` | error | `supersededBy` points at a missing ID |
-| `CYCLIC_SUPERSEDE` | error | A circular supersession chain (`A → B → A`) — the chain is the change history, so a cycle is corrupt history |
-| `BAD_STATUS` | error | Entry status outside `active` / `draft` / `superseded` / `deprecated` |
-| `DANGLING_TAG` | error | A `@spec` tag references no requirement |
-| `SUPERSEDED_REFERENCED` | error | Code still tags a superseded requirement (retag to the successor) |
-| `ORPHAN_REQ` | error | An active requirement has no implementing `@spec` tag |
-| `UNVERIFIED_REQ` | warning | An active requirement is implemented but has no verifying test tag |
-| `DRAFT_REFERENCED` | error / warning | A tag references a draft requirement: error on a verifying (test) tag, warning on an implementing or documenting tag |
-| `DRIFT` | error | A member is pinned behind the version at which a requirement it references changed |
-| `NO_SPEC_CONFIG` | warning | A declared member is present on disk with no `spec-engine.member.json` |
-| `MALFORMED_FILE` | error (warning for a manifest) | A `platform-map.json`, a package or workspace manifest, or platform-map's per-user file failed to parse or validate |
-| `MARKER_MISMATCH` | error | A member's `platform-map.json` marker names a different platform |
-| `MEMBER_MISSING` | warning | A declared member is not on this machine; it is not scanned |
-| `MARKER_MISSING` | warning | A declared member has no `platform-map.json` marker |
-| `PLATFORM_NOT_LOCATED` | warning | A marker names a platform this machine cannot find |
-| `SCAN_TRUNCATED` | warning | A workspace walk hit its depth or entry cap |
-| `UNLISTED_REPO` | warning | A repository in the platform folder is not a member; its tags are not scanned until `spec init <name>` declares it |
-| `UNDECLARED_PLATFORM` | warning | A folder of repositories with no platform file; nothing in it is a member until `spec init <name>` declares the first one |
-| `BROKEN_RELATES` | warning | A `relates` entry points at a nonexistent requirement ID |
-| `RELATES_SUPERSEDED` | warning | A `relates` entry points at a superseded requirement |
-| `SELF_RELATES` | warning | A `relates` entry names its own requirement (dropped, but surfaced) |
-| `UNKNOWN_ROLE` | warning | An `issues` entry uses a role outside `created` / `supersedes-via` / `amends-via` — surfaced and dropped, never stored |
-| `STATEMENT_RULES` | warning (per rule from `statementRules.severity`) | An active statement breaks a statement rule: one row per rule per statement, the detail `<rule>: <detail> — <reason>`. Glossary terms are never judged |
+## In CI
 
-Coverage counts only active requirements: a draft never raises `ORPHAN_REQ` or `UNVERIFIED_REQ`. <!-- @spec CHCK-032 -->
+```shell
+spec check . --ci --base "$(git merge-base HEAD origin/main)"
+```
 
-## Glossary (TERM) diagnostics
+`--ci` deletes the index first, so the result never depends on a warm index. `--base` diffs the requirement set against the point the branch left `main`. Without it, `check` diffs against `HEAD`, which in a CI checkout already holds the change, so the removal and loss checks have nothing to report.
 
-| Code | Severity | Condition |
-| --- | --- | --- |
-| `UNDEFINED_TERM` | error | A requirement's `cites` entry resolves to no glossary TERM |
-| `SUPERSEDED_TERM_REFERENCED` | error | A citation points at a superseded term ID — re-point with `spec term confirm` |
-| `TERM_DRIFT` | warning | A citation's pin lags the cited term's current version after `spec term revise` — a re-confirmation prompt, not a build-breaker |
-| `ORPHAN_TERM` | warning | An active TERM no requirement cites — glossary rot, deliberately non-fatal |
+## Integrity and coverage
 
-## Trusted-red proof gate (`--results <junit.xml>`)
+Always on. A duplicate id, a broken or cyclic supersede chain, a tag that names no requirement or a superseded or deprecated one, an Active requirement with no implementing tag (`ORPHAN_REQ`) or no verifying tag (`UNVERIFIED_REQ`), and a member pinned behind a changed requirement (`DRIFT`). Coverage counts only Active requirements: a draft never raises `ORPHAN_REQ` or `UNVERIFIED_REQ`. <!-- @spec CHCK-032 -->
 
-Pass your test runner's JUnit XML and `check` enforces **proof of passing** — a verifying tag only counts when its test actually passed:
+## Proof of passing (`--results`)
 
-| Code | Severity | Condition |
-| --- | --- | --- |
-| `UNPROVEN_REQ` | error | An active requirement has verifying tags but no *passing* correlated test |
-| `PROOFS_UNCONFIRMED` | warning | No `--results` supplied — the gate falls back to presence-only mode (this warning is the reminder; routed to stderr under `--json`) |
+By default a verifying tag counts when it exists. Pass the test runner's JUnit XML and a verifying tag counts only when its test passed; a requirement with no passing test is `UNPROVEN_REQ`.
 
 ```shell
 bun test --reporter=junit --reporter-outfile=.spec-engine/results.xml
 spec check . --ci --results .spec-engine/results.xml
 ```
 
-## Governance diagnostics (`--base <ref>`)
+## Governance (`--base`)
 
-With a git base ref, `check` also diffs the requirement set against that ref. Without `--base`, the removal and loss rows are computed against `HEAD` whenever git resolves:
+Against a git ref, `check` reports an Active requirement deleted without a supersession (`REQUIREMENT_REMOVED`), the last implementing or verifying tag of a surviving requirement removed (`IMPL_LOST`, `VERIFY_LOST`), a deleted `SPEC.json`, and a status flip the domain owner did not approve. These are the same losses [`spec guard`](/agent-reference/#spec-guard) blocks before a commit.
 
-| Code | Severity | Condition |
-| --- | --- | --- |
-| `REQUIREMENT_REMOVED` | error | A requirement present at the base ref is gone with no approved supersession |
-| `UNAPPROVED_STATUS_FLIP` | warning† | A flip to superseded/deprecated whose CODEOWNERS domain owner is absent from `--approved-by` — †error under `--require-owner-approval` |
-| `PARTIAL_PROPAGATION` | error | Needs `--base` **and** `--results`: a changed requirement where some bound tests pass and some fail — one site migrated, another still red |
+## Platform and glossary
 
-| `IMPL_LOST` | error | The change removes the last implementing tag of a surviving active requirement |
-| `VERIFY_LOST` | warning | The change removes the last verifying tag of a surviving active requirement |
-| `SPEC_FILE_DELETED` | error | A `SPEC.json` present at the base ref is gone |
+Codes from platform-map report a member missing, unlisted, or mismarked, so its tags are not scanned. The glossary codes report a requirement citing an undefined, superseded, or revised term, and an Active term nothing cites.
 
-The three loss rows are the ones `spec guard` reports against the same ref; guard's own `REQUIREMENT_REMOVED` row is not repeated. See [Commands](/commands/#spec-guard-platformdir).
+## Statement rules
 
-Under `--ci` with no `--base`, a working tree whose tracked files equal `HEAD` makes every loss check pass vacuously, so `check` warns on stderr with the line to run instead: `spec check . --ci --base "$(git merge-base HEAD origin/<default>)"`. The exit code and stdout are unchanged. <!-- @spec GUARD-031 -->
+`STATEMENT_RULES` reports an Active statement that breaks one of the statement rules in the [requirement authoring standard](/agent-reference/#the-statement-rules). `spec lint` lists the same findings without building the index.
 
-## Opt-in policy diagnostics
+## Regrading (`spec-engine/check.json`)
 
-| Code | Severity | Condition |
-| --- | --- | --- |
-| `UNSOURCED_CHANGE` | warning | A superseded requirement carries no `supersedes-via` issue. Emitted only under `spec check --unsourced-change` |
-
-## Severity policy (`spec-engine/check.json`)
-
-`spec-engine/check.json` regrades diagnostics. Absent means no rules.
-
-```json
-{ "severity": [
-  { "code": "UNVERIFIED_REQ", "severity": "error" },
-  { "code": "UNVERIFIED_REQ", "severity": "warning", "match": ["LEGACY", "BILLING-004"] }
-] }
-```
-
-- `code` is any diagnostic code; `severity` is `error`, `warning`, or `off`.
-- `match` lists domain keys and requirement ids. A scoped rule applies only to rows whose requirement is listed or carries a listed key.
-- The most specific rule wins: an id match, then a domain match, then an unscoped rule. Among equals, the later rule wins.
-- `off` drops the row from every output.
-- Exit 1 follows the graded severities, on every surface.
-- A file that fails the schema exits 2 with `spec-engine/check.json: <path>: <reason>`.
-
-### Statement rules (`statementRules`)
-
-A requirement is one rule of the product's behavior, stated from the user's point of view. The statement rules are the part of that a pattern can catch. `spec req`, `amend`, `supersede`, `move` (with new text), and `accept` refuse a statement that breaks an enabled rule (exit 2, no override flag), `spec check` reports an active one as `STATEMENT_RULES`, and `spec lint` lists every finding.
-
-| Rule | Reports |
-| --- | --- |
-| `one-sentence` | more than one sentence, no closing period, or a line break |
-| `length` | over `maxLength` characters (280 by default) |
-| `no-file-path` | a repository path or file name |
-| `no-test-narration` | how a test is written |
-| `no-toolchain-layout` | CI or tooling layout |
-| `no-history` | how the requirement changed |
-| `no-jargon` | a word from the jargon list |
-| `no-tool-statement` | which tool is in use |
-
-```json
-{ "statementRules": {
-    "maxLength": 280,
-    "jargon": ["seam", "rung"],
-    "exemptNames": ["SPEC.json", "spec-engine/"],
-    "severity": { "no-jargon": "off", "length": "error" }
-} }
-```
-
-- `jargon` replaces the default list (`seam`, `seams`, `rung`, `rungs`, `residue`, `matrix entry`, `stage runner`, `the stage`).
-- `exemptNames` are product names `no-file-path` never reports; a name ending in `/` exempts every path under it.
-- `severity` maps a rule to `error`, `warning`, or `off`. `off` turns the rule off everywhere; any other value still refuses a write and grades the `STATEMENT_RULES` row.
+`check.json` raises, lowers, or turns off a code, for the whole platform or for named domains and requirements, and tunes the statement rules. Its schema is in the [Agent Reference](/agent-reference/#checkjson).

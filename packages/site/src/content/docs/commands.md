@@ -1,203 +1,41 @@
 ---
 title: Commands
-description: Complete CLI command reference
+description: Which spec command to reach for, by task
 ---
 
-Install the CLI from npm — `bun add -g @spec-engine/spec-engine` puts `spec` on your PATH, and every command below is written that way. Without a global install, run any of them as `bunx @spec-engine/spec-engine <command> [args]`; from a checkout, as `bun packages/engine/src/cli.ts <command> [args]`. See [Getting Started](/getting-started/) for the details.
+Install the CLI from npm: `bun add -g @spec-engine/spec-engine` puts `spec` on your PATH. Without a global install, run any command as `bunx @spec-engine/spec-engine <command> [args]`. See [Getting Started](/getting-started/) for the details.
 
-## Exit code contract
+This page groups the commands by task. The exact contract of each one (flags, `--json` shapes, exit codes) is in the [Agent Reference](/agent-reference/#command-reference), which is the one copy of it.
 
-| Code | Meaning |
-| --- | --- |
-| 0 | Success. Empty results are success (`[]` on stdout, guidance on stderr). |
-| 1 | Data-level failure: `check` found ≥1 error-severity diagnostic; `guard` found a loss; `gate` failed; `index` crashed mid-build. |
-| 2 | Usage/environment error: bad args, not a Spec Engine platform, path-containment violation, etc. |
+## Find the requirements a change touches
 
-## Common flags
+- [`spec query`](/agent-reference/#spec-query): full-text search over requirement statements and glossary terms.
+- [`spec resolve`](/agent-reference/#spec-resolve): the requirements tagged in given files, or with `--req`, every tag site for one requirement.
+- [`spec get`](/agent-reference/#spec-get) and [`spec list`](/agent-reference/#spec-list): one requirement's record, or every record with its history.
 
-Index-touching commands (`index`, `check`, `map`, `query`, `relations`, `resolve`, `propagation`, `provenance`, `gate`, `serve`) accept:
+## Check a change before it ships
 
-- `--out <path>` — DB path override (must resolve inside `platformDir`)
-- `--no-prompt` — suppress interactive onboarding prompt
-- `--json` — emit structured output (all except `serve`)
+- [`spec check`](/agent-reference/#spec-check): integrity, coverage, drift, and governance diagnostics. See [Integrity Checks](/checks/).
+- [`spec guard`](/agent-reference/#spec-guard): the pre-commit gate that blocks a change about to lose a requirement, its last implementation, or its last test.
+- [`spec lint`](/agent-reference/#spec-lint): every statement-rule finding for the platform, a domain, or one requirement.
+- [`spec gate`](/agent-reference/#spec-gate): the approval decision for one member and one requirement.
 
-Read commands (`map`, `query`, `relations`, `resolve`, `propagation`, `provenance`) trust a schema-matching existing index; pass `--fresh` to force a cold rebuild first. `check --ci` and `gate` always rebuild cold — correctness never trusts a warm index.
+## Author and change requirements
 
-## Command reference
+- [`spec domain`](/agent-reference/#spec-domain): scaffold a domain, list the charters, or set a domain's statement grammar.
+- [`spec req`](/agent-reference/#spec-req): print the next id, or mint a requirement.
+- [`spec amend`](/agent-reference/#spec-amend), [`spec supersede`](/agent-reference/#spec-supersede), [`spec move`](/agent-reference/#spec-move), [`spec deprecate`](/agent-reference/#spec-deprecate), [`spec accept`](/agent-reference/#spec-accept): the requirement lifecycle.
+- [`spec term`](/agent-reference/#spec-term) and [`spec glossary`](/agent-reference/#spec-glossary): glossary terms and the generated `GLOSSARY.md`.
 
-### `spec index [platformDir]`
+## See coverage across a platform
 
-Build or refresh the derived SQLite index at `<platformDir>/.spec-engine/index.sqlite`. `--json` emits `{ build_id, repos, domains, requirements, tags, diagnostics }`; `build_id` is deterministic for identical inputs.
+- [`spec map`](/agent-reference/#spec-map): the requirement by member coverage matrix.
+- [`spec propagation`](/agent-reference/#spec-propagation): which members have moved to a superseded requirement's successor.
+- [`spec relations`](/agent-reference/#spec-relations) and [`spec provenance`](/agent-reference/#spec-provenance): related requirements, and the tickets behind each one.
 
-**Exit codes:** 0 / 1 / 2
+## Set up and serve
 
-### `spec check [platformDir]`
-
-Cross-repo integrity, coverage, and drift diagnostics. See [Integrity Checks](/checks/) for every code.
-
-| Flag | Description |
-| --- | --- |
-| `--ci` | Force cold rebuild (delete DB first) |
-| `--results <junit.xml>` | Trusted-red proof gate: a verifying tag only counts when its test *passed* — fires `UNPROVEN_REQ` otherwise. Without it, `PROOFS_UNCONFIRMED` reminds you the gate is presence-only |
-| `--base <ref>` | Governance diff against a git ref: fires `REQUIREMENT_REMOVED` / `UNAPPROVED_STATUS_FLIP` (and `PARTIAL_PROPAGATION` with `--results`) |
-| `--approved-by <list>` | Approver set consulted by the status-flip governance check |
-| `--require-owner-approval` | Escalate `UNAPPROVED_STATUS_FLIP` from warning to error |
-| `--unsourced-change` | Opt-in: warn on superseded requirements lacking a `supersedes-via` issue |
-
-**Exit codes:** 0 (clean) / 1 (errors found) / 2 (crash)
-
-### `spec guard [platformDir]`
-
-The pre-commit **loss gate**: diffs the requirement derivation at `--against <ref>` (default `HEAD`) against the working tree and blocks a change about to lose a requirement, its last implementation, or its last test. Losses: `REQUIREMENT_REMOVED` (an active requirement gone with no supersession), `IMPL_LOST` / `VERIFY_LOST` (a surviving requirement's last implementing/verifying tag removed), `SPEC_FILE_DELETED`. A loss is suppressed only by superseding or deprecating the requirement in the same change — there is no override comment. A non-git tree or unknown ref warns and exits 0 — the guard is a safety net, not a git dependency.
-
-| Flag | Description |
-| --- | --- |
-| `--against <ref>` | Git ref to diff against (default `HEAD`) |
-| `--json` | Emit `{ kind, req_id, file, line, detail }` rows, byte-stable |
-
-**Exit codes:** 0 (clean) / 1 (loss found) / 2
-
-### `spec map [platformDir]`
-
-Render the cross-repo coverage matrix. **Exit codes:** 0 / 2
-
-### `spec get <KEY-NNN> [platformDir]`
-
-Print one requirement's full record (status, key, seq, statement, why, versions, source location) and the `file:line` of every tag that names it: `implemented_in` (implementing and documenting tags, each with its `kind`) and `verified_in` (verifying tags, each with its `level`), sorted by repo, file, and line. Tags are the only record of where a requirement is built and proved. `--json` prints the same object `GET /api/requirements/:id` and `spec_get` serve, and the webapp `/requirements/:id` page shows the same lists. An unknown id prints `[]` with guidance on stderr and exits 0. **Exit codes:** 0 / 2
-
-### `spec list [platformDir] [--domain KEY] [--status S]`
-
-Print every requirement record in (key, seq) order, superseded and deprecated history included. `--domain` narrows to one key; `--status` to `active`, `draft`, `superseded`, or `deprecated` (any other word exits 2). **Exit codes:** 0 / 2
-
-### `spec query <text> [platformDir]`
-
-Full-text retrieval over requirements (FTS5, BM25-ranked, best first). Superseded requirements are excluded. Glossary term definitions ride the same index and surface in a separate Terms group. `--limit N` (default 10, max 1000). Wrap multi-word phrases in quotes; bare `AND`/`OR` is an FTS5 grammar error (exit 2).
-
-**Exit codes:** 0 / 2
-
-### `spec relations [platformDir]`
-
-Render `relates` links as a mermaid `graph LR` diagram (text mode) or `{ from_id, to_id, source_file, line }` rows (`--json`). **Exit codes:** 0 / 2
-
-### `spec provenance [issueId] [platformDir]`
-
-Per-requirement provenance matrix: the issues that created/revised/retired it (by role), the backing tests, and a git pointer. An optional leading `<issueId>` is a display-only reverse-lookup filter — the issue ID stays opaque, never a join key. `--resolve-issues` overlays tracker title/status/URL via the optional adapter (needs `SPEC_TRACKER_TOKEN`; off by default, degrades gracefully).
-
-**Exit codes:** 0 / 2
-
-### `spec resolve <files...> [platformDir]`
-
-Requirements tagged in the given files. Accepts multiple positionals, comma-split within a positional, and absolute paths under the platform tree. `--req KEY-NNN` inverts the lookup: every tag site for that requirement across all repos.
-
-**Exit codes:** 0 / 2
-
-### `spec propagation <reqId> [platformDir]`
-
-Classify each member repo's relationship to a superseded requirement: `MIGRATED_VERIFIED`, `MIGRATED_UNVERIFIED`, `ON_PREDECESSOR`, `ON_OTHER_DOMAIN_REQ`, `NO_DOMAIN_REFERENCE` — plus a `drifted` flag per member. Rows are in dependency order, providers before consumers, read from platform-map's `dependsOn`; ties by name. See [Platform Mapping](/platform-mapping/).
-
-**Exit codes:** 0 / 2
-
-### `spec gate <repo> <reqId> [platformDir]`
-
-Approval primitive. Passes iff `<reqId>` is Active AND `<repo>`'s pin covers the requirement's `changed_at_version`. **Decision order:** `NOT_FOUND` → `DRAFT` → `SUPERSEDED` → `VERSION_PIN` → `PASS`; pin equality passes. An unknown repo is a usage error (exit 2), not a gate failure.
-
-**Exit codes:** 0 (PASS) / 1 (failure) / 2 (bad args)
-
-### `spec init [repo]`
-
-Declare a member and write its `spec-engine.member.json`. A repository directly under the platform folder that the platform file does not list is declared through platform-map first (a platform file entry and a marker), then pinned; a workspace package of a monorepo gets a nested pin and no declaration; a plain folder platform-map cannot declare is refused. Pin resolution: `--specs <pin>` wins; else the **derived platform version** (the max of the enclosing platform's domain versions); else `spec-engine@1` with a printed note. An existing config is left untouched ("already configured", exit 0); `--force` rewrites the pin while preserving an `ignore` list. `--platform <dir>` records a declared member's checkout that lives outside the platform folder in platform-map's per-user file. See [Platform Mapping](/platform-mapping/).
-
-**Exit codes:** 0 / 2 (never exit 1)
-
-### `spec domain new <name>` / `spec domain list [platformDir]`
-
-Scaffold `spec-engine/<KEY>/SPEC.json` (input normalized to uppercase, whitespace stripped) / list domains with their charters (`--json`: sorted `{ key, scope }` array, read from the filesystem).
-
-**Exit codes:** 0 / 2
-
-### `spec domain grammar <KEY> [platformDir]`
-
-Set a domain's statement grammar (`--grammar ears|freeform`) and/or its severity (`--severity warning|error`) through the validating write seam; every other envelope field is written back as read. `--json` prints `{ key, grammar, grammar_severity, file }`. Under `grammar: "ears"`, a statement must fit one of the five EARS shapes and pass the one-promise lint: no `; ` after the first `shall`, no `, and <subject> shall` second clause, no rationale connective (`because`, `so that`, `in order to`). A trailing `, so <observable consequence>` stays legal. `spec check` reports a miss as `STATEMENT_GRAMMAR`, and `spec req` / `amend` / `supersede` / `move` warn or refuse at write time, both at the declared severity. The TERM domain is exempt.
-
-**Exit codes:** 0 / 2 (unknown domain, neither flag, or a value outside the enums)
-
-### `spec migrate [platformDir]`
-
-Strip the retired `livesIn` and `verifiedIn` fields from every `SPEC.json` that still carries them, through the validated write seam. A file without them is not touched, so a second run writes nothing. Until a book is migrated the fields are read and ignored, and the next write of a file drops them. `--json` prints `{ files }`.
-
-**Exit codes:** 0 / 2
-
-### `spec req <domain-prefix> [platformDir]`
-
-**Piped:** prints the next unused requirement ID (e.g. `BILLING-010`) — zero prompts, zero writes. **TTY:** interactive authoring. **`--text` (+ `--why` / `--relates` / `--issue`):** appends a born-active entry non-interactively through the validated write seam. **`--draft`:** the entry is born Draft instead (promote it with `spec accept`). Prefix is case-insensitive (`bil` → `BILLING`; ambiguous → exit 2). `spec req <domain>` alone prints the domain's charter before authoring.
-
-**Exit codes:** 0 / 2
-
-### `spec term …`
-
-The glossary authoring surface — a term is a requirement row in the reserved `TERM` domain (definition in the statement, headword in `term`, synonyms in `aliases`):
-
-- `spec term "<name>" --def "<definition>" [--aliases a,b] [--section s]` — author a `TERM-NNN`
-- `spec term list` — every term's `id name status`, read from the filesystem
-- `spec term revise <TERM-NNN> --def "…"` — rewrite a definition **in place** (same id) and bump the TERM envelope's authored `specVersion`, the pin citations drift against
-- `spec term confirm <KEY-NNN> <TERM-NNN>` — re-pin a requirement's citation to the term's current version (clears `TERM_DRIFT`); re-points to the successor when the cited term was superseded (clears `SUPERSEDED_TERM_REFERENCED`)
-
-`spec supersede` and `spec amend` work on TERM ids exactly as on requirements.
-
-**Exit codes:** 0 / 2
-
-### `spec glossary [platformDir]`
-
-The GLOSSARY.md round-trip. Default: **generate** GLOSSARY.md from the TERM store, byte-stable and LLM-free. `--migrate`: one-time parse of an existing GLOSSARY.md into `TERM-001..N` (idempotent-skip). `--check`: regenerate into a buffer and fail (exit 1) if the committed file drifts — a CI fence.
-
-**Exit codes:** 0 / 1 / 2
-
-### `spec supersede <reqId> [platformDir]`
-
-The post-ship lifecycle move, mechanized. Flips the entry to superseded, mints the successor (`--text` required non-TTY; `--why`, `--relates`, cites, aliases, term, and section default to copies of the predecessor's; issues do not carry over), reindexes, and prints the **retag worklist** — every code site still on the old ID. The target must be Active.
-
-On a requirement domain the reported `spec_version` is the **derived** domain version after the supersession — no authored counter is written, and `--no-bump` is a no-op (there is no counter to hold back). On the reserved TERM domain the authored `specVersion` still bumps (it is the term-drift pin) and `--no-bump` opts out.
-
-`--json`: `{ old_id, new_id, file, spec_version, retag: [...] }`
-
-**Exit codes:** 0 / 2
-
-### `spec move <reqId> <NEW-DOMAIN> [platformDir]`
-
-Cross-domain supersede for taxonomy reorganization: mints the successor as the next id in `<NEW-DOMAIN>` (which must exist), carrying the source's fields (`--text`/`--why` override), flips the source to superseded with a cross-domain `supersededBy`, and emits the retag worklist. Both envelopes validate before either is written — a reject never half-applies. Only Active requirements move; moving into the source's own domain is a usage error (use `supersede`).
-
-**Exit codes:** 0 / 2
-
-### `spec amend <reqId> [platformDir]`
-
-Revise a requirement in place — same ID, no version change (the domain version only derives from supersessions). Field flags name what changes (`--text`/`--why`/`--relates`, at least one); untouched fields stay byte-identical. `--relates` repeats or comma-separates and replaces the whole list; an empty value clears it. Only Active and Draft entries amend. A requirement present in its domain file at the newest `v*` tag merged into HEAD is released: its `--text` and `--why` refuse with exit 2 and name `spec supersede`; `--relates` and `--issue` still write in place. With no `v*` tag or no git, nothing is released.
-
-**Exit codes:** 0 / 2
-
-### `spec accept <reqId> [platformDir]`
-
-Promote a Draft requirement to Active — same ID, every other field untouched, no version change. A Draft is never an orphan, never unverified, and never counted in coverage; accepting it makes it an obligation.
-
-**Exit codes:** 0 / 2
-
-### `spec lint [KEY | KEY-NNN] [platformDir] [--all]`
-
-Print every statement-rule finding for the platform, one domain, or one requirement as `<id> <rule>: <detail> — <reason>`, then rule 0 on stderr. Active requirements by default; `--all` adds drafts. `--json` prints a sorted array of `{ req_id, rule, detail, reason, source_file, line }`. Reads `SPEC.json` directly and honors `check.json` `statementRules`. The same rules refuse a write in `spec req`, `amend`, `supersede`, `move`, and `accept`.
-
-**Exit codes:** 0 clean / 1 any finding / 2 usage, unknown domain or id
-
-### `spec serve [platformDir] [--port N] [--host IP] [--token T] [--allow-writes]`
-
-Launch the local webapp over the derived index on `127.0.0.1`, or on a private `--host` address that requires the printed token and is read-only unless `--allow-writes`. `--probe` smoke-tests and exits.
-
-**API routes (always on):** `/api/coverage`, `/api/report` (per-domain rollup over Active reqs), `/api/repos`, `/api/platform` (the derived platform version), `/api/requirements[/:id]`, `/api/propagation/:id`, `/api/resolve?files=...`
-
-**Feature-flagged routes:** `/api/query?q=&limit=`, `/api/relations[?format=mermaid]`, `/api/provenance`, and the editor's write routes answer **404** until their feature is enabled — the unshipped webapp features (query, relations, provenance, editor, glossary, logs) all default off. Opt in locally with a comma-separated `SPEC_FLAGS` env var: `SPEC_FLAGS=query,relations spec serve .` (unknown keys are ignored).
-
-**Exit codes:** 0 / 1 / 2
-
-### `spec mcp [platformDir]`
-
-Serve Spec Engine as a Model Context Protocol server over stdio. Tools: `spec_query`, `spec_resolve`, `spec_req_tags`, `spec_coverage_report`, `spec_check`, `spec_propagation`, `spec_next_id`, `spec_get`, `spec_list`, `spec_req`, `spec_amend`, `spec_supersede`, `spec_move`, `spec_deprecate`, `spec_accept` — the same JSON the CLI's `--json` modes emit, reindexed fresh per call. Also advertises the `author_requirements` prompt (a static authoring playbook; the engine itself runs no model).
-
-**Exit codes:** 0 / 2
+- [`spec init`](/agent-reference/#spec-init): declare a member and write its pin. See [Platform Mapping](/platform-mapping/).
+- [`spec index`](/agent-reference/#spec-index): build the derived index; every other command builds it when needed.
+- [`spec migrate`](/agent-reference/#spec-migrate): strip the retired `livesIn` and `verifiedIn` fields from every `SPEC.json`.
+- [`spec serve`](/agent-reference/#spec-serve), [`spec mcp`](/agent-reference/#spec-mcp), [`spec docs`](/agent-reference/#spec-docs): the local webapp, the MCP server, and this site offline.

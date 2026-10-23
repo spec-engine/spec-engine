@@ -3,7 +3,8 @@
 A Bun + TypeScript monorepo. This file covers setup, conventions, and process for
 human contributors.
 
-- Machine-facing engine reference (commands, exit codes, `--json` shapes): [AGENTS.md](AGENTS.md)
+- The `spec` CLI contract (commands, exit codes, `--json` shapes): the [agent reference](packages/site/src/content/docs/agent-reference.md)
+- Rules for changing the engine: [AGENTS.md](AGENTS.md)
 - Terminology: [GLOSSARY.md](GLOSSARY.md)
 - Components, seams, invariants: the [architecture page](packages/site/src/content/docs/architecture.md)
 

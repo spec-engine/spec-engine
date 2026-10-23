@@ -3,10 +3,13 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { RULE_ZERO, STATEMENT_RULE_REASONS, STATEMENT_RULES } from "@spec-engine/shared";
 
 const REPO_ROOT = resolve(import.meta.dir, "..", "..", "..");
 const CLI_TS = join(REPO_ROOT, "packages", "engine", "src", "cli.ts");
-const AGENT_DOC = join(REPO_ROOT, "AGENTS.md");
+const BUILDER_DOC = join(REPO_ROOT, "AGENTS.md");
+const REFERENCE_PATH = "packages/site/src/content/docs/agent-reference.md";
+const AGENT_DOC = join(REPO_ROOT, REFERENCE_PATH);
 const README = join(REPO_ROOT, "README.md");
 
 /**
@@ -26,7 +29,7 @@ function publicSubcommands(): string[] {
   return names;
 }
 
-describe("AGENTS.md", () => {
+describe("the agent reference", () => {
   test("sanity: the registry parser finds the known public surface", () => {
     const names = publicSubcommands();
     // If the regex rots and returns [], every assertion below passes vacuously.
@@ -37,11 +40,11 @@ describe("AGENTS.md", () => {
     expect(names).not.toContain("__schema-mismatch-smoke");
   });
 
-  test("AGENTS.md exists at the repo root", () => {
+  test("the agent reference exists", () => {
     expect(existsSync(AGENT_DOC)).toBe(true);
   });
 
-  test("every public subcommand is documented in AGENTS.md", () => {
+  test("every public subcommand is documented in the agent reference", () => {
     const doc = readFileSync(AGENT_DOC, "utf8");
     // A word boundary after the name: a bare substring would pass for a new
     // command named as a prefix of an already-documented one.
@@ -51,7 +54,7 @@ describe("AGENTS.md", () => {
     expect(missing).toEqual([]);
   });
 
-  test("AGENTS.md covers the agent workflow loop and exit codes", () => {
+  test("the agent reference covers the agent workflow loop and exit codes", () => {
     const doc = readFileSync(AGENT_DOC, "utf8");
     // Headline strings only; the prose around them is free to change.
     expect(doc).toContain("--json");
@@ -59,11 +62,28 @@ describe("AGENTS.md", () => {
     expect(doc).toContain("@spec");
   });
 
-  test("README links to AGENTS.md so agents find their path from the repo root", () => {
-    const readme = readFileSync(README, "utf8");
-    // The explicit markdown link form — a bare "AGENTS.md" substring would
-    // be vacuously satisfied by prose mentioning the filename.
-    expect(readme).toContain("[AGENTS.md](AGENTS.md)");
+  test("the builder AGENTS.md links to the agent reference", () => {
+    expect(readFileSync(BUILDER_DOC, "utf8")).toContain(`](${REFERENCE_PATH})`);
+  });
+
+  test("README links to the agent reference so agents find their path from the repo root", () => {
+    expect(readFileSync(README, "utf8")).toContain(`](${REFERENCE_PATH})`);
+  });
+
+  test("states the three-digit requirement-id format rule", () => {
+    // @spec CHRT-023 unit
+    expect(readFileSync(AGENT_DOC, "utf8")).toMatch(/three-digit zero-padded number/);
+  });
+
+  test("states the requirement-authoring standard", () => {
+    // @spec CHRT-024 unit
+    const doc = readFileSync(AGENT_DOC, "utf8");
+    expect(doc).toContain(RULE_ZERO);
+    expect(doc).toContain("When an unknown requirement id is passed");
+    expect(doc).toContain("make sense on its own");
+    expect(doc).toContain("The one-promise lint");
+    for (const rule of STATEMENT_RULES) expect(doc).toContain(`| \`${rule}\` |`);
+    for (const reason of Object.values(STATEMENT_RULE_REASONS)) expect(doc).toContain(reason);
   });
 });
 
@@ -74,18 +94,29 @@ function readOrEmpty(path: string): string {
   return existsSync(path) ? readFileSync(path, "utf8") : "";
 }
 
-describe("AGENTS.md authoring playbook and the req-author skill", () => {
-  test("AGENTS.md carries the brief→mint authoring playbook section", () => {
-    // @spec AUTHOR-010 unit
+describe("the authoring playbook and the req-author skill", () => {
+  test("the agent reference carries the brief→mint authoring playbook section", () => {
+    // @spec AUTHOR-013 unit
     const doc = readFileSync(AGENT_DOC, "utf8");
     expect(doc).toContain("## Authoring requirements (brief → mint)");
   });
 
-  test("the playbook points at the TAXONOMY authoring standard without ghost section numbers", () => {
-    // @spec AUTHOR-005 unit
-    const agents = readFileSync(AGENT_DOC, "utf8");
-    expect(agents).toContain("Requirement authoring standard");
-    expect(agents).not.toContain("4.10");
+  test("the playbook refers to the authoring standard in the same document", () => {
+    // @spec AUTHOR-012 unit
+    const doc = readFileSync(AGENT_DOC, "utf8");
+    const playbook = doc.slice(doc.indexOf("## Authoring requirements (brief → mint)"));
+    expect(doc.indexOf("## Requirement authoring standard")).toBeGreaterThan(-1);
+    expect(playbook).toContain("requirement authoring standard above");
+    expect(playbook.slice(0, playbook.indexOf("## Command reference"))).not.toContain(
+      "| Always true |",
+    );
+  });
+
+  test("the req-author skill opens with rule 0 and points at the agent reference", () => {
+    const skill = readOrEmpty(SKILL_MD);
+    expect(skill).toContain(`> ${RULE_ZERO}`);
+    expect(skill).toContain("agent-reference.md");
+    expect(skill).not.toContain("TAXONOMY");
   });
 
   test("the req-author SKILL.md exists with frontmatter + approval gate + rubric cross-ref + real-CLI dogfood", () => {

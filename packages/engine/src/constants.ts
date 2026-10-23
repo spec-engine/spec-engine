@@ -15,7 +15,7 @@ export const SPEC_FILENAME = "SPEC.json";
 export const MEMBER_CONFIG_FILENAME = "spec-engine.member.json";
 export const PLATFORM_MANIFEST_FILENAME = "spec-engine.platform.json";
 
-/** 0 success, 1 a gate or check failed on real data, 2 usage or precondition (AGENTS.md). */
+/** 0 success, 1 a gate or check failed on real data, 2 usage or precondition (the agent reference). */
 export const EXIT = { OK: 0, FAILURE: 1, USAGE: 2 } as const;
 
 export function defaultIndexPath(platformDir: string): string {
