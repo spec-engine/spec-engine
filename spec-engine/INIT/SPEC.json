@@ -281,11 +281,11 @@
     },
     {
       "id": "INIT-018",
-      "status": "active",
+      "status": "superseded",
       "statement": "If the resolved target (post-symlink) lies inside a spec-engine/ tree or is a platform directory itself, then spec init shall refuse to scaffold and exit 2.",
       "why": "A member pin inside the canonical spec tree registers the requirement source as a member of itself — discovery then scans spec text as code and coverage misreports.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "INIT-042",
       "relates": [],
       "livesIn": [
         "packages/engine/src/operations/init.ts"
@@ -293,7 +293,8 @@
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 22
     },
     {
       "id": "INIT-019",
@@ -730,6 +731,147 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "INIT-042",
+      "status": "active",
+      "statement": "If the resolved target (post-symlink) lies inside a spec-engine/ tree, then spec init shall refuse to scaffold and exit 2.",
+      "why": "A member pin inside the canonical spec tree registers the requirement source as a member of itself — discovery then scans spec text as code and coverage misreports.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/init.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "INIT-043",
+      "status": "active",
+      "statement": "When spec init targets a platform directory, the spec engine shall write the agent onboarding files there and no member config.",
+      "why": "A lone repository is its own platform directory, so refusing it leaves the first adopter's coding agent with no reference, skill, MCP server, or guard hook.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/init.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/engine/src/commands/init.test.ts"
+      ]
+    },
+    {
+      "id": "INIT-044",
+      "status": "active",
+      "statement": "When spec init onboards a repository, the spec engine shall write the bundled agent reference into that repository's AGENTS.md inside a marker-delimited block, creating the file when it is absent.",
+      "why": "Every coding-agent harness reads AGENTS.md; without the reference there, an adopter's agent knows the spec CLI exists but not its commands, tags, or exit codes.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/agentSurface.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/engine/src/operations/agentSurface.test.ts"
+      ]
+    },
+    {
+      "id": "INIT-045",
+      "status": "active",
+      "statement": "When spec init onboards a repository, the spec engine shall install the bundled req-author skill there, replacing a differing copy only under --force.",
+      "why": "Without the skill an agent mints requirements straight from a ticket, skipping the drafting, quoting, and approval steps that keep requirements clean; a silent overwrite would discard a team's local edits.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/agentSurface.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/engine/src/operations/agentSurface.test.ts"
+      ]
+    },
+    {
+      "id": "INIT-046",
+      "status": "active",
+      "statement": "When spec init onboards a repository of a platform whose MCP server config has no spec entry, the spec engine shall add a spec server entry that serves that platform, creating the config when it is absent.",
+      "why": "Without the entry an agent cannot call the spec tools and falls back to guessing requirement ids; an entry aimed at a member directory instead of the platform fails to start.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/agentSurface.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/engine/src/operations/agentSurface.test.ts"
+      ]
+    },
+    {
+      "id": "INIT-047",
+      "status": "active",
+      "statement": "When spec init onboards a repository of a platform that has a hooks directory without a pre-commit hook, the spec engine shall write a pre-commit hook that runs spec guard against that platform and exits with its code.",
+      "why": "Without a local guard a commit that deletes a live requirement or its last test is caught only in CI, after the change has been pushed.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/agentSurface.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/engine/src/operations/agentSurface.test.ts"
+      ]
+    },
+    {
+      "id": "INIT-048",
+      "status": "active",
+      "statement": "When AGENTS.md already holds the agent-reference markers, spec init shall replace only the text between them, so a second run with the same bundle changes no file.",
+      "why": "A re-run that appends a second block or rewrites unchanged files duplicates the reference and churns every adopter's diff on each upgrade.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/agentSurface.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/engine/src/operations/agentSurface.test.ts"
+      ]
+    },
+    {
+      "id": "INIT-049",
+      "status": "active",
+      "statement": "If an onboarding file spec init would write already holds content the spec engine did not author, then spec init shall leave that content unchanged and print what to add instead.",
+      "why": "A pre-commit hook, an MCP server entry, or instructions a team wrote are theirs; overwriting them breaks their tooling without warning.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/agentSurface.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/engine/src/operations/agentSurface.test.ts"
+      ]
     }
   ],
   "grammarSeverity": "error"
