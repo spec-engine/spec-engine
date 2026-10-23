@@ -24,6 +24,7 @@
               "DEPRECATED_REFERENCED",
               "STATEMENT_GRAMMAR",
               "STATEMENT_RULES",
+              "POSSIBLE_DUPLICATE",
               "DRAFT_REFERENCED",
               "GLOSSARY_DRIFT",
               "ORPHAN_REQ",
@@ -133,6 +134,20 @@
               "off"
             ]
           }
+        }
+      },
+      "additionalProperties": false
+    },
+    "duplicates": {
+      "type": "object",
+      "properties": {
+        "threshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "off": {
+          "type": "boolean"
         }
       },
       "additionalProperties": false
