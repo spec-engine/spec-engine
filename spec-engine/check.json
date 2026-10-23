@@ -1,4 +1,5 @@
 {
+  "$schema": "https://docs.spec-engine.dev/schema/v1/check.json",
   "severity": [{ "code": "UNVERIFIED_REQ", "severity": "error" }],
   "statementRules": {
     "exemptNames": [

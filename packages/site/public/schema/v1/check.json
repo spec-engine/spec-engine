@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docs.spec-engine.dev/schema/v1/check.json",
+  "title": "Spec Engine check configuration (check.json)",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "severity": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "DUP_ID",
+              "BROKEN_SUPERSEDE",
+              "BAD_STATUS",
+              "DANGLING_TAG",
+              "SUPERSEDED_REFERENCED",
+              "DEPRECATED_REFERENCED",
+              "STATEMENT_GRAMMAR",
+              "STATEMENT_RULES",
+              "DRAFT_REFERENCED",
+              "GLOSSARY_DRIFT",
+              "ORPHAN_REQ",
+              "UNVERIFIED_REQ",
+              "DRIFT",
+              "NO_SPEC_CONFIG",
+              "BROKEN_RELATES",
+              "RELATES_SUPERSEDED",
+              "CYCLIC_SUPERSEDE",
+              "SELF_RELATES",
+              "UNKNOWN_ROLE",
+              "UNSOURCED_CHANGE",
+              "INVALID_DOMAIN_FILE",
+              "MIGRATION_PENDING",
+              "UNPROVEN_REQ",
+              "PROOFS_UNCONFIRMED",
+              "REQUIREMENT_REMOVED",
+              "IMPL_LOST",
+              "VERIFY_LOST",
+              "SPEC_FILE_DELETED",
+              "UNAPPROVED_STATUS_FLIP",
+              "PARTIAL_PROPAGATION",
+              "MALFORMED_FILE",
+              "MEMBER_MISSING",
+              "MARKER_MISSING",
+              "MARKER_MISMATCH",
+              "UNLISTED_REPO",
+              "PLATFORM_NOT_LOCATED",
+              "UNDECLARED_PLATFORM",
+              "SCAN_TRUNCATED",
+              "UNDEFINED_TERM",
+              "ORPHAN_TERM",
+              "TERM_DRIFT",
+              "SUPERSEDED_TERM_REFERENCED"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "error",
+              "warning",
+              "off"
+            ]
+          },
+          "match": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "severity"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "statementRules": {
+      "type": "object",
+      "properties": {
+        "maxLength": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "jargon": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "exemptNames": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "severity": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "enum": [
+              "one-sentence",
+              "length",
+              "no-file-path",
+              "no-test-narration",
+              "no-toolchain-layout",
+              "no-history",
+              "no-jargon",
+              "no-tool-statement"
+            ]
+          },
+          "additionalProperties": {
+            "type": "string",
+            "enum": [
+              "error",
+              "warning",
+              "off"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

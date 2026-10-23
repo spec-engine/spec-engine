@@ -11,6 +11,7 @@
       "!**/node_modules",
       "!**/dist",
       "!**/SPEC.json",
+      "!packages/site/public/schema",
       "!fixtures",
       "!examples",
       "!docs",
