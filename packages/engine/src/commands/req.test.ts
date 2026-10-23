@@ -10,11 +10,11 @@
 // @spec REQ-026
 // @spec REQ-030
 // @spec REQ-032
-// @spec REQ-037
+// @spec REQ-061
 // @spec REQ-039
 
 import { afterEach, beforeEach, describe, expect, mock, setSystemTime, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { nextRequirementId } from "../authoring/domains";
@@ -219,15 +219,8 @@ describe("spec req — interactive authoring", () => {
   test("TTY append: three answers → the entry saves, updated: bumped, id round-trips", async () => {
     await seed(tmp, "BILLING", 9, { updated: "2020-01-01" });
     expect(JSON.parse(readSpec(tmp, "BILLING")).updated).toBe("2020-01-01");
-    // A resolvable @-ref target for the happy path (no warning expected).
-    mkdirSync(join(tmp, "api", "src"), { recursive: true });
-    writeFileSync(join(tmp, "api", "src", "renew.ts"), "// seam\n");
     setIsTTY(true);
-    mockReadlineQueue([
-      "Charge renewals at current price",
-      "Revenue correctness",
-      "@api/src/renew.ts",
-    ]);
+    mockReadlineQueue(["Charge renewals at current price", "Revenue correctness"]);
 
     await runReq("bil", tmp);
 
@@ -237,7 +230,7 @@ describe("spec req — interactive authoring", () => {
     expect(added.status).toBe("active");
     expect(added.statement).toBe("Charge renewals at current price");
     expect(added.why).toBe("Revenue correctness");
-    expect(added.livesIn).toEqual(["@api/src/renew.ts"]);
+    expect(added).not.toHaveProperty("livesIn");
     expect(domain.updated).toBe(localToday());
     expect(await nextRequirementId(tmp, "BILLING")).toBe("BILLING-011");
 
@@ -271,13 +264,11 @@ describe("spec req — interactive authoring", () => {
   test("unresolvable @-ref warns to stderr but the entry STILL saves", async () => {
     await seed(tmp, "BILLING", 1, { updated: "2020-01-01" });
     setIsTTY(true);
-    mockReadlineQueue(["Track refunds end to end", "Money correctness", "@does/not/exist.ts", ""]);
+    mockReadlineQueue(["Track refunds end to end", "see @does/not/exist.ts"]);
 
     await runReq("bil", tmp);
 
     expect(errs.some((l) => l.includes("warning") && l.includes("@does/not/exist.ts"))).toBe(true);
-    // The unresolvable @-ref was in the Binds prompt (not persisted in JSON),
-    // but the entry STILL saved — the warning never blocks the write.
     const domain = JSON.parse(readSpec(tmp, "BILLING"));
     const added = domain.requirements.find((r: { id: string }) => r.id === "BILLING-002");
     expect(added).toBeDefined();
@@ -379,7 +370,6 @@ describe("spec req — domain with no SPEC.json", () => {
       key: "GHOST",
       statement: "x",
       why: "",
-      livesIn: [],
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -440,7 +430,6 @@ describe("spec req — field-flag authoring", () => {
         platformDir: tmp,
         text: "Charge renewals at the current plan price",
         why: "revenue path",
-        lives: "lib-billing/renew.ts",
       },
       rawArgs: [],
     });
@@ -449,7 +438,6 @@ describe("spec req — field-flag authoring", () => {
     expect(entry.status).toBe("active");
     expect(entry.statement).toBe("Charge renewals at the current plan price");
     expect(entry.why).toBe("revenue path");
-    expect(entry.livesIn).toEqual(["lib-billing/renew.ts"]);
     expect(await nextRequirementId(tmp, "BILLING")).toBe("BILLING-011");
     expect(logs.join("\n")).toContain("BILLING-010");
   });
@@ -479,7 +467,7 @@ describe("spec req — field-flag authoring", () => {
     expect(added().statement).toBe("tty flag-authored");
   });
 
-  test("--why/--lives without --text is a usage error (exit 2, nothing written)", async () => {
+  test("--why without --text is a usage error (exit 2, nothing written)", async () => {
     setIsTTY(undefined);
     const before = readSpec(tmp, "BILLING");
     await expectExit2(() =>
@@ -494,7 +482,7 @@ describe("spec req — field-flag authoring", () => {
 
   test("--text + --draft appends the entry as draft, every other field as the Active path writes it", async () => {
     setIsTTY(undefined);
-    const fields = { text: "drafted rule", why: "revenue path", lives: "lib-billing/renew.ts" };
+    const fields = { text: "drafted rule", why: "revenue path", relates: "BILLING-001" };
     await reqRun({
       args: { domainPrefix: "BILLING", platformDir: tmp, ...fields, draft: true },
       rawArgs: [],
@@ -506,41 +494,6 @@ describe("spec req — field-flag authoring", () => {
 
     expect(drafted.status).toBe("draft");
     expect({ ...drafted, id: "", status: "" }).toEqual({ ...active, id: "", status: "" });
-  });
-
-  // @spec REQ-042 unit
-  test("repeated and comma-separated --lives record every path", async () => {
-    setIsTTY(undefined);
-    await reqRun({
-      args: { domainPrefix: "BILLING", platformDir: tmp, text: "multi-home rule", lives: "c.ts" },
-      rawArgs: ["--text", "multi-home rule", "--lives", "a.ts", "--lives", "b.ts, c.ts"],
-    });
-    expect(added().livesIn).toEqual(["a.ts", "b.ts", "c.ts"]);
-  });
-
-  // @spec REQ-056 unit
-  // @spec SCHM-036 unit
-  test("repeated and comma-separated --tests record every path in verifiedIn", async () => {
-    setIsTTY(undefined);
-    await reqRun({
-      args: { domainPrefix: "BILLING", platformDir: tmp, text: "tested rule", tests: "c.test.ts" },
-      rawArgs: ["--text", "tested rule", "--tests", "a.test.ts", "--tests", "b.test.ts, c.test.ts"],
-    });
-    expect(added().verifiedIn).toEqual(["a.test.ts", "b.test.ts", "c.test.ts"]);
-    expect(added().livesIn).toEqual([]);
-  });
-
-  test("--tests without --text is a usage error (exit 2, nothing written)", async () => {
-    setIsTTY(undefined);
-    const before = readSpec(tmp, "BILLING");
-    await expectExit2(() =>
-      reqRun({
-        args: { domainPrefix: "BILLING", platformDir: tmp, tests: "a.test.ts" },
-        rawArgs: [],
-      }),
-    );
-    expect(errs.join("\n")).toContain("--tests");
-    expect(readSpec(tmp, "BILLING")).toBe(before);
   });
 
   test("--draft with no --text off a TTY is a usage error (exit 2, nothing written)", async () => {

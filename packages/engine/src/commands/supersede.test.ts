@@ -38,7 +38,6 @@ beforeEach(async () => {
   const current = await billing.supersede(ancient.id, {
     statement: "charge at signup price",
     why: "revenue",
-    livesIn: ["renew.ts"],
   });
   expect(current.newId).toBe(ACTIVE);
   await fx.member("api", {
@@ -108,7 +107,6 @@ describe("spec supersede — happy path", () => {
     expect(succ?.status).toBe("active");
     expect(succ?.statement).toBe("charge at the CURRENT plan price");
     expect(succ?.why).toBe("revenue");
-    expect(succ?.livesIn).toEqual(["renew.ts"]);
     expect(domain.specVersion).toBeUndefined();
     expect(logs).toHaveLength(1);
     const out = JSON.parse(logs[0] ?? "");
@@ -120,33 +118,21 @@ describe("spec supersede — happy path", () => {
     expect(retagFiles).toEqual(["api/src/renew.ts", "api/test/renew.test.ts"]);
   });
 
-  test("--why/--lives flags override the copied fields", async () => {
+  test("--why overrides the copied why", async () => {
     await supersedeRun({
       args: {
         id: ACTIVE,
         platformDir: platform,
         text: "new truth",
         why: "fresh rationale",
-        lives: "checkout.ts",
       },
       rawArgs: [],
     });
     const succ = (await billing.read()).requirements.find((r) => r.id === SUCCESSOR);
     expect(succ?.why).toBe("fresh rationale");
-    expect(succ?.livesIn).toEqual(["checkout.ts"]);
   });
 
-  // @spec REQ-055 unit
-  test("repeated --lives sets the successor's whole livesIn list", async () => {
-    await supersedeRun({
-      args: { id: ACTIVE, platformDir: platform, text: "new truth", lives: "b.ts" },
-      rawArgs: ["--lives", "a.ts", "--lives", "b.ts"],
-    });
-    const succ = (await billing.read()).requirements.find((r) => r.id === SUCCESSOR);
-    expect(succ?.livesIn).toEqual(["a.ts", "b.ts"]);
-  });
-
-  test("--binds is accepted but not persisted (the envelope has no binds); lives still copied", async () => {
+  test("--binds is accepted but not persisted (the envelope has no binds)", async () => {
     await supersedeRun({
       args: {
         id: ACTIVE,
@@ -162,7 +148,6 @@ describe("spec supersede — happy path", () => {
     const succ = raw.requirements.find((r) => r.id === SUCCESSOR);
     expect(succ).toBeDefined();
     expect("binds" in (succ ?? {})).toBe(false);
-    expect(succ?.livesIn).toEqual(["renew.ts"]); // still copied
   });
 
   // @spec REQ-036
@@ -194,45 +179,24 @@ describe("spec supersede — the successor keeps what nobody chose to drop", () 
     await plantEdit(platform, "BILLING", (doc) => {
       const entry = entryOf(doc, ACTIVE);
       entry.relates = [HISTORY];
-      entry.livesIn = ["renew.ts", "price.ts"];
-      entry.verifiedIn = ["renew.test.ts"];
       entry.cites = [{ term: "TERM-001", pinned: 1 }];
       entry.section = "Charging";
       entry.issues = [{ role: "created", id: "ENG-1" }];
     });
   });
 
-  // @spec REQ-058 unit
+  // @spec REQ-063 unit
   // @spec REQ-053 unit
-  test("relates, every livesIn and verifiedIn entry, cites, and section copy; issues hold only the new created row", async () => {
+  test("relates, cites, and section copy; issues hold only the new created row", async () => {
     await supersedeRun({
       args: { id: ACTIVE, platformDir: platform, text: "charge at renewal", issue: "ENG-9" },
       rawArgs: [],
     });
     const succ = (await billing.read()).requirements.find((r) => r.id === SUCCESSOR);
     expect(succ?.relates).toEqual([HISTORY]);
-    expect(succ?.livesIn).toEqual(["renew.ts", "price.ts"]);
-    expect(succ?.verifiedIn).toEqual(["renew.test.ts"]);
     expect(succ?.cites).toEqual([{ term: "TERM-001", pinned: 1 }]);
     expect(succ?.section).toBe("Charging");
     expect(succ?.issues).toEqual([{ role: "created", id: "ENG-9" }]);
-  });
-
-  // @spec REQ-057 unit
-  test("--tests replaces the copied verifiedIn; an empty value clears it", async () => {
-    await supersedeRun({
-      args: { id: ACTIVE, platformDir: platform, text: "charge at renewal", tests: "b.test.ts" },
-      rawArgs: ["--tests", "a.test.ts,b.test.ts"],
-    });
-    let succ = (await billing.read()).requirements.find((r) => r.id === SUCCESSOR);
-    expect(succ?.verifiedIn).toEqual(["a.test.ts", "b.test.ts"]);
-    await supersedeRun({
-      args: { id: SUCCESSOR, platformDir: platform, text: "charge on renewal", tests: "" },
-      rawArgs: ["--tests", ""],
-    });
-    const next = (await billing.read()).requirements.find((r) => r.id === succ?.id)?.supersededBy;
-    succ = (await billing.read()).requirements.find((r) => r.id === next);
-    expect(succ?.verifiedIn).toEqual([]);
   });
 
   // @spec REQ-051 unit

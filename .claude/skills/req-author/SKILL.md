@@ -68,14 +68,14 @@ loop consumes what it produces.
    of a new id.
 
 5. **Present the batch and STOP.** For each candidate show: the domain, the
-   statement, the why, the `livesIn` file, and the **source quote** (or the
+   statement, the why, and the **source quote** (or the
    `inferred` label). Write nothing until the human approves. This gate is
    mandatory.
 
 6. **On approval, mint via the real CLI:**
 
    ```
-   spec req <domain> --text "<statement>" --why "<what breaks>" --lives "<file>"
+   spec req <domain> --text "<statement>" --why "<what breaks>"
    ```
 
    (or the equivalent `spec mcp` tools). `spec req` validates through the one

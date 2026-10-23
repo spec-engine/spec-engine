@@ -90,6 +90,27 @@ describe("spec get", () => {
     expect(out).toContain("Active");
   });
 
+  // @spec MAP-005 unit
+  test("the record lists its implementing and verifying tag sites", async () => {
+    await run({
+      args: { reqId: "BILLING-009", platformDir, json: true, noPrompt: true },
+      rawArgs: [],
+    });
+    const row = JSON.parse(logs.join("\n"));
+    expect(row.implemented_in).toEqual([
+      { repo: "api", file: "api/src/renew.ts", line: 1, kind: "implements" },
+    ]);
+    expect(row.verified_in).toEqual([
+      { repo: "api", file: "api/test/renew.e2e.test.ts", line: 1, level: "e2e" },
+    ]);
+
+    logs = [];
+    await run({ args: { reqId: "BILLING-009", platformDir, noPrompt: true }, rawArgs: [] });
+    expect(logs.join("\n")).toEndWith(
+      "implemented in:\n  api/src/renew.ts:1\nverified in:\n  api/test/renew.e2e.test.ts:1",
+    );
+  });
+
   test("an unknown id is [] on stdout, guidance on stderr, exit 0", async () => {
     const code = await exitCode(() =>
       run({ args: { reqId: "BILLING-999", platformDir, json: true, noPrompt: true }, rawArgs: [] }),

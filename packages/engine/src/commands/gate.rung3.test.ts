@@ -96,13 +96,10 @@ describe("spec gate rung-3 flow", () => {
 
     // A new requirement with no supersession: changed_at_version defaults
     // to 1.
-    const minted = await TestPlatform.at(clone)
-      .handle("BILLING")
-      .req({
-        statement: "Third-step demonstration requirement added mid-test.",
-        why: "Locks the rung-3 narrative.",
-        livesIn: ["renew.ts"],
-      });
+    const minted = await TestPlatform.at(clone).handle("BILLING").req({
+      statement: "Third-step demonstration requirement added mid-test.",
+      why: "Locks the rung-3 narrative.",
+    });
     expect(minted.id).toBe("BILLING-010");
 
     logs.length = 0;

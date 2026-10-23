@@ -13,9 +13,6 @@
       "supersedes": null,
       "supersededBy": "DIST-005",
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/docs.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 2,
       "aliases": [],
@@ -29,9 +26,6 @@
       "supersedes": null,
       "supersededBy": "DIST-007",
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/docs.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 3,
       "aliases": [],
@@ -45,9 +39,6 @@
       "supersedes": null,
       "supersededBy": "DIST-009",
       "relates": [],
-      "livesIn": [
-        "packages/engine/scripts/npm-wrapper.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 4,
       "aliases": [],
@@ -61,9 +52,6 @@
       "supersedes": null,
       "supersededBy": "DIST-010",
       "relates": [],
-      "livesIn": [
-        "packages/engine/scripts/build-npm.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 5,
       "aliases": [],
@@ -77,9 +65,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/docs.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -93,9 +78,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/docs.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -108,9 +90,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/docs.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -124,9 +103,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/docs.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -139,9 +115,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/scripts/npm-wrapper.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -155,9 +128,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/scripts/build-npm.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -171,9 +141,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/scripts/build-npm.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -186,9 +153,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "scripts/arch-fences.sh"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -201,9 +165,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "scripts/arch-fences.sh"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -216,9 +177,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "scripts/arch-fences.sh"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -231,13 +189,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        ".github/workflows/ci.yml",
-        "release-please-config.json",
-        ".release-please-manifest.json",
-        "scripts/arch-fences.sh",
-        "scripts/release-config.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -250,9 +201,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        ".github/workflows/ci.yml"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -265,9 +213,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        ".github/workflows/ci.yml"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -280,11 +225,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "renovate.json",
-        "scripts/arch-fences.sh",
-        "scripts/release-config.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []

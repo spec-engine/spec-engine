@@ -63,7 +63,7 @@ Render the cross-repo coverage matrix. **Exit codes:** 0 / 2
 
 ### `spec get <KEY-NNN> [platformDir]`
 
-Print one requirement's full record (status, key, seq, statement, why, versions, source location). `--json` prints the same object `GET /api/requirements/:id` serves. An unknown id prints `[]` with guidance on stderr and exits 0. **Exit codes:** 0 / 2
+Print one requirement's full record (status, key, seq, statement, why, versions, source location) and the `file:line` of every tag that names it: `implemented_in` (implementing and documenting tags, each with its `kind`) and `verified_in` (verifying tags, each with its `level`), sorted by repo, file, and line. Tags are the only record of where a requirement is built and proved. `--json` prints the same object `GET /api/requirements/:id` and `spec_get` serve, and the webapp `/requirements/:id` page shows the same lists. An unknown id prints `[]` with guidance on stderr and exits 0. **Exit codes:** 0 / 2
 
 ### `spec list [platformDir] [--domain KEY] [--status S]`
 
@@ -123,13 +123,13 @@ Set a domain's statement grammar (`--grammar ears|freeform`) and/or its severity
 
 ### `spec migrate [platformDir]`
 
-One-time hard cutover: convert every legacy canonical `SPEC.md` to a schema-validated sibling `SPEC.json`, then delete the `SPEC.md`. Idempotent — skips already-migrated dirs.
+Strip the retired `livesIn` and `verifiedIn` fields from every `SPEC.json` that still carries them, through the validated write seam. A file without them is not touched, so a second run writes nothing. Until a book is migrated the fields are read and ignored, and the next write of a file drops them. `--json` prints `{ files }`.
 
 **Exit codes:** 0 / 2
 
 ### `spec req <domain-prefix> [platformDir]`
 
-**Piped:** prints the next unused requirement ID (e.g. `BILLING-010`) — zero prompts, zero writes. **TTY:** interactive authoring. **`--text` (+ `--why` / `--lives` / `--tests` / `--relates`):** appends a born-active entry non-interactively through the validated write seam. **`--draft`:** the entry is born Draft instead (promote it with `spec accept`). Prefix is case-insensitive (`bil` → `BILLING`; ambiguous → exit 2). `spec req <domain>` alone prints the domain's charter before authoring.
+**Piped:** prints the next unused requirement ID (e.g. `BILLING-010`) — zero prompts, zero writes. **TTY:** interactive authoring. **`--text` (+ `--why` / `--relates` / `--issue`):** appends a born-active entry non-interactively through the validated write seam. **`--draft`:** the entry is born Draft instead (promote it with `spec accept`). Prefix is case-insensitive (`bil` → `BILLING`; ambiguous → exit 2). `spec req <domain>` alone prints the domain's charter before authoring.
 
 **Exit codes:** 0 / 2
 
@@ -154,7 +154,7 @@ The GLOSSARY.md round-trip. Default: **generate** GLOSSARY.md from the TERM stor
 
 ### `spec supersede <reqId> [platformDir]`
 
-The post-ship lifecycle move, mechanized. Flips the entry to superseded, mints the successor (`--text` required non-TTY; `--why`, `--lives`, `--tests`, `--relates`, cites, aliases, term, and section default to copies of the predecessor's; issues do not carry over), reindexes, and prints the **retag worklist** — every code site still on the old ID. The target must be Active.
+The post-ship lifecycle move, mechanized. Flips the entry to superseded, mints the successor (`--text` required non-TTY; `--why`, `--relates`, cites, aliases, term, and section default to copies of the predecessor's; issues do not carry over), reindexes, and prints the **retag worklist** — every code site still on the old ID. The target must be Active.
 
 On a requirement domain the reported `spec_version` is the **derived** domain version after the supersession — no authored counter is written, and `--no-bump` is a no-op (there is no counter to hold back). On the reserved TERM domain the authored `specVersion` still bumps (it is the term-drift pin) and `--no-bump` opts out.
 
@@ -164,13 +164,13 @@ On a requirement domain the reported `spec_version` is the **derived** domain ve
 
 ### `spec move <reqId> <NEW-DOMAIN> [platformDir]`
 
-Cross-domain supersede for taxonomy reorganization: mints the successor as the next id in `<NEW-DOMAIN>` (which must exist), carrying the source's fields (`--text`/`--why`/`--lives`/`--tests` override), flips the source to superseded with a cross-domain `supersededBy`, and emits the retag worklist. Both envelopes validate before either is written — a reject never half-applies. Only Active requirements move; moving into the source's own domain is a usage error (use `supersede`).
+Cross-domain supersede for taxonomy reorganization: mints the successor as the next id in `<NEW-DOMAIN>` (which must exist), carrying the source's fields (`--text`/`--why` override), flips the source to superseded with a cross-domain `supersededBy`, and emits the retag worklist. Both envelopes validate before either is written — a reject never half-applies. Only Active requirements move; moving into the source's own domain is a usage error (use `supersede`).
 
 **Exit codes:** 0 / 2
 
 ### `spec amend <reqId> [platformDir]`
 
-Revise a requirement in place — same ID, no version change (the domain version only derives from supersessions). Field flags name what changes (`--text`/`--why`/`--lives`/`--tests`/`--relates`, at least one); untouched fields stay byte-identical. `--tests` sets `verifiedIn`. `--lives`, `--tests`, and `--relates` repeat or comma-separate and replace the whole list; an empty value clears it. Only Active and Draft entries amend. A requirement present in its domain file at the newest `v*` tag merged into HEAD is released: its `--text` and `--why` refuse with exit 2 and name `spec supersede`; `--lives`, `--tests`, and `--relates` still write in place. With no `v*` tag or no git, nothing is released.
+Revise a requirement in place — same ID, no version change (the domain version only derives from supersessions). Field flags name what changes (`--text`/`--why`/`--relates`, at least one); untouched fields stay byte-identical. `--relates` repeats or comma-separates and replaces the whole list; an empty value clears it. Only Active and Draft entries amend. A requirement present in its domain file at the newest `v*` tag merged into HEAD is released: its `--text` and `--why` refuse with exit 2 and name `spec supersede`; `--relates` and `--issue` still write in place. With no `v*` tag or no git, nothing is released.
 
 **Exit codes:** 0 / 2
 

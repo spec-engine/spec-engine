@@ -41,9 +41,7 @@ function expectRefusal(result: { ok: boolean; reason?: string; detail?: string }
 describe("a statement that breaks a rule is refused before the write", () => {
   test("req", async () => {
     const before = await billing.raw();
-    expectRefusal(
-      await mint({ platformDir: fx.dir, key: "BILLING", statement: BAD, why: "", livesIn: [] }),
-    );
+    expectRefusal(await mint({ platformDir: fx.dir, key: "BILLING", statement: BAD, why: "" }));
     expect(await billing.raw()).toBe(before);
   });
 
@@ -79,7 +77,6 @@ describe("a statement that breaks a rule is refused before the write", () => {
       key: "BILLING",
       statement: GOOD,
       why: "",
-      livesIn: [],
     });
     expect(minted.ok).toBe(true);
   });

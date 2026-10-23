@@ -25,7 +25,6 @@ beforeEach(async () => {
   await billing.req({
     statement: "renewal charges use the current plan price",
     why: "revenue",
-    livesIn: ["renew.ts"],
   });
   await billing.req({ statement: "refunds reverse the original charge", why: "trust" });
   await fx.member("api", {
@@ -130,7 +129,6 @@ describe("spec mcp — tool surface", () => {
     const { newId } = await billing.supersede("BILLING-001", {
       statement: "successor",
       why: "w",
-      livesIn: [],
     });
     expect(newId).toBe("BILLING-003");
     // propagation takes the SUCCESSOR id: "who migrated to BILLING-003?"
@@ -149,26 +147,6 @@ describe("spec mcp — tool surface", () => {
     await billing.req({ statement: "invoices itemize tax separately", why: "w" });
     const rows = (await call("spec_query", { text: "itemize" })) as Array<{ req_id: string }>;
     expect(rows.map((r) => r.req_id)).toContain("BILLING-003");
-  });
-
-  // @spec REQ-056 unit
-  // @spec REQ-057 unit
-  test("spec_req records verified_in and spec_amend replaces it; an empty list clears it", async () => {
-    const minted = (await call("spec_req", {
-      domain: "bil",
-      text: "The billing service shall email a receipt.",
-      verified_in: ["api/test/receipt.test.ts"],
-    })) as { id: string };
-    const entry = async () =>
-      (await billing.read()).requirements.find((r) => r.id === minted.id)?.verifiedIn;
-    expect(await entry()).toEqual(["api/test/receipt.test.ts"]);
-
-    expect(await call("spec_amend", { id: minted.id, verified_in: ["a.test.ts"] })).toMatchObject({
-      fields_changed: ["tests"],
-    });
-    expect(await entry()).toEqual(["a.test.ts"]);
-    await call("spec_amend", { id: minted.id, verified_in: [] });
-    expect(await entry()).toEqual([]);
   });
 
   test("malformed req_id returns an MCP tool error, not a crash", async () => {

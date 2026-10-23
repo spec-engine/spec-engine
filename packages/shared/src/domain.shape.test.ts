@@ -26,7 +26,7 @@ function handShaped() {
         id: "BILLING-001",
         statement: "The billing service shall charge on renewal.",
         status: "active",
-        livesIn: ["api/renew.ts", "api/price.ts"],
+        issues: [{ role: "created", id: "ENG-1" }],
         relates: ["BILLING-002"],
       },
       {
@@ -62,8 +62,6 @@ describe("validateAndWrite preserves an existing file's shape", () => {
       supersedes: null,
       supersededBy: null,
       relates: [],
-      livesIn: ["api/receipt.ts"],
-      verifiedIn: [],
       issues: [{ role: "created", id: "ENG-7" }],
       aliases: [],
       cites: [],
@@ -77,7 +75,6 @@ describe("validateAndWrite preserves an existing file's shape", () => {
       statement: "The billing service shall email a receipt.",
       status: "active",
       why: null,
-      livesIn: ["api/receipt.ts"],
       issues: [{ role: "created", id: "ENG-7" }],
     };
     (expected.requirements as unknown[]).push(appended);
@@ -92,7 +89,7 @@ describe("validateAndWrite preserves an existing file's shape", () => {
     first.status = "superseded";
     first.supersededBy = "BILLING-009";
     first.relates = [];
-    first.livesIn = [];
+    first.issues = [];
     expect((await validateAndWrite(target, domain, SRC)).ok).toBe(true);
 
     const expected = {
@@ -102,7 +99,7 @@ describe("validateAndWrite preserves an existing file's shape", () => {
           id: "BILLING-001",
           statement: "The billing service shall charge on renewal.",
           status: "superseded",
-          livesIn: [],
+          issues: [],
           relates: [],
           supersededBy: "BILLING-009",
         },
@@ -124,16 +121,16 @@ describe("validateAndWrite preserves an existing file's shape", () => {
     expect(await Bun.file(target).text()).toBe(text(expected));
   });
 
-  // @spec SCHM-036 unit
-  // @spec SCHM-032 unit
-  test("a set verifiedIn is written on its entry alone; entries without the key stay without it", async () => {
-    const domain = await writeAndLoad();
-    entry(domain, 0).verifiedIn = ["api/renew.test.ts"];
-    expect((await validateAndWrite(target, domain, SRC)).ok).toBe(true);
-
-    const expected = handShaped();
-    (expected.requirements[0] as Record<string, unknown>).verifiedIn = ["api/renew.test.ts"];
-    expect(await Bun.file(target).text()).toBe(text(expected));
+  // @spec SCHM-038 unit
+  test("a write drops livesIn and verifiedIn from every entry and changes nothing else", async () => {
+    const legacy = handShaped();
+    Object.assign(legacy.requirements[0] as object, { livesIn: ["api/renew.ts"] });
+    Object.assign(legacy.requirements[1] as object, { verifiedIn: ["api/refund.test.ts"] });
+    await Bun.write(target, text(legacy));
+    const parsed = parseDomainText(await Bun.file(target).text(), SRC);
+    if (!parsed.ok) throw new Error("legacy fields must parse");
+    expect((await validateAndWrite(target, parsed.data, SRC)).ok).toBe(true);
+    expect(await Bun.file(target).text()).toBe(text(handShaped()));
   });
 
   // @spec SCHM-031 unit

@@ -34,7 +34,6 @@ function validScrambledDomain() {
         id: "BILLING-009",
         relates: ["BILLING-002"],
         status: "Active",
-        livesIn: ["api/src/billing/renew.ts"],
         why: "Revenue correctness.",
       },
     ],
@@ -92,8 +91,6 @@ describe("validateAndWrite — deterministic serialization + round-trip", () => 
           supersedes: null,
           supersededBy: null,
           relates: ["BILLING-002"],
-          livesIn: ["api/src/billing/renew.ts"],
-          verifiedIn: [],
           issues: [{ role: "created", id: "JIRA-1" }],
           // aliases/cites default to []; term/section are omitted when absent.
           aliases: [],
@@ -133,7 +130,6 @@ describe("validateAndWrite — deterministic serialization + round-trip", () => 
       "supersedes",
       "supersededBy",
       "relates",
-      "livesIn",
       "issues",
     ].map((k) => text.indexOf(`"${k}"`));
     const reqSorted = [...reqOrder].sort((x, y) => x - y);

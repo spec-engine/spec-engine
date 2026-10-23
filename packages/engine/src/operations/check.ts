@@ -12,7 +12,6 @@ import {
 } from "@spec-engine/shared";
 import { gitLsTree, gitRefResolves, gitShow } from "../base/gitBase";
 import { parseCodeowners } from "../check/codeowners";
-import { brokenFileRefDiagnostics, inFileTagDiagnostics } from "../check/filerefs";
 import { statementGrammarDiagnostics } from "../check/grammar";
 import { changedRules, partialPropagation } from "../check/propagation-teeth";
 import { provenDetermination } from "../check/proven";
@@ -253,9 +252,6 @@ export async function check(input: CheckInput, storage: Storage): Promise<CheckR
   diagnostics.push(
     ...(await statementRulesDiagnostics(platformDir, checkConfig.config.statementRules)),
   );
-  // @spec CHCK-045
-  diagnostics.push(...(await brokenFileRefDiagnostics(platformDir)));
-  diagnostics.push(...(await inFileTagDiagnostics(platformDir, storage.listTags())));
   // @spec CHCK-029
   diagnostics.push(...(await supersedesPointerDiagnostics(platformDir)));
   const glossaryDrift = glossaryDriftDiagnostic(platformDir);

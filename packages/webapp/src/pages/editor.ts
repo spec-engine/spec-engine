@@ -156,14 +156,6 @@ export function mountEditor(app: Hono, bindHost: string = DEFAULT_BIND_HOST): vo
             <textarea name="why" rows="2"></textarea>
           </label>
           <label>
-            Lives in (optional, single path)
-            <input type="text" name="livesIn" placeholder="path/to/impl.ts" />
-          </label>
-          <label>
-            Verified in (optional, single path)
-            <input type="text" name="verifiedIn" placeholder="path/to/impl.test.ts" />
-          </label>
-          <label>
             Relates to (optional, comma-separated ids)
             <input type="text" name="relates" placeholder="BILLING-001, BILLING-002" />
           </label>
@@ -201,8 +193,6 @@ export function mountEditor(app: Hono, bindHost: string = DEFAULT_BIND_HOST): vo
     const form = (await c.req.parseBody()) as Record<string, unknown>;
     const statement = field(form, "statement");
     const why = field(form, "why");
-    const livesIn = field(form, "livesIn");
-    const verifiedIn = field(form, "verifiedIn");
     const relates = field(form, "relates");
 
     // `statement` passes through even when empty so the engine validator rejects
@@ -212,8 +202,6 @@ export function mountEditor(app: Hono, bindHost: string = DEFAULT_BIND_HOST): vo
       statement,
     };
     if (why.length > 0) payload.why = why;
-    if (livesIn.length > 0) payload.livesIn = livesIn;
-    if (verifiedIn.length > 0) payload.verifiedIn = verifiedIn;
     if (relates.length > 0) payload.relates = relates;
 
     const res = await app.request("/api/requirements", {

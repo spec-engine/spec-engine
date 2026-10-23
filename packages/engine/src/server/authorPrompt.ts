@@ -32,7 +32,7 @@ export function renderAuthorPrompt(opts: {
     "4. Self-check: the statement is one sentence of at most 280 characters that names no repository file or folder, test mechanics, CI or tooling layout, history, project jargon, or the tool in use (spec req refuses it otherwise; `spec lint` lists the findings); it makes sense read alone; it describes what the system does, not how the code does it; no expiration dates ('currently', removed things); the why names what breaks if the promise stops holding — never a restatement.",
     "5. Tie each draft to its source: quote the exact phrase of the brief it derives from; label anything you inferred as inferred.",
     "6. Present the full batch (statement, why, placement, source quote) for approval BEFORE writing.",
-    '7. Mint each approved requirement: `spec req <domain> --text "…" --why "…" --lives "…"`.',
+    '7. Mint each approved requirement: `spec req <domain> --text "…" --why "…"`.',
     "8. The originating ticket is provenance only — never a requirement id, never a code tag.",
   ].join("\n");
 }

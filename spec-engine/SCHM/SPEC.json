@@ -13,9 +13,6 @@
       "supersedes": null,
       "supersededBy": "SCHM-011",
       "relates": [],
-      "livesIn": [
-        "@packages/shared/src/schema.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 2,
@@ -30,9 +27,6 @@
       "supersedes": null,
       "supersededBy": "SCHM-012",
       "relates": [],
-      "livesIn": [
-        "@packages/shared/src/storage.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 3,
@@ -47,9 +41,6 @@
       "supersedes": null,
       "supersededBy": "SCHM-013",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/parser/domainJson.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 4,
@@ -64,9 +55,6 @@
       "supersedes": null,
       "supersededBy": "SCHM-015",
       "relates": [],
-      "livesIn": [
-        "@packages/shared/src/domain.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 5,
@@ -81,7 +69,6 @@
       "supersedes": null,
       "supersededBy": "SCHM-016",
       "relates": [],
-      "livesIn": [],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 6,
@@ -96,9 +83,6 @@
       "supersedes": null,
       "supersededBy": "SCHM-018",
       "relates": [],
-      "livesIn": [
-        "@packages/shared/src/schema.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 7,
@@ -113,9 +97,6 @@
       "supersedes": null,
       "supersededBy": "SCHM-019",
       "relates": [],
-      "livesIn": [
-        "@packages/shared/src/schema.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 8,
@@ -130,9 +111,6 @@
       "supersedes": null,
       "supersededBy": "SCHM-020",
       "relates": [],
-      "livesIn": [
-        "@scripts/arch-fences.sh"
-      ],
       "issues": [],
       "supersededAtVersion": 9,
       "aliases": [],
@@ -146,9 +124,6 @@
       "supersedes": null,
       "supersededBy": "SCHM-022",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/indexer/discover.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 10,
       "aliases": [],
@@ -162,9 +137,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/domain.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -177,9 +149,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/schema.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -193,9 +162,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/storage.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -209,9 +175,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/parser/domainJson.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -225,9 +188,6 @@
       "supersedes": null,
       "supersededBy": "INDX-016",
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/parser/domainJson.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 11,
       "aliases": [],
@@ -241,9 +201,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/domain.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -257,9 +214,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/domain.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -273,10 +227,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/storage/sql/diagnostics.ts",
-        "packages/shared/src/schema.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -289,9 +239,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/parser/domainJson.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -305,9 +252,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/parser/domainJson.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -321,9 +265,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "scripts/arch-fences.sh"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -337,9 +278,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/domain.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -352,9 +290,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/indexer/discover.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -368,9 +303,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/indexer/discover.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -383,9 +315,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/mint.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -398,9 +327,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "scripts/arch-fences.sh"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -413,9 +339,6 @@
       "supersedes": null,
       "supersededBy": "SCHM-035",
       "relates": [],
-      "livesIn": [
-        "scripts/arch-fences.sh"
-      ],
       "issues": [],
       "aliases": [],
       "cites": [],
@@ -429,9 +352,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "scripts/arch-fences.sh"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -444,9 +364,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "scripts/arch-fences.sh"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -459,9 +376,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "scripts/arch-fences.sh"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -474,9 +388,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/domain.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -489,9 +400,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/domain.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -504,9 +412,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/domain.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -519,9 +424,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/domain.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -534,9 +436,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/domain.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -549,9 +448,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "scripts/arch-fences.sh"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -564,9 +460,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/domain.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": [],
@@ -580,7 +473,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -593,7 +485,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -606,7 +497,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -619,7 +509,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [],
       "issues": [],
       "aliases": [],
       "cites": []

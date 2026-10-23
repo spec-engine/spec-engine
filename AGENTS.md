@@ -207,7 +207,7 @@ Branch on exit codes, not on output text.
 | `spec check [platformDir] [--ci]` | Integrity + coverage + drift diagnostics | yes (array) | 0 / 1 / 2 |
 | `spec guard [platformDir] [--against <ref>]` | Block a change about to lose a requirement, its last implementation, or its last test | yes (array) | 0 / 1 / 2 |
 | `spec map [platformDir]` | Requirement × repo coverage matrix | yes (array) | 0 / 2 |
-| `spec get <KEY-NNN> [platformDir]` | One requirement's full record; unknown id is `[]` | yes (object, or `[]`) | 0 / 2 |
+| `spec get <KEY-NNN> [platformDir]` | One requirement's full record and its tag sites; unknown id is `[]` | yes (object, or `[]`) | 0 / 2 |
 | `spec list [platformDir] [--domain KEY] [--status S]` | Every requirement record in (key, seq) order, history included | yes (array) | 0 / 2 |
 | `spec query <text> [platformDir]` | Full-text retrieval over requirements | yes (array) | 0 / 2 |
 | `spec relations [platformDir]` | Mermaid graph of `relates` links | yes (array) | 0 / 2 |
@@ -217,7 +217,7 @@ Branch on exit codes, not on output text.
 | `spec gate <repo> <KEY-NNN> [platformDir]` | Approval gate: pass iff Active and the pin covers it | yes (object) | 0 / 1 / 2 |
 | `spec init [repo]` | Declare a member through platform-map and write its `spec-engine.member.json` pin | yes (object) | 0 / 2 |
 | `spec domain new <KEY>` / `spec domain list` / `spec domain grammar <KEY>` | Scaffold / list `spec-engine/<KEY>/SPEC.json` / set its statement grammar and severity | `list`: yes (array); `grammar`: yes (object) | 0 / 2 |
-| `spec migrate [platformDir]` | One-time cutover of every `SPEC.md` to `SPEC.json` (idempotent) | no | 0 / 2 |
+| `spec migrate [platformDir]` | Strip the retired `livesIn` and `verifiedIn` fields from every `SPEC.json` (idempotent) | yes (object) | 0 / 2 |
 | `spec req <domain-prefix> [platformDir]` | Piped: next unused id. `--text`: author non-interactively | yes (object) | 0 / 2 |
 | `spec term …` | Author, list, revise, and confirm glossary terms | yes | 0 / 2 |
 | `spec glossary [platformDir]` | Generate `GLOSSARY.md` from the TERM store; `--migrate`, `--check` | yes (object) | 0 / 1 / 2 |
@@ -309,9 +309,6 @@ Codes, in `DiagnosticCode` order:
 | `UNVERIFIED_REQ` | warning |
 | `DRIFT` | error |
 | `NO_SPEC_CONFIG` | warning |
-| `BROKEN_FILE_REF` | error |
-| `UNIMPLEMENTED_IN_FILE` | warning |
-| `UNVERIFIED_IN_FILE` | warning |
 | `BROKEN_RELATES` | warning |
 | `RELATES_SUPERSEDED` | warning |
 | `CYCLIC_SUPERSEDE` | error |
@@ -357,18 +354,6 @@ present on disk with no `spec-engine.member.json`.
   git the check stays quiet.
 - `BROKEN_SUPERSEDE` covers both stored directions: a `supersededBy` naming a
   missing id, and a `supersedes` naming a missing id or the entry itself.
-- `BROKEN_FILE_REF`: an Active/Draft entry's `livesIn` or `verifiedIn` entry
-  does not resolve to a file under the platform root. Terminal-status entries
-  are exempt.
-- `UNIMPLEMENTED_IN_FILE`: an Active entry's `livesIn` entry names a file the
-  scanner reads, and that file holds no implementing or documenting tag for
-  the requirement.
-- `UNVERIFIED_IN_FILE`: an Active entry's `verifiedIn` entry names a file the
-  scanner reads, and that file holds no verifying tag for the requirement.
-- A file the scanner reads lies inside a member, outside that member's ignored
-  and dot-prefixed directories, and is a tag source or a `.md` document. A
-  JSON config or a file under `.claude/` never raises either in-file code. An
-  entry that does not resolve is `BROKEN_FILE_REF` only.
 - Without `--results`, `check` emits `PROOFS_UNCONFIRMED` and skips proof
   enforcement. The results file is never hashed into `build_id`. Generate it
   with `bun test --reporter=junit --reporter-outfile=.spec-engine/results.xml`.
@@ -406,8 +391,6 @@ present on disk with no `spec-engine.member.json`.
 - The most specific rule wins: an id match, then a domain match, then an
   unscoped rule. Among equals, the later rule wins.
 - `off` drops the row from every output.
-- A platform that lists only tagged files in `livesIn` and `verifiedIn` can
-  raise `UNIMPLEMENTED_IN_FILE` and `UNVERIFIED_IN_FILE` to `error`.
 - Grading runs inside the operation, so the CLI, `spec_check`, and every
   other surface agree, and exit 1 follows the graded severities.
 - A file that fails the schema (unknown code or key, a bad severity, a
@@ -471,12 +454,19 @@ Exit: 0 / 2.
 
 ### spec get
 
-One requirement's full record from the derived index.
+One requirement's full record from the derived index, with the code sites its
+tags name. Tags are the only record of where a requirement is implemented and
+verified.
 
 `--json`: the `Requirement` row `{ id, key, seq, status, superseded_by, text,
 why, source_file, line, spec_version, changed_at_version,
-superseded_at_version }`, the same object `GET /api/requirements/:id` serves.
-Text mode is a one-row table: `ID STATUS KEY SEQ CHANGED_AT TEXT`.
+superseded_at_version }` plus `implemented_in: [{ repo, file, line, kind }]`
+(implementing and documenting tags) and `verified_in: [{ repo, file, line,
+level }]` (verifying tags), each sorted by (repo, file, line). The same object
+is served by `GET /api/requirements/:id` and `spec_get`, and shown on the
+webapp `/requirements/:id` page. Text mode is a one-row table
+(`ID STATUS KEY SEQ CHANGED_AT TEXT`) followed by an `implemented in:` and a
+`verified in:` list of `file:line`.
 
 Exit: 0 / 2. An unknown id prints `[]` on stdout, guidance on stderr, and
 exits 0. A malformed id exits 2.
@@ -637,8 +627,12 @@ Exit: 0 / 2.
 
 ### spec migrate
 
-One-time cutover: every canonical `SPEC.md` becomes a schema-validated sibling
-`SPEC.json`, then the `SPEC.md` is deleted. Idempotent. No `--json`.
+Rewrites every `SPEC.json` that still carries the retired `livesIn` or
+`verifiedIn` fields through the write seam, which drops them. A file without
+them is not touched, so a second run writes nothing. Until a book is migrated,
+the fields are read and ignored, and the next write of a file drops them.
+
+`--json`: `{ files }`, the platform-relative paths rewritten.
 
 Exit: 0 / 2.
 
@@ -648,7 +642,7 @@ Exit: 0 / 2.
 | --- | --- |
 | stdin not a TTY, no `--text` | Print the bare next unused id (e.g. `BILLING-010`), exit 0. No prompts, no writes. |
 | `--json`, no `--text` | Print `{ domain, next_id }`. Same zero-write contract, even on a TTY. |
-| `--text "<statement>"` | Append an Active entry with zero prompts. `--why`, `--lives`, `--tests`, `--relates`, `--issue <ticket>` fill the other fields and error without `--text`. `--lives` builds `livesIn` and `--tests` builds `verifiedIn`. `--lives`, `--tests`, and `--relates` repeat and comma-separate: `--lives a.ts --lives b.ts,c.ts` records all three. |
+| `--text "<statement>"` | Append an Active entry with zero prompts. `--why`, `--relates`, `--issue <ticket>` fill the other fields and error without `--text`. `--relates` repeats and comma-separates: `--relates A-1 --relates A-2,A-3` records all three. |
 | `--draft` | Author the entry as Draft (with `--text`, or on a TTY). Off a TTY without `--text` it exits 2. |
 | TTY, no flags | Interactive authoring. |
 
@@ -705,14 +699,13 @@ in the domain file that holds the target, reindexes fresh, and prints the
 retag worklist (the sites `check` reports as `SUPERSEDED_REFERENCED` until
 retagged).
 
-The successor copies the predecessor's `why`, every `livesIn` and
-`verifiedIn` entry, `relates`, `cites`, `aliases`, `term`, and `section` unless a flag overrides
-the field. Its `issues` hold only the `created` row from `--issue`.
+The successor copies the predecessor's `why`, `relates`, `cites`, `aliases`,
+`term`, and `section` unless a flag overrides the field. Its `issues` hold only the `created` row from `--issue`.
 
 | Flag | Effect |
 | --- | --- |
 | `--text` | The successor statement. Required when not a TTY. |
-| `--why`, `--lives`, `--tests`, `--relates` | Successor fields. Default to copies of the predecessor's. `--lives`, `--tests`, and `--relates` repeat or comma-separate and replace the whole list; an empty value clears it. |
+| `--why`, `--relates` | Successor fields. Default to copies of the predecessor's. `--relates` repeats or comma-separates and replaces the whole list; an empty value clears it. |
 | `--issue <ticket>` | Recorded as `supersedes-via` on the predecessor and `created` on the successor. |
 | `--no-bump` | TERM domain only: keep the authored `specVersion`. No-op elsewhere. |
 
@@ -726,10 +719,8 @@ Exit: 0 / 2. All guards run before the first byte is written.
 ### spec move
 
 Cross-domain supersede. Mints the successor as the next id in `<NEW-DOMAIN>`
-(which must exist), copies `statement`, `why`, every `livesIn` and
-`verifiedIn` entry, `relates`, `cites`, `aliases`, `term`, and `section`
-(`--text`, `--why`, `--lives`, `--tests` override; an empty `--lives` or
-`--tests` clears the list), flips the source to superseded with a cross-domain
+(which must exist), copies `statement`, `why`, `relates`, `cites`, `aliases`,
+`term`, and `section` (`--text` and `--why` override), flips the source to superseded with a cross-domain
 `supersededBy`, and prints the retag worklist. The successor carries no
 `issues`.
 
@@ -747,7 +738,7 @@ Revise an Active or Draft entry in place. Same id, no version change.
 
 | Flag | Effect |
 | --- | --- |
-| `--text`, `--why`, `--lives`, `--tests`, `--relates` | Field to change. At least one flag is required. Untouched fields stay byte-identical. `--tests` sets `verifiedIn`. `--lives`, `--tests`, and `--relates` repeat or comma-separate and replace the whole list (the `--aliases` idiom); an empty value clears it. |
+| `--text`, `--why`, `--relates` | Field to change. At least one flag is required. Untouched fields stay byte-identical. `--relates` repeats or comma-separates and replaces the whole list (the `--aliases` idiom); an empty value clears it. |
 | `--issue <ticket>` | Append `amends-via` provenance. |
 | `--term`, `--aliases` | TERM ids only. |
 
@@ -757,7 +748,7 @@ A released requirement is an Active entry present in its domain file at the
 newest `v*` tag merged into HEAD. Its promise does not change in place: a
 `--text`, `--why`, `--term`, or `--aliases` amend refuses with exit 2, naming
 the tag. Two paths stay open: `spec supersede` changes the promise, and an
-amend of only `--lives`, `--tests`, `--relates`, or `--issue` writes in place. With no
+amend of only `--relates` or `--issue` writes in place. With no
 `v*` tag merged into HEAD, or outside git, every entry is unreleased. A Draft
 entry always amends.
 
@@ -775,8 +766,7 @@ end one with `spec deprecate`.
 Exit: 0 / 2 (the target is not Draft: nothing is written).
 
 - A Draft never raises `ORPHAN_REQ` or `UNVERIFIED_REQ` and is not counted in
-  the coverage report. A code tag on one is `DRAFT_REFERENCED` (warning), and
-  its `livesIn` and `verifiedIn` are still checked by `BROKEN_FILE_REF`.
+  the coverage report. A code tag on one is `DRAFT_REFERENCED` (warning).
 
 ### spec lint
 
@@ -862,14 +852,14 @@ MCP server over stdio. Register it as
 | `spec_check` | diagnostic rows |
 | `spec_propagation` | per-repo migration state |
 | `spec_next_id` | `{ domain, next_id }`, nothing written |
-| `spec_get` | one `Requirement` row, or `[]` for an unknown id; the `spec get --json` shape |
+| `spec_get` | one `Requirement` row with `implemented_in` and `verified_in`, or `[]` for an unknown id; the `spec get --json` shape |
 | `spec_list` | `Requirement` rows in (key, seq) order, `domain` and `status` filters; the `spec list --json` shape |
-| `spec_supersede` | `{ old_id, new_id, file, spec_version, retag }`, the `spec supersede --json` shape; optional `why`, `lives_in`, `verified_in`, `relates`, `issue` arguments |
+| `spec_supersede` | `{ old_id, new_id, file, spec_version, retag }`, the `spec supersede --json` shape; optional `why`, `relates`, `issue` arguments |
 | `spec_deprecate` | `{ id, file, reason, sites }`, the `spec deprecate --json` shape |
 | `spec_accept` | `{ id, file }`, the `spec accept --json` shape |
-| `spec_req` | `{ id, file, clauses? }`, the `spec req --text --json` shape; `domain` (key or prefix) and `text` required, optional `why`, `lives`, `verified_in`, `relates`, `issue`, `draft` |
-| `spec_amend` | `{ id, file, fields_changed }`, the `spec amend --json` shape; `id` required, optional `text`, `why`, `lives`, `verified_in`, `relates`, `issue` |
-| `spec_move` | `{ old_id, new_id, from_file, to_file, source_spec_version, target_spec_version, retag }`, the `spec move --json` shape; `id` and `newDomain` required, optional `text`, `why`, `lives`, `verified_in` |
+| `spec_req` | `{ id, file, clauses? }`, the `spec req --text --json` shape; `domain` (key or prefix) and `text` required, optional `why`, `relates`, `issue`, `draft` |
+| `spec_amend` | `{ id, file, fields_changed }`, the `spec amend --json` shape; `id` required, optional `text`, `why`, `relates`, `issue` |
+| `spec_move` | `{ old_id, new_id, from_file, to_file, source_spec_version, target_spec_version, retag }`, the `spec move --json` shape; `id` and `newDomain` required, optional `text`, `why` |
 
 Every tool call reindexes fresh. stdout is the protocol channel; chrome goes to
 stderr. One prompt, `author_requirements` (`brief` required, `domain`
@@ -902,7 +892,8 @@ command choreography:
    gates the behavior. The why names what breaks; rationale never enters the
    statement. Every draft quotes the phrase of the brief it derives from.
 5. **Mint.** `spec req <domain> --text "<statement>" --why "<what breaks>"
-   --lives "<file>" --tests "<test file>" [--issue <ticket>]`.
+   [--issue <ticket>]`. Where the requirement is built and proved is recorded
+   by the `@spec` tags, never in the entry.
 6. **Provenance, not identity.** The ticket goes in `--issue`, never in an id
    or a tag.
 7. **Verify.** `spec index . && spec check . --ci` (exit 0) and `spec guard .`

@@ -13,9 +13,6 @@
       "supersedes": null,
       "supersededBy": "TRK-004",
       "relates": [],
-      "livesIn": [
-        "@scripts/arch-fences.sh"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 2,
@@ -30,9 +27,6 @@
       "supersedes": null,
       "supersededBy": "TRK-005",
       "relates": [],
-      "livesIn": [
-        "@packages/tracker/src/linear.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 3,
@@ -47,9 +41,6 @@
       "supersedes": null,
       "supersededBy": "TRK-006",
       "relates": [],
-      "livesIn": [
-        "@packages/tracker/src/linear.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 4,
@@ -64,9 +55,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "scripts/arch-fences.sh"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -80,9 +68,6 @@
       "supersedes": null,
       "supersededBy": "TRK-007",
       "relates": [],
-      "livesIn": [
-        "packages/tracker/src/linear.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -97,9 +82,6 @@
       "supersedes": null,
       "supersededBy": "TRK-008",
       "relates": [],
-      "livesIn": [
-        "packages/tracker/src/linear.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -114,9 +96,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/tracker/src/linear.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -129,9 +108,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/tracker/src/linear.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -145,9 +121,6 @@
       "supersededBy": null,
       "relates": [
         "TRK-008"
-      ],
-      "livesIn": [
-        "scripts/arch-fences.sh"
       ],
       "issues": [],
       "aliases": [],

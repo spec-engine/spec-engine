@@ -74,7 +74,7 @@ An operation takes typed input and returns typed data or a typed refusal. It nev
 | `coverageReport` | storage | per-domain rollup | | `GET /api/report` | `spec_coverage_report` |
 | `check` | storage, platform dir, results file, base ref, flags | diagnostics, `build_id`, red or green | `spec check` | | `spec_check` |
 | `nextId` | platform dir, domain key or prefix | the resolved key and next unused id, or `usage` | `spec req` | | `spec_next_id` |
-| `mint` | platform dir, key, statement, why, lives-in, relates, issue, status | the new id and file, or `not_found` / `usage` / `invalid_domain_file` | `spec req --text` | `POST /api/requirements` | `spec_req` |
+| `mint` | platform dir, key, statement, why, relates, issue, status | the new id and file, or `not_found` / `usage` / `invalid_domain_file` | `spec req --text` | `POST /api/requirements` | `spec_req` |
 | `amend` | platform dir, id, fields | the changed fields, or `not_found` / `conflict` / `invalid_domain_file` | `spec amend` | `PUT /api/requirements/:id` | `spec_amend` |
 | `supersede` | platform dir, id, successor statement and fields, a fresh-tags callback | the successor id, the domain version, the retag worklist, or `not_found` / `conflict` / `usage` / `invalid_domain_file` | `spec supersede` | `POST /api/requirements/:id/supersede` | `spec_supersede` |
 | `move` | platform dir, id, target domain key, optional successor fields, a fresh-tags callback | both files, both versions, the retag worklist, or `usage` / `not_found` / `conflict` / `invalid_domain_file` | `spec move` | `POST /api/requirements/:id/move` | `spec_move` |
@@ -82,7 +82,7 @@ An operation takes typed input and returns typed data or a typed refusal. It nev
 | `accept` | platform dir, id | the file, or `not_found` / `conflict` / `invalid_domain_file` | `spec accept` | `POST /api/requirements/:id/accept` | `spec_accept` |
 | `mintTerm`, `listTerms`, `reviseTerm`, `confirmTerm` | platform dir, term fields or ids | the term id, the store rows, the bumped version, or the re-pinned citation; `not_found` / `conflict` / `invalid_domain_file` | `spec term` | | |
 | `coverageMatrix` | storage | requirement × repo rows | `spec map` | `GET /api/coverage` | |
-| `getRecord` | storage, requirement id | one full `Requirement` row, or null | `spec get` | `GET /api/requirements/:id` | `spec_get` |
+| `getRecord` | storage, requirement id | one full `Requirement` row with its implementing and verifying tag sites, or null | `spec get` | `GET /api/requirements/:id` | `spec_get` |
 | `listRecords` | storage, optional key and status | every `Requirement` row in (key, seq) order | `spec list` | `GET /api/requirements` | `spec_list` |
 | `relations` | storage | `relates` links | `spec relations` | `GET /api/relations` | |
 | `provenance` | storage, optional issue id | provenance matrix rows | `spec provenance` | `GET /api/provenance` | |

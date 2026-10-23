@@ -8,9 +8,8 @@
 // @spec REQ-026
 // @spec REQ-030
 // @spec REQ-032
-// @spec REQ-037
+// @spec REQ-061
 // @spec REQ-039
-// @spec REQ-056
 //
 // Prompts render to stderr so stdout stays machine-parseable.
 
@@ -21,15 +20,7 @@ import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
 import { mint } from "../operations/mint";
 import { nextId } from "../operations/nextId";
-import {
-  jsonArg,
-  listFlag,
-  livesArg,
-  platformDirArg,
-  relatesArg,
-  resolvePlatformDir,
-  testsArg,
-} from "./_args";
+import { jsonArg, listFlag, platformDirArg, relatesArg, resolvePlatformDir } from "./_args";
 import { exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
 
 const reqArgs = {
@@ -46,8 +37,6 @@ const reqArgs = {
       "Non-interactive authoring: the Requirement field. When set, the entry appends with zero prompts.",
   },
   why: { type: "string", description: "Why it matters field (only with --text)" },
-  lives: livesArg,
-  tests: testsArg,
   relates: relatesArg,
   issue: {
     type: "string",
@@ -89,13 +78,11 @@ export const reqCommand = defineCommand({
     }
     const hasFieldFlags =
       typeof args.why === "string" ||
-      typeof args.lives === "string" ||
-      typeof args.tests === "string" ||
       typeof args.relates === "string" ||
       typeof args.issue === "string";
     if (hasFieldFlags) {
       console.error(
-        "spec req: --why/--lives/--tests/--relates/--issue require --text (the Requirement field is mandatory)",
+        "spec req: --why/--relates/--issue require --text (the Requirement field is mandatory)",
       );
       process.exit(EXIT.USAGE);
       return;
@@ -134,8 +121,6 @@ async function mintFromFlags(
   await mintAndReport(platformDir, key, {
     statement,
     why: (args.why ?? "").trim(),
-    livesIn: listFlag(rawArgs, "lives", args.lives) ?? [],
-    verifiedIn: listFlag(rawArgs, "tests", args.tests) ?? [],
     relates: listFlag(rawArgs, "relates", args.relates) ?? [],
     issue: (args.issue ?? "").trim() || undefined,
     status: statusOf(args),
@@ -163,11 +148,9 @@ async function mintInteractively(
     return;
   }
   const why = (await askLine("Why it matters: ")).trim();
-  const livesIn = listFlag([], "lives", await askLine("Lives in: ")) ?? [];
   await mintAndReport(platformDir, key, {
     statement: requirement,
     why,
-    livesIn,
     issue: undefined,
     status,
     json: false,
@@ -181,8 +164,6 @@ async function mintAndReport(
   fields: {
     statement: string;
     why: string;
-    livesIn: string[];
-    verifiedIn?: string[] | undefined;
     relates?: string[] | undefined;
     issue?: string | undefined;
     status: "active" | "draft";

@@ -51,8 +51,7 @@ function splitAliases(raw: string): string[] {
 
 /**
  * Flags to the operation's input. An absent flag leaves the field to be copied from the predecessor.
- * @spec REQ-055
- * @spec REQ-057
+ * @spec REQ-051
  */
 function inputFromArgs(
   args: SupersedeArgs,
@@ -63,10 +62,6 @@ function inputFromArgs(
 ): SupersedeInput {
   const input: SupersedeInput = { platformDir, id, statement, noBump: Boolean(args.noBump) };
   if (typeof args.why === "string") input.why = args.why;
-  const livesIn = listFlag(rawArgs, "lives", args.lives);
-  if (livesIn !== undefined) input.livesIn = livesIn;
-  const verifiedIn = listFlag(rawArgs, "tests", args.tests);
-  if (verifiedIn !== undefined) input.verifiedIn = verifiedIn;
   const relates = listFlag(rawArgs, "relates", args.relates);
   if (relates !== undefined) input.relates = relates;
   if (typeof args.term === "string") input.term = args.term;
@@ -91,16 +86,6 @@ const supersedeArgs = {
   why: {
     type: "string",
     description: "Successor's Why it matters (default: copied from the old entry)",
-  },
-  lives: {
-    type: "string",
-    description:
-      "Successor's Lives in: repeat or comma-separate; empty clears (default: copied from the old entry)",
-  },
-  tests: {
-    type: "string",
-    description:
-      "Successor's Verified in (verifiedIn): repeat or comma-separate; empty clears (default: copied from the old entry)",
   },
   relates: {
     type: "string",

@@ -1,28 +1,38 @@
 import {
+  type ImplementingSite,
   REQUIREMENT_STATUSES,
   type Requirement,
+  type RequirementRecord,
   type RequirementStatus,
   type Storage,
+  type VerifyingSite,
 } from "@spec-engine/shared";
 
 export interface GetRecordResult {
   ok: true;
   /** Null when the id is not in the index. */
-  row: Requirement | null;
+  row: RequirementRecord | null;
   /** True when the platform holds no requirements at all (first-spec guidance, not "unknown id"). */
   platformEmpty: boolean;
 }
 
-/** One requirement's full record. */
+/** One requirement's full record and the code sites its tags name. */
 // @spec MAP-003
+// @spec MAP-005
 // @spec SCHM-012
+// @spec SCHM-040
 export function getRecord(storage: Storage, id: string): GetRecordResult {
-  const row = storage.getRequirement(id);
-  return {
-    ok: true,
-    row,
-    platformEmpty: row === null && storage.listRequirements().length === 0,
-  };
+  const req = storage.getRequirement(id);
+  if (req === null) {
+    return { ok: true, row: null, platformEmpty: storage.listRequirements().length === 0 };
+  }
+  const implemented_in: ImplementingSite[] = [];
+  const verified_in: VerifyingSite[] = [];
+  for (const { repo, file, line, kind, level } of storage.listTags({ req_id: id })) {
+    if (kind === "verifies") verified_in.push({ repo, file, line, level: level ?? null });
+    else implemented_in.push({ repo, file, line, kind });
+  }
+  return { ok: true, row: { ...req, implemented_in, verified_in }, platformEmpty: false };
 }
 
 export interface ListRecordsFilter {

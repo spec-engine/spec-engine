@@ -89,7 +89,6 @@ describe("cold-rebuild equivalence over the JSON domain fixture", () => {
     const { id } = await billing.req({
       statement: "When a charge is made, compute tax per region at charge time X.",
       why: "Compliance.",
-      livesIn: ["tax.ts"],
     });
     await fx.member("api", {
       pin: "spec-engine@2",

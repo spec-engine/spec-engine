@@ -129,8 +129,9 @@ it lights up. A declared member with no `spec-engine.member.json` is reported as
 `NO_SPEC_CONFIG`, and a repository in the platform folder that nobody declared as
 `UNLISTED_REPO`, rather than silently ignored.
 
-`SPEC.json` is the only spec format. `spec migrate` was the one-time cutover from the
-legacy Markdown specs.
+`SPEC.json` is the only spec format. Where a requirement is implemented and verified is
+recorded only by the `@spec` tags; `spec migrate` strips the retired `livesIn` and
+`verifiedIn` fields from an older book.
 
 See the [architecture page](https://docs.spec-engine.dev/architecture/) for the
 components, the single seams, and the invariants.
