@@ -376,11 +376,12 @@ The eight codes before them are platform-map's, surfaced with the platform-map c
 `duplicates` tunes duplicate detection on every surface: the write-time warning and `POSSIBLE_DUPLICATE`.
 
 ```json
-{ "severity": [], "duplicates": { "threshold": 0.6, "off": false } }
+{ "severity": [], "duplicates": { "threshold": 0.6, "off": false, "ignore": ["REQ-069/REQ-060"] } }
 ```
 
 - `threshold` is a score between 0 and 1; a pair at or above it is a possible duplicate. Absent means 0.5.
 - `off: true` turns detection off everywhere. A `severity` rule of `off` for `POSSIBLE_DUPLICATE` drops only the check rows.
+- `ignore` lists pairs reviewed as distinct, each two requirement ids joined by `/` in either order. A listed pair gets no `POSSIBLE_DUPLICATE` row and no write-time warning.
 
 ### spec guard
 

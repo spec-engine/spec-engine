@@ -923,6 +923,18 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "CHCK-071",
+      "status": "active",
+      "statement": "Where check.json lists a requirement pair under duplicates ignore, spec check shall report no POSSIBLE_DUPLICATE for that pair.",
+      "why": "A pair the owner has judged distinct would otherwise warn on every run, and a warning nobody can clear teaches readers to skip the code.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
   ],
   "grammarSeverity": "error"

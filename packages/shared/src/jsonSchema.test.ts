@@ -32,3 +32,13 @@ test("check.json and the member config accept a $schema key and still refuse oth
     specs: "spec-engine@1",
   });
 });
+
+// @spec CHCK-071 unit
+test("check.json duplicates ignore takes ID/ID pairs and refuses anything else", () => {
+  const parse = (ignore: unknown) =>
+    CheckConfigSchema.safeParse({ duplicates: { ignore } }).success;
+  expect(parse(["REQ-069/REQ-060"])).toBe(true);
+  expect(parse(["REQ-069"])).toBe(false);
+  expect(parse(["REQ-069/REQ"])).toBe(false);
+  expect(parse(["REQ-069/REQ-060/REQ-001"])).toBe(false);
+});
