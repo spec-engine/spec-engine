@@ -116,6 +116,7 @@ describe("statementFindings", () => {
     "When a requirement is amended through the CLI, the HTTP API, or the MCP server, the spec engine shall write the same envelope.",
     "spec list shall order requirements by key.",
     "spec check shall grade the row by default as an error.",
+    "When spec supersede runs with --issue, the spec CLI shall record the ticket as supersedes-via on the predecessor.",
   ])("no-mechanism passes: %s", (statement) => {
     expect(rulesOf(statement)).not.toContain("no-mechanism");
   });
