@@ -2,9 +2,9 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
-import { validateDomainFile } from "@spec-engine/shared";
+import { parseEarsStatement, statementFindings, validateDomainFile } from "@spec-engine/shared";
 import { entryOf, plantEdit } from "./plant";
-import { TestPlatform } from "./platform";
+import { STATEMENTS, TestPlatform } from "./platform";
 
 let fx: TestPlatform;
 
@@ -175,4 +175,12 @@ describe("plantEdit writes a planted state through the seam", () => {
     ).rejects.toThrow(/invalid after the edit/);
     expect(await billing.raw()).toBe(before);
   });
+});
+
+test("every fixture statement passes the statement rules and parses as EARS", () => {
+  expect(new Set(STATEMENTS).size).toBe(STATEMENTS.length);
+  for (const statement of STATEMENTS) {
+    expect(statementFindings(statement, {})).toEqual([]);
+    expect(parseEarsStatement(statement).ok).toBe(true);
+  }
 });

@@ -9,7 +9,6 @@ import {
   type CheckConfig,
   type SpecCite,
   type SpecDomain,
-  STATEMENT_RULES,
   validateDomainFile,
 } from "@spec-engine/shared";
 import { CANONICAL_SPECS_DIR, SPEC_FILENAME, specPaths } from "../constants";
@@ -262,6 +261,17 @@ export class DomainHandle {
   }
 }
 
+/** Statements that pass every statement rule and the EARS grammar, each distinct. */
+export const STATEMENTS = [
+  "When a subscription reaches renewal, the billing service shall charge the current plan price.",
+  "When a refund is issued, the billing service shall reverse the original charge.",
+  "When an invoice is issued, the billing service shall itemize tax separately.",
+  "When a session stays idle for 30 minutes, the auth service shall expire it.",
+  "When a customer signs up, the billing service shall charge the signup price.",
+  "When a subscription reaches renewal, the billing service shall charge the plan price at renewal time.",
+  "When a plan changes, the billing service shall prorate the next charge.",
+] as const;
+
 function placeholderStatement(id: string): string {
   return `The system shall satisfy ${id}.`;
 }
@@ -312,15 +322,6 @@ export class TestPlatform extends FileTree {
 
   checkConfig(config: CheckConfig): string {
     return this.file(`${CANONICAL_SPECS_DIR}/check.json`, `${JSON.stringify(config)}\n`);
-  }
-
-  /** Turn every statement rule off, so a test of lifecycle mechanics can author placeholder text. */
-  statementRulesOff(): this {
-    this.checkConfig({
-      severity: [],
-      statementRules: { severity: Object.fromEntries(STATEMENT_RULES.map((r) => [r, "off"])) },
-    });
-    return this;
   }
 
   /** Absolute path of a domain's SPEC.json, scaffolded or not. */

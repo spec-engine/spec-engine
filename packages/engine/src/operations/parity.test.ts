@@ -20,7 +20,7 @@ import { buildMcpServer } from "../server/mcp";
 import { openStorage } from "../storage/sqlite";
 import { commitAndTag } from "../testing/git";
 import { entryOf, plantEdit } from "../testing/plant";
-import { TestPlatform } from "../testing/platform";
+import { STATEMENTS, TestPlatform } from "../testing/platform";
 import { SPEC_TOKEN, specTag } from "../testing/specTag";
 import { coldFreshTags, withIndex } from "./_index";
 import { accept } from "./accept";
@@ -92,18 +92,18 @@ beforeEach(async () => {
   process.env.SPEC_FLAGS = "query,editor,relations,provenance";
   tmp = mkdtempSync(join(tmpdir(), "spec-parity-"));
   platform = join(tmp, "platform");
-  fx = TestPlatform.at(platform).statementRulesOff();
+  fx = TestPlatform.at(platform);
   const billing = await fx.domain("BILLING", { scope: "billing" });
   const first = await billing.req({
-    statement: "renewal charges use the current plan price",
+    statement: STATEMENTS[0],
     why: "revenue",
   });
   const second = await billing.supersede(first.id, {
-    statement: "renewal charges use the plan price at renewal time",
+    statement: STATEMENTS[5],
     why: "revenue",
   });
   await billing.req({
-    statement: "refunds reverse the original charge",
+    statement: STATEMENTS[1],
     why: "revenue",
     cites: [{ term: "TERM-001", pinned: 1 }],
   });

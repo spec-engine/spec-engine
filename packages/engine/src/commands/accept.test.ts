@@ -4,7 +4,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { type DomainHandle, TestPlatform } from "../testing/platform";
+import { type DomainHandle, STATEMENTS, TestPlatform } from "../testing/platform";
 import { acceptCommand } from "./accept";
 
 let fx: TestPlatform;
@@ -24,7 +24,7 @@ type RunFn = (ctx: { args: Record<string, unknown>; rawArgs: string[] }) => Prom
 const run = (acceptCommand as unknown as { run: RunFn }).run;
 
 beforeEach(async () => {
-  fx = TestPlatform.temp("spec-accept-").statementRulesOff();
+  fx = TestPlatform.temp("spec-accept-");
   billing = await fx.domain("BILLING");
   logs = [];
   originalLog = console.log;
@@ -63,7 +63,7 @@ async function exitCodeOf(fn: () => Promise<void>): Promise<number | null> {
 describe("spec accept", () => {
   test("promotes a Draft to active and changes no other field", async () => {
     const draft = await billing.req({
-      statement: "refunds reverse the original charge",
+      statement: STATEMENTS[1],
       why: "revenue",
       status: "draft",
     });
@@ -80,11 +80,11 @@ describe("spec accept", () => {
   });
 
   for (const [label, prepare] of [
-    ["Active", async () => (await billing.req({ statement: "s", why: "w" })).id],
+    ["Active", async () => (await billing.req({ statement: STATEMENTS[0], why: "w" })).id],
     [
       "deprecated",
       async () => {
-        const { id } = await billing.req({ statement: "s", why: "w", status: "draft" });
+        const { id } = await billing.req({ statement: STATEMENTS[0], why: "w", status: "draft" });
         await billing.deprecate(id);
         return id;
       },

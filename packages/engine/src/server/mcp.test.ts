@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import packageJson from "../../package.json" with { type: "json" };
-import { type DomainHandle, TestPlatform } from "../testing/platform";
+import { type DomainHandle, STATEMENTS, TestPlatform } from "../testing/platform";
 import { specTag } from "../testing/specTag";
 import { buildMcpServer } from "./mcp";
 
@@ -19,14 +19,14 @@ const BILLING_SCOPE = "billing lifecycle: renewals, refunds, and invoice pricing
 // Two Active BILLING reqs → nextRequirementId reads SPEC.json and allocates
 // BILLING-003.
 beforeEach(async () => {
-  fx = TestPlatform.temp("spec-mcp-").statementRulesOff();
+  fx = TestPlatform.temp("spec-mcp-");
   platform = fx.dir;
   billing = await fx.domain("BILLING", { scope: BILLING_SCOPE });
   await billing.req({
-    statement: "renewal charges use the current plan price",
+    statement: STATEMENTS[0],
     why: "revenue",
   });
-  await billing.req({ statement: "refunds reverse the original charge", why: "trust" });
+  await billing.req({ statement: STATEMENTS[1], why: "trust" });
   await fx.member("api", {
     files: {
       "src/renew.ts": `export const renew = 1; ${specTag("BILLING-001")}`,
@@ -127,7 +127,7 @@ describe("spec mcp — tool surface", () => {
 
   test("spec_propagation classifies member repos for a superseded req", async () => {
     const { newId } = await billing.supersede("BILLING-001", {
-      statement: "successor",
+      statement: STATEMENTS[6],
       why: "w",
     });
     expect(newId).toBe("BILLING-003");
@@ -144,7 +144,7 @@ describe("spec mcp — tool surface", () => {
 
   test("every call reindexes fresh: an edit made after the previous call is visible", async () => {
     await call("spec_query", { text: "renewal" }); // builds the index
-    await billing.req({ statement: "invoices itemize tax separately", why: "w" });
+    await billing.req({ statement: STATEMENTS[2], why: "w" });
     const rows = (await call("spec_query", { text: "itemize" })) as Array<{ req_id: string }>;
     expect(rows.map((r) => r.req_id)).toContain("BILLING-003");
   });

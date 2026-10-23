@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { entryOf, plantEdit } from "../testing/plant";
-import { type DomainHandle, TestPlatform } from "../testing/platform";
+import { type DomainHandle, STATEMENTS, TestPlatform } from "../testing/platform";
 import { specTag } from "../testing/specTag";
 import { moveCommand } from "./move";
 
@@ -32,14 +32,14 @@ const moveRun = (moveCommand as unknown as { run: RunFn }).run;
 async function seed(domain: DomainHandle): Promise<string> {
   const id = await domain.nextId();
   await domain.req({
-    statement: `${id} statement`,
+    statement: STATEMENTS[Number(id.slice(-3)) % STATEMENTS.length] as string,
     why: `${id} why`,
   });
   return id;
 }
 
 beforeEach(async () => {
-  fx = TestPlatform.temp("spec-move-").statementRulesOff();
+  fx = TestPlatform.temp("spec-move-");
   platform = fx.dir;
   billing = await fx.domain("BILLING");
   await seed(billing);
@@ -103,7 +103,7 @@ describe("spec move — happy path", () => {
     expect(src?.supersededAtVersion).toBe(2);
     const succ = authDoc.requirements.find((r) => r.id === "AUTH-002");
     expect(succ?.status).toBe("active");
-    expect(succ?.statement).toBe("BILLING-001 statement");
+    expect(succ?.statement).toBe(STATEMENTS[1]);
     expect(succ?.why).toBe("BILLING-001 why");
     expect(billingDoc.specVersion).toBeUndefined();
     expect(authDoc.specVersion).toBeUndefined();
@@ -131,14 +131,14 @@ describe("spec move — happy path", () => {
         id: "BILLING-001",
         newDomain: "AUTH",
         platformDir: platform,
-        text: "the session token expires after 30 minutes of inactivity",
+        text: STATEMENTS[3],
         why: "an idle session must not stay authenticated forever",
         json: true,
       },
       rawArgs: [],
     });
     const succ = (await auth.read()).requirements.find((r) => r.id === "AUTH-002");
-    expect(succ?.statement).toBe("the session token expires after 30 minutes of inactivity");
+    expect(succ?.statement).toBe(STATEMENTS[3]);
     expect(succ?.why).toBe("an idle session must not stay authenticated forever");
   });
 

@@ -21,7 +21,12 @@ import { nextRequirementId } from "../authoring/domains";
 import { localToday } from "../authoring/edit";
 import { gitTestEnv } from "../testing/git";
 import { plantEdit } from "../testing/plant";
-import { type DomainHandle, type RequirementInput, TestPlatform } from "../testing/platform";
+import {
+  type DomainHandle,
+  type RequirementInput,
+  STATEMENTS,
+  TestPlatform,
+} from "../testing/platform";
 import { reqCommand } from "./req";
 
 let tmp: string;
@@ -102,11 +107,12 @@ async function seed(
 ): Promise<DomainHandle> {
   if (options.updated !== undefined) setSystemTime(new Date(`${options.updated}T12:00:00`));
   try {
-    const domain = await TestPlatform.at(root)
-      .statementRulesOff()
-      .domain(key, options.scope === undefined ? {} : { scope: options.scope });
+    const domain = await TestPlatform.at(root).domain(
+      key,
+      options.scope === undefined ? {} : { scope: options.scope },
+    );
     for (let i = 0; i < count; i++) {
-      await domain.req(i === 0 && options.first ? options.first : { statement: "placeholder" });
+      await domain.req(i === 0 && options.first ? options.first : { statement: STATEMENTS[0] });
     }
     return domain;
   } finally {
@@ -220,7 +226,7 @@ describe("spec req — interactive authoring", () => {
     await seed(tmp, "BILLING", 9, { updated: "2020-01-01" });
     expect(JSON.parse(readSpec(tmp, "BILLING")).updated).toBe("2020-01-01");
     setIsTTY(true);
-    mockReadlineQueue(["Charge renewals at current price", "Revenue correctness"]);
+    mockReadlineQueue([STATEMENTS[0], "Revenue correctness"]);
 
     await runReq("bil", tmp);
 
@@ -228,7 +234,7 @@ describe("spec req — interactive authoring", () => {
     const added = domain.requirements.find((r: { id: string }) => r.id === "BILLING-010");
     expect(added).toBeDefined();
     expect(added.status).toBe("active");
-    expect(added.statement).toBe("Charge renewals at current price");
+    expect(added.statement).toBe(STATEMENTS[0]);
     expect(added.why).toBe("Revenue correctness");
     expect(added).not.toHaveProperty("livesIn");
     expect(domain.updated).toBe(localToday());
@@ -264,7 +270,7 @@ describe("spec req — interactive authoring", () => {
   test("unresolvable @-ref warns to stderr but the entry STILL saves", async () => {
     await seed(tmp, "BILLING", 1, { updated: "2020-01-01" });
     setIsTTY(true);
-    mockReadlineQueue(["Track refunds end to end", "see @does/not/exist.ts"]);
+    mockReadlineQueue([STATEMENTS[1], "see @does/not/exist.ts"]);
 
     await runReq("bil", tmp);
 
@@ -272,7 +278,7 @@ describe("spec req — interactive authoring", () => {
     const domain = JSON.parse(readSpec(tmp, "BILLING"));
     const added = domain.requirements.find((r: { id: string }) => r.id === "BILLING-002");
     expect(added).toBeDefined();
-    expect(added.statement).toBe("Track refunds end to end");
+    expect(added.statement).toBe(STATEMENTS[1]);
   });
 
   test("non-TTY in-process: prints next id, no prompts, no mutation", async () => {
@@ -368,7 +374,7 @@ describe("spec req — domain with no SPEC.json", () => {
     const result = await mint({
       platformDir: tmp,
       key: "GHOST",
-      statement: "x",
+      statement: STATEMENTS[0],
       why: "",
     });
     expect(result.ok).toBe(false);
@@ -428,7 +434,7 @@ describe("spec req — field-flag authoring", () => {
       args: {
         domainPrefix: "bil",
         platformDir: tmp,
-        text: "Charge renewals at the current plan price",
+        text: STATEMENTS[0],
         why: "revenue path",
       },
       rawArgs: [],
@@ -436,7 +442,7 @@ describe("spec req — field-flag authoring", () => {
     const entry = added();
     expect(entry).toBeDefined();
     expect(entry.status).toBe("active");
-    expect(entry.statement).toBe("Charge renewals at the current plan price");
+    expect(entry.statement).toBe(STATEMENTS[0]);
     expect(entry.why).toBe("revenue path");
     expect(await nextRequirementId(tmp, "BILLING")).toBe("BILLING-011");
     expect(logs.join("\n")).toContain("BILLING-010");
@@ -445,26 +451,27 @@ describe("spec req — field-flag authoring", () => {
   test("--text + --json prints { id, file } and writes", async () => {
     setIsTTY(undefined);
     await reqRun({
-      args: { domainPrefix: "BILLING", platformDir: tmp, text: "flag-authored", json: true },
+      args: { domainPrefix: "BILLING", platformDir: tmp, text: STATEMENTS[1], json: true },
       rawArgs: [],
     });
     expect(logs).toHaveLength(1);
     expect(JSON.parse(logs[0] ?? "")).toEqual({
       id: "BILLING-010",
       file: "spec-engine/BILLING/SPEC.json",
+      clauses: expect.any(Object),
     });
-    expect(added().statement).toBe("flag-authored");
+    expect(added().statement).toBe(STATEMENTS[1]);
   });
 
   test("TTY + --text skips the interactive flow entirely (flags win)", async () => {
     setIsTTY(true);
     mockReadlineQueue([]); // would abort if the prompt flow (wrongly) ran
     await reqRun({
-      args: { domainPrefix: "BILLING", platformDir: tmp, text: "tty flag-authored" },
+      args: { domainPrefix: "BILLING", platformDir: tmp, text: STATEMENTS[2] },
       rawArgs: [],
     });
     expect(errs.join("\n")).not.toContain("Authoring");
-    expect(added().statement).toBe("tty flag-authored");
+    expect(added().statement).toBe(STATEMENTS[2]);
   });
 
   test("--why without --text is a usage error (exit 2, nothing written)", async () => {
@@ -482,7 +489,7 @@ describe("spec req — field-flag authoring", () => {
 
   test("--text + --draft appends the entry as draft, every other field as the Active path writes it", async () => {
     setIsTTY(undefined);
-    const fields = { text: "drafted rule", why: "revenue path", relates: "BILLING-001" };
+    const fields = { text: STATEMENTS[3], why: "revenue path", relates: "BILLING-001" };
     await reqRun({
       args: { domainPrefix: "BILLING", platformDir: tmp, ...fields, draft: true },
       rawArgs: [],
@@ -515,11 +522,16 @@ describe("spec req — field-flag authoring", () => {
   test("@-ref validation still warns on flag-supplied text, entry still saves", async () => {
     setIsTTY(undefined);
     await reqRun({
-      args: { domainPrefix: "BILLING", platformDir: tmp, text: "see @no/such/file.ts" },
+      args: {
+        domainPrefix: "BILLING",
+        platformDir: tmp,
+        text: STATEMENTS[4],
+        why: "see @no/such/file.ts",
+      },
       rawArgs: [],
     });
     expect(errs.join("\n")).toContain("@no/such/file.ts");
-    expect(added().statement).toBe("see @no/such/file.ts");
+    expect(added().why).toBe("see @no/such/file.ts");
   });
 });
 
@@ -533,7 +545,7 @@ describe("spec req — charter at authoring", () => {
   test("(a) TTY authoring prints the charter to stderr, never stdout", async () => {
     await writeScopedDomain("GUARD", "guard the loss gate");
     setIsTTY(true);
-    mockReadlineQueue(["A durable requirement", "", "", ""]);
+    mockReadlineQueue([STATEMENTS[2], "", "", ""]);
 
     await runReq("guard", tmp);
 
@@ -572,7 +584,7 @@ describe("spec req — charter at authoring", () => {
   test("(d) null-scope domain degrades: 'no charter set' on stderr, stdout id intact", async () => {
     await seed(tmp, "PLAIN", 1); // no scope
     setIsTTY(true);
-    mockReadlineQueue(["Another requirement", "", "", ""]);
+    mockReadlineQueue([STATEMENTS[3], "", "", ""]);
 
     await runReq("PLAIN", tmp);
 
@@ -586,7 +598,7 @@ describe("spec req — charter at authoring", () => {
     setIsTTY(false);
 
     await reqRun({
-      args: { domainPrefix: "guard", platformDir: tmp, text: "A flag-authored requirement" },
+      args: { domainPrefix: "guard", platformDir: tmp, text: STATEMENTS[3] },
       rawArgs: [],
     });
 

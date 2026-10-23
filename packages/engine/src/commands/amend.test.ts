@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { localToday } from "../authoring/edit";
 import { deriveDomainVersion } from "../parser/domainJson";
 import { commitAndTag, git } from "../testing/git";
-import { type DomainHandle, TestPlatform } from "../testing/platform";
+import { type DomainHandle, STATEMENTS, TestPlatform } from "../testing/platform";
 import { specTag } from "../testing/specTag";
 import { amendCommand } from "./amend";
 
@@ -32,15 +32,15 @@ const ACTIVE = "BILLING-002";
 const HISTORY = "BILLING-001";
 
 beforeEach(async () => {
-  fx = TestPlatform.temp("spec-amend-").statementRulesOff();
+  fx = TestPlatform.temp("spec-amend-");
   tmp = fx.dir;
   // Author the fixture on a past date so a bumped `updated` is observable.
   setSystemTime(new Date("2026-06-01T12:00:00"));
   try {
     billing = await fx.domain("BILLING");
-    const old = await billing.req({ statement: "old", why: "w" });
+    const old = await billing.req({ statement: STATEMENTS[0], why: "w" });
     const successor = await billing.supersede(old.id, {
-      statement: "rough draft of the rule",
+      statement: STATEMENTS[5],
       why: "revenue",
     });
     expect(successor.newId).toBe(ACTIVE);
@@ -95,7 +95,7 @@ describe("spec amend", () => {
       args: {
         id: ACTIVE,
         platformDir: tmp,
-        text: "the precise rule",
+        text: STATEMENTS[2],
         why: "revenue correctness",
         json: true,
       },
@@ -105,7 +105,7 @@ describe("spec amend", () => {
     const req = domain.requirements.find((r) => r.id === ACTIVE);
     expect(req).toBeDefined();
     expect(req?.status).toBe("active"); // status + id unchanged
-    expect(req?.statement).toBe("the precise rule");
+    expect(req?.statement).toBe(STATEMENTS[2]);
     expect(req?.why).toBe("revenue correctness");
     expect(deriveDomainVersion(domain.requirements)).toBe(versionBefore); // amend never bumps
     expect(domain.specVersion).toBeUndefined(); // no authored counter on a requirement domain
@@ -215,16 +215,16 @@ describe("spec amend — release gate", () => {
     expect(JSON.parse(logs.join("")).fields_changed).toEqual(["issue", "relates"]);
     const req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
     expect(req?.relates).toEqual(["BILLING-001"]);
-    expect(req?.statement).toBe("rough draft of the rule");
+    expect(req?.statement).toBe(STATEMENTS[5]);
   });
 
   // @spec REQ-044 unit
   test("an entry minted after the newest release tag amends freely", async () => {
     release("v0.1.0");
-    const later = await billing.req({ statement: "minted after the release", why: "w" });
-    await amendRun({ args: { id: later.id, platformDir: tmp, text: "reworded" }, rawArgs: [] });
+    const later = await billing.req({ statement: STATEMENTS[4], why: "w" });
+    await amendRun({ args: { id: later.id, platformDir: tmp, text: STATEMENTS[3] }, rawArgs: [] });
     const req = (await billing.read()).requirements.find((r) => r.id === later.id);
-    expect(req?.statement).toBe("reworded");
+    expect(req?.statement).toBe(STATEMENTS[3]);
   });
 
   // @spec REQ-047 unit
@@ -233,32 +233,32 @@ describe("spec amend — release gate", () => {
     git(tmp, "add", "-A");
     git(tmp, "commit", "-q", "-m", "work");
     git(tmp, "tag", "nightly");
-    await amendRun({ args: { id: ACTIVE, platformDir: tmp, text: "refined" }, rawArgs: [] });
+    await amendRun({ args: { id: ACTIVE, platformDir: tmp, text: STATEMENTS[1] }, rawArgs: [] });
     const req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
-    expect(req?.statement).toBe("refined");
+    expect(req?.statement).toBe(STATEMENTS[1]);
   });
 
   // @spec REQ-047 unit
   test("a platform outside git amends a tagged entry freely", async () => {
     writeFileSync(join(tmp, "renew.ts"), `export const renew = 1; ${specTag(ACTIVE)}`);
-    await amendRun({ args: { id: ACTIVE, platformDir: tmp, text: "refined" }, rawArgs: [] });
+    await amendRun({ args: { id: ACTIVE, platformDir: tmp, text: STATEMENTS[1] }, rawArgs: [] });
     const req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
-    expect(req?.statement).toBe("refined");
+    expect(req?.statement).toBe(STATEMENTS[1]);
   });
 
   test("Draft entry amends even after a release", async () => {
     const draft = await billing.req({
       status: "draft",
-      statement: "a draft still being shaped",
+      statement: STATEMENTS[6],
       why: "w",
     });
     release("v0.1.0");
     await amendRun({
-      args: { id: draft.id, platformDir: tmp, text: "reshaped draft", json: true },
+      args: { id: draft.id, platformDir: tmp, text: STATEMENTS[2], json: true },
       rawArgs: [],
     });
     const req = (await billing.read()).requirements.find((r) => r.id === draft.id);
-    expect(req?.statement).toBe("reshaped draft");
+    expect(req?.statement).toBe(STATEMENTS[2]);
   });
 });
 
