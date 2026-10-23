@@ -226,6 +226,7 @@ Branch on exit codes, not on output text.
 | `spec move <KEY-NNN> <NEW-DOMAIN> [platformDir]` | Cross-domain supersede | yes (object) | 0 / 2 |
 | `spec amend <KEY-NNN> [platformDir]` | Revise an unshipped entry in place | yes (object) | 0 / 2 |
 | `spec accept <KEY-NNN> [platformDir]` | Promote a Draft requirement to Active | yes (object) | 0 / 2 |
+| `spec lint [KEY \| KEY-NNN] [platformDir] [--all]` | Every statement-rule finding for the platform, a domain, or a requirement | yes (array) | 0 / 1 / 2 |
 | `spec serve [platformDir] [--port N] [--host IP]` | Local webapp + `/api/*` over the index | n/a (HTTP) | 0 / 1 / 2 |
 | `spec docs [--port N]` | Serve the bundled docs site offline | n/a (HTTP) | 0 / 1 / 2 |
 | `spec mcp [platformDir]` | MCP server over stdio | n/a (JSON-RPC) | 0 / 2 |
@@ -301,6 +302,7 @@ Codes, in `DiagnosticCode` order:
 | `SUPERSEDED_REFERENCED` | error |
 | `DEPRECATED_REFERENCED` | error |
 | `STATEMENT_GRAMMAR` | per domain, default warning |
+| `STATEMENT_RULES` | warning; per rule from `statementRules.severity` |
 | `DRAFT_REFERENCED` | error on a verifying tag, warning on an implementing or documenting tag |
 | `GLOSSARY_DRIFT` | warning |
 | `ORPHAN_REQ` | error |
@@ -405,6 +407,31 @@ present on disk with no `spec-engine.member.json`.
   other surface agree, and exit 1 follows the graded severities.
 - A file that fails the schema (unknown code or key, a bad severity, a
   malformed match entry) exits 2 with `spec-engine/check.json: <path>: <reason>`.
+
+`statementRules` configures the statement rules on every surface: the
+write-time refusal, `STATEMENT_RULES`, and `spec lint`.
+
+```json
+{ "severity": [],
+  "statementRules": {
+    "maxLength": 280,
+    "jargon": ["seam", "rung"],
+    "exemptNames": ["SPEC.json", "spec-engine/"],
+    "severity": { "no-jargon": "off", "length": "error" }
+} }
+```
+
+- `maxLength` defaults to 280. `jargon` replaces the default list (`seam`,
+  `seams`, `rung`, `rungs`, `residue`, `matrix entry`, `stage runner`,
+  `the stage`).
+- `exemptNames` are product names `no-file-path` never reports. A name
+  ending in `/` exempts every path under it.
+- `severity` maps a rule to `error`, `warning`, or `off`. `off` turns the
+  rule off everywhere. Any other value still refuses a write; it grades the
+  `STATEMENT_RULES` row, and the `severity` array regrades by code after it.
+- The rules: `one-sentence`, `length`, `no-file-path`, `no-test-narration`,
+  `no-toolchain-layout`, `no-history`, `no-jargon`, `no-tool-statement`.
+  Unknown keys exit 2.
 
 ### spec guard
 
@@ -746,6 +773,26 @@ Exit: 0 / 2 (the target is not Draft: nothing is written).
   the coverage report. A code tag on one is `DRAFT_REFERENCED` (warning), and
   its `livesIn` and `verifiedIn` are still checked by `BROKEN_FILE_REF`.
 
+### spec lint
+
+Every statement-rule finding. Reads `SPEC.json` directly, not the index.
+
+| Form | Scope |
+| --- | --- |
+| `spec lint [platformDir]` | the platform |
+| `spec lint <KEY> [platformDir]` | one domain |
+| `spec lint <KEY-NNN> [platformDir]` | one requirement |
+| `--all` | Draft requirements as well as Active ones |
+
+Text mode prints `<id> <rule>: <detail> — <reason>` per finding on stdout,
+then rule 0 on stderr. `--json` prints a sorted array of
+`{ req_id, rule, detail, reason, source_file, line }`. The TERM domain is
+never judged. A lone positional that holds `spec-engine/` is the platform
+dir. CLI only: no MCP tool or HTTP route.
+
+Exit: 0 clean / 1 any finding / 2 usage, unknown domain or id, or a bad
+`check.json`.
+
 ### spec serve
 
 Binds one address: `127.0.0.1`, or `--host <ip>` (a literal loopback,
@@ -832,7 +879,9 @@ Exit: 0 / 2.
 
 <!-- @spec AUTHOR-005 -->
 
-The full authoring standard (the eight rules and the fixed statement shapes) is
+Rule 0: A requirement is one rule of the product's behavior, stated from the user's point of view.
+
+The full authoring standard (rule 0, the eight rules, and the fixed statement shapes) is
 the "Requirement authoring standard" section of `spec-engine/TAXONOMY.md`. The
 command choreography:
 
@@ -880,6 +929,25 @@ A statement that fits a shape still fails the one-promise lint when:
 - `spec req`, `amend`, `supersede`, and `move` judge new text at write time:
   warn and write under warning, refuse (exit 2) under error.
 - The TERM domain is exempt.
+
+**Statement rules.** Every domain, whatever its grammar. `spec req`,
+`amend`, `supersede`, `move` (with new text), and `accept` refuse a
+statement that breaks an enabled rule: exit 2, one
+`<rule>: <detail> — <reason>` line per finding, rule 0 last. There is no
+override flag; `check.json` `statementRules` tunes or turns off a rule.
+`spec check` reports an Active statement that breaks one as
+`STATEMENT_RULES`, one row per rule per statement.
+
+| Rule | Reports |
+| --- | --- |
+| `one-sentence` | more than one sentence, no closing period, or a line break |
+| `length` | over `maxLength` characters (280) |
+| `no-file-path` | a repository path or file name |
+| `no-test-narration` | how a test is written |
+| `no-toolchain-layout` | CI or tooling layout |
+| `no-history` | how the requirement changed |
+| `no-jargon` | a word from the jargon list |
+| `no-tool-statement` | which tool is in use |
 
 ## The agent loop (route → tag → check)
 
