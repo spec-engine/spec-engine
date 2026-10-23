@@ -547,15 +547,16 @@
     },
     {
       "id": "CHCK-041",
-      "status": "active",
+      "status": "superseded",
       "statement": "If a domain declares the ears grammar and an Active or Draft statement's result continues with a comma-and clause that names its own subject before another shall, then spec check shall report STATEMENT_GRAMMAR at the domain's declared severity.",
       "why": "A second subject with its own shall is a second promise hiding in one id, so supersession and coverage track two behaviors as one.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "CHRT-025",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 15
     },
     {
       "id": "CHCK-042",

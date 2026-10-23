@@ -312,6 +312,90 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "CHRT-025",
+      "status": "active",
+      "statement": "The statement rules shall report a statement that chains a second promise onto its result.",
+      "why": "A statement that chains two promises cannot pass or fail as one, and a reviewer cannot tell which half a test proves.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHRT-026",
+      "status": "active",
+      "statement": "The statement rules shall report a statement whose result names the mechanism that delivers a behavior.",
+      "why": "A statement that names how the product works breaks when the design changes, though the behavior the user sees has not.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHRT-027",
+      "status": "active",
+      "statement": "The statement rules shall report a statement that defines a behavior by what it is not.",
+      "why": "A behavior stated by its contrast leaves the reader to guess what the product does.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHRT-028",
+      "status": "active",
+      "statement": "The statement rules shall report a statement about what a document contains.",
+      "why": "What a document says is documentation, and a requirement about it tests the prose, not the product.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHRT-029",
+      "status": "active",
+      "statement": "The statement rules shall report a Where clause whose condition holds a flag or an invocation.",
+      "why": "A flag or an invocation is an event the user triggers, and filing it under Where hides the trigger from the reader.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHRT-030",
+      "status": "active",
+      "statement": "The statement rules shall report a trailing so-clause longer than eight words or holding a second verb phrase.",
+      "why": "A long so-clause smuggles rationale or a second promise past the one-promise check.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "CHRT-031",
+      "status": "active",
+      "statement": "When check.json sets no severity for the trailing so-clause rule, spec check shall report its findings at warning severity.",
+      "why": "A short consequence is often legitimate, and failing the gate on every borderline so-clause would push authors to delete useful context.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
   ],
   "grammarSeverity": "error"
