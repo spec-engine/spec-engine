@@ -238,9 +238,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "scripts/arch-fences.sh"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -253,16 +250,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/scripts/build-npm.ts",
-        "packages/engine/src/operations/agentSurface.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/engine/test/npm-package.test.ts"
-      ]
+      "cites": []
     }
   ],
   "grammarSeverity": "error"

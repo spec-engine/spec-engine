@@ -617,9 +617,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/init.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -632,15 +629,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/init.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/engine/src/commands/init.test.ts"
-      ]
+      "cites": []
     },
     {
       "id": "INIT-044",
@@ -650,15 +641,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/agentSurface.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/engine/src/operations/agentSurface.test.ts"
-      ]
+      "cites": []
     },
     {
       "id": "INIT-045",
@@ -668,15 +653,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/agentSurface.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/engine/src/operations/agentSurface.test.ts"
-      ]
+      "cites": []
     },
     {
       "id": "INIT-046",
@@ -686,15 +665,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/agentSurface.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/engine/src/operations/agentSurface.test.ts"
-      ]
+      "cites": []
     },
     {
       "id": "INIT-047",
@@ -704,15 +677,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/agentSurface.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/engine/src/operations/agentSurface.test.ts"
-      ]
+      "cites": []
     },
     {
       "id": "INIT-048",
@@ -722,15 +689,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/agentSurface.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/engine/src/operations/agentSurface.test.ts"
-      ]
+      "cites": []
     },
     {
       "id": "INIT-049",
@@ -740,15 +701,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/agentSurface.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/engine/src/operations/agentSurface.test.ts"
-      ]
+      "cites": []
     }
   ],
   "grammarSeverity": "error"

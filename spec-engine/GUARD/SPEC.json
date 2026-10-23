@@ -399,15 +399,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/base/gitBase.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/engine/src/base/gitBase.test.ts"
-      ]
+      "cites": []
     },
     {
       "id": "GUARD-031",
@@ -417,15 +411,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/check.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/engine/src/commands/check.ci-base-warning.test.ts"
-      ]
+      "cites": []
     }
   ],
   "grammarSeverity": "error"
