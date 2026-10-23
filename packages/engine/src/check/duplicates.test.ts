@@ -34,7 +34,7 @@ function pairs<T>(xs: readonly T[]): [T, T][] {
   return out;
 }
 
-// @spec CHCK-055 unit
+// @spec CHCK-064 unit
 describe("duplicate scoring", () => {
   test("drops punctuation, stopwords, the EARS keywords, and plural or tense suffixes", () => {
     expect([...duplicateTokens("When the check runs, the CLI shall report rows.")]).toEqual([
@@ -92,8 +92,8 @@ describe("duplicate scoring", () => {
   });
 });
 
-// @spec CHCK-056 unit
-// @spec CHCK-057 unit
+// @spec CHCK-065 unit
+// @spec CHCK-066 unit
 test("check.json duplicates sets the threshold or turns detection off", () => {
   expect(duplicateThreshold(undefined)).toBe(DEFAULT_DUPLICATE_THRESHOLD);
   expect(duplicateThreshold({ threshold: 0.8 })).toBe(0.8);
@@ -123,7 +123,7 @@ describe("against an index", () => {
     return fx;
   }
 
-  // @spec CHCK-055 integration
+  // @spec CHCK-064 integration
   test("check reports one warning per Active pair, on the higher id", async () => {
     await platformWithNearDuplicates();
     const rows = await withIndex({ platformDir: fx.dir, build: "reset" }, async (h) => {
@@ -140,7 +140,7 @@ describe("against an index", () => {
     ]);
   });
 
-  // @spec CHCK-057 integration
+  // @spec CHCK-066 integration
   test("check.json off silences both check and the authoring scan", async () => {
     await platformWithNearDuplicates();
     fx.checkConfig({ severity: [], duplicates: { off: true } });
@@ -158,7 +158,7 @@ describe("against an index", () => {
     ).toEqual([]);
   });
 
-  // @spec REQ-070 integration
+  // @spec REQ-083 integration
   test("the authoring scan names Active matches only, minus the excluded ids", async () => {
     await platformWithNearDuplicates();
     const found = await coldDuplicateScan(fx.dir)(

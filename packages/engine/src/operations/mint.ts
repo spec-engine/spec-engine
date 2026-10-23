@@ -67,7 +67,7 @@ export function unresolvableRefWarnings(platformDir: string, fieldValues: string
  * the shared validator rejects the resulting envelope.
  * @param scan how this surface finds the possible duplicates after the write.
  * @spec SCHM-043
- * @spec REQ-070
+ * @spec REQ-083
  */
 export async function mint(input: MintInput, scan: DuplicateScan): Promise<MintResult | OpFailure> {
   const { platformDir, key } = input;

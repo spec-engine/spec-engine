@@ -148,7 +148,7 @@ function validateBoth(m: MoveTarget): Diagnostic[] {
  *   after the retag.
  * @spec REQ-075
  * @spec SCHM-043
- * @spec REQ-070
+ * @spec REQ-083
  */
 export async function move(
   input: MoveInput,

@@ -142,7 +142,7 @@ The procedure for turning a brief or ticket into requirements. Each draft is wri
 6. **Provenance, not identity.** The ticket goes in `--issue`, never in an id or a tag.
 7. **Verify.** `spec index . && spec check . --ci` (exit 0) and `spec guard .` before the PR.
 
-<!-- @spec REQ-070 -->
+<!-- @spec REQ-083 -->
 
 Step 3 also runs at write time. `spec req --text`, `spec supersede`, `spec move`, and `spec amend --text` compare the written statement with the Active requirements `spec query` ranks highest for its words, print each one whose word overlap reaches the duplicate threshold as `possible duplicate of <ID> (<score>): <statement>` on stderr, and write anyway. The score is the Jaccard overlap of the two statements' word sets after lowercasing, dropping punctuation, English stopwords, and the EARS keywords, and folding plural and tense suffixes. The default threshold is 0.5. A hit is a prompt to fold or relate the two, never a refusal. Two statements that mean the same thing in different words score low; the check catches shared wording only.
 
@@ -370,8 +370,8 @@ The eight codes before them are platform-map's, surfaced with the platform-map c
 - `severity` maps a rule to `error`, `warning`, or `off`. A rule with no entry is `error`, except `no-trailing-commentary`, which is `warning`. `error` refuses the write and grades the `STATEMENT_RULES` row error; `warning` writes, prints the finding on stderr, and grades the row warning; `off` turns the rule off everywhere. The `severity` array regrades by code after it.
 - The rules: `one-sentence`, `length`, `no-file-path`, `no-test-narration`, `no-toolchain-layout`, `no-history`, `no-jargon`, `no-tool-statement`, `one-promise`, `no-mechanism`, `no-contrast`, `no-document-content`, `where-takes-a-feature`, `no-trailing-commentary`. Unknown keys exit 2.
 
-<!-- @spec CHCK-056 -->
-<!-- @spec CHCK-057 -->
+<!-- @spec CHCK-065 -->
+<!-- @spec CHCK-066 -->
 
 `duplicates` tunes duplicate detection on every surface: the write-time warning and `POSSIBLE_DUPLICATE`.
 
@@ -546,7 +546,7 @@ Exit: 0 / 2.
 | `--draft` | Author the entry as Draft (with `--text`, or on a TTY). Off a TTY without `--text` it exits 2. |
 | TTY, no flags | Interactive authoring. |
 
-`--json` with `--text`: `{ id, file, possible_duplicates }`, plus `clauses: { pattern, condition, system, response }` when the statement parses as EARS. `possible_duplicates` is `[{ id, score }]`, empty when none. <!-- @spec REQ-071 -->
+`--json` with `--text`: `{ id, file, possible_duplicates }`, plus `clauses: { pattern, condition, system, response }` when the statement parses as EARS. `possible_duplicates` is `[{ id, score }]`, empty when none. <!-- @spec REQ-084 -->
 
 Exit: 0 / 2 (ambiguous prefix, unknown domain, grammar refusal, statement-rule refusal).
 

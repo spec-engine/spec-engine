@@ -31,7 +31,7 @@ export const StatementRulesConfigSchema = z
   })
   .strict();
 
-// @spec CHCK-057
+// @spec CHCK-066
 export const DuplicatesConfigSchema = z
   .object({
     threshold: z.number().min(0).max(1).optional(),

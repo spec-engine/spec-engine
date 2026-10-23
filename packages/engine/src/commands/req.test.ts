@@ -429,8 +429,8 @@ describe("spec req — field-flag authoring", () => {
     expect(added().statement).toBe(STATEMENTS[1]);
   });
 
-  // @spec REQ-070 integration
-  // @spec REQ-071 integration
+  // @spec REQ-083 integration
+  // @spec REQ-084 integration
   test("--text naming an existing statement warns of each duplicate on stderr and still writes", async () => {
     setIsTTY(undefined);
     await reqRun({

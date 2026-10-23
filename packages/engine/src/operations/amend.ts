@@ -140,7 +140,7 @@ function applyFields(
  * @spec REQ-044
  * @spec REQ-076
  * @spec SCHM-043
- * @spec REQ-070
+ * @spec REQ-083
  */
 export async function amend(
   input: AmendInput,
