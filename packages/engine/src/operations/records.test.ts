@@ -23,7 +23,7 @@ afterAll(() => {
   rmSync(platformDir, { recursive: true, force: true });
 });
 
-// @spec MAP-003 unit
+// @spec MAP-006 unit
 describe("getRecord", () => {
   test("a known id answers its full record", () => {
     const r = getRecord(storage, "BILLING-009");

@@ -1,5 +1,4 @@
-// @spec PROOF-015 unit
-// @spec PROOF-016 unit
+// @spec PROOF-020 unit
 import { describe, expect, test } from "bun:test";
 import type { Requirement, RequirementStatus, Tag } from "@spec-engine/shared";
 import type { TestCaseResult } from "../results/junit";

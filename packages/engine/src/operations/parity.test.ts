@@ -187,7 +187,7 @@ describe("read operations answer identically on every surface", () => {
     expect((await apiJson("/api/provenance/by-issue?issue=ENG-1")).body).toEqual(viaCli.byIssue);
   });
 
-  // @spec MAP-003 integration
+  // @spec MAP-006 integration
   // @spec MAP-004 integration
   // @spec SCHM-040 integration
   test("get and list: full records agree across the operation, the API, and MCP", async () => {

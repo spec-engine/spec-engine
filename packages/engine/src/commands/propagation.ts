@@ -1,4 +1,4 @@
-// @spec PROP-005
+// @spec PROP-007
 
 import { defineCommand } from "citty";
 import { EXIT, resolveDbPath } from "../constants";

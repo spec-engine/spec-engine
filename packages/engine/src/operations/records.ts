@@ -17,7 +17,7 @@ export interface GetRecordResult {
 }
 
 /** One requirement's full record and the code sites its tags name. */
-// @spec MAP-003
+// @spec MAP-006
 // @spec MAP-005
 // @spec SCHM-012
 // @spec SCHM-040

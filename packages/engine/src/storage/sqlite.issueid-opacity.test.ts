@@ -1,4 +1,4 @@
-// @spec PROV-006
+// @spec PROV-007
 //
 // The issue_id-opacity CI fence proves the source never names issue_id as a
 // key; this proves the live view behaves that way. The probe's issue_id

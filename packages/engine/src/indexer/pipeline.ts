@@ -295,7 +295,7 @@ function buildRows(input: BuildRowsInput): IndexRows {
 
   // Every diagnostics row is pushed before the one sort.
   const diagnostics: Omit<ParseDiagnostic, "id">[] = validateStructure(specs);
-  // @spec INIT-032
+  // @spec CHCK-059
   for (const s of unpinned) {
     diagnostics.push({
       code: DiagnosticCode.NO_SPEC_CONFIG,
@@ -339,7 +339,7 @@ function buildRows(input: BuildRowsInput): IndexRows {
 /**
  * An unresolved citation keeps `term_id = null` and still lands, so
  * UNDEFINED_TERM can fire; term_citations has no FK for that reason.
- * @spec INDX-012
+ * @spec INDX-026
  */
 function buildTermRows(
   specs: ParsedSpec[],

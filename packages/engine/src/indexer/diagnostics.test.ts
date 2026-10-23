@@ -1,4 +1,4 @@
-// @spec INDX-008 unit
+// @spec INDX-022 unit
 //
 // The planted trees live under src/testing/fixtures/diagnostics/ so the
 // canonical platform-fixture stays clean.

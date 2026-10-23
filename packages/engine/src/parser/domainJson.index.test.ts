@@ -46,7 +46,7 @@ async function writeCitesFixture(root: string): Promise<void> {
   await fx.member("api", { files: { "src/noop.ts": "export const noop = () => 0;\n" } });
 }
 
-// @spec INDX-012 unit
+// @spec INDX-026 unit
 describe("cites → term_citations resolution", () => {
   test("term/aliases flatten to term_aliases (canonical name + each alias)", async () => {
     const fixture = join(tmp, "cites-fixture");

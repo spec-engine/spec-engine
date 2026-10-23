@@ -1,5 +1,5 @@
-// @spec PROOF-014 unit
-// @spec PROOF-009 unit
+// @spec PROOF-019 unit
+// @spec PROOF-017 unit
 
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
@@ -184,6 +184,7 @@ describe("parseJUnit — CDATA failure body with ']]' and '>'", () => {
   });
 });
 
+// @spec PROOF-021 unit
 describe("parseJUnit — malformed input", () => {
   test("unbalanced tags throw", () => {
     const bad = '<testsuites><testcase name="x"></testsuites>';

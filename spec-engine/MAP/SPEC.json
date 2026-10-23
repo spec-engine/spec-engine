@@ -34,15 +34,16 @@
     },
     {
       "id": "MAP-003",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec get is run with a requirement id, the spec CLI shall print that requirement's full record from the derived index, or print [] on stdout with guidance on stderr and exit 0 when the id is unknown.",
       "why": "An agent that needs a requirement's statement, status, and version today has to start spec serve or grep SPEC.json; every other read has a CLI verb.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "MAP-006",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 3
     },
     {
       "id": "MAP-004",
@@ -61,6 +62,30 @@
       "status": "active",
       "statement": "When spec get prints a requirement, the spec CLI shall list its implementing sites and its verifying sites, each a file and line read from the code tags, sorted by repo, file, and line.",
       "why": "The code tags are the only record of where a requirement is built and proved, so a reader who cannot see them from the requirement goes back to grepping the tree.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "MAP-006",
+      "status": "active",
+      "statement": "When spec get runs with a requirement id, it shall print that requirement's full record.",
+      "why": "An agent that needs a requirement's statement, status, and version today has to start spec serve or grep SPEC.json; every other read has a CLI verb.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "MAP-007",
+      "status": "active",
+      "statement": "When spec get is given an unknown requirement id, it shall print [] and exit 0.",
+      "why": "If an unknown id failed the command, an agent probing for an id would treat a normal empty answer as an error.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

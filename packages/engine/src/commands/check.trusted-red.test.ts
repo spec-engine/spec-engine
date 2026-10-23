@@ -1,4 +1,4 @@
-// @spec PROOF-011
+// @spec PROOF-020 integration
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";

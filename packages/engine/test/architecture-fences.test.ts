@@ -68,7 +68,7 @@ describe("architecture fences (scripts/arch-fences.sh)", () => {
     fenceHeld("SCHM-029");
   });
 
-  // @spec PROV-006 unit
+  // @spec PROV-007 unit
   test("PROV-006: issue_id is never a key, index, join, or grouping column", () => {
     fenceHeld("PROV-006");
     expect(stdout).toContain("issue_id-opacity gate: OK");

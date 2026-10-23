@@ -1,4 +1,4 @@
-// @spec INDX-008
+// @spec INDX-022
 //
 // Bad rows still land in the `requirements` table: the DB has no CHECK
 // constraints, and this validator only produces diagnostic rows.

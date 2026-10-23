@@ -98,7 +98,6 @@ fence_schm030_schema_reads() {
 # import the write half (planInit, applyInit, planLink, applyLink) and the
 # pure probes (detect, discover); nothing else in production source imports
 # the package at all.
-# @spec INIT-037
 fence_init037_platform_map_seam() {
   local importers readers
   importers=$(engine_sources | xargs grep -lE 'from "@spec-engine/platform-map"' 2>/dev/null | sort)
@@ -140,7 +139,7 @@ fence_schm08_no_sql_files() {
 }
 
 # --- PROV-006: issue_id is never an identity construct ---------------------
-# @spec PROV-006
+# @spec PROV-007
 fence_prov02_issue_id_opacity() {
   PAT='(PRIMARY KEY[^,]*issue_id|issue_id[^,]*PRIMARY KEY|FOREIGN KEY[^)]*issue_id|issue_id[^)]*FOREIGN KEY|UNIQUE\([^)]*issue_id|CREATE[[:space:]]+(UNIQUE[[:space:]]+)?INDEX[^;]*\([^)]*issue_id|JOIN[^;]*ON[^;]*issue_id|GROUP BY[^;]*issue_id)'
   OFFENDERS=$(cat packages/shared/src/schema.ts packages/engine/src/storage/sqlite.ts \

@@ -1,4 +1,4 @@
-// @spec GATE-008
+// @spec GATE-010
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { appendFileSync, readFileSync, rmSync } from "node:fs";

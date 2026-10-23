@@ -177,7 +177,7 @@ function place(repoDir: string, canonical: string): { ok: true; placement: Place
 /**
  * Record in platform-map's per-user file where a declared member's checkout
  * lives when it is not a child of the platform folder.
- * @spec INIT-039
+ * @spec INIT-056
  */
 function link(canonical: string, platformRoot: string): { ok: true; userFile: string } | OpFailure {
   if (!existsSync(join(canonical, PLATFORM_MAP_FILENAME))) {
@@ -201,7 +201,7 @@ function link(canonical: string, platformRoot: string): { ok: true; userFile: st
  * @spec INIT-015
  * @spec INIT-016
  * @spec INIT-017
- * @spec INIT-027
+ * @spec INIT-050
  */
 export async function resolveMemberPin(input: MemberPinInput): Promise<MemberPin | OpFailure> {
   const canon = canonicalize(input.repoDir);
@@ -257,7 +257,7 @@ export async function resolveMemberPin(input: MemberPinInput): Promise<MemberPin
  * The platform-map writes that make `name` a member of the platform at
  * `platformDir`: a platform file entry and a marker. Nothing is written here;
  * `applyInit` writes the plan, and skips every file that already exists.
- * @spec INIT-038
+ * @spec INIT-055
  */
 export function planDeclare(
   platformDir: string,
@@ -422,7 +422,7 @@ export type InitMemberResult = WriteMemberConfigResult & {
  * Declare the target through platform-map when the platform file does not
  * list it, then write its pin. The declaration plan and the config refusals
  * are both judged before the first byte is written.
- * @spec INIT-038
+ * @spec INIT-055
  */
 export async function completeInit(
   resolved: MemberPin,

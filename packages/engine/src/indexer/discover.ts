@@ -107,7 +107,7 @@ function extractPin(specs: string): number {
 export async function derivePlatformVersion(platformDir: string): Promise<number> {
   // @spec SCHM-022
   // @spec SCHM-023
-  // @spec INIT-029
+  // @spec INIT-052
   const canonicalPath = join(resolve(platformDir), CANONICAL_SPECS_DIR);
   const jsonPaths = await findDomainJsonFiles(canonicalPath);
   let version = 1;
@@ -231,7 +231,7 @@ export interface MemberLocation {
  * the child-directory convention or through the per-user file); else its
  * parent when the parent holds `spec-engine/`; else platform-map's located
  * root when that holds `spec-engine/`; else null.
- * @spec INIT-034
+ * @spec INIT-053
  */
 export function locateMember(dir: string): MemberLocation | null {
   const abs = resolve(dir);
@@ -392,7 +392,7 @@ function toRepos(columns: readonly Column[]): Repo[] {
 /** A lone repository's own column, named by its directory and pinned to the
  *  derived version. A directory named `spec-engine` would collide with the
  *  canonical row, so that column is `root`.
- *  @spec INIT-041 */
+ *  @spec INIT-057 */
 function selfMember(absPlatform: string, platformVersion: number): Repo {
   const dir = basename(absPlatform);
   return {
@@ -453,7 +453,7 @@ function packageDirs(repo: MapRepo): string[] | null {
 /**
  * A lone monorepo's files outside every workspace package, as one column
  * named like a lone single repo's.
- * @spec INIT-041
+ * @spec INIT-057
  */
 function loneRootColumn(absPlatform: string, repo: MapRepo, platformVersion: number): Column[] {
   const dirs = packageDirs(repo);
@@ -480,7 +480,7 @@ async function loneMembers(
 /**
  * A pinned member's columns: a monorepo's packages plus its files outside
  * them under the member's name, else the member itself.
- * @spec INIT-041
+ * @spec INIT-057
  */
 async function memberColumns(repo: MapRepo, path: string, cfg: SpecConfig): Promise<Column[]> {
   const pin = extractPin(cfg.specs);
@@ -557,7 +557,7 @@ async function membersOf(
   const { mapped, located } = reading;
   const diagnostics = surfaced(mapped);
   if (mapped.mode !== "multi-repo") {
-    // @spec INIT-035
+    // @spec INIT-054
     const members = await loneMembers(mapped.repos[0], absPlatform, platformVersion);
     return { mode: mapped.mode, members, unpinned: [], undeclared: [], diagnostics };
   }
@@ -588,7 +588,6 @@ async function membersOf(
  * the coverage columns platform-map's map names, each pinned by its own
  * `spec-engine.member.json` (a lone repository's columns by the derived
  * version). Throws `NotASpecPlatformError` when `spec-engine/` is absent.
- * @spec INIT-037
  */
 export async function discoverRepos(
   platformDir: string,
@@ -602,7 +601,7 @@ export async function discoverRepos(
   const platformVersion = await derivePlatformVersion(absPlatform);
   if (!opts.quiet) warnIfRetiredManifest(absPlatform, platformVersion);
 
-  // @spec INIT-028
+  // @spec INIT-051
   const canonical: Repo = {
     name: CANONICAL_SPECS_DIR,
     path: canonicalPath,

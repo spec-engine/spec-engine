@@ -1,5 +1,5 @@
-// @spec PROOF-014
-// @spec PROOF-009
+// @spec PROOF-019
+// @spec PROOF-017
 //
 // Hand-rolled on purpose: no XML dependency. Runner variance (bun's nested
 // suites, jest/pytest flat) is absorbed by fixed attribute precedence, not a
@@ -29,6 +29,7 @@ export type TestCaseResult = {
 /** Thrown on malformed / unbalanced / truncated XML. A typed sentinel (not a
  *  string-matched plain Error) so `commands/check.ts` can branch on it via
  *  `instanceof` and surface exit 2, distinct from an exit-1 diagnostic. */
+// @spec PROOF-021
 export class JUnitParseError extends Error {
   constructor(message: string) {
     super(`Malformed JUnit XML: ${message}`);

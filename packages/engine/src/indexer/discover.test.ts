@@ -1,8 +1,7 @@
-// @spec INIT-037
-// @spec INIT-032
-// @spec INIT-035
+// @spec CHCK-059
+// @spec INIT-054
 // @spec CHCK-055
-// @spec INIT-034
+// @spec INIT-053
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { cpSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
@@ -157,7 +156,7 @@ describe("a declared platform: membership comes from the platform file", () => {
     expect(r.members[2]?.path).toBe(join(shared.dir, "packages", "ui"));
   });
 
-  // @spec INIT-041 unit
+  // @spec INIT-057 unit
   test("a monorepo member's root column is named by the member and skips its packages", async () => {
     const shared = await fx.member("shared", { ignore: ["generated"] });
     shared.workspace(["packages/ui"]);
@@ -303,7 +302,7 @@ describe("a folder of repositories with no platform file is a preview: nothing i
 });
 
 describe("a lone repository", () => {
-  // @spec INIT-028 unit
+  // @spec INIT-051 unit
   test("a lone single repo is its own column, named by its directory and pinned to the derived version", async () => {
     await writeVersionedDomain(tmp, "ALPHA", 3);
     await mkdir(join(tmp, "src"), { recursive: true });
@@ -354,7 +353,7 @@ describe("a lone repository", () => {
     expect(r.members.some((m) => m.name === "packages")).toBe(false);
   });
 
-  // @spec INIT-041 unit
+  // @spec INIT-057 unit
   test("a lone monorepo's files outside every package are one more column, named by the directory", async () => {
     await writeVersionedDomain(tmp, "ALPHA", 2);
     fx.workspace(["packages/engine", "scripts"]);
@@ -368,7 +367,7 @@ describe("a lone repository", () => {
     expect(root?.ignore).toEqual(["packages/engine", "scripts"]);
   });
 
-  // @spec INIT-041 unit
+  // @spec INIT-057 unit
   test("a lone repository in a directory named spec-engine gets a column named root", async () => {
     const dir = join(tmp, "checkout", "spec-engine");
     mkdirSync(join(dir, ".git"), { recursive: true });
@@ -383,7 +382,7 @@ describe("a lone repository", () => {
     expect(root?.ignore).toEqual(["packages/engine"]);
   });
 
-  // @spec INIT-041 integration
+  // @spec INIT-057 integration
   test("a root-level tag implements its requirement once; a package's tag is not scanned twice", async () => {
     const alpha = await fx.domain("ALPHA");
     const atRoot = await alpha.req({ statement: "s.", why: "w" });
@@ -573,7 +572,7 @@ describe("the derived platform version", () => {
     expect(r.platformVersion).toBe(2);
   });
 
-  // @spec INIT-029 unit
+  // @spec INIT-052 unit
   test("a domain SPEC.json the reader rejects contributes nothing", async () => {
     await writeVersionedDomain(tmp, "ALPHA", 3);
     cpSync(join(NOT_JSON, "spec-engine"), join(tmp, "spec-engine"), { recursive: true });

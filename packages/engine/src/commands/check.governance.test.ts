@@ -1,5 +1,6 @@
 // @spec CHCK-023 integration
-// @spec OWNER-002 integration
+// @spec OWNER-003 integration
+// @spec OWNER-004 integration
 //
 // The base ref is the unmutated clone; each scenario mutates only the
 // working tree copy of spec-engine/BILLING/SPEC.json.

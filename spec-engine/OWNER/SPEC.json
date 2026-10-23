@@ -21,14 +21,39 @@
     },
     {
       "id": "OWNER-002",
-      "status": "active",
+      "status": "superseded",
       "statement": "When a change flips a requirement's status into superseded or deprecated on a spec path with CODEOWNERS domain owners and no domain owner is in the approver set, spec check shall report UNAPPROVED_STATUS_FLIP — warning severity by default, error severity under --require-owner-approval.",
+      "why": "Ending a requirement's life is a governance act; without the owner check, anyone who can edit the spec file can end a requirement and the CODEOWNERS policy is decorative.",
+      "supersedes": null,
+      "supersededBy": "OWNER-003",
+      "relates": [],
+      "issues": [],
+      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": [],
+      "supersededAtVersion": 3
+    },
+    {
+      "id": "OWNER-003",
+      "status": "active",
+      "statement": "When a change flips a requirement to superseded or deprecated without approval from a CODEOWNERS owner of its domain, spec check shall report UNAPPROVED_STATUS_FLIP at warning severity.",
       "why": "Ending a requirement's life is a governance act; without the owner check, anyone who can edit the spec file can end a requirement and the CODEOWNERS policy is decorative.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
       "issues": [],
-      "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "OWNER-004",
+      "status": "active",
+      "statement": "Where --require-owner-approval is given, spec check shall report UNAPPROVED_STATUS_FLIP at error severity.",
+      "why": "Without an error grade, a team that requires owner sign-off could merge a status flip no owner approved.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
       "aliases": [],
       "cites": []
     }

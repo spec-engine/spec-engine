@@ -12,7 +12,7 @@ export interface GuardResult {
   losses: Loss[];
 }
 
-/** @spec GUARD-013 */
+/** @spec GUARD-032 */
 export async function guard(
   storage: Storage,
   platformDir: string,

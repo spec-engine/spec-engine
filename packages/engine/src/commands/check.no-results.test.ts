@@ -1,4 +1,4 @@
-// @spec PROOF-012
+// @spec PROOF-018
 //
 // Under --json the PROOFS_UNCONFIRMED advisory must stay off stdout: smokes
 // 7 and 18 under scripts/smoke/ parse that array against the baseline.

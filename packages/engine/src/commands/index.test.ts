@@ -1,4 +1,4 @@
-// @spec INDX-009
+// @spec INDX-023
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { cpSync, existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";

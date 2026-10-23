@@ -94,16 +94,17 @@
     },
     {
       "id": "GATE-008",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec gate <repo> <KEY-NNN> is run, the spec CLI shall pass (exit 0) only if the requirement's status is Active and its changed_at_version is covered by the member's pinned spec version (equality passes), and shall otherwise exit 1 with a single typed reason.",
       "why": "Without a machine-checkable approval gate, a member repo can build against a draft, superseded, deprecated, or newer-than-pinned requirement — the approval recorded by the spec merge never reaches the PR check that needed it.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "GATE-010",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 9
     },
     {
       "id": "GATE-009",
@@ -115,6 +116,18 @@
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "GATE-010",
+      "status": "active",
+      "statement": "When spec gate runs for a member and a requirement, it shall exit 0 only when the requirement is Active and the member's pin is at or above its changed_at_version.",
+      "why": "Without a machine-checkable approval gate, a member repo can build against a draft, superseded, deprecated, or newer-than-pinned requirement — the approval recorded by the spec merge never reaches the PR check that needed it.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
       "aliases": [],
       "cites": []
     }

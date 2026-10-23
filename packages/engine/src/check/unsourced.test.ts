@@ -1,4 +1,4 @@
-// @spec INDX-008 unit
+// @spec INDX-022 unit
 import { describe, expect, test } from "bun:test";
 import type { ProvenanceRow, Requirement, RequirementStatus } from "@spec-engine/shared";
 import { unsourcedChanges } from "./unsourced";

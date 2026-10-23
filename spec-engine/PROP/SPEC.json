@@ -1,7 +1,7 @@
 {
   "key": "PROP",
   "owner": "drea",
-  "updated": "2026-09-05",
+  "updated": "2026-10-22",
   "scope": "Propagation and migration state, including the drift definition. Belongs here: the per-repo migrated or drifted state; spec propagation; the drift definition. Does not belong here: the SPEC.json model shape (SCHM). Boundary case: the drift definition is PROP's contract; the SQL view that computes it is only enforcement.",
   "grammar": "ears",
   "requirements": [
@@ -60,22 +60,35 @@
     },
     {
       "id": "PROP-005",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec propagation <KEY-NNN> is run for a superseded requirement, the spec CLI shall report one row per member repo classifying it as migrated to the successor (verified or unverified), still on the predecessor, on another requirement of the domain, or referencing the domain not at all.",
       "why": "After a supersession ships, a member can keep building on the predecessor indefinitely; without per-repo migration state no one can see which repos are behind until the drift bites in production.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "PROP-007",
       "relates": [],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 5
     },
     {
       "id": "PROP-006",
       "status": "active",
       "statement": "When propagation is reported for a requirement, the spec CLI and the webapp propagation page shall list the member rows in dependency order: a member after every member it depends on in the platform map's dependsOn, and members at the same depth by name.",
       "why": "A consumer can only migrate to a successor after the packages it depends on ship it; a name-ordered list hides that order and sends teams to migrate downstream members first.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "PROP-007",
+      "status": "active",
+      "statement": "When spec propagation runs for a superseded requirement, it shall classify each member repo as migrated to the successor, still on the predecessor, or elsewhere in the domain.",
+      "why": "After a supersession ships, a member can keep building on the predecessor indefinitely; without per-repo migration state no one can see which repos are behind until the drift bites in production.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

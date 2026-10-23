@@ -88,7 +88,6 @@ ORDER BY d.repo, d.source_file, d.line
 `;
 
 // @spec CHCK-056
-// @spec PROOF-011
 export const Q4_ORPHAN_REQ_SQL = `
 SELECT
   'ORPHAN_REQ'                                                AS code,

@@ -70,7 +70,7 @@ async function run(command: unknown, args: Record<string, unknown>): Promise<num
 
 describe("adoption ladder", () => {
   // ----- Rung 1: one repo, specs inline, zero ceremony ----------------------
-  // @spec INIT-035 e2e
+  // @spec INIT-054 e2e
   test("rung 1: spec map self-consumes the lone repo — basename column, no config", async () => {
     const repo = clone(SINGLE_REPO);
     const code = await run(mapCommand, { platformDir: repo });

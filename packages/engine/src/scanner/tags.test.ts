@@ -1,5 +1,6 @@
-// @spec INDX-010 unit
-// @spec INDX-011 unit
+// @spec INDX-024 unit
+// @spec INDX-028 unit
+// @spec INDX-025 unit
 
 import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -113,7 +114,7 @@ describe("findCodeFiles", () => {
     expect(isPathIgnored("src/renew.ts")).toBe(false);
   });
 
-  // @spec INDX-018 unit
+  // @spec INDX-027 unit
   test("an extra token matches only as a repo-relative prefix", () => {
     expect(isPathIgnored("generated/x.ts", ["generated"])).toBe(true);
     expect(isPathIgnored("generated/x.ts", ["generated/"])).toBe(true);
@@ -151,7 +152,7 @@ describe("isTestFile", () => {
     ["api/src/foo.spec.ts", true],
     // "src/test.ts" — single token doesn't match `.test.` (needs both dots)
     ["api/src/test.ts", false],
-    // @spec INDX-015 unit
+    // @spec INDX-025 unit
     ["api/renew_test.go", true],
     ["api/renew.go", false],
     ["api/tests/renew.rs", true],
