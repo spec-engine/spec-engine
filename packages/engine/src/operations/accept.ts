@@ -17,10 +17,10 @@ export interface AcceptResult {
 }
 
 /**
- * @spec REQ-038
+ * @spec REQ-075
  * @spec REQ-040
  * @spec REQ-041
- * @spec SCHM-024
+ * @spec SCHM-043
  * @spec REQ-060
  */
 export async function accept(input: AcceptInput): Promise<AcceptResult | OpFailure> {

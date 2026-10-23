@@ -41,7 +41,7 @@ export const relatesArg = {
  * empties dropped. citty keeps only the last occurrence of a repeated flag, so
  * `rawArgs` is read first; `parsed` covers an in-process call that passes no
  * raw argv. Undefined when the flag is absent.
- * @spec REQ-050
+ * @spec REQ-077
  */
 export function listFlag(
   rawArgs: readonly string[],

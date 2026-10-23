@@ -278,7 +278,6 @@ function placeholderStatement(id: string): string {
 
 /**
  * A platform directory a test authors through the operations.
- * @spec SCHM-035
  */
 export class TestPlatform extends FileTree {
   private constructor(readonly dir: string) {

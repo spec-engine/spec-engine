@@ -92,7 +92,7 @@ An operation takes typed input and returns typed data or a typed refusal. It nev
 | `newDomain`, `listDomains`, `setDomainGrammar` | platform dir, key | the scaffolded file, or `usage` / `conflict` / `invalid_domain_file`; the `{ key, scope }` rows; the written `grammar` / `grammarSeverity`, or `usage` / `not_found` / `invalid_domain_file` | `spec domain` | | |
 | `writeGlossary`, `migrateGlossary`, `checkGlossary` | platform dir | the generated count, the migrated count or a skip, clean or drift | `spec glossary` | | |
 
-Reads take an open `Storage` handle because the surface owns the handle's lifetime: the CLI and MCP open one per call through `withIndex`, the API keeps one for the life of the server. Writes take the platform directory because they edit `SPEC.json` files. A lifecycle write takes a fresh-tags callback for its worklist, so a one-shot surface cold-rebuilds a throwaway index while the API re-indexes into the handle it keeps. Every guard runs before the first byte is written (REQ-038 <!-- @spec REQ-038 -->), and `operations/parity.test.ts` proves each surface writes the same envelope.
+Reads take an open `Storage` handle because the surface owns the handle's lifetime: the CLI and MCP open one per call through `withIndex`, the API keeps one for the life of the server. Writes take the platform directory because they edit `SPEC.json` files. A lifecycle write takes a fresh-tags callback for its worklist, so a one-shot surface cold-rebuilds a throwaway index while the API re-indexes into the handle it keeps. Every guard runs before the first byte is written (REQ-038 <!-- @spec REQ-075 -->), and `operations/parity.test.ts` proves each surface writes the same envelope.
 
 ## The single seams
 

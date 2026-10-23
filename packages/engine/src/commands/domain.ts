@@ -66,7 +66,7 @@ export const domainListCommand = defineCommand({
   },
   async run({ args }) {
     const platformDir = resolvePlatformDir(args);
-    // @spec DOMAIN-018
+    // @spec REQ-071
     try {
       assertSpecPlatform(platformDir);
     } catch (e) {

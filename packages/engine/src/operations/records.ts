@@ -19,7 +19,7 @@ export interface GetRecordResult {
 /** One requirement's full record and the code sites its tags name. */
 // @spec MAP-006
 // @spec MAP-005
-// @spec SCHM-012
+// @spec SCHM-041
 // @spec SCHM-040
 export function getRecord(storage: Storage, id: string): GetRecordResult {
   const req = storage.getRequirement(id);
@@ -50,7 +50,7 @@ export interface ListRecordsResult {
 
 /** Every requirement record, optionally filtered. */
 // @spec MAP-004
-// @spec SCHM-012
+// @spec SCHM-041
 export function listRecords(storage: Storage, filter: ListRecordsFilter = {}): ListRecordsResult {
   const rows = storage.listRequirements(filter);
   return {

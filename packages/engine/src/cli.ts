@@ -1,5 +1,4 @@
 // @spec INIT-054
-// @spec REQ-019
 // Every subcommand is lazy-imported so the compiled binary starts fast.
 
 import { defineCommand, runMain, showUsage } from "citty";

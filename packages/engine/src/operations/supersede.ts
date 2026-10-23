@@ -85,7 +85,7 @@ export async function supersedeTarget(
 
 /**
  * The successor's why and relates: the input's, else the predecessor's.
- * @spec REQ-051
+ * @spec REQ-078
  * @spec REQ-063
  */
 function successorFields(
@@ -101,7 +101,6 @@ function successorFields(
 /**
  * The successor keeps the predecessor's headword and synonyms unless the
  * input names them.
- * @spec REQ-033
  * @spec REQ-034
  */
 function applyTermOverrides(successor: SpecRequirement, input: SupersedeInput): void {
@@ -124,7 +123,7 @@ function flipPredecessor(req: SpecRequirement, newId: string, issue?: string): v
  * authored. The TERM domain bumps its authored `specVersion` (the pin every
  * citation drifts against) unless `noBump`, and its successor carries the
  * version it was minted at.
- * @spec REQ-036
+ * @spec REQ-074
  */
 function applyVersionStage(
   domain: SpecDomain,
@@ -149,8 +148,8 @@ function applyVersionStage(
  * @param freshTags how this surface derives current tags for the retag
  *   after the write: the CLI and MCP cold-rebuild a throwaway index,
  *   the API re-indexes into its long-lived handle.
- * @spec REQ-038
- * @spec SCHM-024
+ * @spec REQ-075
+ * @spec SCHM-043
  */
 export async function supersede(
   input: SupersedeInput,

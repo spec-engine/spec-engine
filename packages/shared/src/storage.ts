@@ -1,4 +1,4 @@
-// @spec SCHM-012
+// @spec SCHM-041
 // Implemented only by packages/engine/src/storage/sqlite.ts.
 
 import type { DiagnosticCode } from "./diagnostics";

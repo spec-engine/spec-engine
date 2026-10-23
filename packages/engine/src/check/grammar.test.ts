@@ -1,6 +1,6 @@
 // @spec CHCK-008 integration
 // @spec REQ-054 integration
-// @spec SCHM-010 integration
+// @spec SCHM-042 integration
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { readFileSync, rmSync } from "node:fs";

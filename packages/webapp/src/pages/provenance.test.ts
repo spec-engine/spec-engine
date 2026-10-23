@@ -369,9 +369,8 @@ describe("Setup scan-mode detection", () => {
   });
 });
 
-// @spec SERV-014 integration
+// @spec SERV-033 integration
 // @spec SERV-016 integration
-// @spec SERV-015 integration
 describe("status filtering: live-contract default + ?all=1 toggle", () => {
   test("Coverage: superseded rows hidden by default, shown under ?all=1, toggle link present", async () => {
     const app = buildApp(); // platform-fixture: BILLING-001 is Superseded

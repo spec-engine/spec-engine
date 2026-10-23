@@ -46,8 +46,7 @@ export interface MintTermResult {
 
 /**
  * Append an Active term. `not_found` when the platform has no TERM store.
- * @spec REQ-033
- * @spec SCHM-024
+ * @spec SCHM-043
  */
 export async function mintTerm(input: MintTermInput): Promise<MintTermResult | OpFailure> {
   const { platformDir } = input;
@@ -119,9 +118,8 @@ export interface ReviseTermResult {
  * Rewrite a term's definition in place (same id) and bump the TERM envelope's
  * `specVersion`, the pin every citing requirement drifts against. Only an
  * Active or Draft term revises; a superseded term is history.
- * @spec REQ-033
- * @spec REQ-038
- * @spec SCHM-024
+ * @spec REQ-075
+ * @spec SCHM-043
  */
 export async function reviseTerm(input: ReviseTermInput): Promise<ReviseTermResult | OpFailure> {
   const { platformDir, id, definition } = input;
@@ -198,7 +196,7 @@ async function confirmTarget(
  * citing entry re-pins; history keeps the citations it died with.
  * @spec CHCK-018
  * @spec CHCK-019
- * @spec REQ-038
+ * @spec REQ-075
  */
 export async function confirmTerm(input: ConfirmTermInput): Promise<ConfirmTermResult | OpFailure> {
   const { platformDir, reqId, termId } = input;

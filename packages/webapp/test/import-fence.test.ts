@@ -1,4 +1,4 @@
-// @spec SCHM-012
+// @spec SCHM-041
 //
 // A second fence behind Biome's `noRestrictedImports` in
 // `packages/webapp/biome.json`: it still fails if the rule is disabled, the

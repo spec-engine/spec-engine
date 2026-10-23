@@ -107,13 +107,12 @@ function applyFields(
     fieldsChanged.push("why");
     refValues.push(fields.why ?? "");
   }
-  // @spec REQ-050
-  // @spec REQ-051
+  // @spec REQ-077
+  // @spec REQ-078
   if (fields.relates !== undefined) {
     req.relates = splitList(fields.relates);
     fieldsChanged.push("relates");
   }
-  // @spec REQ-033
   // @spec REQ-034
   if (fields.term !== undefined) {
     req.term = fields.term;
@@ -134,8 +133,8 @@ function applyFields(
 
 /**
  * @spec REQ-044
- * @spec REQ-048
- * @spec SCHM-024
+ * @spec REQ-076
+ * @spec SCHM-043
  */
 export async function amend(input: AmendInput): Promise<AmendResult | OpFailure> {
   const { platformDir, id, fields } = input;

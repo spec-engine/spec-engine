@@ -3,9 +3,8 @@
 // @spec REQ-024
 // @spec REQ-025
 // @spec REQ-026
-// @spec REQ-027
-// @spec REQ-028
-// @spec REQ-019
+// @spec REQ-071
+// @spec REQ-072
 // @spec REQ-029
 // @spec REQ-026
 // @spec REQ-030
@@ -14,7 +13,7 @@
 // @spec REQ-039
 
 import { afterEach, beforeEach, describe, expect, mock, setSystemTime, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { nextRequirementId } from "../authoring/domains";
@@ -324,43 +323,6 @@ describe("spec req — non-TTY subprocess keeps the composable id query", () => 
       expect(readSpec(sub.dir, "BILLING")).toBe(before);
     } finally {
       sub.remove();
-    }
-  });
-});
-
-describe("spec new / spec id removed", () => {
-  test("--help lists domain + req and has no new/id subcommand row", () => {
-    const { exitCode, stdout } = runCli("--help");
-    expect(exitCode).toBe(0);
-    // citty colorizes subcommand names (`\x1b[36mdomain\x1b[39m`); strip
-    // ANSI escapes so the line-anchored row regexes see plain text. Rows
-    // render as `  <name>    <description>`.
-    // biome-ignore lint/suspicious/noControlCharactersInRegex: ANSI stripping requires the ESC control char
-    const plain = stdout.replace(/\[[0-9;]*m/g, "");
-    expect(plain).toMatch(/^\s+domain\s/m);
-    expect(plain).toMatch(/^\s+req\s/m);
-    expect(plain).not.toMatch(/^\s+(new|id)\s/m);
-  });
-
-  test("`spec new TESTKEY` has no scaffold side effect", () => {
-    const sub = mkdtempSync(join(tmpdir(), "spec-req-oldnew-"));
-    try {
-      runCli("new", "TESTKEY", sub);
-      // Whatever citty's unknown-command behavior prints, the scaffold must
-      // NOT have happened — assert by side-effect absence, not error text.
-      expect(existsSync(join(sub, "spec-engine", "TESTKEY", "SPEC.md"))).toBe(false);
-    } finally {
-      rmSync(sub, { recursive: true, force: true });
-    }
-  });
-
-  test("`spec id TESTKEY` prints no next id", () => {
-    const sub = mkdtempSync(join(tmpdir(), "spec-req-oldid-"));
-    try {
-      const { stdout } = runCli("id", "TESTKEY", sub);
-      expect(stdout).not.toContain("TESTKEY-001");
-    } finally {
-      rmSync(sub, { recursive: true, force: true });
     }
   });
 });

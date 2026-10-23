@@ -29,7 +29,7 @@ async function scaffoldPlatform(): Promise<void> {
   });
 }
 
-// @spec SCHM-015
+// @spec REQ-075
 describe("round-trip: mint writes JSON the index reads back", () => {
   test("append → re-read shows the requirement with status active", async () => {
     await scaffoldPlatform();

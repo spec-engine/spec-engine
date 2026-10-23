@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { parseDomainText, validateAndWrite, validateDomainFile } from "./domain";
+import { validateAndWrite, validateDomainFile } from "./domain";
 
 const SRC = "spec-engine/BILLING/SPEC.json";
 
@@ -173,8 +173,8 @@ describe("validateDomainFile — structural ACCEPT despite a SEMANTIC defect", (
     if (!res.ok) throw new Error("expected accept");
     expect(res.data.key).toBe("BILLING");
     expect(res.data.requirements.length).toBe(2);
-    expect(res.data.requirements[0]!.relates).toEqual([]);
-    expect(res.data.requirements[0]!.issues).toEqual([]);
+    expect(res.data.requirements[0]?.relates).toEqual([]);
+    expect(res.data.requirements[0]?.issues).toEqual([]);
   });
 
   test("optional array fields default to [] when omitted", () => {
@@ -206,7 +206,7 @@ describe("validateDomainFile — structural ACCEPT despite a SEMANTIC defect", (
   });
 });
 
-// @spec CHRT-010 unit
+// @spec SCHM-042 unit
 describe("scope round-trip", () => {
   // `Bun.file` and `validateAndWrite` only: this shared-package test stays
   // node:fs-free under the runtime-free import fence.
@@ -242,7 +242,7 @@ describe("scope round-trip", () => {
   });
 });
 
-// @spec SCHM-016 unit
+// @spec SCHM-042 unit
 describe("term field round-trip", () => {
   let n = 0;
   function writePath() {
@@ -296,39 +296,5 @@ describe("term field round-trip", () => {
     const r = reread.data.requirements[0]! as Record<string, unknown>;
     expect(r.aliases).toEqual([]);
     expect(r.cites).toEqual([]);
-  });
-});
-
-// @spec SCHM-030 unit
-describe("parseDomainText — bytes become a domain only through the schema", () => {
-  test("a valid envelope parses to the defaults-applied domain", () => {
-    const res = parseDomainText(JSON.stringify(validDomain()), SRC);
-    expect(res.ok).toBe(true);
-    if (!res.ok) throw new Error("expected accept");
-    expect(res.data.key).toBe("BILLING");
-    expect(res.data.requirements[0]?.relates).toEqual([]);
-  });
-
-  test("bytes that are not JSON are one INVALID_DOMAIN_FILE row, reason not_json", () => {
-    const res = parseDomainText("{ not json", SRC);
-    expect(res.ok).toBe(false);
-    if (res.ok) throw new Error("expected reject");
-    expect(res.reason).toBe("not_json");
-    expect(res.diagnostics).toHaveLength(1);
-    expect(res.diagnostics[0]?.code).toBe("INVALID_DOMAIN_FILE");
-    expect(res.diagnostics[0]?.source_file).toBe(SRC);
-    expect(res.diagnostics[0]?.line).toBe(0);
-    expect(res.diagnostics[0]?.detail.startsWith("not valid JSON:")).toBe(true);
-  });
-
-  test("JSON that fails the schema carries the validator's own diagnostics, reason schema", () => {
-    const input = { key: "BILLING", requirements: [] };
-    const res = parseDomainText(JSON.stringify(input), SRC);
-    expect(res.ok).toBe(false);
-    if (res.ok) throw new Error("expected reject");
-    expect(res.reason).toBe("schema");
-    const direct = validateDomainFile(input, SRC);
-    if (direct.ok) throw new Error("expected the validator to reject too");
-    expect(res.diagnostics).toEqual(direct.diagnostics);
   });
 });

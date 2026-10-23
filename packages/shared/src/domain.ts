@@ -54,7 +54,7 @@ export const SpecRequirementSchema = z
     deprecatedReason: z.string().optional(),
     // A term is a requirement row in the TERM domain. Every optional field
     // added here must also be carried in `orderDomain`, or a write strips it.
-    // @spec SCHM-016
+    // @spec SCHM-042
     term: z.string().optional(),
     aliases: z.array(z.string()).optional().default([]),
     cites: z.array(SpecCiteSchema).optional().default([]),
@@ -68,17 +68,15 @@ export const SpecDomainSchema = z
   .object({
     key: z.string().regex(KEY_RE),
     owner: z.string().nullable().optional(),
-    // @spec SCHM-020
-    // @spec SCHM-021
     // Only the TERM domain authors a specVersion: a term revision adds no
     // supersede edge, so its version cannot be derived. A requirement domain's
     // version is derived; fence_no_authored_specversion keeps it unauthored.
     specVersion: z.number().int().positive().optional(),
     updated: z.string(),
-    // @spec CHRT-010
+    // @spec SCHM-042
     scope: z.string().nullable().optional(),
     // Enums, not free strings: a typo'd grammar must reject, never mean freeform.
-    // @spec SCHM-010
+    // @spec SCHM-042
     grammar: z.enum(["ears", "freeform"]).optional(),
     grammarSeverity: z.enum(["warning", "error"]).optional(),
     requirements: z.array(SpecRequirementSchema),
@@ -132,7 +130,6 @@ export type ParseDomainTextResult =
  * The one way bytes become a domain envelope: JSON, then the structural
  * schema. Every SPEC.json reader calls this before touching a field, so no
  * code path holds an unvalidated envelope.
- * @spec SCHM-030
  */
 export function parseDomainText(text: string, sourceFile: string): ParseDomainTextResult {
   let parsed: unknown;
@@ -212,7 +209,7 @@ const sameValue = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSO
  * Patch `raw` in place from `before` to `next`, both canonical projections: an
  * unchanged field keeps its raw bytes, a changed field keeps its key position,
  * a field that turns default is written only where the raw carries the key.
- * @spec SCHM-032
+ * @spec SCHM-044
  */
 function patchFields(raw: JsonObject, before: JsonObject, next: JsonObject): void {
   for (const key of new Set([...Object.keys(before), ...Object.keys(next)])) {
@@ -228,7 +225,7 @@ function patchFields(raw: JsonObject, before: JsonObject, next: JsonObject): voi
  * A new entry in the key order of `template`: the template's keys first
  * (a defaulted value only where the template carries the key), then every
  * remaining non-default field in canonical order.
- * @spec SCHM-033
+ * @spec SCHM-044
  */
 function shapeLike(template: JsonObject | undefined, next: JsonObject): JsonObject {
   if (template === undefined) return next;
@@ -245,7 +242,7 @@ function shapeLike(template: JsonObject | undefined, next: JsonObject): JsonObje
 /**
  * The validated domain rendered onto the existing file's raw object, entries
  * in the validated order, matched to raw entries by id (duplicates in turn).
- * @spec SCHM-031
+ * @spec SCHM-044
  */
 function preserveShape(raw: JsonObject, rawDomain: SpecDomain, domain: SpecDomain): JsonObject {
   const before = orderDomain(rawDomain) as ProjectedDomain;
@@ -275,7 +272,6 @@ function preserveShape(raw: JsonObject, rawDomain: SpecDomain, domain: SpecDomai
 /**
  * Accept `serialized` only when it re-parses to `domain`, compared through the
  * canonical projection (an absent nullable field equals an explicit null).
- * @spec SCHM-034
  */
 export function verifyRoundTrip(
   serialized: string,
@@ -324,8 +320,8 @@ async function readExisting(
  * valid file is patched in its own shape, and the patch must re-parse to the
  * validated domain or nothing is written.
  *
- * @spec SCHM-015
- * @spec SCHM-031
+ * @spec REQ-075
+ * @spec SCHM-044
  */
 export async function validateAndWrite(
   path: string,

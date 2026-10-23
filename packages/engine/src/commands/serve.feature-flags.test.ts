@@ -1,5 +1,4 @@
-// @spec SERV-006 integration
-// @spec SERV-007 integration
+// @spec SERV-032 integration
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { rmSync } from "node:fs";
@@ -69,7 +68,7 @@ describe("flag off — routes are off, not just the nav link", () => {
     expect(put.status).toBe(404);
   });
 
-  // @spec SERV-006 integration
+  // @spec SERV-032 integration
   test("the flagged READ endpoints answer 404 too — every surface, not just the write plane", async () => {
     const cases: Array<[string, string]> = [
       ["/api/query?q=renewal", "query"],
@@ -109,7 +108,7 @@ describe("flag on — the same surfaces work", () => {
     expect(await nav.text()).toContain('href="/editor"');
   });
 
-  // @spec SERV-006 integration
+  // @spec SERV-032 integration
   test("SPEC_FLAGS on: the read endpoints answer 200 again", async () => {
     process.env.SPEC_FLAGS = "query,relations,provenance";
     expect((await app.request("/api/query?q=renewal")).status).toBe(200);

@@ -34,7 +34,6 @@ run() {
 }
 
 # --- SCHM-025: bun:sqlite outside packages/engine --------------------------
-# @spec SCHM-025
 fence_d11_bun_sqlite() {
   # Match both double-quote and single-quote import shapes so Biome's
   # default formatter (or a hand-typed single-quote import in a new
@@ -53,7 +52,6 @@ engine_sources() {
 }
 
 # --- SCHM-025: only storage/sqlite.ts may import bun:sqlite ----------------
-# @spec SCHM-025
 fence_d08_engine_internal() {
   OFFENDERS=$(engine_sources \
     | grep -v 'storage/sqlite.ts' \
@@ -68,7 +66,6 @@ fence_d08_engine_internal() {
 # An HTTP route, an MCP tool, or a command may parse, call an operation, and
 # render. None of them may write a domain file or allocate an id itself: the
 # write seam and the id allocator are imported only under operations/.
-# @spec SCHM-027
 fence_ops01_write_seam() {
   OFFENDERS=$(grep -RlE --exclude='*.test.ts' 'validateAndWrite|nextRequirementId' packages/engine/src/server packages/engine/src/commands 2>/dev/null || true)
   if [ -n "$OFFENDERS" ]; then
@@ -81,7 +78,6 @@ fence_ops01_write_seam() {
 # JSON.parse lives where a file's own schema lives: the domain reader in
 # shared, the member-config, package.json, and MCP config readers, and the HTTP body
 # reader. Nothing in production source casts through `unknown`.
-# @spec SCHM-030
 fence_schm030_schema_reads() {
   ALLOWED='packages/shared/src/domain.ts|packages/shared/src/checkConfig.ts|packages/engine/src/indexer/discover.ts|packages/engine/src/operations/init.ts|packages/engine/src/operations/agentSurface.ts|packages/engine/src/server/api.ts'
   OFFENDERS=$(grep -RnE --include='*.ts' --exclude='*.test.ts' --exclude-dir=testing 'JSON\.parse\(|as unknown as' packages/*/src 2>/dev/null \
@@ -121,7 +117,6 @@ fence_init037_platform_map_seam() {
 }
 
 # --- SCHM-028: no CHECK/FK/UNIQUE on domain fields -------------------------
-# @spec SCHM-028
 fence_schm07_schema_constraint() {
   if grep -E '(CHECK\(|FOREIGN KEY|^\s*UNIQUE\()' packages/shared/src/schema.ts; then
     echo "FORBIDDEN: schema.ts contains CHECK/FK/UNIQUE constraints (SCHM-028)"
@@ -130,7 +125,6 @@ fence_schm07_schema_constraint() {
 }
 
 # --- SCHM-029: DDL must be inline TS strings (no .sql files) ---------------
-# @spec SCHM-029
 fence_schm08_no_sql_files() {
   if find packages -name '*.sql' -type f | grep -q .; then
     echo "FORBIDDEN: .sql files in packages/ (DDL must be inline TS strings, SCHM-029)"
@@ -316,7 +310,6 @@ fence_trk06_no_token_log() {
 # src/testing/fixtures/, which are data, not code. A test authors its
 # platform through src/testing/platform.ts (the operations) or plants a state
 # the engine refuses through src/testing/plant.ts (still the seam).
-# @spec SCHM-035
 fence_val01_validate_and_write() {
   PAT='(Bun\.write|writeFile|writeFileSync)\([^;]*(SPEC\.json|[Ss]pecPath|[Ss]pecFile)'
   OFFENDERS=$(find packages/*/src -name '*.ts' -type f -not -path '*/src/testing/fixtures/*' -print0 \
@@ -418,7 +411,6 @@ fence_glossary_roundtrip() {
 # (its counter is the term-drift pin). A requirement never holds a top-level
 # `specVersion` (it uses changedAtVersion / supersededAtVersion), so a match
 # in a non-TERM SPEC.json is always the envelope counter.
-# @spec SCHM-020
 fence_no_authored_specversion() {
   local offenders=""
   for f in spec-engine/*/SPEC.json; do

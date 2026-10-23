@@ -112,7 +112,7 @@ function lineageOf(
 
 /** Lineage walks `allReqs`, not `listed`, so a visible requirement's history
  *  keeps the superseded predecessors the default filter hides as rows.
- *  @spec SERV-014 */
+ *  @spec SERV-033 */
 function buildDomains(
   allReqs: Requirement[],
   listed: Requirement[],
@@ -279,7 +279,7 @@ function renderBody(
   showAll: boolean,
   hiddenCount: number,
 ): ReturnType<typeof html> {
-  // @spec SERV-014
+  // @spec SERV-033
   // The toggle is a plain link so the filter works without JS.
   const statusToggle = showAll
     ? html`<a class="req-btn status-toggle" href="/requirements">Hide superseded &amp; retired</a>`
@@ -334,7 +334,7 @@ export function mountRequirements(app: Hono): void {
     const reqs = await apiJson<Requirement[]>(app, "/api/requirements");
     const coverage = await apiJson<CoverageRow[]>(app, "/api/coverage");
 
-    // @spec SERV-014
+    // @spec SERV-033
     const showAll = c.req.query("all") === "1";
     const listed = showAll
       ? reqs

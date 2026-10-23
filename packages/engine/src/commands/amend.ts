@@ -101,7 +101,7 @@ function splitAliases(raw: string): string[] {
 
 /**
  * Flags to the operation's field set: trimmed, with empty why → null and an empty relates list → [].
- * @spec REQ-051
+ * @spec REQ-078
  */
 function fieldsFromArgs(args: AmendArgs, rawArgs: readonly string[]): AmendFields {
   assertAmendFlags(args);
