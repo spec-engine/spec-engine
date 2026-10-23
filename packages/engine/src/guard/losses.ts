@@ -124,8 +124,7 @@ function reqDeletedFor(base: SpecRequirement, f: GuardFacts): Loss | null {
 }
 
 /** Only a surviving, still-Active requirement is guarded: a deleted one is
- *  REQUIREMENT_REMOVED's, and a superseded one's lost tags are the expected
- *  retag worklist. */
+ *  REQUIREMENT_REMOVED's, and a superseded one's tags moved to its successor. */
 function lastTagGone(id: string, count: number, f: GuardFacts): boolean {
   return f.worktreeActiveIds.has(id) && count === 0;
 }

@@ -154,17 +154,25 @@ The GLOSSARY.md round-trip. Default: **generate** GLOSSARY.md from the TERM stor
 
 ### `spec supersede <reqId> [platformDir]`
 
-The post-ship lifecycle move, mechanized. Flips the entry to superseded, mints the successor (`--text` required non-TTY; `--why`, `--relates`, cites, aliases, term, and section default to copies of the predecessor's; issues do not carry over), reindexes, and prints the **retag worklist** — every code site still on the old ID. The target must be Active.
+The post-ship lifecycle move, mechanized. Flips the entry to superseded, mints the successor (`--text` required non-TTY; `--why`, `--relates`, cites, aliases, term, and section default to copies of the predecessor's; issues do not carry over), reindexes, and **retags** every code site of the old ID: `@spec OLD` becomes `@spec NEW`, keeping the level token and the rest of the line. Sites come from the fresh index, so `fixtures/` and dot directories are never touched; a second run finds none. The target must be Active.
 
 On a requirement domain the reported `spec_version` is the **derived** domain version after the supersession — no authored counter is written, and `--no-bump` is a no-op (there is no counter to hold back). On the reserved TERM domain the authored `specVersion` still bumps (it is the term-drift pin) and `--no-bump` opts out.
 
-`--json`: `{ old_id, new_id, file, spec_version, retag: [...] }`
+`--json`: `{ old_id, new_id, file, spec_version, retagged: [...] }`, the rewritten sites
 
 **Exit codes:** 0 / 2
 
 ### `spec move <reqId> <NEW-DOMAIN> [platformDir]`
 
-Cross-domain supersede for taxonomy reorganization: mints the successor as the next id in `<NEW-DOMAIN>` (which must exist), carrying the source's fields (`--text`/`--why` override), flips the source to superseded with a cross-domain `supersededBy`, and emits the retag worklist. Both envelopes validate before either is written — a reject never half-applies. Only Active requirements move; moving into the source's own domain is a usage error (use `supersede`).
+Cross-domain supersede for taxonomy reorganization: mints the successor as the next id in `<NEW-DOMAIN>` (which must exist), carrying the source's fields (`--text`/`--why` override), flips the source to superseded with a cross-domain `supersededBy`, and retags every site of the source to the successor. `--json` reports them as `retagged`. Both envelopes validate before either is written — a reject never half-applies. Only Active requirements move; moving into the source's own domain is a usage error (use `supersede`).
+
+**Exit codes:** 0 / 2
+
+### `spec deprecate <reqId> --reason "…" [platformDir]`
+
+Ends an Active or Draft requirement without a successor: marks it `deprecated`, records the reason, and removes every `@spec` tag of the id from the code. A line holding only the tag is deleted; on a line with other text only the tag and its level token go. `fixtures/` and dot directories are never touched.
+
+`--json`: `{ id, file, reason, removed: [...] }`, the removed sites
 
 **Exit codes:** 0 / 2
 

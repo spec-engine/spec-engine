@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -21,7 +21,7 @@ import { openStorage } from "../storage/sqlite";
 import { commitAndTag } from "../testing/git";
 import { entryOf, plantEdit } from "../testing/plant";
 import { TestPlatform } from "../testing/platform";
-import { specTag } from "../testing/specTag";
+import { SPEC_TOKEN, specTag } from "../testing/specTag";
 import { coldFreshTags, withIndex } from "./_index";
 import { accept } from "./accept";
 import { amend } from "./amend";
@@ -269,16 +269,21 @@ async function runCli(cmd: unknown, args: Record<string, unknown>): Promise<stri
 const specFile = (key: string) => join(platform, "spec-engine", key, "SPEC.json");
 const read = (key: string) => Bun.file(specFile(key)).text();
 
+const CODE_FILES = ["src/renew.ts", "test/renew.test.ts"];
+
 async function writeThrough(
   keys: string[],
   surfaces: Record<string, () => Promise<unknown>>,
 ): Promise<Record<string, string[]>> {
-  const restore = fx.snapshotSpecs();
+  const restore = fx.snapshotSpecs("api");
   const out: Record<string, string[]> = {};
   for (const [name, run] of Object.entries(surfaces)) {
     restore();
     await run();
-    out[name] = await Promise.all(keys.map(read));
+    out[name] = [
+      ...(await Promise.all(keys.map(read))),
+      ...CODE_FILES.map((f) => readFileSync(join(platform, "api", f), "utf8")),
+    ];
   }
   return out;
 }
@@ -408,7 +413,7 @@ describe("write operations leave the same envelope from every surface", () => {
   });
 
   // @spec REQ-038 integration
-  test("supersede: operation, CLI, HTTP POST, and MCP write the same envelope and worklist", async () => {
+  test("supersede: operation, CLI, HTTP POST, and MCP write the same envelope and retag", async () => {
     const successor = "When a renewal is charged, the billing service shall use the plan price.";
     const results: Record<string, unknown> = {};
     const snapshots = await writeThrough(["BILLING"], {
@@ -429,7 +434,7 @@ describe("write operations leave the same envelope from every surface", () => {
             new_id: r.newId,
             file: r.file,
             spec_version: r.specVersion,
-            retag: r.retag,
+            retagged: r.retagged,
           };
         }
       },
@@ -461,8 +466,10 @@ describe("write operations leave the same envelope from every surface", () => {
     expectAllEqual(snapshots);
     expect(results.api).toEqual(results.operation);
     expect(results.mcp).toEqual(results.operation);
-    const retag = (results.operation as { retag: unknown[] }).retag;
-    expect(retag).toHaveLength(2);
+    expect((results.operation as { retagged: unknown[] }).retagged).toHaveLength(2);
+    expect(readFileSync(join(platform, "api", "test/renew.test.ts"), "utf8")).toContain(
+      `${SPEC_TOKEN} BILLING-004 unit`,
+    );
 
     // The guard refuses the now-superseded predecessor on every surface, before any write.
     const again = await read("BILLING");
@@ -481,7 +488,7 @@ describe("write operations leave the same envelope from every surface", () => {
     expect(await read("BILLING")).toBe(again);
   });
 
-  test("deprecate: operation, CLI, HTTP POST, and MCP write the same envelope and site list", async () => {
+  test("deprecate: operation, CLI, HTTP POST, and MCP write the same envelope and remove the same tags", async () => {
     const results: Record<string, unknown> = {};
     const snapshots = await writeThrough(["BILLING"], {
       operation: async () => {
@@ -490,7 +497,8 @@ describe("write operations leave the same envelope from every surface", () => {
           fresh(),
         );
         expect(r.ok).toBe(true);
-        if (r.ok) results.operation = { id: r.id, file: r.file, reason: r.reason, sites: r.sites };
+        if (r.ok)
+          results.operation = { id: r.id, file: r.file, reason: r.reason, removed: r.removed };
       },
       cli: () => runCli(deprecateCommand, { id: "BILLING-002", reason: "gone" }),
       api: async () => {
@@ -511,7 +519,10 @@ describe("write operations leave the same envelope from every surface", () => {
     expectAllEqual(snapshots);
     expect(results.api).toEqual(results.operation);
     expect(results.mcp).toEqual(results.operation);
-    expect((results.operation as { sites: unknown[] }).sites).toHaveLength(2);
+    expect((results.operation as { removed: unknown[] }).removed).toHaveLength(2);
+    expect(readFileSync(join(platform, "api", "src/renew.ts"), "utf8")).toBe(
+      "export const renew = 1;\n",
+    );
   });
 
   // @spec REQ-039 integration
@@ -588,7 +599,7 @@ describe("write operations leave the same envelope from every surface", () => {
 
   // @spec SERV-030 unit
   // @spec SERV-031 unit
-  test("move: operation, CLI, HTTP POST, and MCP write the same two envelopes and worklist", async () => {
+  test("move: operation, CLI, HTTP POST, and MCP write the same two envelopes and retag", async () => {
     const results: Record<string, unknown> = {};
     const snapshots = await writeThrough(["BILLING", "AUTH"], {
       operation: async () => {
@@ -609,7 +620,7 @@ describe("write operations leave the same envelope from every surface", () => {
             to_file: r.toFile,
             source_spec_version: r.sourceSpecVersion,
             target_spec_version: r.targetSpecVersion,
-            retag: r.retag,
+            retagged: r.retagged,
           };
         }
       },
@@ -646,7 +657,7 @@ describe("write operations leave the same envelope from every surface", () => {
       source_spec_version: 3,
       target_spec_version: 1,
     });
-    expect((results.operation as { retag: unknown[] }).retag).toHaveLength(2);
+    expect((results.operation as { retagged: unknown[] }).retagged).toHaveLength(2);
     expect(results.cli).toEqual(results.operation);
     expect(results.api).toEqual(results.operation);
     expect(results.mcp).toEqual(results.operation);

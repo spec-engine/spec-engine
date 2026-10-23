@@ -2,6 +2,8 @@
 // indexes them as this repo's tags.
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { entryOf, plantEdit } from "../testing/plant";
 import { type DomainHandle, TestPlatform } from "../testing/platform";
 import { specTag } from "../testing/specTag";
@@ -86,9 +88,10 @@ async function expectExit2(fn: () => Promise<void>): Promise<void> {
 
 describe("spec supersede — happy path", () => {
   // @spec REQ-036
+  // @spec REQ-065 integration
   // The fixture already holds one superseded edge (derived version 2); this
   // supersede adds the second, so the died-at version is 3.
-  test("flips old entry, mints successor with copied fields, reports the derived version, emits worklist", async () => {
+  test("flips old entry, mints successor with copied fields, reports the derived version, retags the sites", async () => {
     await supersedeRun({
       args: {
         id: ACTIVE,
@@ -114,8 +117,11 @@ describe("spec supersede — happy path", () => {
     expect(out.new_id).toBe(SUCCESSOR);
     expect(out.file).toBe("spec-engine/BILLING/SPEC.json");
     expect(out.spec_version).toBe(3);
-    const retagFiles = (out.retag as Array<{ file: string }>).map((r) => r.file);
+    const retagFiles = (out.retagged as Array<{ file: string }>).map((r) => r.file);
     expect(retagFiles).toEqual(["api/src/renew.ts", "api/test/renew.test.ts"]);
+    expect(readFileSync(join(platform, "api/test/renew.test.ts"), "utf8")).toBe(
+      `export const t = 1; ${specTag(SUCCESSOR, "unit")}`,
+    );
   });
 
   test("--why overrides the copied why", async () => {
@@ -161,7 +167,7 @@ describe("spec supersede — happy path", () => {
     expect(domain.requirements.find((r) => r.id === ACTIVE)?.supersededAtVersion).toBe(3);
   });
 
-  test("text mode prints the retag worklist table + a check reminder", async () => {
+  test("text mode prints the retagged sites", async () => {
     await supersedeRun({
       args: { id: ACTIVE, platformDir: platform, text: "new truth" },
       rawArgs: [],
@@ -170,7 +176,7 @@ describe("spec supersede — happy path", () => {
     expect(out).toContain(`${ACTIVE} → ${SUCCESSOR}`);
     expect(out).toContain("api/src/renew.ts");
     expect(out).toContain("api/test/renew.test.ts");
-    expect(errs.join("\n")).toContain("SUPERSEDED_REFERENCED");
+    expect(out).toContain(`retagged 2 site(s) from ${ACTIVE} to ${SUCCESSOR}`);
   });
 });
 

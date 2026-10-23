@@ -113,7 +113,7 @@ const supersedeArgs = {
   json: {
     type: "boolean",
     description:
-      "Emit { old_id, new_id, file, spec_version, retag } as JSON instead of the text summary",
+      "Emit { old_id, new_id, file, spec_version, retagged } as JSON instead of the text summary",
   },
 } as const;
 
@@ -123,7 +123,7 @@ export const supersedeCommand = defineCommand({
   meta: {
     name: "supersede",
     description:
-      "Supersede a shipped requirement: flip it to superseded, mint the successor, bump specVersion, and emit the retag worklist.",
+      "Supersede a shipped requirement: flip it to superseded, mint the successor, bump specVersion, and retag every site of it to the successor.",
   },
   args: supersedeArgs,
   async run({ args, rawArgs }) {
@@ -147,23 +147,18 @@ export const supersedeCommand = defineCommand({
     if (!result.ok) exitOnFailure("spec supersede", result);
     printWarnings("spec supersede", result.warnings);
 
-    const { newId, file, specVersion, retag } = result;
+    const { newId, file, specVersion, retagged } = result;
     if (args.json) {
       console.log(
-        JSON.stringify({ old_id: id, new_id: newId, file, spec_version: specVersion, retag }),
+        JSON.stringify({ old_id: id, new_id: newId, file, spec_version: specVersion, retagged }),
       );
     } else {
       console.log(`superseded ${id} → ${newId} in ${file}`);
       if (specVersion !== null) console.log(`specVersion bumped to ${specVersion}`);
-      if (retag.length > 0) {
-        console.log(`retag ${retag.length} site(s) from ${id} to ${newId}:`);
-        console.log(renderReqTags(retag, "text"));
+      if (retagged.length > 0) {
+        console.log(`retagged ${retagged.length} site(s) from ${id} to ${newId}:`);
+        console.log(renderReqTags(retagged, "text"));
       }
-    }
-    if (retag.length > 0) {
-      console.error(
-        `note: spec check will report SUPERSEDED_REFERENCED at each remaining ${id} tag until the sites are retagged to ${newId}`,
-      );
     }
   },
 });

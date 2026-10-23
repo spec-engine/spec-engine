@@ -189,7 +189,7 @@
     {
       "id": "TERM-013",
       "status": "active",
-      "statement": "the only legal way an active requirement stops applying with a successor: mints the new id, marks the old `supersededBy`, and emits the retag worklist. The supersede edge is what advances the domain's derived version; on the reserved TERM domain it also bumps the authored `specVersion`.",
+      "statement": "the only legal way an active requirement stops applying with a successor: mints the new id, marks the old `supersededBy`, and rewrites every tag of the old id to the new one. The supersede edge is what advances the domain's derived version; on the reserved TERM domain it also bumps the authored `specVersion`.",
       "why": null,
       "supersedes": null,
       "supersededBy": null,
@@ -219,7 +219,7 @@
     {
       "id": "TERM-015",
       "status": "active",
-      "statement": "deliberate end-of-life without a successor: `spec deprecate` marks the entry `deprecated`, records why, and emits the cleanup worklist of tags still bound to the id.",
+      "statement": "deliberate end-of-life without a successor: `spec deprecate` marks the entry `deprecated`, records why, and removes every tag of the id from the code.",
       "why": null,
       "supersedes": null,
       "supersededBy": null,

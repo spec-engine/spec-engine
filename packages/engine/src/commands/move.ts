@@ -48,7 +48,7 @@ const moveArgs = {
   json: {
     type: "boolean",
     description:
-      "Emit { old_id, new_id, from_file, to_file, source_spec_version, target_spec_version, retag } as JSON",
+      "Emit { old_id, new_id, from_file, to_file, source_spec_version, target_spec_version, retagged } as JSON",
   },
 } as const;
 
@@ -58,7 +58,7 @@ export const moveCommand = defineCommand({
   meta: {
     name: "move",
     description:
-      "Move a requirement to another domain: mint the successor in <NEW-DOMAIN> carrying the source's fields, mark the source superseded, bump both specVersions, and emit the retag worklist.",
+      "Move a requirement to another domain: mint the successor in <NEW-DOMAIN> carrying the source's fields, mark the source superseded, bump both specVersions, and retag every site of it to the successor.",
   },
   args: moveArgs,
   async run({ args }) {
@@ -90,7 +90,7 @@ export const moveCommand = defineCommand({
     if (!result.ok) exitOnFailure("spec move", result);
     printWarnings("spec move", result.warnings);
 
-    const { newId, fromFile, toFile, sourceSpecVersion, targetSpecVersion, retag } = result;
+    const { newId, fromFile, toFile, sourceSpecVersion, targetSpecVersion, retagged } = result;
     const sourceKey = id.slice(0, id.indexOf("-"));
     if (args.json) {
       console.log(
@@ -101,7 +101,7 @@ export const moveCommand = defineCommand({
           to_file: toFile,
           source_spec_version: sourceSpecVersion,
           target_spec_version: targetSpecVersion,
-          retag,
+          retagged,
         }),
       );
     } else {
@@ -111,15 +111,10 @@ export const moveCommand = defineCommand({
           `specVersion: ${sourceKey}→${sourceSpecVersion}, ${targetKey}→${targetSpecVersion}`,
         );
       }
-      if (retag.length > 0) {
-        console.log(`retag ${retag.length} site(s) from ${id} to ${newId}:`);
-        console.log(renderReqTags(retag, "text"));
+      if (retagged.length > 0) {
+        console.log(`retagged ${retagged.length} site(s) from ${id} to ${newId}:`);
+        console.log(renderReqTags(retagged, "text"));
       }
-    }
-    if (retag.length > 0) {
-      console.error(
-        `note: spec check will report SUPERSEDED_REFERENCED at each remaining ${id} tag until the sites are retagged to ${newId}`,
-      );
     }
   },
 });
