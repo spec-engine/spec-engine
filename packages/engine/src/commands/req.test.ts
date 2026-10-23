@@ -101,10 +101,9 @@ async function seed(
 ): Promise<DomainHandle> {
   if (options.updated !== undefined) setSystemTime(new Date(`${options.updated}T12:00:00`));
   try {
-    const domain = await TestPlatform.at(root).domain(
-      key,
-      options.scope === undefined ? {} : { scope: options.scope },
-    );
+    const domain = await TestPlatform.at(root)
+      .statementRulesOff()
+      .domain(key, options.scope === undefined ? {} : { scope: options.scope });
     for (let i = 0; i < count; i++) {
       await domain.req(i === 0 && options.first ? options.first : { statement: "placeholder" });
     }

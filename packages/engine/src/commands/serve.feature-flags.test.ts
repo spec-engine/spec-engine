@@ -101,7 +101,7 @@ describe("flag on — the same surfaces work", () => {
     const post = await app.request("/api/requirements", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ key: "BILLING", statement: "flag-on write" }),
+      body: JSON.stringify({ key: "BILLING", statement: "Flag-on write." }),
     });
     expect(post.status).toBe(201);
 

@@ -32,7 +32,7 @@ const ACTIVE = "BILLING-002";
 const HISTORY = "BILLING-001";
 
 beforeEach(async () => {
-  fx = TestPlatform.temp("spec-amend-");
+  fx = TestPlatform.temp("spec-amend-").statementRulesOff();
   tmp = fx.dir;
   // Author the fixture on a past date so a bumped `updated` is observable.
   setSystemTime(new Date("2026-06-01T12:00:00"));

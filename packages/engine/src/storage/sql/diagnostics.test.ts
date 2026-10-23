@@ -27,8 +27,8 @@ async function codesFor(id: string): Promise<string[]> {
 describe("ORPHAN_REQ and UNVERIFIED_REQ", () => {
   test("an untagged Draft is not an orphan; the same Active entry is", async () => {
     const billing = await fx.domain("BILLING");
-    const draft = await billing.req({ statement: "s", why: "w", status: "draft" });
-    const active = await billing.req({ statement: "s", why: "w" });
+    const draft = await billing.req({ statement: "s.", why: "w", status: "draft" });
+    const active = await billing.req({ statement: "s.", why: "w" });
 
     expect(await codesFor(draft.id)).not.toContain("ORPHAN_REQ");
     expect(await codesFor(active.id)).toContain("ORPHAN_REQ");
@@ -36,8 +36,8 @@ describe("ORPHAN_REQ and UNVERIFIED_REQ", () => {
 
   test("an implemented but unverified Draft is not unverified; the same Active entry is", async () => {
     const billing = await fx.domain("BILLING");
-    const draft = await billing.req({ statement: "s", why: "w", status: "draft" });
-    const active = await billing.req({ statement: "s", why: "w" });
+    const draft = await billing.req({ statement: "s.", why: "w", status: "draft" });
+    const active = await billing.req({ statement: "s.", why: "w" });
     await fx.member("api", {
       files: { "src/x.ts": `export const x = 1; ${specTag(draft.id)}${specTag(active.id)}` },
     });

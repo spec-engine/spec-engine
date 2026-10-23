@@ -8,6 +8,7 @@ import {
   grammarWarningText,
   judgeStatementGrammar,
 } from "../authoring/grammar";
+import { statementRulesRefusal } from "../authoring/statementRules";
 import { deriveDomainVersion } from "../parser/domainJson";
 import type { ReqTagRow } from "../resolve/format";
 import {
@@ -174,6 +175,8 @@ export async function supersede(
     }
     warnings.push({ kind: "grammar", text: grammarWarningText("", verdict).slice(2) });
   }
+  const refusal = statementRulesRefusal(platformDir, key, input.statement);
+  if (refusal !== null) return fail("usage", refusal);
   const { why, livesIn, verifiedIn, relates } = successorFields(input, req);
   warnings.push(
     ...unresolvableRefWarnings(platformDir, [input.statement, why, ...livesIn, ...verifiedIn]),

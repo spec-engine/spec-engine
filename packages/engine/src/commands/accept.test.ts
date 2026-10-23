@@ -24,7 +24,7 @@ type RunFn = (ctx: { args: Record<string, unknown>; rawArgs: string[] }) => Prom
 const run = (acceptCommand as unknown as { run: RunFn }).run;
 
 beforeEach(async () => {
-  fx = TestPlatform.temp("spec-accept-");
+  fx = TestPlatform.temp("spec-accept-").statementRulesOff();
   billing = await fx.domain("BILLING");
   logs = [];
   originalLog = console.log;

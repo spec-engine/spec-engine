@@ -99,7 +99,7 @@ describe("spec gate rung-3 flow", () => {
     const minted = await TestPlatform.at(clone)
       .handle("BILLING")
       .req({
-        statement: "Rung-3 demonstration requirement added mid-test.",
+        statement: "Third-step demonstration requirement added mid-test.",
         why: "Locks the rung-3 narrative.",
         livesIn: ["renew.ts"],
       });

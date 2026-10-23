@@ -1,5 +1,6 @@
 import { validateAndWrite } from "@spec-engine/shared";
 import { localToday } from "../authoring/edit";
+import { statementRulesRefusal } from "../authoring/statementRules";
 import { displayStatus, locateEntry } from "./_envelope";
 import { fail, type OpFailure } from "./_result";
 
@@ -19,6 +20,7 @@ export interface AcceptResult {
  * @spec REQ-040
  * @spec REQ-041
  * @spec SCHM-024
+ * @spec REQ-060
  */
 export async function accept(input: AcceptInput): Promise<AcceptResult | OpFailure> {
   const { platformDir, id } = input;
@@ -29,6 +31,9 @@ export async function accept(input: AcceptInput): Promise<AcceptResult | OpFailu
   if (req.status.toLowerCase() !== "draft") {
     return fail("conflict", `${id} is ${displayStatus(req.status)} — only a Draft entry accepts`);
   }
+
+  const refusal = statementRulesRefusal(platformDir, located.key, req.statement);
+  if (refusal !== null) return fail("usage", refusal);
 
   req.status = "active";
   domain.updated = localToday();

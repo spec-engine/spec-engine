@@ -39,7 +39,7 @@ describe("round-trip: mint writes JSON the index reads back", () => {
     const minted = await mint({
       platformDir: tmp,
       key: "BILLING",
-      statement: "Charge renewals at the current plan price",
+      statement: "Charge renewals at the current plan price.",
       why: "Revenue correctness",
       livesIn: ["@api/src/renew.ts"],
     });
@@ -54,7 +54,7 @@ describe("round-trip: mint writes JSON the index reads back", () => {
     const added = domain.requirements.find((r: { id: string }) => r.id === "BILLING-001");
     expect(added).toBeDefined();
     expect(added.status).toBe("active");
-    expect(added.statement).toBe("Charge renewals at the current plan price");
+    expect(added.statement).toBe("Charge renewals at the current plan price.");
     expect(added.why).toBe("Revenue correctness");
     expect(added.livesIn).toEqual(["@api/src/renew.ts"]);
     const raw = await Bun.file(join(tmp, "spec-engine", "BILLING", "SPEC.json")).text();
@@ -67,7 +67,7 @@ describe("round-trip: mint writes JSON the index reads back", () => {
     const minted = await mint({
       platformDir: tmp,
       key: "BILLING",
-      statement: "Charge renewals at the current plan price",
+      statement: "Charge renewals at the current plan price.",
       why: "Revenue correctness",
       livesIn: [],
     });
@@ -82,7 +82,7 @@ describe("round-trip: mint writes JSON the index reads back", () => {
       expect(row).toBeDefined();
       // lowercase "active" case-maps to Capitalized "Active" at the read boundary.
       expect(row?.status).toBe("Active");
-      expect(row?.text).toBe("Charge renewals at the current plan price");
+      expect(row?.text).toBe("Charge renewals at the current plan price.");
       const cov = s.coverageMatrix().filter((c) => c.req_id === "BILLING-001" && c.repo === "api");
       expect(cov.length).toBe(1);
       expect(cov[0]?.implemented).toBe(1);

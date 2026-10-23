@@ -386,8 +386,8 @@ describe("a lone repository", () => {
   // @spec INIT-041 integration
   test("a root-level tag implements its requirement once; a package's tag is not scanned twice", async () => {
     const alpha = await fx.domain("ALPHA");
-    const atRoot = await alpha.req({ statement: "s", why: "w" });
-    const inPackage = await alpha.req({ statement: "s", why: "w" });
+    const atRoot = await alpha.req({ statement: "s.", why: "w" });
+    const inPackage = await alpha.req({ statement: "s.", why: "w" });
     fx.workspace(["packages/engine"]);
     fx.file("infra/deploy.sh", `echo deploy\n# @spec ${atRoot.id}\n`);
     fx.file("packages/engine/src/x.ts", `export const x = 1; ${specTag(inPackage.id)}`);
