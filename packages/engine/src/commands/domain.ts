@@ -73,6 +73,7 @@ export const domainListCommand = defineCommand({
       handleNotAPlatform(e);
     }
 
+    // @spec DOMAIN-031
     const { domains } = await listDomains(platformDir);
     // @spec CHRT-011
     if (args.json) {

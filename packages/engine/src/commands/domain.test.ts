@@ -225,7 +225,7 @@ describe("spec domain list", () => {
     expect(logs).toEqual(["ALPHA", "MIKE", "ZULU"]);
   });
 
-  // @spec DOMAIN-030 unit
+  // @spec DOMAIN-031 unit
   test("empty spec-engine/ → exit 0, zero output lines", async () => {
     mkdirSync(join(tmp, "spec-engine"), { recursive: true });
     await runDomainList(tmp);

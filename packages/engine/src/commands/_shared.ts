@@ -45,6 +45,7 @@ export async function handleInvalidDomainFiles(
   if (!(e instanceof InvalidDomainFilesError)) return;
   if (json) console.log(renderDiagnostics(e.diagnostics, "json"));
   else console.error(renderDiagnostics(e.diagnostics, "text"));
+  // @spec INDX-031
   await exit(code);
 }
 

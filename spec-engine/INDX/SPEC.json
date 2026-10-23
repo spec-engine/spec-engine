@@ -391,6 +391,18 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "INDX-031",
+      "status": "active",
+      "statement": "When an index build refuses on an invalid domain file, the read or check command that requested it shall exit 1.",
+      "why": "CI branches on the exit code, so a refused build that exits 0 passes the gate on an index that was never built.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
   ],
   "grammarSeverity": "error"

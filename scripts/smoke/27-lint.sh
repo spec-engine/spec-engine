@@ -3,6 +3,7 @@
 # @spec REQ-060
 # @spec CHCK-068
 # @spec CHCK-067
+# @spec CHCK-069
 # @spec CHCK-058
 source "$(dirname "$0")/_lib.sh"
 TMP=$(fixture_copy); trap 'rm -rf "$TMP"' EXIT

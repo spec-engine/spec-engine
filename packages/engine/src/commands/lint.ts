@@ -66,6 +66,7 @@ export const lintCommand = defineCommand({
       for (const f of result.findings) console.log(`${f.req_id} ${formatStatementFinding(f)}`);
       if (result.findings.length > 0) console.error(RULE_ZERO);
     }
+    // @spec CHCK-069
     await exit(result.findings.length > 0 ? EXIT.FAILURE : EXIT.OK);
   },
 });

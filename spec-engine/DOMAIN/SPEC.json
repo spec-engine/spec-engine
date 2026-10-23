@@ -404,6 +404,18 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "DOMAIN-031",
+      "status": "active",
+      "statement": "When the platform holds no domain, spec domain list shall exit 0.",
+      "why": "Scripted listings run on fresh platforms, and an error exit on an empty platform breaks them before the first domain exists.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
   ],
   "grammarSeverity": "error"
