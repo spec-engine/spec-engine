@@ -30,6 +30,7 @@ import { findDomainJsonFiles, isPathIgnored } from "../scanner/fs";
 import { fail, type OpFailure } from "./_result";
 import { glossaryDriftDiagnostic } from "./glossary";
 import { guard } from "./guard";
+import { migrationPendingDiagnostics } from "./migrate";
 
 export interface CheckInput {
   platformDir: string;
@@ -254,6 +255,7 @@ export async function check(input: CheckInput, storage: Storage): Promise<CheckR
   );
   // @spec CHCK-029
   diagnostics.push(...(await supersedesPointerDiagnostics(platformDir)));
+  diagnostics.push(...(await migrationPendingDiagnostics(platformDir)));
   const glossaryDrift = glossaryDriftDiagnostic(platformDir);
   if (glossaryDrift !== null) diagnostics.push(glossaryDrift);
 

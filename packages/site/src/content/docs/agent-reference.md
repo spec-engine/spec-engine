@@ -280,6 +280,7 @@ Codes, in `DiagnosticCode` order:
 | `UNKNOWN_ROLE` | warning | An `issues` entry uses a role outside `created` / `supersedes-via` / `amends-via` (surfaced and dropped, never stored) |
 | `UNSOURCED_CHANGE` | warning, only with `--unsourced-change` | A superseded requirement carries no `supersedes-via` issue |
 | `INVALID_DOMAIN_FILE` | error | A `SPEC.json` is not JSON or fails the shared schema; one row per failing field |
+| `MIGRATION_PENDING` | warning | A `SPEC.json` still carries the retired `livesIn` or `verifiedIn` fields; run `spec migrate` |
 | `UNPROVEN_REQ` | error, only with `--results` | An Active requirement has verifying tags but no passing correlated test |
 | `PROOFS_UNCONFIRMED` | warning, only without `--results` | The proof gate fell back to presence-only mode |
 | `REQUIREMENT_REMOVED` | error | An Active requirement present at the base ref is gone with no same-change supersession |
