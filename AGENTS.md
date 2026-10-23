@@ -385,7 +385,7 @@ present on disk with no `spec-engine.member.json`.
   `HEAD` makes every loss check pass vacuously, so `check` warns on stderr
   with the line to run instead:
   `spec check . --ci --base "$(git merge-base HEAD origin/<default>)"`.
-  The exit code and stdout are unchanged. <!-- @spec GUARD-030 -->
+  The exit code and stdout are unchanged. <!-- @spec GUARD-031 -->
 - Coverage counts only Active requirements: `ORPHAN_REQ` and
   `UNVERIFIED_REQ` fire for Active entries only. <!-- @spec CHCK-032 -->
 
