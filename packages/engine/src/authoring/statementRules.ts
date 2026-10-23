@@ -1,24 +1,42 @@
 import { formatStatementFinding, RULE_ZERO, statementFindings } from "@spec-engine/shared";
 import { readCheckConfig } from "../check/severity";
+import type { OpWarning } from "../operations/_result";
+
+export interface StatementRulesVerdict {
+  /** The refusal text when a rule graded `error` breaks, else null. */
+  refusal: string | null;
+  /** Findings of rules graded `warning`, written anyway. */
+  warnings: OpWarning[];
+}
 
 /**
- * The refusal text for a to-be-written statement that breaks an enabled
- * statement rule under the platform's check.json, or null when it passes.
- * TERM statements are definitions and are never judged; a blank statement is
- * the schema validator's refusal.
+ * Judges a to-be-written statement under the platform's check.json. A rule
+ * with no configured severity is `error`. TERM statements are definitions and
+ * are never judged; a blank statement is the schema validator's refusal.
  * @spec REQ-060
+ * @spec REQ-069
  * @spec CHRT-022
  * @spec CHCK-048
  */
-export function statementRulesRefusal(
+export function statementRulesVerdict(
   platformDir: string,
   key: string,
   statement: string,
-): string | null {
-  if (key === "TERM" || statement.trim() === "") return null;
+): StatementRulesVerdict {
+  if (key === "TERM" || statement.trim() === "") return { refusal: null, warnings: [] };
   const config = readCheckConfig(platformDir);
-  if (!config.ok) return config.detail;
-  const findings = statementFindings(statement, config.config.statementRules);
-  if (findings.length === 0) return null;
-  return [...findings.map(formatStatementFinding), RULE_ZERO].join("\n");
+  if (!config.ok) return { refusal: config.detail, warnings: [] };
+  const rules = config.config.statementRules;
+  const findings = statementFindings(statement, rules);
+  const errors = findings.filter((f) => (rules?.severity?.[f.rule] ?? "error") === "error");
+  if (errors.length > 0) {
+    return { refusal: [...errors.map(formatStatementFinding), RULE_ZERO].join("\n"), warnings: [] };
+  }
+  return {
+    refusal: null,
+    warnings: findings.map((f) => ({
+      kind: "statement",
+      text: `warning — ${formatStatementFinding(f)}`,
+    })),
+  };
 }

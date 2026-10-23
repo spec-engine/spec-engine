@@ -315,7 +315,9 @@ export function buildMcpServer(platformDir: string): McpServer {
         return errorResult(`req_id must be a requirement id (KEY-NNN); got ${req_id}`);
       }
       const r = await accept({ platformDir, id: req_id });
-      return r.ok ? jsonResult({ id: r.id, file: r.file }) : errorResult(r.detail);
+      if (!r.ok) return errorResult(r.detail);
+      for (const w of r.warnings) console.error(`spec_accept: ${w.text}`);
+      return jsonResult({ id: r.id, file: r.file });
     },
   );
 

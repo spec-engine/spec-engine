@@ -4,7 +4,7 @@ import { assertSpecPlatform } from "../indexer/discover";
 import { accept } from "../operations/accept";
 import { ID_RE } from "../parser/grammar";
 import { jsonArg, platformDirArg, resolvePlatformDir } from "./_args";
-import { exitOnFailure, handleNotAPlatform } from "./_shared";
+import { exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
 
 export const acceptCommand = defineCommand({
   meta: {
@@ -36,6 +36,7 @@ export const acceptCommand = defineCommand({
 
     const result = await accept({ platformDir, id });
     if (!result.ok) exitOnFailure("spec accept", result);
+    printWarnings("spec accept", result.warnings);
     if (args.json) {
       console.log(JSON.stringify({ id, file: result.file }));
       return;

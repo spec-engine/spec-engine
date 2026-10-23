@@ -22,13 +22,13 @@ afterEach(() => fx.remove());
 
 // @spec CHCK-049 unit
 describe("STATEMENT_RULES", () => {
-  test("an Active statement gets one warning row per rule it breaks", async () => {
+  test("an Active statement gets one error row per rule it breaks", async () => {
     const { id } = await billing.req({ statement: BAD });
     const rows = await statementRulesDiagnostics(fx.dir, undefined);
     expect(rows).toEqual([
       {
         code: "STATEMENT_RULES",
-        severity: "warning",
+        severity: "error",
         repo: null,
         source_file: "spec-engine/BILLING/SPEC.json",
         line: expect.any(Number),
@@ -38,7 +38,7 @@ describe("STATEMENT_RULES", () => {
       },
       {
         code: "STATEMENT_RULES",
-        severity: "warning",
+        severity: "error",
         repo: null,
         source_file: "spec-engine/BILLING/SPEC.json",
         line: expect.any(Number),
@@ -66,12 +66,12 @@ describe("STATEMENT_RULES", () => {
   });
 
   // @spec CHCK-048 unit
-  test("a per-rule severity grades its rows and leaves the others at warning", async () => {
+  test("a per-rule severity grades its rows and leaves the others at error", async () => {
     await billing.req({ statement: BAD });
-    const rows = await statementRulesDiagnostics(fx.dir, { severity: { "no-history": "error" } });
+    const rows = await statementRulesDiagnostics(fx.dir, { severity: { "no-history": "warning" } });
     expect(rows.map((r) => [r.detail.split(":")[0], r.severity])).toEqual([
-      ["one-sentence", "warning"],
-      ["no-history", "error"],
+      ["one-sentence", "error"],
+      ["no-history", "warning"],
     ]);
   });
 
