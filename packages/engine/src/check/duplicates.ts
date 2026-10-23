@@ -87,7 +87,7 @@ export interface PossibleDuplicate {
 }
 
 /** The `possible_duplicates` shape every `--json` surface prints. */
-// @spec REQ-071
+// @spec REQ-084
 export function duplicateRefs(dups: readonly PossibleDuplicate[]): { id: string; score: number }[] {
   return dups.map(({ id, score }) => ({ id, score }));
 }
@@ -148,8 +148,8 @@ function activeRequirements(storage: Storage): Map<string, Requirement> {
 export const DEFAULT_DUPLICATE_THRESHOLD = 0.5;
 
 /** The configured threshold, or null when check.json turns duplicate detection off. */
-// @spec CHCK-056
-// @spec CHCK-057
+// @spec CHCK-065
+// @spec CHCK-066
 export function duplicateThreshold(config: DuplicatesConfig | undefined): number | null {
   if (config?.off === true) return null;
   return config?.threshold ?? DEFAULT_DUPLICATE_THRESHOLD;
@@ -159,7 +159,7 @@ export function duplicateThreshold(config: DuplicatesConfig | undefined): number
  * The Active requirements an authored statement may duplicate, read from an
  * index that already holds the write. An unreadable check.json yields none:
  * `spec check` owns reporting it.
- * @spec REQ-070
+ * @spec REQ-083
  */
 export function scanDuplicates(
   storage: Storage,
@@ -180,7 +180,7 @@ const higher = (a: Requirement, b: Requirement): boolean =>
   a.key === b.key ? a.seq > b.seq : a.key > b.key;
 
 /** One warning per unordered pair of Active requirements at or above the threshold, on the higher id. */
-// @spec CHCK-055
+// @spec CHCK-064
 export function duplicateDiagnostics(storage: Storage, threshold: number): Diagnostic[] {
   const active = activeRequirements(storage);
   const seen = new Set<string>();

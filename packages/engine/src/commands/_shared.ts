@@ -79,7 +79,7 @@ export function printWarnings(cmdName: string, warnings: OpWarning[] | undefined
 }
 
 /** One stderr line per possible duplicate; the write already landed. */
-// @spec REQ-070
+// @spec REQ-083
 export function printDuplicates(dups: readonly PossibleDuplicate[]): void {
   for (const d of dups) {
     console.error(`possible duplicate of ${d.id} (${d.score.toFixed(2)}): ${d.statement}`);

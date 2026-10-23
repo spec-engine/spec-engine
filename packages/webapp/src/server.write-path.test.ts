@@ -100,7 +100,7 @@ describe("webapp editor — the create form forwards to POST /api/requirements",
     expect(added?.text).toBe("When a refund is issued, reverse the tax collected on the charge.");
   });
 
-  // @spec REQ-070 integration
+  // @spec REQ-083 integration
   test("a create submit that repeats an Active statement saves and names the possible duplicate", async () => {
     const res = await postForm("/editor/create", {
       key: "BILLING",
