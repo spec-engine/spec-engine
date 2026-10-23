@@ -874,19 +874,20 @@
     },
     {
       "id": "REQ-065",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec supersede replaces a requirement, the spec engine shall rewrite every tag of the predecessor to name the successor, keeping the tag's level token.",
       "why": "A tag left on the predecessor reports as a superseded reference, and a person retagging by hand misses sites or drops the level.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "REQ-086",
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 38
     },
     {
       "id": "REQ-066",
-      "status": "active",
+      "status": "deprecated",
       "statement": "When spec move replaces a requirement with one in another domain, the spec engine shall rewrite every tag of the predecessor to name the successor, keeping the tag's level token.",
       "why": "A tag left on the moved requirement reports as a superseded reference, and a person retagging by hand misses sites or drops the level.",
       "supersedes": null,
@@ -894,7 +895,8 @@
       "relates": [],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "merged into REQ-086"
     },
     {
       "id": "REQ-067",
@@ -1118,6 +1120,18 @@
       "status": "active",
       "statement": "When spec supersede or spec amend targets a TERM id, the spec CLI shall carry the term headword and aliases onto the entry it writes.",
       "why": "A shift in a term's meaning must supersede or revise-with-bump, never silently redefine; excluding TERM ids from the lifecycle machinery would leave meaning changes untracked.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "REQ-086",
+      "status": "active",
+      "statement": "When spec supersede or spec move replaces a requirement, the spec engine shall rewrite every tag of the predecessor to name the successor, keeping the tag's level token.",
+      "why": "A tag left on the predecessor reports as a superseded reference, and a person retagging by hand misses sites or drops the level.",
       "supersedes": null,
       "supersededBy": null,
       "relates": [],

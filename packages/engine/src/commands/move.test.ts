@@ -86,7 +86,7 @@ async function expectExit2(fn: () => Promise<void>): Promise<void> {
 
 describe("spec move — happy path", () => {
   // @spec REQ-074
-  // @spec REQ-066 integration
+  // @spec REQ-086 integration
   // The source gains a supersede edge (derived 1 → 2); the target gains only
   // an Active successor, so its derived version stays 1.
   test("flips source, mints successor in target, reports each side's derived version", async () => {
