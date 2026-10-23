@@ -35,7 +35,7 @@ test "$(jq -r '.[0].rule' <<<"$LINT_OUT")" = "no-history" || fail "spec lint --j
 set +e
 CHECK_OUT=$("$SPEC" check --ci "$TMP" --json 2>/dev/null)
 set -e
-jq -e --arg id "$ID" 'any(.[]; .code == "STATEMENT_RULES" and .req_id == $id and .severity == "warning")' \
+jq -e --arg id "$ID" 'any(.[]; .code == "STATEMENT_RULES" and .req_id == $id and .severity == "error")' \
   <<<"$CHECK_OUT" >/dev/null || fail "spec check did not report STATEMENT_RULES for $ID"
 
 echo "smoke 27: spec req refused a rule-breaking statement (exit 2); spec lint and spec check reported it once planted"
