@@ -218,6 +218,168 @@
       "changedAtVersion": 1,
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "CHRT-014",
+      "status": "active",
+      "statement": "The statement rules shall report a statement that is more than one sentence, or that has no closing period.",
+      "why": "A statement that runs to two sentences carries two promises, and one test cannot prove both.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/shared/src/statementRules.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/shared/src/statementRules.test.ts"
+      ]
+    },
+    {
+      "id": "CHRT-015",
+      "status": "active",
+      "statement": "The statement rules shall report a statement longer than the configured maximum, 280 characters by default.",
+      "why": "A reader cannot hold an over-long statement at once, so reviewers approve text they did not take in.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/shared/src/statementRules.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/shared/src/statementRules.test.ts"
+      ]
+    },
+    {
+      "id": "CHRT-016",
+      "status": "active",
+      "statement": "The statement rules shall report a statement that names a file or folder of the repository.",
+      "why": "A statement tied to a file path goes stale on the first move, and the path says nothing about what the product does.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/shared/src/statementRules.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/shared/src/statementRules.test.ts"
+      ]
+    },
+    {
+      "id": "CHRT-017",
+      "status": "active",
+      "statement": "The statement rules shall report a statement that describes how a test is written.",
+      "why": "Test narration passes review as a requirement while promising nothing a user can observe.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/shared/src/statementRules.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/shared/src/statementRules.test.ts"
+      ]
+    },
+    {
+      "id": "CHRT-018",
+      "status": "active",
+      "statement": "The statement rules shall report a statement that describes CI or tooling layout.",
+      "why": "A book full of pipeline layout buries the product's behavior and churns every time the pipeline is rearranged.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/shared/src/statementRules.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/shared/src/statementRules.test.ts"
+      ]
+    },
+    {
+      "id": "CHRT-019",
+      "status": "active",
+      "statement": "The statement rules shall report a statement that tells how the requirement changed over time.",
+      "why": "History in a statement reads as a live promise after the change it narrates is forgotten, and the supersede chain already records it.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/shared/src/statementRules.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/shared/src/statementRules.test.ts"
+      ]
+    },
+    {
+      "id": "CHRT-020",
+      "status": "active",
+      "statement": "The statement rules shall report a statement that uses a word from the configured jargon list.",
+      "why": "A reader without the codebase cannot parse project jargon, so the statement fails the people it is written for.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/shared/src/statementRules.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/shared/src/statementRules.test.ts"
+      ]
+    },
+    {
+      "id": "CHRT-021",
+      "status": "active",
+      "statement": "The statement rules shall report a statement that names which tool is in use.",
+      "why": "A tool choice is a decision record, and stating it as a requirement blocks the swap the decision allows.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/shared/src/statementRules.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/shared/src/statementRules.test.ts"
+      ]
+    },
+    {
+      "id": "CHRT-022",
+      "status": "active",
+      "statement": "The statement rules shall skip glossary terms.",
+      "why": "A glossary definition names vocabulary by design, so judging it as behavior refuses every useful term.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/authoring/statementRules.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/engine/src/authoring/statementRules.test.ts"
+      ]
     }
   ],
   "grammarSeverity": "error"

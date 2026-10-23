@@ -971,6 +971,24 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "REQ-060",
+      "status": "active",
+      "statement": "When a new statement breaks an enabled rule, spec req, amend, supersede, move, and accept shall refuse with exit 2 and print each finding.",
+      "why": "A rule that only reports after the write lets every bad statement into the book, and the sweep never ends.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/authoring/statementRules.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": [
+        "packages/engine/src/authoring/statementRules.test.ts"
+      ]
     }
   ],
   "grammarSeverity": "error"
