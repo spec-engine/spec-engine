@@ -705,6 +705,18 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "CHCK-054",
+      "status": "active",
+      "statement": "When a domain file still carries a retired livesIn or verifiedIn key, spec check shall report one MIGRATION_PENDING warning for that file that names spec migrate.",
+      "why": "The engine reads and ignores the retired keys, so without a row the stale fields linger unnoticed until an unrelated write drops them.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
   ],
   "grammarSeverity": "error"

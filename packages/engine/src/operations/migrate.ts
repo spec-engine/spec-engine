@@ -1,5 +1,6 @@
-import { validateAndWrite } from "@spec-engine/shared";
+import { type Diagnostic, DiagnosticCode, validateAndWrite } from "@spec-engine/shared";
 import { listDomainKeys } from "../authoring/domains";
+import { specPaths } from "../constants";
 import { readEnvelope } from "./_envelope";
 import { fail, type OpFailure } from "./_result";
 
@@ -11,6 +12,32 @@ export interface MigrateResult {
   ok: true;
   /** Platform-relative SPEC.json paths rewritten, in key order. */
   files: string[];
+}
+
+/**
+ * One MIGRATION_PENDING warning per SPEC.json whose raw text still carries a
+ * retired key. A missing or unreadable file is another check's finding.
+ * @spec CHCK-054
+ */
+export async function migrationPendingDiagnostics(platformDir: string): Promise<Diagnostic[]> {
+  const rows: Diagnostic[] = [];
+  for (const key of listDomainKeys(platformDir)) {
+    const { abs, rel } = specPaths(platformDir, key);
+    const raw = await Bun.file(abs)
+      .text()
+      .catch(() => "");
+    if (!LEGACY_KEY_RE.test(raw)) continue;
+    rows.push({
+      code: DiagnosticCode.MIGRATION_PENDING,
+      severity: "warning",
+      repo: null,
+      source_file: rel,
+      line: null,
+      req_id: null,
+      detail: `${rel} still carries the retired livesIn or verifiedIn fields; run spec migrate to strip them`,
+    });
+  }
+  return rows;
 }
 
 /**

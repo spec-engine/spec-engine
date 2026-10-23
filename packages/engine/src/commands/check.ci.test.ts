@@ -126,6 +126,7 @@ describe("Inverted CI assertion", () => {
   test("severity matches the per-code contract across the diagnostic set", async () => {
     const WARNING_CODES = new Set([
       "BROKEN_RELATES",
+      "MIGRATION_PENDING",
       "RELATES_SUPERSEDED",
       "NO_SPEC_CONFIG",
       "UNKNOWN_ROLE",
