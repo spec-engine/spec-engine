@@ -43,6 +43,12 @@ function snapshot(): Record<string, string> {
 }
 
 describe("writeAgentSurface", () => {
+  test("the installed reference carries no doc tag of this repository's requirements", () => {
+    // @spec INIT-044 unit
+    run();
+    expect(read("AGENTS.md")).not.toMatch(/<!-- @spec [A-Z][A-Z0-9]*-\d+ -->/);
+  });
+
   test("a bare repository gets the reference block, the skill, the MCP entry, and the hook", () => {
     // @spec INIT-044 unit
     // @spec INIT-045 unit

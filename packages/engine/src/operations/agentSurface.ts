@@ -12,7 +12,12 @@ import { isExistingDir } from "../constants";
 export const AGENT_BLOCK_BEGIN = "<!-- spec-engine:agent-reference:begin -->";
 export const AGENT_BLOCK_END = "<!-- spec-engine:agent-reference:end -->";
 
-export const AGENT_REFERENCE = referenceSource.replace(/^---\n[\s\S]*?\n---\n+/, "");
+// The reference binds this repository's requirements with doc tags; an adopter's
+// index would read them as dangling tags, so they are stripped from the payload.
+export const AGENT_REFERENCE = referenceSource
+  .replace(/^---\n[\s\S]*?\n---\n+/, "")
+  .replace(/^<!-- @spec [A-Z][A-Z0-9]*-\d+ -->\n\n?/gm, "")
+  .replace(/ <!-- @spec [A-Z][A-Z0-9]*-\d+ -->/g, "");
 
 const SKILL_FILES: Record<string, string> = { "req-author/SKILL.md": skillSource };
 
