@@ -2,6 +2,7 @@
 # An invalid SPEC.json refuses the build: spec index and spec check --ci exit 1 and print only its INVALID_DOMAIN_FILE rows.
 # @spec INDX-016
 # @spec INDX-030
+# @spec INDX-031
 source "$(dirname "$0")/_lib.sh"
 TMP=$(fixture_copy); trap 'rm -rf "$TMP"' EXIT
 FILE=spec-engine/BILLING/SPEC.json

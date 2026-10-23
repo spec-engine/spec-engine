@@ -899,6 +899,18 @@
       "issues": [],
       "aliases": [],
       "cites": []
+    },
+    {
+      "id": "CHCK-069",
+      "status": "active",
+      "statement": "The spec lint command shall exit 1 when it reports a finding and exit 0 otherwise.",
+      "why": "A sweep script branches on the exit code, so a lint that exits 0 with findings reports a finished sweep that is not finished.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
     }
   ],
   "grammarSeverity": "error"

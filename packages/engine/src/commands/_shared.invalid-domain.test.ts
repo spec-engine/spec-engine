@@ -63,6 +63,7 @@ const read = (json: boolean) =>
 
 describe("a read command over an invalid SPEC.json", () => {
   // @spec INDX-030 unit
+  // @spec INDX-031 unit
   test("--json prints only the check --json rows on stdout, exit 1", async () => {
     expect(await exitCode(() => read(true))).toBe(1);
     expect(errs).toEqual([]);
@@ -73,6 +74,7 @@ describe("a read command over an invalid SPEC.json", () => {
   });
 
   // @spec INDX-030 unit
+  // @spec INDX-031 unit
   test("text mode prints only the rows on stderr, exit 1", async () => {
     expect(await exitCode(() => read(false))).toBe(1);
     expect(logs).toEqual([]);
