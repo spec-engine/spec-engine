@@ -295,6 +295,17 @@ The rules every new requirement is written against. The `req-author` skill
 applies them. The statement-shape rule is also checked at write time and by
 `spec check`.
 
+0. **A requirement is one rule of the product's behavior, stated from the
+   user's point of view.** The statement rules are the regex half of this
+   rule: `spec req`, `amend`, `supersede`, `move`, and `accept` refuse a
+   statement that is more than one sentence or has no closing period, runs
+   past 280 characters, names a repository file or folder, describes how a
+   test is written, describes CI or tooling layout, tells how the
+   requirement changed, uses a configured jargon word, or names the tool in
+   use. `spec check` reports an Active statement that breaks one as
+   `STATEMENT_RULES`, and `spec lint` lists every finding. `check.json`
+   tunes the length, the jargon list, the exempt names, and each rule's
+   severity. The judgment half stays with the author.
 1. **One behavior per requirement.** A ticket usually splits into several
    requirements. Never mint one requirement per ticket.
 2. **Write the statement in the fixed shape.** Pick the sentence shape that
