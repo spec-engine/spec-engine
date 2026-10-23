@@ -99,11 +99,10 @@ describe("parseEarsStatement — one promise per statement", () => {
     expect(parseEarsStatement("When a; b holds, spec check shall exit 1.").ok).toBe(true);
   });
 
-  test('", and <subject> shall" rejects; ", and shall" with no new subject passes', () => {
-    const second = parseEarsStatement("spec check shall exit 1, and the log shall name the file.");
-    expect(second.ok).toBe(false);
-    if (!second.ok) expect(second.problem).toContain("own subject");
-    expect(parseEarsStatement("spec check shall exit 1, and shall name the file.").ok).toBe(true);
+  test("a second shall is left to the one-promise statement rule", () => {
+    expect(parseEarsStatement("spec check shall exit 1, and the log shall name the file.").ok).toBe(
+      true,
+    );
   });
 
   test("each rationale connective rejects, naming the connective", () => {
