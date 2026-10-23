@@ -1,7 +1,7 @@
 {
   "key": "MAP",
   "owner": null,
-  "updated": "2026-09-05",
+  "updated": "2026-10-22",
   "scope": "The spec map requirement-by-repo coverage matrix. Belongs here: the matrix rows; the src, test, src+test, and dash rendering; the webapp matrix view. Does not belong here: full-text retrieval (QURY). Boundary case: MAP stays its own domain because the webapp matrix view will accrue here.",
   "grammar": "ears",
   "requirements": [
@@ -64,6 +64,19 @@
       "livesIn": [
         "packages/engine/src/operations/records.ts"
       ],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "MAP-005",
+      "status": "active",
+      "statement": "When spec get prints a requirement, the spec CLI shall list its implementing sites and its verifying sites, each a file and line read from the code tags, sorted by repo, file, and line.",
+      "why": "The code tags are the only record of where a requirement is built and proved, so a reader who cannot see them from the requirement goes back to grepping the tree.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [],
       "issues": [],
       "aliases": [],
       "cites": []

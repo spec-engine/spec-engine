@@ -558,7 +558,7 @@
     },
     {
       "id": "SCHM-036",
-      "status": "active",
+      "status": "deprecated",
       "statement": "The SPEC.json requirement entry shall carry an optional verifiedIn array of platform-relative test file paths, defaulting to empty, beside livesIn.",
       "why": "A requirement records where it is implemented but not which test file is expected to prove it, so a named proof cannot be checked and adopters keep that claim in a side ledger.",
       "supersedes": null,
@@ -567,6 +567,59 @@
       "livesIn": [
         "packages/shared/src/domain.ts"
       ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "deprecatedReason": "Code tags are the only record of where a requirement is implemented and verified, so the authored livesIn and verifiedIn fields and everything built on them are retired."
+    },
+    {
+      "id": "SCHM-037",
+      "status": "active",
+      "statement": "If a SPEC.json requirement entry carries a livesIn or verifiedIn field, then the spec engine shall accept the entry and ignore the field.",
+      "why": "Books written before the fields were retired still carry them, and refusing those files would fail every adopter's build until they migrate.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-038",
+      "status": "active",
+      "statement": "When the spec engine writes a SPEC.json file, it shall leave no livesIn or verifiedIn field in any entry.",
+      "why": "A retired field that a rewrite carries forward keeps an authored claim about the code alive beside the tags that contradict it.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-039",
+      "status": "active",
+      "statement": "When spec migrate runs, the spec CLI shall remove every livesIn and verifiedIn field from the platform's SPEC.json files, rewriting only the files that carry one.",
+      "why": "An adopter needs one command to clear the retired fields, and a file without them must stay byte-identical so the command can run again safely.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [],
+      "issues": [],
+      "aliases": [],
+      "cites": []
+    },
+    {
+      "id": "SCHM-040",
+      "status": "active",
+      "statement": "The spec engine shall show the same implementing and verifying sites for a requirement on spec get, the GET /api/requirements/:id route, the spec_get MCP tool, and the webapp requirement page.",
+      "why": "A surface that drops or reorders the sites tells an agent and a person different stories about where the requirement is built.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [],
       "issues": [],
       "aliases": [],
       "cites": []

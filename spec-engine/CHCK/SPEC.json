@@ -432,7 +432,7 @@
     },
     {
       "id": "CHCK-027",
-      "status": "active",
+      "status": "deprecated",
       "statement": "Where a requirement is superseded or deprecated, spec check shall not report BROKEN_FILE_REF for its livesIn entries.",
       "why": "The file a retired requirement used to live in is expected to be gone, so judging history would make every cleanup red the gate.",
       "supersedes": null,
@@ -448,11 +448,12 @@
         }
       ],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Code tags are the only record of where a requirement is implemented and verified, so the authored livesIn and verifiedIn fields and everything built on them are retired."
     },
     {
       "id": "CHCK-028",
-      "status": "active",
+      "status": "deprecated",
       "statement": "The system shall derive BROKEN_FILE_REF from livesIn entries only and never from @-refs appearing in statement or why text.",
       "why": "The @-ref grammar's only path test is that the token contains a slash, which a scoped npm package name also passes, so a text-wide check reports @spec-engine/spec-engine as a missing file.",
       "supersedes": null,
@@ -468,7 +469,8 @@
         }
       ],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Code tags are the only record of where a requirement is implemented and verified, so the authored livesIn and verifiedIn fields and everything built on them are retired."
     },
     {
       "id": "CHCK-029",
@@ -731,7 +733,7 @@
     },
     {
       "id": "CHCK-045",
-      "status": "active",
+      "status": "deprecated",
       "statement": "If an Active or Draft requirement's livesIn or verifiedIn entry does not resolve to a file under the platform root, then spec check shall report BROKEN_FILE_REF at error severity.",
       "why": "A requirement that points at a file which is not there is a broken link nobody can see; without the check, livesIn is write-only text that CI can never verify.",
       "supersedes": null,
@@ -742,11 +744,12 @@
       ],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Code tags are the only record of where a requirement is implemented and verified, so the authored livesIn and verifiedIn fields and everything built on them are retired."
     },
     {
       "id": "CHCK-046",
-      "status": "active",
+      "status": "deprecated",
       "statement": "When an Active requirement's livesIn entry resolves to a file the scanner reads and that file holds no implementing or documenting tag for the requirement, spec check shall report UNIMPLEMENTED_IN_FILE at warning severity by default, or at the severity check.json configures for the code.",
       "why": "A location claim that silently stops carrying its tag keeps the gate green while the claim is false; one in four of this platform's own entries had drifted that way unreported.",
       "supersedes": null,
@@ -757,11 +760,12 @@
       ],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Code tags are the only record of where a requirement is implemented and verified, so the authored livesIn and verifiedIn fields and everything built on them are retired."
     },
     {
       "id": "CHCK-047",
-      "status": "active",
+      "status": "deprecated",
       "statement": "When an Active requirement's verifiedIn entry resolves to a file the scanner reads and that file holds no verifying tag for the requirement, spec check shall report UNVERIFIED_IN_FILE at warning severity by default, or at the severity check.json configures for the code.",
       "why": "A named test file that does not claim the requirement is a proof nobody runs; without the check an adopter keeps a per-file ledger outside the CLI to enforce it.",
       "supersedes": null,
@@ -772,7 +776,8 @@
       ],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Code tags are the only record of where a requirement is implemented and verified, so the authored livesIn and verifiedIn fields and everything built on them are retired."
     },
     {
       "id": "CHCK-048",

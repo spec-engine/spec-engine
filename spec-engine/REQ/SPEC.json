@@ -600,11 +600,11 @@
     },
     {
       "id": "REQ-037",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec req <KEY> --text runs, it shall append a new Active entry — the given statement, why null when unset, empty relates/livesIn/issues unless flags fill them, no authored version counter — and bump the envelope's updated to the local date, such that reindexing yields zero diagnostics.",
       "why": "Authoring must produce exactly what the indexer ingests, or authored requirements silently vanish from coverage the moment the index rebuilds.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "REQ-061",
       "relates": [],
       "livesIn": [
         "packages/engine/src/commands/req.ts"
@@ -612,7 +612,8 @@
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 23
     },
     {
       "id": "REQ-038",
@@ -691,7 +692,7 @@
     },
     {
       "id": "REQ-042",
-      "status": "active",
+      "status": "deprecated",
       "statement": "When an authoring command receives --lives, the spec CLI shall build livesIn from every --lives occurrence, splitting each value on commas, trimming, and dropping empty entries.",
       "why": "A requirement is often implemented in several places; a flag that keeps only one path forces the rest out of the record.",
       "supersedes": null,
@@ -707,7 +708,8 @@
         }
       ],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Code tags are the only record of where a requirement is implemented and verified, so the authored livesIn and verifiedIn fields and everything built on them are retired."
     },
     {
       "id": "REQ-043",
@@ -747,18 +749,19 @@
     },
     {
       "id": "REQ-045",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec amend refuses a released requirement, it shall name the release tag, spec supersede as the path for the promise, and --lives or --relates as the path for metadata.",
       "why": "A refusal that names no exit sends adopters to a codemod outside the validated seam.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "REQ-062",
       "relates": [],
       "livesIn": [
         "packages/engine/src/operations/amend.ts"
       ],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 24
     },
     {
       "id": "REQ-046",
@@ -899,7 +902,7 @@
     },
     {
       "id": "REQ-055",
-      "status": "active",
+      "status": "deprecated",
       "statement": "When spec amend or spec supersede or spec move receives --lives, the spec CLI shall replace the target's livesIn with that list, an empty --lives value clearing it.",
       "why": "One replace-or-clear idiom, the same as --aliases, so an author always knows what the stored list will be.",
       "supersedes": null,
@@ -910,11 +913,12 @@
       ],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Code tags are the only record of where a requirement is implemented and verified, so the authored livesIn and verifiedIn fields and everything built on them are retired."
     },
     {
       "id": "REQ-056",
-      "status": "active",
+      "status": "deprecated",
       "statement": "When an authoring command receives --tests, the spec CLI shall build verifiedIn from every --tests occurrence, splitting each value on commas, trimming, and dropping empty entries.",
       "why": "A requirement is often proved by several test files; a flag that keeps only one entry forces the author to pick or to edit the file by hand.",
       "supersedes": null,
@@ -925,11 +929,12 @@
       ],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Code tags are the only record of where a requirement is implemented and verified, so the authored livesIn and verifiedIn fields and everything built on them are retired."
     },
     {
       "id": "REQ-057",
-      "status": "active",
+      "status": "deprecated",
       "statement": "When spec amend or spec supersede or spec move receives --tests, the spec CLI shall replace the target's verifiedIn with that list, an empty --tests value clearing it.",
       "why": "One replace-or-clear idiom, the same as --lives, so an author always knows what a repeated flag does to the list.",
       "supersedes": null,
@@ -940,37 +945,40 @@
       ],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "deprecatedReason": "Code tags are the only record of where a requirement is implemented and verified, so the authored livesIn and verifiedIn fields and everything built on them are retired."
     },
     {
       "id": "REQ-058",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec supersede or spec move mints a successor, it shall copy the predecessor's relates, every livesIn entry, every verifiedIn entry, cites, aliases, term, and section unless a flag overrides the field.",
       "why": "A successor that silently drops cross-references and all but the first location loses facts nobody chose to remove.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "REQ-063",
       "relates": [],
       "livesIn": [
         "packages/engine/src/operations/_envelope.ts"
       ],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 25
     },
     {
       "id": "REQ-059",
-      "status": "active",
+      "status": "superseded",
       "statement": "When spec amend changes only livesIn, verifiedIn, or relates of a released requirement, it shall write the change in place.",
       "why": "Location and cross-references are not the promise; a file move otherwise churns ids and rewrites every tag site.",
       "supersedes": null,
-      "supersededBy": null,
+      "supersededBy": "REQ-064",
       "relates": [],
       "livesIn": [
         "packages/engine/src/operations/amend.ts"
       ],
       "issues": [],
       "aliases": [],
-      "cites": []
+      "cites": [],
+      "supersededAtVersion": 26
     },
     {
       "id": "REQ-060",
@@ -989,6 +997,70 @@
       "verifiedIn": [
         "packages/engine/src/authoring/statementRules.test.ts"
       ]
+    },
+    {
+      "id": "REQ-061",
+      "status": "active",
+      "statement": "When spec req runs with --text, the spec CLI shall append an Active entry holding the given statement and set the domain's updated date to today.",
+      "why": "Authoring must produce exactly what the indexer ingests, or authored requirements silently vanish from coverage the moment the index rebuilds.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/commands/req.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": []
+    },
+    {
+      "id": "REQ-062",
+      "status": "active",
+      "statement": "When spec amend refuses a released requirement, the spec CLI shall name the release tag, spec supersede as the path for the promise, and --relates or --issue as the path for metadata.",
+      "why": "A refusal that names no exit sends adopters to a codemod outside the validated seam.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/amend.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": []
+    },
+    {
+      "id": "REQ-063",
+      "status": "active",
+      "statement": "When spec supersede or spec move mints a successor, the spec CLI shall copy the predecessor's relates, cites, aliases, term, and section unless a flag overrides the field.",
+      "why": "A successor that silently drops cross-references or term fields loses facts nobody chose to remove.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/_envelope.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": []
+    },
+    {
+      "id": "REQ-064",
+      "status": "active",
+      "statement": "When spec amend changes only the relates or issue links of a released requirement, the spec CLI shall write the change in place.",
+      "why": "Cross-references and issue links are not the promise, so changing them must not churn the id and every tag site.",
+      "supersedes": null,
+      "supersededBy": null,
+      "relates": [],
+      "livesIn": [
+        "packages/engine/src/operations/amend.ts"
+      ],
+      "issues": [],
+      "aliases": [],
+      "cites": [],
+      "verifiedIn": []
     }
   ],
   "grammarSeverity": "error"
