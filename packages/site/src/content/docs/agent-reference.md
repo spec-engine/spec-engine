@@ -99,17 +99,17 @@ A domain envelope may declare `grammar: "ears"` with `grammarSeverity: "warning"
 | Rule | Fails | Passes |
 | --- | --- | --- |
 | Semicolon clause | `; ` anywhere after the first `shall` | `When a; b holds, X shall …` |
-| Second subject | `, and <subject> shall` after the first `shall` | `X shall A, and shall B` |
 | Rationale | `because`, `so that`, `in order to` anywhere | a trailing `, so <observable consequence>` |
 
 - `spec check` reports a nonconforming Active or Draft statement as `STATEMENT_GRAMMAR` at the declared severity, one row per statement, the detail naming the first failed shape or rule.
 - `spec req`, `amend`, `supersede`, and `move` judge new text at write time: they warn and write under warning, and refuse (exit 2) under error.
+- A second `shall` is the `one-promise` statement rule's, reported on every domain as `STATEMENT_RULES`, never as `STATEMENT_GRAMMAR`.
 - The lint is a pattern, not a reading: a statement that passes can still chain two behaviors, and the reviewer still owns that call.
 - The TERM domain is exempt.
 
 ### The statement rules
 
-Every domain is judged by these rules, whatever its grammar. `spec req`, `amend`, `supersede`, `move` (with new text), and `accept` refuse a statement that breaks a rule graded `error` (the default): exit 2, one `<rule>: <detail> — <reason>` line per finding, rule 0 last. A rule graded `warning` writes the statement and prints the same finding lines on stderr. There is no override flag; the `statementRules` block of `check.json` grades a rule, tunes it, or turns it off. `spec check` reports an Active statement that breaks one as `STATEMENT_RULES`, one row per rule per statement. The TERM domain is never judged.
+Every domain is judged by these rules, whatever its grammar. `spec req`, `amend`, `supersede`, `move` (with new text), and `accept` refuse a statement that breaks a rule graded `error` (the default for every rule but `no-trailing-commentary`, which defaults to `warning`): exit 2, one `<rule>: <detail> — <reason>` line per finding, rule 0 last. A rule graded `warning` writes the statement and prints the same finding lines on stderr. There is no override flag; the `statementRules` block of `check.json` grades a rule, tunes it, or turns it off. `spec check` reports an Active statement that breaks one as `STATEMENT_RULES`, one row per rule per statement. The TERM domain is never judged.
 
 | Rule | Reports | Printed reason |
 | --- | --- | --- |
@@ -121,6 +121,12 @@ Every domain is judged by these rules, whatever its grammar. `spec req`, `amend`
 | `no-history` | how the requirement changed | a statement says what holds now, not how it got there |
 | `no-jargon` | a word from the jargon list | a reader without the codebase cannot parse project jargon |
 | `no-tool-statement` | which tool is in use | naming the tool in use is a decision record, not a requirement |
+| `one-promise` | a second `shall` after the first, `, and <verb>` chained onto the result, or `, and exit <N>` | a second promise is its own requirement |
+| `no-mechanism` | `via`, `by <verb>ing`, `through the`, `using`, or `by means of` in the result | how the product does it is design, not behaviour |
+| `no-contrast` | `instead of`, `rather than`, `never … but`, or `not <X>, <Y>` and `, not <X>` in the result | a behaviour is stated by what it does, not by what it is not |
+| `no-document-content` | `README` or `the document states` anywhere, or a document (`the table`, a section, the agent reference, `AGENTS.md`, `TAXONOMY.md`) as the subject | what a document contains is documentation, not behaviour |
+| `where-takes-a-feature` | a `Where` clause holding a `--flag` or an invocation (`runs`, `is given`, `is passed`) | a flag or an invocation is a trigger and takes When |
+| `no-trailing-commentary` | a trailing `, so …` clause over eight words or holding a second verb phrase | a trailing so-clause names one short consequence, not a second point |
 
 ## Authoring requirements (brief → mint)
 
@@ -335,14 +341,14 @@ The eight codes before them are platform-map's, surfaced with the platform-map c
     "maxLength": 280,
     "jargon": ["seam", "rung"],
     "exemptNames": ["SPEC.json", "spec-engine/"],
-    "severity": { "no-jargon": "off", "length": "error" }
+    "severity": { "no-jargon": "off", "length": "error", "no-trailing-commentary": "error" }
 } }
 ```
 
-- `maxLength` defaults to 280. `jargon` replaces the default list (`seam`, `seams`, `rung`, `rungs`, `residue`, `matrix entry`, `stage runner`, `the stage`).
+- `maxLength` defaults to 280. `jargon` replaces the default list (`seam`, `seams`, `rung`, `rungs`, `residue`, `matrix entry`, `stage runner`, `the stage`, `self-member`, `context walk`, `canonical row`, `layer`, `corpus`).
 - `exemptNames` are product names `no-file-path` never reports. A name ending in `/` exempts every path under it.
-- `severity` maps a rule to `error`, `warning`, or `off`. A rule with no entry is `error`. `error` refuses the write and grades the `STATEMENT_RULES` row error; `warning` writes, prints the finding on stderr, and grades the row warning; `off` turns the rule off everywhere. The `severity` array regrades by code after it.
-- The rules: `one-sentence`, `length`, `no-file-path`, `no-test-narration`, `no-toolchain-layout`, `no-history`, `no-jargon`, `no-tool-statement`. Unknown keys exit 2.
+- `severity` maps a rule to `error`, `warning`, or `off`. A rule with no entry is `error`, except `no-trailing-commentary`, which is `warning`. `error` refuses the write and grades the `STATEMENT_RULES` row error; `warning` writes, prints the finding on stderr, and grades the row warning; `off` turns the rule off everywhere. The `severity` array regrades by code after it.
+- The rules: `one-sentence`, `length`, `no-file-path`, `no-test-narration`, `no-toolchain-layout`, `no-history`, `no-jargon`, `no-tool-statement`, `one-promise`, `no-mechanism`, `no-contrast`, `no-document-content`, `where-takes-a-feature`, `no-trailing-commentary`. Unknown keys exit 2.
 
 ### spec guard
 

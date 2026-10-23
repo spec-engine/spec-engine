@@ -22,7 +22,12 @@
     ],
     "severity": {
       "no-toolchain-layout": "off",
-      "no-jargon": "off"
+      "no-jargon": "off",
+      "one-promise": "warning",
+      "no-mechanism": "warning",
+      "no-contrast": "warning",
+      "no-document-content": "warning",
+      "where-takes-a-feature": "warning"
     }
   }
 }
