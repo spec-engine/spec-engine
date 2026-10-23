@@ -159,9 +159,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/site/src/content/docs/agent-reference.md"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -174,9 +171,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/site/src/content/docs/agent-reference.md"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
