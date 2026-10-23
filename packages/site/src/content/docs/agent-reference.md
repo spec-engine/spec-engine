@@ -160,6 +160,21 @@ bunx @spec-engine/spec-engine <command> [...]   # without a global install (requ
 - A requirement domain's version is derived from its supersede history. The platform version is the max domain version. Drift compares a member's pin against each referenced requirement's `changed_at_version`. A stray `spec-engine.platform.json` is ignored with a warning.
 - A member's `dependsOn` (the platform's own package names in its manifest) orders `spec propagation`: providers before consumers.
 
+### Editor support
+
+The docs site publishes a JSON Schema for each file the engine reads, generated from the schemas the engine parses with:
+
+| File | Schema URL |
+| --- | --- |
+| `spec-engine/<KEY>/SPEC.json` | `https://docs.spec-engine.dev/schema/v1/spec.json` |
+| `spec-engine/check.json` | `https://docs.spec-engine.dev/schema/v1/check.json` |
+| `spec-engine.member.json` | `https://docs.spec-engine.dev/schema/v1/member.json` |
+
+- A file names its schema with a top-level `"$schema"` key, which editors read for completion and validation. Every other unknown top-level key still fails the schema.
+- `spec domain new` and `spec init` write the key first. `spec migrate` adds it to a file that lacks it, and `spec check` reports such a file as `MIGRATION_PENDING`.
+- A rewrite keeps an existing `$schema` key in place with its value.
+- The `v1` path only changes additively. A breaking shape is published under a new path.
+
 ### Tags
 
 - The tag is `@spec KEY-NNN`, optionally followed by a level token `unit` | `integration` | `e2e` on a test tag. Never write "implements" or "verifies" in the tag.
@@ -197,7 +212,7 @@ Branch on exit codes, not on output text.
 | `spec gate <repo> <KEY-NNN> [platformDir]` | Approval gate: pass iff Active and the pin covers it | yes (object) | 0 / 1 / 2 |
 | `spec init [repo]` | Declare a member through platform-map and write its `spec-engine.member.json` pin | yes (object) | 0 / 2 |
 | `spec domain new <KEY>` / `spec domain list` / `spec domain grammar <KEY>` | Scaffold / list `spec-engine/<KEY>/SPEC.json` / set its statement grammar and severity | `list`: yes (array); `grammar`: yes (object) | 0 / 2 |
-| `spec migrate [platformDir]` | Strip the retired `livesIn` and `verifiedIn` fields from every `SPEC.json` (idempotent) | yes (object) | 0 / 2 |
+| `spec migrate [platformDir]` | Strip the retired `livesIn` and `verifiedIn` fields from every `SPEC.json` and add a missing `$schema` key to every `SPEC.json`, `check.json`, and member config (idempotent) | yes (object) | 0 / 2 |
 | `spec req <domain-prefix> [platformDir]` | Piped: next unused id. `--text`: author non-interactively | yes (object) | 0 / 2 |
 | `spec term …` | Author, list, revise, and confirm glossary terms | yes | 0 / 2 |
 | `spec glossary [platformDir]` | Generate `GLOSSARY.md` from the TERM store; `--migrate`, `--check` | yes (object) | 0 / 1 / 2 |
@@ -280,7 +295,7 @@ Codes, in `DiagnosticCode` order:
 | `UNKNOWN_ROLE` | warning | An `issues` entry uses a role outside `created` / `supersedes-via` / `amends-via` (surfaced and dropped, never stored) |
 | `UNSOURCED_CHANGE` | warning, only with `--unsourced-change` | A superseded requirement carries no `supersedes-via` issue |
 | `INVALID_DOMAIN_FILE` | error | A `SPEC.json` is not JSON or fails the shared schema; one row per failing field |
-| `MIGRATION_PENDING` | warning | A `SPEC.json` still carries the retired `livesIn` or `verifiedIn` fields; run `spec migrate` |
+| `MIGRATION_PENDING` | warning | A `SPEC.json` still carries the retired `livesIn` or `verifiedIn` fields, or a `SPEC.json`, `check.json`, or `spec-engine.member.json` has no `$schema` key; the detail names which and the schema URL (`https://docs.spec-engine.dev/schema/v1/<spec\|check\|member>.json`); run `spec migrate` |
 | `UNPROVEN_REQ` | error, only with `--results` | An Active requirement has verifying tags but no passing correlated test |
 | `PROOFS_UNCONFIRMED` | warning, only without `--results` | The proof gate fell back to presence-only mode |
 | `REQUIREMENT_REMOVED` | error | An Active requirement present at the base ref is gone with no same-change supersession |
@@ -451,12 +466,12 @@ Exit: 0 pass / 1 fail / 2 unknown repo name or bad args.
 
 ### spec init
 
-Declares a member through platform-map and writes `spec-engine.member.json`.
+Declares a member through platform-map and writes `spec-engine.member.json`: `{ "$schema": "https://docs.spec-engine.dev/schema/v1/member.json", "specs": "spec-engine@N" }`, plus `ignore` when set. Init writes no `check.json`.
 
 | Flag | Effect |
 | --- | --- |
 | `--specs spec-engine@N` | Override the pin. |
-| `--force` | Rewrite an existing config, preserving `ignore`. Any other key refuses, as does a malformed `ignore`. |
+| `--force` | Rewrite an existing config, preserving `ignore` and `$schema`. Any other key refuses, as does a malformed `ignore`. |
 | `--platform <dir>` | The platform root, for a declared member checked out outside the platform folder. Its location is recorded in platform-map's per-user file first. |
 
 `--json`: `{ action: "wrote", path, pin, source, declared, linked, agent_surface }`, `{ action: "already-configured", path, pin, extra_fields, declared, linked, agent_surface }`, or, on a platform directory, `{ action: "surface-only", agent_surface }`. `declared` lists the platform-map files written (the platform file, the marker), empty when the member was already declared; `linked` is the per-user file written under `--platform`, else null; `agent_surface` lists the agent-surface files written or changed, `[]` on a re-run.
@@ -482,7 +497,7 @@ Exit: 0 wrote or already configured / 2. Branch on `action`, not the exit code.
 
 ### spec domain
 
-`spec domain new <KEY>` scaffolds `spec-engine/<KEY>/SPEC.json`. `spec domain list` prints one key per line; `--json` prints a sorted array of `{ key, scope }` (scope is the charter sentence or null), read from the filesystem.
+`spec domain new <KEY>` scaffolds `spec-engine/<KEY>/SPEC.json` with `"$schema": "https://docs.spec-engine.dev/schema/v1/spec.json"` as its first key. `spec domain list` prints one key per line; `--json` prints a sorted array of `{ key, scope }` (scope is the charter sentence or null), read from the filesystem.
 
 `spec domain grammar <KEY> [platformDir] [--grammar ears|freeform] [--severity warning|error]` sets the envelope's `grammar` and/or `grammarSeverity` through the validating write path; every other field is written back as read. `--json` prints `{ key, grammar, grammar_severity, file }` (an unset field is null). An unknown domain, neither flag, or a value outside the enums exits 2. CLI only: no MCP tool or HTTP route.
 
@@ -494,9 +509,11 @@ Exit: 0 / 2.
 
 ### spec migrate
 
-Rewrites every `SPEC.json` that still carries the retired `livesIn` or `verifiedIn` fields through the write seam, which drops them. A file without them is not touched, so a second run writes nothing. Until a file is migrated, the fields are read and ignored, and the next write of a file drops them.
+Rewrites every `SPEC.json` that still carries the retired `livesIn` or `verifiedIn` fields through the write seam, which drops them. Until a file is migrated, the fields are read and ignored, and the next write of a file drops them.
 
-`--json`: `{ files }`, the platform-relative paths rewritten.
+It also adds a `$schema` key as the first key of every `SPEC.json`, `spec-engine/check.json`, and member `spec-engine.member.json` that lacks one: `https://docs.spec-engine.dev/schema/v1/spec.json`, `…/check.json`, and `…/member.json`. A config is checked against its schema first and only gains the inserted line. A file needing neither change is not touched, so a second run writes nothing.
+
+`--json`: `{ files }`, the platform-relative paths rewritten: `SPEC.json` files in key order, then `check.json`, then member configs.
 
 Exit: 0 / 2.
 
