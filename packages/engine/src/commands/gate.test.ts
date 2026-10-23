@@ -157,13 +157,10 @@ describe("spec gate (in-process)", () => {
     // domain version (1 + edge count), the fixture already carries one edge
     // (BILLING-001→009); this supersession adds the second, so the derived
     // version is 3 — the successor changes at @3.
-    const { newId } = await TestPlatform.at(clone)
-      .handle("BILLING")
-      .supersede("BILLING-002", {
-        statement: "Stand-in for the VERSION_PIN gate reason.",
-        why: "Locks the VERSION_PIN reason without disturbing the canonical fixture.",
-        livesIn: ["test-version-pin.ts"],
-      });
+    const { newId } = await TestPlatform.at(clone).handle("BILLING").supersede("BILLING-002", {
+      statement: "Stand-in for the VERSION_PIN gate reason.",
+      why: "Locks the VERSION_PIN reason without disturbing the canonical fixture.",
+    });
 
     // Plant the member tag in mobile (pinned @1).
     const memberPath = join(clone, "mobile", "src", "test-version-pin.ts");

@@ -55,7 +55,7 @@ coverage/
 
 # Local agent / tool config (never ship in the public build)
 # Exception: .claude/skills/ holds shipped, versioned skills (e.g. req-author,
-# AUTHOR-002's livesIn target) and the repo .mcp.json registers the spec mcp
+# AUTHOR-002's implementation) and the repo .mcp.json registers the spec mcp
 # server — both are deliverables, not local state, so they are tracked.
 .claude/*
 !.claude/skills/

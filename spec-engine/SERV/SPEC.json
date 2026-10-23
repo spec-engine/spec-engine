@@ -13,9 +13,6 @@
       "supersedes": null,
       "supersededBy": "SERV-008",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/serve.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 2,
@@ -30,9 +27,6 @@
       "supersedes": null,
       "supersededBy": "SERV-009",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/server/api.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 3,
@@ -47,9 +41,6 @@
       "supersedes": null,
       "supersededBy": "SERV-011",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/serve.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 4,
@@ -64,9 +55,6 @@
       "supersedes": null,
       "supersededBy": "SERV-013",
       "relates": [],
-      "livesIn": [
-        "@packages/webapp/src/pages/setup.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 5,
       "aliases": [],
@@ -80,9 +68,6 @@
       "supersedes": null,
       "supersededBy": "SERV-014",
       "relates": [],
-      "livesIn": [
-        "@packages/webapp/src/pages/requirements.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 6,
       "aliases": [],
@@ -96,9 +81,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/flags.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -111,9 +93,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/flags.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -126,9 +105,6 @@
       "supersedes": null,
       "supersededBy": "SERV-019",
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/serve.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 9,
@@ -143,9 +119,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/server/api.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -159,9 +132,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/server/api.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -174,9 +144,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/serve.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -190,9 +157,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/serve.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -205,9 +169,6 @@
       "supersedes": null,
       "supersededBy": "SERV-017",
       "relates": [],
-      "livesIn": [
-        "packages/webapp/src/pages/setup.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 7,
@@ -222,9 +183,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/webapp/src/pages/requirements.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -238,9 +196,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/webapp/src/pages/coverage.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -253,9 +208,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/webapp/src/pages/requirements.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -268,9 +220,6 @@
       "supersedes": null,
       "supersededBy": "SERV-018",
       "relates": [],
-      "livesIn": [
-        "packages/webapp/src/pages/setup.ts"
-      ],
       "issues": [
         {
           "role": "supersedes-via",
@@ -290,9 +239,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/webapp/src/pages/setup.ts"
-      ],
       "issues": [
         {
           "role": "created",
@@ -310,9 +256,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/serve.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -325,9 +268,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/server/lan.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -340,9 +280,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/server/lan.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -355,9 +292,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/server/lan.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -370,9 +304,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/serve.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -385,9 +316,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/server/lan.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -400,9 +328,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/server/lan.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -415,9 +340,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/indexer/discover.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -430,9 +352,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/server/api.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -445,9 +364,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/server/mcp.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -460,9 +376,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/server/mcp.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -475,9 +388,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/server/mcp.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -490,9 +400,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/server/api.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []

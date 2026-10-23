@@ -18,8 +18,6 @@ function req(id: string, status: string, extra: Partial<SpecRequirement> = {}): 
     status,
     statement: `${id} statement`,
     relates: [],
-    livesIn: [],
-    verifiedIn: [],
     issues: [],
     aliases: [],
     cites: [],

@@ -14,8 +14,7 @@ $ spec domain new ORDERS
 created spec-engine/ORDERS/SPEC.json
 
 $ spec req orders --text "An order total equals the sum of its line items." \
-    --why "Mispriced orders ship money out the door silently." \
-    --lives "checkout/src/total.ts"
+    --why "Mispriced orders ship money out the door silently."
 appended ORDERS-001 to spec-engine/ORDERS/SPEC.json
 ```
 
@@ -31,8 +30,7 @@ appended ORDERS-001 to spec-engine/ORDERS/SPEC.json
       "id": "ORDERS-001",
       "status": "active",
       "statement": "An order total equals the sum of its line items.",
-      "why": "Mispriced orders ship money out the door silently.",
-      "livesIn": ["checkout/src/total.ts"]
+      "why": "Mispriced orders ship money out the door silently."
     }
   ]
 }

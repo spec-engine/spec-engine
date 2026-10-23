@@ -140,8 +140,6 @@ export async function migrateGlossary(
     supersedes: null,
     supersededBy: null,
     relates: [],
-    livesIn: [],
-    verifiedIn: [],
     issues: [],
     aliases: [],
     cites: [],

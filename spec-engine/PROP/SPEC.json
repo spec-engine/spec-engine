@@ -13,9 +13,6 @@
       "supersedes": null,
       "supersededBy": "PROOF-006",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/check/propagation-teeth.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -28,9 +25,6 @@
       "supersedes": null,
       "supersededBy": "PROP-004",
       "relates": [],
-      "livesIn": [
-        "@packages/shared/src/schema.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 3,
@@ -45,9 +39,6 @@
       "supersedes": null,
       "supersededBy": "PROP-005",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/propagation.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 4,
@@ -62,9 +53,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/schema.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -78,9 +66,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/propagation.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -94,9 +79,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/indexer/discover.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []

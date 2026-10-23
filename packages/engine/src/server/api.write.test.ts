@@ -118,7 +118,6 @@ describe("PUT /api/requirements/:id — amend through the same seam", () => {
     const before = readAuth().requirements.find((r) => r.id === "AUTH-001");
     expect(before).toBeDefined();
     const beforeWhy = before?.why;
-    const beforeLives = before?.livesIn;
 
     const res = await app.request("/api/requirements/AUTH-001", {
       method: "PUT",
@@ -139,22 +138,6 @@ describe("PUT /api/requirements/:id — amend through the same seam", () => {
 
     const after = readAuth().requirements.find((r) => r.id === "AUTH-001");
     expect(after?.why).toEqual(beforeWhy);
-    expect(after?.livesIn).toEqual(beforeLives);
-  });
-
-  // @spec REQ-057 unit
-  test("a PUT with verifiedIn replaces the list; an empty list clears it", async () => {
-    const put = (verifiedIn: string[]) =>
-      app.request("/api/requirements/AUTH-001", {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ verifiedIn }),
-      });
-    const verifiedIn = () => readAuth().requirements.find((r) => r.id === "AUTH-001")?.verifiedIn;
-    expect((await put(["auth/test/session.test.ts"])).status).toBe(200);
-    expect(verifiedIn()).toEqual(["auth/test/session.test.ts"]);
-    expect((await put([])).status).toBe(200);
-    expect(verifiedIn()).toEqual([]);
   });
 
   test("a PUT on a Superseded entry is refused 409 — history is immutable over HTTP", async () => {
@@ -220,7 +203,6 @@ describe("parity: an invalid create returns byte-identical INVALID_DOMAIN_FILE d
       supersedes: null,
       supersededBy: null,
       relates: [],
-      livesIn: [],
       issues: [],
     });
     domain.updated = localToday();

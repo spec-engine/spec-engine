@@ -20,9 +20,6 @@ description: Diagnostic codes and what they mean
 | `UNVERIFIED_REQ` | warning | An active requirement is implemented but has no verifying test tag |
 | `DRAFT_REFERENCED` | error / warning | A tag references a draft requirement: error on a verifying (test) tag, warning on an implementing or documenting tag |
 | `DRIFT` | error | A member is pinned behind the version at which a requirement it references changed |
-| `BROKEN_FILE_REF` | error | An active or draft requirement's `livesIn` or `verifiedIn` entry does not resolve to a file under the platform root (a terminal-status entry is exempt) |
-| `UNIMPLEMENTED_IN_FILE` | warning | An active requirement's `livesIn` entry names a file the scanner reads, and that file holds no implementing or documenting tag for the requirement |
-| `UNVERIFIED_IN_FILE` | warning | An active requirement's `verifiedIn` entry names a file the scanner reads, and that file holds no verifying tag for the requirement |
 | `NO_SPEC_CONFIG` | warning | A declared member is present on disk with no `spec-engine.member.json` |
 | `MALFORMED_FILE` | error (warning for a manifest) | A `platform-map.json`, a package or workspace manifest, or platform-map's per-user file failed to parse or validate |
 | `MARKER_MISMATCH` | error | A member's `platform-map.json` marker names a different platform |

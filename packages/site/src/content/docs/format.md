@@ -18,9 +18,7 @@ One JSON **domain envelope** per domain, at `spec-engine/<KEY>/SPEC.json`. Human
       "statement": "When a subscription renews, charge the saved payment method at the current plan price.",
       "why": "Revenue path. Silent failure loses money with no visible error.",
       "issues": [{ "role": "created", "id": "ENG-1432" }],
-      "relates": ["BILLING-002", "BILLING-007"],
-      "livesIn": ["@lib-billing/renew.ts"],
-      "verifiedIn": ["lib-billing/renew.test.ts"]
+      "relates": ["BILLING-002", "BILLING-007"]
     }
   ]
 }
@@ -49,9 +47,9 @@ One JSON **domain envelope** per domain, at `spec-engine/<KEY>/SPEC.json`. Human
 | `supersededBy` | Set when superseded: the successor's id (resolved globally, so a cross-domain `spec move` works) |
 | `supersededAtVersion` | The derived domain version at which the entry died — stamped once at supersession |
 | `relates` | Advisory links to other requirement ids (rendered by `spec relations`) |
-| `livesIn` | Where the requirement is *enforced* — `@<path>` refs. Metadata, not identity |
-| `verifiedIn` | The test files that verify the requirement — platform-relative paths. Optional, defaults to empty. Metadata, not identity |
 | `issues` | Optional provenance — see below |
+
+No field says where a requirement is implemented or verified: the `@spec` tags in code are the only record, and `spec get` lists them. A file that still carries the retired `livesIn` or `verifiedIn` fields is read with them ignored; `spec migrate` strips them.
 
 Glossary `TERM` entries reuse the same shape plus `term` (the headword), `aliases`, `cites` (pinned term citations), and `section` (the GLOSSARY.md heading).
 

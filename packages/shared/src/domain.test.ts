@@ -26,7 +26,6 @@ function validDomain() {
         why: "Historical.",
         supersededBy: "BILLING-009",
         relates: [],
-        livesIn: [],
         issues: [],
       },
       {
@@ -36,7 +35,6 @@ function validDomain() {
         why: "Revenue correctness.",
         supersedes: "BILLING-001",
         relates: ["BILLING-002"],
-        livesIn: ["api/src/billing/renew.ts"],
         issues: [{ role: "supersedes-via", id: "JIRA-4412" }],
         changedAtVersion: 2,
       },
@@ -169,18 +167,16 @@ describe("validateDomainFile — structural ACCEPT despite a SEMANTIC defect", (
     expect(res.data.requirements[1]?.issues[0]?.id).toBe("BILLING-001");
   });
 
-  test("a full valid BILLING-shaped domain (superseded chain, relates, livesIn, issues) accepts", () => {
+  test("a full valid BILLING-shaped domain (superseded chain, relates, issues) accepts", () => {
     const res = validateDomainFile(validDomain(), SRC);
     expect(res.ok).toBe(true);
     if (!res.ok) throw new Error("expected accept");
     expect(res.data.key).toBe("BILLING");
     expect(res.data.requirements.length).toBe(2);
     expect(res.data.requirements[0]!.relates).toEqual([]);
-    expect(res.data.requirements[0]!.livesIn).toEqual([]);
     expect(res.data.requirements[0]!.issues).toEqual([]);
   });
 
-  // @spec SCHM-036 unit
   test("optional array fields default to [] when omitted", () => {
     const d = {
       key: "AUTH",
@@ -193,21 +189,20 @@ describe("validateDomainFile — structural ACCEPT despite a SEMANTIC defect", (
     if (!res.ok) throw new Error("expected accept");
     const r = res.data.requirements[0]!;
     expect(r.relates).toEqual([]);
-    expect(r.livesIn).toEqual([]);
-    expect(r.verifiedIn).toEqual([]);
     expect(r.issues).toEqual([]);
   });
 
-  // @spec SCHM-036 unit
-  test("verifiedIn accepts a string array and rejects anything else", () => {
+  // @spec SCHM-037 unit
+  test("an entry carrying livesIn or verifiedIn is accepted and the fields are dropped", () => {
     const d = validDomain();
-    const withList = (verifiedIn: unknown) => ({
+    const legacy = {
       ...d,
-      requirements: [{ ...entry(d, 0), verifiedIn }],
-    });
-    const ok = validateDomainFile(withList(["api/test/renew.test.ts"]), SRC);
-    expect(ok.ok && ok.data.requirements[0]?.verifiedIn).toEqual(["api/test/renew.test.ts"]);
-    expect(validateDomainFile(withList("api/test/renew.test.ts"), SRC).ok).toBe(false);
+      requirements: [{ ...entry(d, 0), livesIn: ["api/renew.ts"], verifiedIn: "anything" }],
+    };
+    const res = validateDomainFile(legacy, SRC);
+    if (!res.ok) throw new Error("expected accept");
+    expect(res.data.requirements[0]).not.toHaveProperty("livesIn");
+    expect(res.data.requirements[0]).not.toHaveProperty("verifiedIn");
   });
 });
 

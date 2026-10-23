@@ -13,9 +13,6 @@
       "supersedes": null,
       "supersededBy": "RSLV-003",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/resolve.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 2,
@@ -30,9 +27,6 @@
       "supersedes": null,
       "supersededBy": "RSLV-004",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/resolve/format.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 3,
@@ -47,9 +41,6 @@
       "supersedes": null,
       "supersededBy": "RSLV-005",
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/resolve.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -64,9 +55,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/resolve/format.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -80,9 +68,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/resolve.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -96,9 +81,6 @@
       "supersededBy": null,
       "relates": [
         "RSLV-005"
-      ],
-      "livesIn": [
-        "packages/engine/src/commands/resolve.ts"
       ],
       "issues": [],
       "aliases": [],

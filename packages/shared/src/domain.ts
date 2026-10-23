@@ -30,6 +30,10 @@ export const SpecCiteSchema = z
   })
   .strict();
 
+/** Retired entry keys: read and ignored, never written back. */
+const LEGACY_ENTRY_KEYS = ["livesIn", "verifiedIn"] as const;
+
+// @spec SCHM-037
 export const SpecRequirementSchema = z
   .object({
     id: z.string().regex(ID_RE),
@@ -39,9 +43,8 @@ export const SpecRequirementSchema = z
     supersedes: z.string().nullable().optional(),
     supersededBy: z.string().nullable().optional(),
     relates: z.array(z.string()).optional().default([]),
-    livesIn: z.array(z.string()).optional().default([]),
-    // @spec SCHM-036
-    verifiedIn: z.array(z.string()).optional().default([]),
+    livesIn: z.unknown().optional(),
+    verifiedIn: z.unknown().optional(),
     issues: z.array(SpecIssueSchema).optional().default([]),
     changedAtVersion: z.number().int().optional(),
     // Stamped once at supersession and never recomputed, unlike
@@ -57,7 +60,8 @@ export const SpecRequirementSchema = z
     cites: z.array(SpecCiteSchema).optional().default([]),
     section: z.string().nullable().optional(),
   })
-  .strict();
+  .strict()
+  .transform(({ livesIn: _l, verifiedIn: _v, ...entry }) => entry);
 
 // `.strict()` on both objects: an unknown key (`__proto__`, a typo) rejects.
 export const SpecDomainSchema = z
@@ -181,8 +185,6 @@ function orderDomain(d: SpecDomain) {
       supersedes: r.supersedes ?? null,
       supersededBy: r.supersededBy ?? null,
       relates: r.relates,
-      livesIn: r.livesIn,
-      verifiedIn: r.verifiedIn,
       issues: r.issues.map((iss) => ({ role: iss.role, id: iss.id })),
       changedAtVersion: r.changedAtVersion,
       supersededAtVersion: r.supersededAtVersion,
@@ -251,6 +253,10 @@ function preserveShape(raw: JsonObject, rawDomain: SpecDomain, domain: SpecDomai
   patchFields(raw, before, next);
 
   const rawEntries = raw.requirements as JsonObject[];
+  // @spec SCHM-038
+  for (const entry of rawEntries) {
+    for (const key of LEGACY_ENTRY_KEYS) delete entry[key];
+  }
   const byId = new Map<string, number[]>();
   rawDomain.requirements.forEach((r, i) => {
     byId.set(r.id, [...(byId.get(r.id) ?? []), i]);

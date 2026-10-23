@@ -41,16 +41,12 @@ function errorResult(message: string) {
 function amendFieldsOf(args: {
   text: string | undefined;
   why: string | undefined;
-  lives: string[] | undefined;
-  verified_in: string[] | undefined;
   relates: string[] | undefined;
   issue: string | undefined;
 }): AmendFields {
   const fields: AmendFields = {};
   if (args.text !== undefined) fields.statement = args.text;
   if (args.why !== undefined) fields.why = args.why || null;
-  if (args.lives !== undefined) fields.livesIn = args.lives;
-  if (args.verified_in !== undefined) fields.verifiedIn = args.verified_in;
   if (args.relates !== undefined) fields.relates = args.relates;
   if (args.issue) fields.issue = args.issue;
   return fields;
@@ -179,7 +175,7 @@ export function buildMcpServer(platformDir: string): McpServer {
     {
       title: "One requirement's full record",
       description:
-        "The full record for one requirement id: status, key, seq, statement, why, versions, and source location. An unknown id returns [] (the `spec get --json` shape).",
+        "The full record for one requirement id: status, key, seq, statement, why, versions, source location, and the implemented_in and verified_in tag sites. An unknown id returns [] (the `spec get --json` shape).",
       inputSchema: { req_id: z.string().describe("Requirement id (KEY-NNN)") },
     },
     async ({ req_id }) => {
@@ -236,14 +232,6 @@ export function buildMcpServer(platformDir: string): McpServer {
           .string()
           .optional()
           .describe("Successor's why (default: copied from the predecessor)"),
-        lives_in: z
-          .array(z.string())
-          .optional()
-          .describe("Successor's livesIn paths (default: copied from the predecessor)"),
-        verified_in: z
-          .array(z.string())
-          .optional()
-          .describe("Successor's verifiedIn paths (default: copied from the predecessor)"),
         relates: z
           .array(z.string())
           .optional()
@@ -258,7 +246,7 @@ export function buildMcpServer(platformDir: string): McpServer {
           ),
       },
     },
-    async ({ req_id, statement, why, lives_in, verified_in, relates, issue }) => {
+    async ({ req_id, statement, why, relates, issue }) => {
       if (!ID_RE.test(req_id)) {
         return errorResult(`req_id must be a requirement id (KEY-NNN); got ${req_id}`);
       }
@@ -268,8 +256,6 @@ export function buildMcpServer(platformDir: string): McpServer {
           id: req_id,
           statement,
           why,
-          livesIn: lives_in,
-          verifiedIn: verified_in,
           relates,
           issue,
         },
@@ -344,8 +330,6 @@ export function buildMcpServer(platformDir: string): McpServer {
         domain: z.string().min(1).describe("Domain key or unique case-insensitive prefix"),
         text: z.string().trim().min(1).describe("The requirement statement"),
         why: z.string().trim().default("").describe("What breaks without it"),
-        lives: z.array(z.string()).default([]).describe("livesIn paths"),
-        verified_in: z.array(z.string()).default([]).describe("verifiedIn test paths"),
         relates: z
           .array(z.string())
           .default([])
@@ -354,7 +338,7 @@ export function buildMcpServer(platformDir: string): McpServer {
         draft: z.boolean().default(false).describe("Author as Draft instead of Active"),
       },
     },
-    async ({ domain, text, why, lives, verified_in, relates, issue, draft }) => {
+    async ({ domain, text, why, relates, issue, draft }) => {
       const allocated = await nextId(platformDir, domain);
       if (!allocated.ok) return errorResult(allocated.detail);
       const r = await mint({
@@ -362,8 +346,6 @@ export function buildMcpServer(platformDir: string): McpServer {
         key: allocated.key,
         statement: text,
         why,
-        livesIn: lives,
-        verifiedIn: verified_in,
         relates,
         issue: issue || undefined,
         status: draft ? "draft" : "active",
@@ -387,11 +369,6 @@ export function buildMcpServer(platformDir: string): McpServer {
         id: z.string().describe("The requirement id to amend (KEY-NNN)"),
         text: z.string().trim().min(1).optional().describe("New statement"),
         why: z.string().trim().optional().describe("New why; empty clears it"),
-        lives: z.array(z.string()).optional().describe("Replacement livesIn list; empty clears"),
-        verified_in: z
-          .array(z.string())
-          .optional()
-          .describe("Replacement verifiedIn list; empty clears"),
         relates: z
           .array(z.string())
           .optional()
@@ -399,13 +376,11 @@ export function buildMcpServer(platformDir: string): McpServer {
         issue: z.string().trim().optional().describe("Ticket recorded as amends-via"),
       },
     },
-    async ({ id, text, why, lives, verified_in, relates, issue }) => {
+    async ({ id, text, why, relates, issue }) => {
       if (!ID_RE.test(id)) return errorResult(`id must be a requirement id (KEY-NNN); got ${id}`);
-      const fields = amendFieldsOf({ text, why, lives, verified_in, relates, issue });
+      const fields = amendFieldsOf({ text, why, relates, issue });
       if (Object.keys(fields).length === 0) {
-        return errorResult(
-          "nothing to amend — pass at least one of text, why, lives, verified_in, relates",
-        );
+        return errorResult("nothing to amend — pass at least one of text, why, relates, issue");
       }
       const r = await amend({ platformDir, id, fields });
       if (!r.ok) return errorResult(r.detail);
@@ -426,17 +401,9 @@ export function buildMcpServer(platformDir: string): McpServer {
         newDomain: z.string().min(1).describe("The existing target domain key"),
         text: z.string().optional().describe("Successor statement (default: copied)"),
         why: z.string().optional().describe("Successor why (default: copied)"),
-        lives: z
-          .array(z.string())
-          .optional()
-          .describe("Successor livesIn list; empty clears (default: copied)"),
-        verified_in: z
-          .array(z.string())
-          .optional()
-          .describe("Successor verifiedIn list; empty clears (default: copied)"),
       },
     },
-    async ({ id, newDomain, text, why, lives, verified_in }) => {
+    async ({ id, newDomain, text, why }) => {
       if (!ID_RE.test(id)) return errorResult(`id must be a requirement id (KEY-NNN); got ${id}`);
       const targetKey = normalizeDomainKey(newDomain);
       if (targetKey === "") return errorResult(`newDomain must be a domain key; got ${newDomain}`);
@@ -447,8 +414,6 @@ export function buildMcpServer(platformDir: string): McpServer {
           targetKey,
           statement: text,
           why,
-          livesIn: lives,
-          verifiedIn: verified_in,
         },
         coldFreshTags(platformDir),
       );

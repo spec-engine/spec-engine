@@ -13,9 +13,6 @@
       "supersedes": null,
       "supersededBy": "INIT-015",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/init.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 4,
       "aliases": [],
@@ -29,9 +26,6 @@
       "supersedes": null,
       "supersededBy": "INIT-016",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/init.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 5,
       "aliases": [],
@@ -45,9 +39,6 @@
       "supersedes": null,
       "supersededBy": "INIT-018",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/init.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 6,
       "aliases": [],
@@ -61,9 +52,6 @@
       "supersedes": null,
       "supersededBy": "INIT-019",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/init.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 7,
       "aliases": [],
@@ -77,9 +65,6 @@
       "supersedes": null,
       "supersededBy": "INIT-013",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/init.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 3,
       "aliases": [],
@@ -93,9 +78,6 @@
       "supersedes": null,
       "supersededBy": "INIT-022",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/indexer/discover.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 8,
       "aliases": [],
@@ -109,9 +91,6 @@
       "supersedes": null,
       "supersededBy": "CHCK-003",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/check.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -124,9 +103,6 @@
       "supersedes": null,
       "supersededBy": "INIT-023",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/onboarding/prompt.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 9,
       "aliases": [],
@@ -140,9 +116,6 @@
       "supersedes": null,
       "supersededBy": "INIT-024",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/onboarding/context.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 10,
       "aliases": [],
@@ -156,9 +129,6 @@
       "supersedes": null,
       "supersededBy": "INIT-026",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/cli.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 11,
@@ -173,9 +143,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/cli.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "deprecatedReason": "Duplicate of CHCK-001 and CHCK-002: the CI-gate behavior it narrates is owned by check's exit contract and cold rebuild. Its unique content was onboarding documentation, not an engine behavior.",
@@ -190,9 +157,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/cli.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "deprecatedReason": "Duplicate of MAP-001 and PROP-003: the second-repo narrative restates cross-repo coverage and migration state. INIT's own pin behaviors are owned by its remaining requirements.",
@@ -207,9 +171,6 @@
       "supersedes": null,
       "supersededBy": "INIT-027",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/init.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 12,
@@ -224,9 +185,6 @@
       "supersedes": null,
       "supersededBy": "INIT-028",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/indexer/discover.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 13,
       "aliases": [],
@@ -240,9 +198,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/init.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -256,9 +211,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/init.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -272,9 +224,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/init.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -287,9 +236,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/init.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -303,9 +249,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/init.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -319,9 +262,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/init.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -334,9 +274,6 @@
       "supersedes": null,
       "supersededBy": "INIT-031",
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/init.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 15,
       "aliases": [],
@@ -350,9 +287,6 @@
       "supersedes": null,
       "supersededBy": "INIT-032",
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/indexer/discover.ts"
-      ],
       "issues": [
         {
           "role": "supersedes-via",
@@ -372,9 +306,6 @@
       "supersedes": null,
       "supersededBy": "INIT-033",
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/onboarding/prompt.ts"
-      ],
       "issues": [
         {
           "role": "supersedes-via",
@@ -394,9 +325,6 @@
       "supersedes": null,
       "supersededBy": "INIT-034",
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/onboarding/context.ts"
-      ],
       "issues": [
         {
           "role": "supersedes-via",
@@ -416,9 +344,6 @@
       "supersedes": null,
       "supersededBy": "INIT-029",
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/onboarding/context.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 14,
       "aliases": [],
@@ -432,9 +357,6 @@
       "supersedes": null,
       "supersededBy": "INIT-035",
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/indexer/discover.ts"
-      ],
       "issues": [
         {
           "role": "supersedes-via",
@@ -454,9 +376,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/init.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -470,9 +389,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/indexer/discover.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -486,9 +402,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/indexer/discover.ts"
-      ],
       "issues": [
         {
           "role": "amends-via",
@@ -507,9 +420,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/init.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -522,9 +432,6 @@
       "supersedes": null,
       "supersededBy": "INIT-036",
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/init.ts"
-      ],
       "issues": [
         {
           "role": "supersedes-via",
@@ -543,9 +450,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/indexer/pipeline.ts"
-      ],
       "issues": [
         {
           "role": "created",
@@ -563,9 +467,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/onboarding/prompt.ts"
-      ],
       "issues": [
         {
           "role": "created",
@@ -583,9 +484,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/indexer/discover.ts"
-      ],
       "issues": [
         {
           "role": "created",
@@ -603,9 +501,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/indexer/discover.ts"
-      ],
       "issues": [
         {
           "role": "created",
@@ -623,9 +518,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/init.ts"
-      ],
       "issues": [
         {
           "role": "created",
@@ -643,9 +535,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/indexer/discover.ts"
-      ],
       "issues": [
         {
           "role": "created",
@@ -663,9 +552,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/init.ts"
-      ],
       "issues": [
         {
           "role": "created",
@@ -683,9 +569,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/init.ts"
-      ],
       "issues": [
         {
           "role": "created",
@@ -703,9 +586,6 @@
       "supersedes": null,
       "supersededBy": "INIT-041",
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/indexer/discover.ts"
-      ],
       "issues": [
         {
           "role": "created",
@@ -724,9 +604,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/indexer/discover.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []

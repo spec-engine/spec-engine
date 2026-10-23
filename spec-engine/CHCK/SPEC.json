@@ -13,9 +13,6 @@
       "supersedes": null,
       "supersededBy": "CHCK-012",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/check.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 2,
@@ -30,9 +27,6 @@
       "supersedes": null,
       "supersededBy": "CHCK-014",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/check.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 3,
@@ -47,9 +41,6 @@
       "supersedes": null,
       "supersededBy": "CHCK-015",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/check.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 4,
@@ -64,7 +55,6 @@
       "supersedes": null,
       "supersededBy": "CHCK-016",
       "relates": [],
-      "livesIn": [],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 5,
@@ -79,7 +69,6 @@
       "supersedes": null,
       "supersededBy": "CHCK-018",
       "relates": [],
-      "livesIn": [],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 6,
@@ -94,9 +83,6 @@
       "supersedes": null,
       "supersededBy": "CHCK-020",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/glossary.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 7,
@@ -111,9 +97,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/storage/sql/diagnostics.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -126,9 +109,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/check/grammar.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -141,9 +121,6 @@
       "supersedes": null,
       "supersededBy": "CHCK-033",
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/storage/sqlite.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 11,
       "aliases": [],
@@ -157,9 +134,6 @@
       "supersedes": null,
       "supersededBy": "CHCK-024",
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/glossary.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 9,
       "aliases": [],
@@ -173,9 +147,6 @@
       "supersedes": null,
       "supersededBy": "CHCK-023",
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/check.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 8,
       "aliases": [],
@@ -189,9 +160,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/check.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -205,9 +173,6 @@
       "supersedes": null,
       "supersededBy": "CHCK-043",
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/check.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": [],
@@ -221,9 +186,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/check.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -237,9 +199,6 @@
       "supersedes": null,
       "supersededBy": "CHCK-025",
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/check.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 10,
@@ -254,10 +213,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/storage/sql/diagnostics.ts",
-        "packages/shared/src/diagnostics.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -271,9 +226,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/storage/sql/diagnostics.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -286,12 +238,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/term.ts",
-        "packages/engine/src/storage/sql/diagnostics.ts",
-        "packages/shared/src/diagnostics.ts",
-        "packages/shared/src/schema.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -305,10 +251,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/term.ts",
-        "packages/engine/src/storage/sql/diagnostics.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -321,10 +263,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/glossary.ts",
-        "scripts/arch-fences.sh"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -338,9 +276,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/glossary.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -353,9 +288,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/glossary.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -368,10 +300,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/check/removed.ts",
-        "packages/engine/src/operations/check.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -385,9 +313,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/glossary.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -401,9 +326,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/check.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -417,9 +339,6 @@
       "supersedes": null,
       "supersededBy": "CHCK-045",
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/check/filerefs.ts"
-      ],
       "issues": [
         {
           "role": "created",
@@ -438,9 +357,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/check/filerefs.ts"
-      ],
       "issues": [
         {
           "role": "created",
@@ -459,9 +375,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/check/filerefs.ts"
-      ],
       "issues": [
         {
           "role": "created",
@@ -480,9 +393,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/check/supersedes.ts"
-      ],
       "issues": [
         {
           "role": "created",
@@ -500,9 +410,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "scripts/arch-fences.sh"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -515,9 +422,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/indexer/discover.ts"
-      ],
       "issues": [
         {
           "role": "created",
@@ -535,9 +439,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/storage/sql/diagnostics.ts"
-      ],
       "issues": [
         {
           "role": "created",
@@ -555,9 +456,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/storage/sql/diagnostics.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -570,9 +468,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/storage/sql/diagnostics.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -585,9 +480,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/storage/sql/diagnostics.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -600,10 +492,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/check/severity.ts",
-        "packages/shared/src/checkConfig.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -616,10 +504,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/check/severity.ts",
-        "packages/shared/src/checkConfig.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -632,9 +516,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/check/severity.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -647,9 +528,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/check.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -662,9 +540,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/ears.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -677,9 +552,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/ears.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -692,9 +564,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/ears.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -707,9 +576,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/check.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -724,9 +590,6 @@
       "relates": [
         "CHCK-043"
       ],
-      "livesIn": [
-        "packages/engine/src/operations/check.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -739,9 +602,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/check/filerefs.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": [],
@@ -755,9 +615,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/check/filerefs.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": [],
@@ -771,9 +628,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/check/filerefs.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": [],
@@ -787,16 +641,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/checkConfig.ts",
-        "packages/engine/src/authoring/statementRules.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/engine/src/authoring/statementRules.test.ts"
-      ]
+      "cites": []
     },
     {
       "id": "CHCK-049",
@@ -806,15 +653,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/check/statementRules.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/engine/src/check/statementRules.test.ts"
-      ]
+      "cites": []
     },
     {
       "id": "CHCK-050",
@@ -824,16 +665,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/lint.ts",
-        "packages/engine/src/commands/lint.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/engine/src/commands/lint.test.ts"
-      ]
+      "cites": []
     },
     {
       "id": "CHCK-051",
@@ -843,15 +677,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/lint.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/engine/src/commands/lint.test.ts"
-      ]
+      "cites": []
     },
     {
       "id": "CHCK-052",
@@ -861,15 +689,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/lint.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/engine/src/commands/lint.test.ts"
-      ]
+      "cites": []
     }
   ],
   "grammarSeverity": "error"

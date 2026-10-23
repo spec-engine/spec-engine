@@ -1,4 +1,4 @@
-import type { Requirement } from "@spec-engine/shared";
+import type { Requirement, RequirementRecord } from "@spec-engine/shared";
 import type { RenderMode } from "../constants";
 
 const HEADER = ["ID", "STATUS", "KEY", "SEQ", "CHANGED_AT", "TEXT"];
@@ -28,4 +28,19 @@ export function renderRecords(rows: readonly Requirement[], mode: RenderMode): s
         .trimEnd(),
     )
     .join("\n");
+}
+
+/** The record's table row, then its implementing and verifying sites as `file:line`, one per line. */
+// @spec MAP-005
+export function renderRecord(record: RequirementRecord): string {
+  const sites = (label: string, list: readonly { file: string; line: number }[]) =>
+    list.length === 0
+      ? [`${label}: none`]
+      : [`${label}:`, ...list.map((s) => `  ${s.file}:${s.line}`)];
+  return [
+    renderRecords([record], "text"),
+    "",
+    ...sites("implemented in", record.implemented_in),
+    ...sites("verified in", record.verified_in),
+  ].join("\n");
 }

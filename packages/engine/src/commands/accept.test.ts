@@ -65,7 +65,6 @@ describe("spec accept", () => {
     const draft = await billing.req({
       statement: "refunds reverse the original charge",
       why: "revenue",
-      livesIn: ["refund.ts"],
       status: "draft",
     });
     const before = (await billing.read()).requirements.find((r) => r.id === draft.id);

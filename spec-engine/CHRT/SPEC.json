@@ -13,9 +13,6 @@
       "supersedes": null,
       "supersededBy": "CHRT-007",
       "relates": [],
-      "livesIn": [
-        "@spec-engine/TAXONOMY.md"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 2,
@@ -30,9 +27,6 @@
       "supersedes": null,
       "supersededBy": "CHRT-009",
       "relates": [],
-      "livesIn": [
-        "@spec-engine/TAXONOMY.md"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 3,
@@ -47,9 +41,6 @@
       "supersedes": null,
       "supersededBy": "CHRT-010",
       "relates": [],
-      "livesIn": [
-        "@packages/shared/src/domain.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 4,
@@ -64,10 +55,6 @@
       "supersedes": null,
       "supersededBy": "CHRT-011",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/domain.ts",
-        "@packages/engine/src/authoring/domains.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 5,
@@ -82,9 +69,6 @@
       "supersedes": null,
       "supersededBy": "CHRT-012",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/req.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 6,
@@ -99,9 +83,6 @@
       "supersedes": null,
       "supersededBy": "CHRT-013",
       "relates": [],
-      "livesIn": [
-        "@spec-engine/TAXONOMY.md"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 7,
@@ -116,9 +97,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "scripts/arch-fences.sh"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -132,9 +110,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "spec-engine/TAXONOMY.md"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -147,9 +122,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "spec-engine/TAXONOMY.md"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -163,9 +135,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/domain.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -179,9 +148,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/domain.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -195,9 +161,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/req.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -211,9 +174,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "spec-engine/TAXONOMY.md"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -227,15 +187,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/statementRules.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/shared/src/statementRules.test.ts"
-      ]
+      "cites": []
     },
     {
       "id": "CHRT-015",
@@ -245,15 +199,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/statementRules.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/shared/src/statementRules.test.ts"
-      ]
+      "cites": []
     },
     {
       "id": "CHRT-016",
@@ -263,15 +211,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/statementRules.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/shared/src/statementRules.test.ts"
-      ]
+      "cites": []
     },
     {
       "id": "CHRT-017",
@@ -281,15 +223,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/statementRules.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/shared/src/statementRules.test.ts"
-      ]
+      "cites": []
     },
     {
       "id": "CHRT-018",
@@ -299,15 +235,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/statementRules.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/shared/src/statementRules.test.ts"
-      ]
+      "cites": []
     },
     {
       "id": "CHRT-019",
@@ -317,15 +247,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/statementRules.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/shared/src/statementRules.test.ts"
-      ]
+      "cites": []
     },
     {
       "id": "CHRT-020",
@@ -335,15 +259,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/statementRules.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/shared/src/statementRules.test.ts"
-      ]
+      "cites": []
     },
     {
       "id": "CHRT-021",
@@ -353,15 +271,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/statementRules.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/shared/src/statementRules.test.ts"
-      ]
+      "cites": []
     },
     {
       "id": "CHRT-022",
@@ -371,15 +283,9 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/authoring/statementRules.ts"
-      ],
       "issues": [],
       "aliases": [],
-      "cites": [],
-      "verifiedIn": [
-        "packages/engine/src/authoring/statementRules.test.ts"
-      ]
+      "cites": []
     }
   ],
   "grammarSeverity": "error"

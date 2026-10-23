@@ -90,6 +90,13 @@ describe("mountWebapp (SSR pages)", () => {
     expect(body.toLowerCase()).toContain("renew");
   });
 
+  // @spec SCHM-040 unit
+  test("GET /requirements/BILLING-009 lists its implementing and verifying sites", async () => {
+    const body = await (await buildApp().request("/requirements/BILLING-009")).text();
+    expect(body).toContain("<code>api/src/renew.ts:1</code>");
+    expect(body).toContain("<code>api/test/renew.e2e.test.ts:1</code>");
+  });
+
   test("GET /requirements/NOPE-404 → 200 HTML 'Requirement not found' page", async () => {
     const app = buildApp();
     const res = await app.request("/requirements/NOPE-404");

@@ -67,6 +67,26 @@ export interface Tag {
   level: TagLevel;
 }
 
+export interface ImplementingSite {
+  repo: string;
+  file: string;
+  line: number;
+  kind: Exclude<TagKind, "verifies">;
+}
+
+export interface VerifyingSite {
+  repo: string;
+  file: string;
+  line: number;
+  level: TagLevel;
+}
+
+/** A requirement row with the code sites its tags name, each list sorted by (repo, file, line). */
+export interface RequirementRecord extends Requirement {
+  implemented_in: ImplementingSite[];
+  verified_in: VerifyingSite[];
+}
+
 /** Broken targets land on purpose: they are diagnosed, never constrained in the DB. */
 export interface RelationRow {
   from_id: string;

@@ -42,7 +42,6 @@ beforeEach(async () => {
     const successor = await billing.supersede(old.id, {
       statement: "rough draft of the rule",
       why: "revenue",
-      livesIn: ["renew.ts"],
     });
     expect(successor.newId).toBe(ACTIVE);
   } finally {
@@ -108,7 +107,6 @@ describe("spec amend", () => {
     expect(req?.status).toBe("active"); // status + id unchanged
     expect(req?.statement).toBe("the precise rule");
     expect(req?.why).toBe("revenue correctness");
-    expect(req?.livesIn).toEqual(["renew.ts"]); // untouched field
     expect(deriveDomainVersion(domain.requirements)).toBe(versionBefore); // amend never bumps
     expect(domain.specVersion).toBeUndefined(); // no authored counter on a requirement domain
     expect(domain.updated).toBe(localToday()); // updated bumped
@@ -118,33 +116,6 @@ describe("spec amend", () => {
       file: "spec-engine/BILLING/SPEC.json",
       fields_changed: ["requirement", "why"],
     });
-  });
-
-  test("--lives maps to livesIn[]", async () => {
-    await amendRun({
-      args: { id: ACTIVE, platformDir: tmp, lives: "checkout.ts" },
-      rawArgs: [],
-    });
-    const req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
-    expect(req?.livesIn).toEqual(["checkout.ts"]);
-    expect(req?.statement).toBe("rough draft of the rule"); // untouched
-  });
-
-  // @spec REQ-055 unit
-  test("repeated and comma-separated --lives replace livesIn with the whole list", async () => {
-    await amendRun({
-      args: { id: ACTIVE, platformDir: tmp, lives: "c.ts" },
-      rawArgs: ["--lives", "a.ts", "--lives", "b.ts,c.ts"],
-    });
-    const req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
-    expect(req?.livesIn).toEqual(["a.ts", "b.ts", "c.ts"]);
-  });
-
-  // @spec REQ-055 unit
-  test("an empty --lives clears livesIn", async () => {
-    await amendRun({ args: { id: ACTIVE, platformDir: tmp, lives: "" }, rawArgs: ["--lives", ""] });
-    const req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
-    expect(req?.livesIn).toEqual([]);
   });
 
   test("no field flags non-TTY → exit 2 (nothing to amend)", async () => {
@@ -180,14 +151,14 @@ describe("spec amend", () => {
     expect(await billing.raw()).toBe(before);
   });
 
-  test("@-ref warning fires on amended lives; save proceeds", async () => {
+  test("@-ref warning fires on an amended why; save proceeds", async () => {
     await amendRun({
-      args: { id: ACTIVE, platformDir: tmp, lives: "@missing/file.ts" },
+      args: { id: ACTIVE, platformDir: tmp, why: "see @missing/file.ts" },
       rawArgs: [],
     });
     expect(errs.join("\n")).toContain("@missing/file.ts");
     const req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
-    expect(req?.livesIn).toEqual(["@missing/file.ts"]);
+    expect(req?.why).toBe("see @missing/file.ts");
   });
 
   // @spec REQ-050 unit
@@ -204,29 +175,13 @@ describe("spec amend", () => {
     req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
     expect(req?.relates).toEqual([]);
   });
-
-  // @spec REQ-056 unit
-  // @spec REQ-057 unit
-  test("--tests replaces verifiedIn with every comma-split value; an empty value clears it", async () => {
-    await amendRun({
-      args: { id: ACTIVE, platformDir: tmp, tests: "c.test.ts" },
-      rawArgs: ["--tests", "a.test.ts", "--tests", " b.test.ts ,c.test.ts"],
-    });
-    let req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
-    expect(req?.verifiedIn).toEqual(["a.test.ts", "b.test.ts", "c.test.ts"]);
-    expect(req?.livesIn).toEqual(["renew.ts"]);
-
-    await amendRun({ args: { id: ACTIVE, platformDir: tmp, tests: "" }, rawArgs: [] });
-    req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
-    expect(req?.verifiedIn).toEqual([]);
-  });
 });
 
 const release = (tag: string) => commitAndTag(tmp, tag);
 
 describe("spec amend — release gate", () => {
   // @spec REQ-044 unit
-  // @spec REQ-045 unit
+  // @spec REQ-062 unit
   test("a released Active entry refuses a statement change, naming the tag and both escape hatches", async () => {
     writeFileSync(join(tmp, "renew.ts"), `export const renew = 1; ${specTag(ACTIVE)}`);
     release("v0.1.0");
@@ -237,9 +192,8 @@ describe("spec amend — release gate", () => {
     const message = errs.join("\n");
     expect(message).toContain("v0.1.0");
     expect(message).toContain(`spec supersede ${ACTIVE}`);
-    expect(message).toContain("--lives");
-    expect(message).toContain("--tests");
     expect(message).toContain("--relates");
+    expect(message).toContain("--issue");
     expect(await billing.raw()).toBe(before);
   });
 
@@ -251,29 +205,16 @@ describe("spec amend — release gate", () => {
     );
   });
 
-  // @spec REQ-059 unit
-  test("a released Active entry amends --lives and --relates in place", async () => {
+  // @spec REQ-064 unit
+  test("a released Active entry amends --relates and --issue in place", async () => {
     release("v0.1.0");
     await amendRun({
-      args: { id: ACTIVE, platformDir: tmp, lives: "moved.ts", relates: "BILLING-001" },
+      args: { id: ACTIVE, platformDir: tmp, relates: "BILLING-001", issue: "ENG-9", json: true },
       rawArgs: [],
     });
+    expect(JSON.parse(logs.join("")).fields_changed).toEqual(["issue", "relates"]);
     const req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
-    expect(req?.livesIn).toEqual(["moved.ts"]);
     expect(req?.relates).toEqual(["BILLING-001"]);
-    expect(req?.statement).toBe("rough draft of the rule");
-  });
-
-  // @spec REQ-059 unit
-  test("a released Active entry amends --tests alone in place", async () => {
-    release("v0.1.0");
-    await amendRun({
-      args: { id: ACTIVE, platformDir: tmp, tests: "renew.test.ts", json: true },
-      rawArgs: [],
-    });
-    expect(JSON.parse(logs.join("")).fields_changed).toEqual(["tests"]);
-    const req = (await billing.read()).requirements.find((r) => r.id === ACTIVE);
-    expect(req?.verifiedIn).toEqual(["renew.test.ts"]);
     expect(req?.statement).toBe("rough draft of the rule");
   });
 
@@ -323,7 +264,7 @@ describe("spec amend — release gate", () => {
 
 // ── amend is domain-generic — the --term/--aliases flags let it revise a TERM
 // entry's glossary fields in place (same id, no specVersion bump), mirroring
-// --text/--why/--lives on a requirement. ─────────────────────────────────────
+// --text/--why on a requirement. ─────────────────────────────────────
 describe("spec amend — TERM fields in place", () => {
   // @spec REQ-034 unit
   test("--term/--aliases/--def revise the fields in place; same id, specVersion untouched", async () => {

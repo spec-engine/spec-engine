@@ -13,9 +13,6 @@
       "supersedes": null,
       "supersededBy": "MAP-002",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/map.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 2,
@@ -30,9 +27,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/map.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -46,9 +40,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/records.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -61,9 +52,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/records.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -76,7 +64,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [],
       "issues": [],
       "aliases": [],
       "cites": []

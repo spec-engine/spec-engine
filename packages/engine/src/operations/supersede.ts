@@ -32,10 +32,6 @@ export interface SupersedeInput {
   statement: string;
   /** Absent: copied from the predecessor. */
   why?: string | undefined;
-  /** Absent: every predecessor `livesIn` entry is carried forward. */
-  livesIn?: string[] | undefined;
-  /** Replaces the predecessor's `verifiedIn`; an empty list clears it. Absent: copied. */
-  verifiedIn?: string[] | undefined;
   /** Replaces the predecessor's `relates`; an empty list clears it. Absent: copied. */
   relates?: string[] | undefined;
   /** TERM ids only. Absent: copied from the predecessor. */
@@ -87,10 +83,9 @@ export async function supersedeTarget(
 }
 
 /**
- * The successor's why, livesIn, verifiedIn, and relates: the input's, else the predecessor's.
+ * The successor's why and relates: the input's, else the predecessor's.
  * @spec REQ-051
- * @spec REQ-057
- * @spec REQ-058
+ * @spec REQ-063
  */
 function successorFields(
   input: SupersedeInput,
@@ -98,8 +93,6 @@ function successorFields(
 ): Omit<SuccessorFields, "statement" | "issue"> {
   return {
     why: (input.why ?? req.why ?? "").trim(),
-    livesIn: input.livesIn ?? [...req.livesIn],
-    verifiedIn: input.verifiedIn ?? [...req.verifiedIn],
     relates: input.relates === undefined ? [...req.relates] : splitList(input.relates),
   };
 }
@@ -177,10 +170,8 @@ export async function supersede(
   }
   const refusal = statementRulesRefusal(platformDir, key, input.statement);
   if (refusal !== null) return fail("usage", refusal);
-  const { why, livesIn, verifiedIn, relates } = successorFields(input, req);
-  warnings.push(
-    ...unresolvableRefWarnings(platformDir, [input.statement, why, ...livesIn, ...verifiedIn]),
-  );
+  const { why, relates } = successorFields(input, req);
+  warnings.push(...unresolvableRefWarnings(platformDir, [input.statement, why]));
 
   // @spec REQ-049
   const newId = await nextRequirementId(platformDir, key);
@@ -188,8 +179,6 @@ export async function supersede(
   const successor = successorEntry(newId, req, {
     statement: input.statement,
     why,
-    livesIn,
-    verifiedIn,
     relates,
     issue,
   });
