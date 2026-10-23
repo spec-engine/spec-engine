@@ -103,7 +103,7 @@ export function buildMcpServer(platformDir: string): McpServer {
     {
       title: "Requirement → tag sites (reverse query)",
       description:
-        "Every code/test/doc site tagging the given requirement, across all repos — impact analysis and retag worklists.",
+        "Every code/test/doc site tagging the given requirement, across all repos — impact analysis.",
       inputSchema: { req_id: z.string().describe("Requirement id (KEY-NNN)") },
     },
     async ({ req_id }) => {
@@ -224,7 +224,7 @@ export function buildMcpServer(platformDir: string): McpServer {
     {
       title: "Supersede a shipped requirement",
       description:
-        "Flip an Active requirement to superseded, mint its successor in the same domain, and return the retag worklist (the tag sites spec check reports as SUPERSEDED_REFERENCED until retagged). The same JSON as `spec supersede --json`.",
+        "Flip an Active requirement to superseded, mint its successor in the same domain, rewrite every tag of the predecessor to the successor, and return the rewritten sites. The same JSON as `spec supersede --json`.",
       inputSchema: {
         req_id: z.string().describe("The Active requirement id to supersede (KEY-NNN)"),
         statement: z.string().min(1).describe("The successor's statement"),
@@ -268,7 +268,7 @@ export function buildMcpServer(platformDir: string): McpServer {
         new_id: r.newId,
         file: r.file,
         spec_version: r.specVersion,
-        retag: r.retag,
+        retagged: r.retagged,
       });
     },
   );
@@ -278,7 +278,7 @@ export function buildMcpServer(platformDir: string): McpServer {
     {
       title: "Deprecate a requirement",
       description:
-        "Mark an Active or Draft requirement deprecated with a recorded reason and return the code tags still bound to it (each a DEPRECATED_REFERENCED error in spec check until removed). The same JSON as `spec deprecate --json`.",
+        "Mark an Active or Draft requirement deprecated with a recorded reason, remove every tag of it from the code, and return the removed sites. The same JSON as `spec deprecate --json`.",
       inputSchema: {
         req_id: z.string().describe("The requirement id to deprecate (KEY-NNN)"),
         reason: z.string().min(1).describe("Why the requirement ended; the durable record"),
@@ -295,7 +295,7 @@ export function buildMcpServer(platformDir: string): McpServer {
         coldFreshTags(platformDir),
       );
       return r.ok
-        ? jsonResult({ id: r.id, file: r.file, reason: r.reason, sites: r.sites })
+        ? jsonResult({ id: r.id, file: r.file, reason: r.reason, removed: r.removed })
         : errorResult(r.detail);
     },
   );
@@ -395,7 +395,7 @@ export function buildMcpServer(platformDir: string): McpServer {
     {
       title: "Move a requirement to another domain",
       description:
-        "Mint the successor in newDomain carrying the source's fields, mark the source superseded, and return the retag worklist. The same JSON as `spec move --json`.",
+        "Mint the successor in newDomain carrying the source's fields, mark the source superseded, rewrite every tag of the source to the successor, and return the rewritten sites. The same JSON as `spec move --json`.",
       inputSchema: {
         id: z.string().describe("The Active requirement id to move (KEY-NNN)"),
         newDomain: z.string().min(1).describe("The existing target domain key"),
@@ -426,7 +426,7 @@ export function buildMcpServer(platformDir: string): McpServer {
         to_file: r.toFile,
         source_spec_version: r.sourceSpecVersion,
         target_spec_version: r.targetSpecVersion,
-        retag: r.retag,
+        retagged: r.retagged,
       });
     },
   );

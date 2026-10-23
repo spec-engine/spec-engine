@@ -21,8 +21,8 @@ import {
 } from "./_envelope";
 import type { FreshTags } from "./_index";
 import { fail, type OpFailure, type OpWarning } from "./_result";
+import { applyRetag } from "./_retag";
 import { unresolvableRefWarnings } from "./mint";
-import { toReqTagRows } from "./reads";
 
 export interface SupersedeInput {
   platformDir: string;
@@ -50,7 +50,8 @@ export interface SupersedeResult {
   file: string;
   /** The domain version after the supersession; null under `noBump` on TERM. */
   specVersion: number | null;
-  retag: ReqTagRow[];
+  /** The predecessor's tag sites, rewritten to the successor. */
+  retagged: ReqTagRow[];
   warnings: OpWarning[];
 }
 
@@ -146,7 +147,7 @@ function applyVersionStage(
 
 /**
  * @param freshTags how this surface derives current tags for the retag
- *   worklist after the write: the CLI and MCP cold-rebuild a throwaway index,
+ *   after the write: the CLI and MCP cold-rebuild a throwaway index,
  *   the API re-indexes into its long-lived handle.
  * @spec REQ-038
  * @spec SCHM-024
@@ -195,6 +196,6 @@ export async function supersede(
       warnings,
     });
   }
-  const retag = toReqTagRows(await freshTags(id));
-  return { ok: true, oldId: id, newId, file: relFile, specVersion, retag, warnings };
+  const retagged = await applyRetag(platformDir, id, newId, freshTags);
+  return { ok: true, oldId: id, newId, file: relFile, specVersion, retagged, warnings };
 }

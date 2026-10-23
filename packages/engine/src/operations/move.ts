@@ -28,8 +28,8 @@ import {
 } from "./_envelope";
 import type { FreshTags } from "./_index";
 import { fail, type OpFailure, type OpWarning } from "./_result";
+import { applyRetag } from "./_retag";
 import { unresolvableRefWarnings } from "./mint";
-import { toReqTagRows } from "./reads";
 
 export interface MoveInput {
   platformDir: string;
@@ -52,7 +52,8 @@ export interface MoveResult {
   toFile: string;
   sourceSpecVersion: number | null;
   targetSpecVersion: number | null;
-  retag: ReqTagRow[];
+  /** The source's tag sites, rewritten to the successor. */
+  retagged: ReqTagRow[];
   warnings: OpWarning[];
 }
 
@@ -140,7 +141,7 @@ function validateBoth(m: MoveTarget): Diagnostic[] {
 
 /**
  * @param freshTags how this surface derives current tags for the retag
- *   worklist after the write.
+ *   after the write.
  * @spec REQ-038
  * @spec SCHM-024
  */
@@ -191,7 +192,7 @@ export async function move(
   await validateAndWrite(target.specPath, target.domain, target.relFile);
   await validateAndWrite(source.specPath, source.domain, source.relFile);
 
-  const retag = toReqTagRows(await freshTags(id));
+  const retagged = await applyRetag(platformDir, id, newId, freshTags);
   return {
     ok: true,
     oldId: id,
@@ -200,7 +201,7 @@ export async function move(
     toFile: target.relFile,
     sourceSpecVersion,
     targetSpecVersion,
-    retag,
+    retagged,
     warnings,
   };
 }

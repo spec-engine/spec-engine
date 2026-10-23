@@ -76,9 +76,9 @@ An operation takes typed input and returns typed data or a typed refusal. It nev
 | `nextId` | platform dir, domain key or prefix | the resolved key and next unused id, or `usage` | `spec req` | | `spec_next_id` |
 | `mint` | platform dir, key, statement, why, relates, issue, status | the new id and file, or `not_found` / `usage` / `invalid_domain_file` | `spec req --text` | `POST /api/requirements` | `spec_req` |
 | `amend` | platform dir, id, fields | the changed fields, or `not_found` / `conflict` / `invalid_domain_file` | `spec amend` | `PUT /api/requirements/:id` | `spec_amend` |
-| `supersede` | platform dir, id, successor statement and fields, a fresh-tags callback | the successor id, the domain version, the retag worklist, or `not_found` / `conflict` / `usage` / `invalid_domain_file` | `spec supersede` | `POST /api/requirements/:id/supersede` | `spec_supersede` |
-| `move` | platform dir, id, target domain key, optional successor fields, a fresh-tags callback | both files, both versions, the retag worklist, or `usage` / `not_found` / `conflict` / `invalid_domain_file` | `spec move` | `POST /api/requirements/:id/move` | `spec_move` |
-| `deprecate` | platform dir, id, reason, a fresh-tags callback | the file and the tags still bound, or `not_found` / `conflict` / `invalid_domain_file` | `spec deprecate` | `POST /api/requirements/:id/deprecate` | `spec_deprecate` |
+| `supersede` | platform dir, id, successor statement and fields, a fresh-tags callback | the successor id, the domain version, the retagged sites, or `not_found` / `conflict` / `usage` / `invalid_domain_file` | `spec supersede` | `POST /api/requirements/:id/supersede` | `spec_supersede` |
+| `move` | platform dir, id, target domain key, optional successor fields, a fresh-tags callback | both files, both versions, the retagged sites, or `usage` / `not_found` / `conflict` / `invalid_domain_file` | `spec move` | `POST /api/requirements/:id/move` | `spec_move` |
+| `deprecate` | platform dir, id, reason, a fresh-tags callback | the file and the removed tags, or `not_found` / `conflict` / `invalid_domain_file` | `spec deprecate` | `POST /api/requirements/:id/deprecate` | `spec_deprecate` |
 | `accept` | platform dir, id | the file, or `not_found` / `conflict` / `invalid_domain_file` | `spec accept` | `POST /api/requirements/:id/accept` | `spec_accept` |
 | `mintTerm`, `listTerms`, `reviseTerm`, `confirmTerm` | platform dir, term fields or ids | the term id, the store rows, the bumped version, or the re-pinned citation; `not_found` / `conflict` / `invalid_domain_file` | `spec term` | | |
 | `coverageMatrix` | storage | requirement × repo rows | `spec map` | `GET /api/coverage` | |
@@ -127,7 +127,7 @@ Each of these exists exactly once, and a grep fence in `scripts/arch-fences.sh` 
 2. Allocate the next id from the filesystem, never from the index.
 3. Judge new statement text against the EARS grammar when the domain declares one.
 4. Write the whole envelope through `validateAndWrite`.
-5. Lifecycle commands then reindex fresh and print the retag worklist.
+5. Lifecycle commands then reindex fresh and rewrite (or, for deprecate, remove) the tags of the ended id.
 
 ## HTTP path
 

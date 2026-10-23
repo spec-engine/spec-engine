@@ -4,7 +4,7 @@ import type { ReqTagRow } from "../resolve/format";
 import { locateEntry } from "./_envelope";
 import type { FreshTags } from "./_index";
 import { fail, type OpFailure } from "./_result";
-import { toReqTagRows } from "./reads";
+import { applyRetag } from "./_retag";
 
 export interface DeprecateInput {
   platformDir: string;
@@ -18,14 +18,14 @@ export interface DeprecateResult {
   id: string;
   file: string;
   reason: string;
-  /** Tag sites still bound to the id after the write. */
-  sites: ReqTagRow[];
+  /** The tag sites removed from the code. */
+  removed: ReqTagRow[];
 }
 
 /**
  * Only an Active or Draft entry deprecates: a superseded entry is already
  * history, a deprecated one is done.
- * @spec REQ-021
+ * @spec REQ-068
  * @spec REQ-038
  * @spec SCHM-024
  */
@@ -58,6 +58,6 @@ export async function deprecate(
       diagnostics: res.diagnostics,
     });
   }
-  const sites = toReqTagRows(await freshTags(id));
-  return { ok: true, id, file: relFile, reason, sites };
+  const removed = await applyRetag(platformDir, id, null, freshTags);
+  return { ok: true, id, file: relFile, reason, removed };
 }
