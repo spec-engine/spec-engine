@@ -109,6 +109,10 @@ Each of these exists exactly once, and a grep fence in `scripts/arch-fences.sh` 
 | Derived versions | No authored `specVersion` on requirement domains | `no authored specVersion` |
 | Generated docs | `GLOSSARY.md` and the TAXONOMY charters are regenerated, never hand-edited | `glossary round-trip`, `charters generated from the envelopes` |
 
+## Editor support
+
+`packages/shared/src/jsonSchema.ts` generates a JSON Schema from each zod schema the engine parses a file with: the domain envelope, `check.json`, and the member config. The site build runs it into `packages/site/public/schema/v1/`, served as `https://docs.spec-engine.dev/schema/v1/{spec,check,member}.json`, each with its own URL as `$id`. The generated files are committed, and `jsonSchema.test.ts` fails when a fresh generation differs from them, so a schema change lands as a reviewed diff. The `v1` files only change additively; a breaking shape gets a new path. The three zod objects accept a top-level `$schema` string, `orderDomain` carries it first, and the shape-preserving rewrite keeps it where the file has it.
+
 ## Read path
 
 `spec map`, `spec check`, `spec query`, and the other read commands:
