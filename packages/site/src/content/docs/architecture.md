@@ -96,7 +96,7 @@ Reads take an open `Storage` handle because the surface owns the handle's lifeti
 
 ## The single seams
 
-Each of these exists exactly once, and a grep fence in `scripts/arch-fences.sh` fails CI if a second copy appears. Every fence label starts with the id of the requirement the fence enforces, and the fence function carries that id as its `@spec` tag.
+Each of these exists exactly once, and a grep fence in `scripts/arch-fences.sh` fails CI if a second copy appears. Every fence runs under a label that says what it checks, and carries a `@spec` tag only when it backs an Active requirement.
 
 | Seam | What goes through it | Fence |
 | --- | --- | --- |
