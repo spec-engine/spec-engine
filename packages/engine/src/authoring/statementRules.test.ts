@@ -68,7 +68,10 @@ describe("a statement that breaks a rule is refused before the write", () => {
   });
 
   test("accept judges the draft's statement", async () => {
-    fx.statementRulesOff();
+    fx.checkConfig({
+      severity: [],
+      statementRules: { severity: { "one-sentence": "warning", "no-history": "warning" } },
+    });
     const draft = await billing.req({ statement: BAD, status: "draft" });
     fx.checkConfig({ severity: [] });
     expectRefusal(await accept({ platformDir: fx.dir, id: draft.id }));

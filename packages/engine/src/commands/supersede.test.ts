@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { entryOf, plantEdit } from "../testing/plant";
-import { type DomainHandle, TestPlatform } from "../testing/platform";
+import { type DomainHandle, STATEMENTS, TestPlatform } from "../testing/platform";
 import { specTag } from "../testing/specTag";
 import { supersedeCommand } from "./supersede";
 
@@ -33,12 +33,12 @@ const HISTORY = "BILLING-001";
 const SUCCESSOR = "BILLING-003";
 
 beforeEach(async () => {
-  fx = TestPlatform.temp("spec-supersede-").statementRulesOff();
+  fx = TestPlatform.temp("spec-supersede-");
   platform = fx.dir;
   billing = await fx.domain("BILLING", { owner: "drea" });
-  const ancient = await billing.req({ statement: "ancient truth", why: "history" });
+  const ancient = await billing.req({ statement: STATEMENTS[6], why: "history" });
   const current = await billing.supersede(ancient.id, {
-    statement: "charge at signup price",
+    statement: STATEMENTS[4],
     why: "revenue",
   });
   expect(current.newId).toBe(ACTIVE);
@@ -96,7 +96,7 @@ describe("spec supersede — happy path", () => {
       args: {
         id: ACTIVE,
         platformDir: platform,
-        text: "charge at the CURRENT plan price",
+        text: STATEMENTS[0],
         json: true,
       },
       rawArgs: [],
@@ -108,7 +108,7 @@ describe("spec supersede — happy path", () => {
     expect(old?.supersededAtVersion).toBe(3);
     const succ = domain.requirements.find((r) => r.id === SUCCESSOR);
     expect(succ?.status).toBe("active");
-    expect(succ?.statement).toBe("charge at the CURRENT plan price");
+    expect(succ?.statement).toBe(STATEMENTS[0]);
     expect(succ?.why).toBe("revenue");
     expect(domain.specVersion).toBeUndefined();
     expect(logs).toHaveLength(1);
@@ -129,7 +129,7 @@ describe("spec supersede — happy path", () => {
       args: {
         id: ACTIVE,
         platformDir: platform,
-        text: "new truth",
+        text: STATEMENTS[5],
         why: "fresh rationale",
       },
       rawArgs: [],
@@ -143,7 +143,7 @@ describe("spec supersede — happy path", () => {
       args: {
         id: ACTIVE,
         platformDir: platform,
-        text: "new truth",
+        text: STATEMENTS[5],
         binds: "plans.current_price",
       },
       rawArgs: [],
@@ -159,7 +159,7 @@ describe("spec supersede — happy path", () => {
   // @spec REQ-036
   test("--no-bump is a no-op on a requirement domain — the version stays DAG-derived", async () => {
     await supersedeRun({
-      args: { id: ACTIVE, platformDir: platform, text: "new truth", noBump: true },
+      args: { id: ACTIVE, platformDir: platform, text: STATEMENTS[5], noBump: true },
       rawArgs: [],
     });
     const domain = await billing.read();
@@ -169,7 +169,7 @@ describe("spec supersede — happy path", () => {
 
   test("text mode prints the retagged sites", async () => {
     await supersedeRun({
-      args: { id: ACTIVE, platformDir: platform, text: "new truth" },
+      args: { id: ACTIVE, platformDir: platform, text: STATEMENTS[5] },
       rawArgs: [],
     });
     const out = logs.join("\n");
@@ -195,7 +195,7 @@ describe("spec supersede — the successor keeps what nobody chose to drop", () 
   // @spec REQ-053 unit
   test("relates, cites, and section copy; issues hold only the new created row", async () => {
     await supersedeRun({
-      args: { id: ACTIVE, platformDir: platform, text: "charge at renewal", issue: "ENG-9" },
+      args: { id: ACTIVE, platformDir: platform, text: STATEMENTS[0], issue: "ENG-9" },
       rawArgs: [],
     });
     const succ = (await billing.read()).requirements.find((r) => r.id === SUCCESSOR);
@@ -208,7 +208,7 @@ describe("spec supersede — the successor keeps what nobody chose to drop", () 
   // @spec REQ-051 unit
   test("--relates replaces the copied relates; an empty value clears it", async () => {
     await supersedeRun({
-      args: { id: ACTIVE, platformDir: platform, text: "charge at renewal", relates: "" },
+      args: { id: ACTIVE, platformDir: platform, text: STATEMENTS[0], relates: "" },
       rawArgs: ["--relates", ""],
     });
     const succ = (await billing.read()).requirements.find((r) => r.id === SUCCESSOR);
@@ -227,7 +227,7 @@ describe("spec supersede — an id held outside its prefix's domain", () => {
       entryOf(doc, "AUTH-001").id = "AUTHUI-01";
     });
     await supersedeRun({
-      args: { id: "AUTHUI-01", platformDir: platform, text: "expire after 30 days", json: true },
+      args: { id: "AUTHUI-01", platformDir: platform, text: STATEMENTS[3], json: true },
       rawArgs: [],
     });
     const out = JSON.parse(logs[0] ?? "");

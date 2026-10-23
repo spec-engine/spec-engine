@@ -23,7 +23,11 @@ type RunFn = (ctx: { args: Record<string, unknown>; rawArgs: string[] }) => Prom
 const run = (lintCommand as unknown as { run: RunFn }).run;
 
 beforeEach(async () => {
-  fx = TestPlatform.temp("spec-lint-").statementRulesOff();
+  fx = TestPlatform.temp("spec-lint-");
+  fx.checkConfig({
+    severity: [],
+    statementRules: { severity: { "no-history": "warning", "no-tool-statement": "warning" } },
+  });
   const billing = await fx.domain("BILLING");
   await billing.req({ statement: BAD });
   await billing.req({ statement: "The endpoint answers 404 for an unknown id." });

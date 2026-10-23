@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { TestPlatform } from "../testing/platform";
+import { STATEMENTS, TestPlatform } from "../testing/platform";
 import { SPEC_TOKEN as T } from "../testing/specTag";
 import { coldFreshTags } from "./_index";
 import { retagLine } from "./_retag";
@@ -74,10 +74,10 @@ describe("lifecycle commands rewrite tags across a member", () => {
   };
 
   beforeEach(async () => {
-    fx = TestPlatform.temp("spec-retag-").statementRulesOff();
+    fx = TestPlatform.temp("spec-retag-");
     const billing = await fx.domain("BILLING");
-    await billing.req({ statement: "one", why: "w" });
-    await billing.req({ statement: "two", why: "w" });
+    await billing.req({ statement: STATEMENTS[0], why: "w" });
+    await billing.req({ statement: STATEMENTS[1], why: "w" });
     await fx.member("api", { files });
     mkdirSync(join(fx.dir, ".spec-engine"), { recursive: true });
     writeFileSync(join(fx.dir, ".spec-engine", "note.ts"), `// ${T} BILLING-001\n`);
@@ -88,7 +88,7 @@ describe("lifecycle commands rewrite tags across a member", () => {
   // @spec REQ-065 integration
   test("supersede rewrites every site once and a second lookup finds none", async () => {
     const r = await supersede(
-      { platformDir: fx.dir, id: "BILLING-001", statement: "one again" },
+      { platformDir: fx.dir, id: "BILLING-001", statement: STATEMENTS[2] },
       coldFreshTags(fx.dir),
     );
     expect(r.ok).toBe(true);

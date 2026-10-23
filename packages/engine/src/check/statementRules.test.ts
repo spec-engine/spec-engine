@@ -14,7 +14,10 @@ let billing: DomainHandle;
 
 beforeEach(async () => {
   fx = TestPlatform.temp("spec-statement-rules-check-");
-  fx.statementRulesOff();
+  fx.checkConfig({
+    severity: [],
+    statementRules: { severity: { "one-sentence": "warning", "no-history": "warning" } },
+  });
   billing = await fx.domain("BILLING");
 });
 
