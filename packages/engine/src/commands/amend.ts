@@ -3,15 +3,7 @@ import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
 import { type AmendFields, amend } from "../operations/amend";
 import { ID_RE } from "../parser/grammar";
-import {
-  jsonArg,
-  listFlag,
-  livesArg,
-  platformDirArg,
-  relatesArg,
-  resolvePlatformDir,
-  testsArg,
-} from "./_args";
+import { jsonArg, listFlag, platformDirArg, relatesArg, resolvePlatformDir } from "./_args";
 import { exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
 
 const amendArgs = {
@@ -23,8 +15,6 @@ const amendArgs = {
   platformDir: platformDirArg,
   text: { type: "string", description: "New Requirement (statement) field value" },
   why: { type: "string", description: "New Why it matters field value" },
-  lives: livesArg,
-  tests: testsArg,
   relates: relatesArg,
   issue: {
     type: "string",
@@ -45,7 +35,7 @@ export const amendCommand = defineCommand({
   meta: {
     name: "amend",
     description:
-      "Revise a requirement's fields in place (same id, no version bump). A released requirement's statement and why are superseded instead; --lives, --tests, and --relates still amend.",
+      "Revise a requirement's fields in place (same id, no version bump). A released requirement's statement and why are superseded instead; --relates and --issue still amend.",
   },
   args: amendArgs,
   async run({ args, rawArgs }) {
@@ -81,14 +71,12 @@ function assertAmendFlags(args: AmendArgs): void {
   const hasField =
     args.text !== undefined ||
     args.why !== undefined ||
-    args.lives !== undefined ||
-    args.tests !== undefined ||
     args.relates !== undefined ||
     args.term !== undefined ||
     args.aliases !== undefined;
   if (!hasField && !hasIssue) {
     console.error(
-      "spec amend: nothing to amend — pass at least one of --text / --why / --lives / --tests / --relates / --term / --aliases",
+      "spec amend: nothing to amend — pass at least one of --text / --why / --relates / --term / --aliases",
     );
     process.exit(EXIT.USAGE);
   }
@@ -112,9 +100,8 @@ function splitAliases(raw: string): string[] {
 }
 
 /**
- * Flags to the operation's field set: trimmed, with empty why → null and an empty lives list → [].
- * @spec REQ-055
- * @spec REQ-057
+ * Flags to the operation's field set: trimmed, with empty why → null and an empty relates list → [].
+ * @spec REQ-051
  */
 function fieldsFromArgs(args: AmendArgs, rawArgs: readonly string[]): AmendFields {
   assertAmendFlags(args);
@@ -124,10 +111,6 @@ function fieldsFromArgs(args: AmendArgs, rawArgs: readonly string[]): AmendField
     const v = args.why.trim();
     fields.why = v === "" ? null : v;
   }
-  const livesIn = listFlag(rawArgs, "lives", args.lives);
-  if (livesIn !== undefined) fields.livesIn = livesIn;
-  const verifiedIn = listFlag(rawArgs, "tests", args.tests);
-  if (verifiedIn !== undefined) fields.verifiedIn = verifiedIn;
   const relates = listFlag(rawArgs, "relates", args.relates);
   if (relates !== undefined) fields.relates = relates;
   if (args.term !== undefined) fields.term = args.term.trim();

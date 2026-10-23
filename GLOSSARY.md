@@ -22,7 +22,6 @@ by the data model, outside-in.
 
 - **Tag** — a `@spec KEY-NNN` comment binding a source line to a requirement.
 - **Tag kind** — derived from the file path, never written in the tag: a tag in implementation code **implements**; in a test path **verifies**; in docs **documents**. Test tags may carry a level token (`unit` | `integration` | `e2e`).
-- **livesIn** — a requirement field listing where it is *enforced* (`@<path>` refs). Metadata, not identity: a requirement belongs to the domain whose promise it protects, wherever the enforcing code lives.
 
 ## Requirement lifecycle
 

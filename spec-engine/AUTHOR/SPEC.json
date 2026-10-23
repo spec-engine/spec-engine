@@ -13,9 +13,6 @@
       "supersedes": null,
       "supersededBy": "AUTHOR-004",
       "relates": [],
-      "livesIn": [
-        "@AGENTS.md"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 2,
@@ -30,9 +27,6 @@
       "supersedes": null,
       "supersededBy": "AUTHOR-006",
       "relates": [],
-      "livesIn": [
-        "@.claude/skills/req-author/SKILL.md"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 3,
@@ -47,10 +41,6 @@
       "supersedes": null,
       "supersededBy": "AUTHOR-008",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/server/mcp.ts",
-        "@packages/engine/src/server/authorPrompt.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 4,
@@ -65,9 +55,6 @@
       "supersedes": null,
       "supersededBy": "AUTHOR-010",
       "relates": [],
-      "livesIn": [
-        "AGENTS.md"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 5,
@@ -82,9 +69,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "AGENTS.md"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -97,9 +81,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        ".claude/skills/req-author/SKILL.md"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -113,9 +94,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        ".claude/skills/req-author/SKILL.md"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -128,9 +106,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/server/mcp.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -144,9 +119,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/server/authorPrompt.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -159,9 +131,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "AGENTS.md"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -175,9 +144,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "scripts/arch-fences.sh"
-      ],
       "issues": [],
       "aliases": [],
       "cites": [],

@@ -13,9 +13,6 @@
       "supersedes": null,
       "supersededBy": "QURY-005",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/query.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 2,
@@ -30,9 +27,6 @@
       "supersedes": null,
       "supersededBy": "QURY-007",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/storage/sqlite.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 3,
@@ -47,7 +41,6 @@
       "supersedes": null,
       "supersededBy": "QURY-008",
       "relates": [],
-      "livesIn": [],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 4,
@@ -62,9 +55,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/storage/sql/fts.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -77,9 +67,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/query.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -93,10 +80,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/commands/query.ts",
-        "packages/engine/src/storage/sql/fts.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -109,9 +92,6 @@
       "supersedes": null,
       "supersededBy": "QURY-009",
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/storage/sqlite.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 5,
@@ -126,9 +106,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/query/format.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -142,9 +119,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/storage/sql/fts.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],

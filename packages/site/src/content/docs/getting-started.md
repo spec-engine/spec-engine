@@ -27,8 +27,7 @@ $ spec domain new ORDERS
 created spec-engine/ORDERS/SPEC.json
 
 $ spec req orders --text "An order total equals the sum of its line items." \
-    --why "Mispriced orders ship money out the door silently." \
-    --lives "src/orders.ts"
+    --why "Mispriced orders ship money out the door silently."
 appended ORDERS-001 to spec-engine/ORDERS/SPEC.json
 ```
 

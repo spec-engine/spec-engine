@@ -13,9 +13,6 @@
       "supersedes": null,
       "supersededBy": "OWNER-002",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/check/statusflip.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 2,
@@ -30,10 +27,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/check/codeowners.ts",
-        "packages/engine/src/operations/check.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],

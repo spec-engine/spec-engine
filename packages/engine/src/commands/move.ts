@@ -5,17 +5,12 @@ import { assertSpecPlatform } from "../indexer/discover";
 import { type MoveInput, move } from "../operations/move";
 import { ID_RE } from "../parser/grammar";
 import { renderReqTags } from "../resolve/format";
-import { listFlag, platformDirArg, resolvePlatformDir } from "./_args";
+import { platformDirArg, resolvePlatformDir } from "./_args";
 import { cliFreshTags, exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
 
-/**
- * Flags to the operation's input. An absent flag leaves the field to be copied from the source.
- * @spec REQ-055
- * @spec REQ-057
- */
+/** Flags to the operation's input. An absent flag leaves the field to be copied from the source. */
 function inputFromArgs(
   args: MoveArgs,
-  rawArgs: readonly string[],
   platformDir: string,
   id: string,
   targetKey: string,
@@ -23,10 +18,6 @@ function inputFromArgs(
   const input: MoveInput = { platformDir, id, targetKey, noBump: Boolean(args.noBump) };
   if (typeof args.text === "string") input.statement = args.text;
   if (typeof args.why === "string") input.why = args.why;
-  const livesIn = listFlag(rawArgs, "lives", args.lives);
-  if (livesIn !== undefined) input.livesIn = livesIn;
-  const verifiedIn = listFlag(rawArgs, "tests", args.tests);
-  if (verifiedIn !== undefined) input.verifiedIn = verifiedIn;
   return input;
 }
 
@@ -50,16 +41,6 @@ const moveArgs = {
     type: "string",
     description: "Rewrite the successor's Why (default: copied from the source)",
   },
-  lives: {
-    type: "string",
-    description:
-      "Rewrite the successor's Lives in: repeat or comma-separate; empty clears (default: copied from the source)",
-  },
-  tests: {
-    type: "string",
-    description:
-      "Rewrite the successor's Verified in (verifiedIn): repeat or comma-separate; empty clears (default: copied from the source)",
-  },
   noBump: {
     type: "boolean",
     description: "Do not bump either envelope's specVersion",
@@ -80,7 +61,7 @@ export const moveCommand = defineCommand({
       "Move a requirement to another domain: mint the successor in <NEW-DOMAIN> carrying the source's fields, mark the source superseded, bump both specVersions, and emit the retag worklist.",
   },
   args: moveArgs,
-  async run({ args, rawArgs }) {
+  async run({ args }) {
     const id = args.id;
     const rawTargetKey = args.newDomain;
     const platformDir = resolvePlatformDir(args);
@@ -103,7 +84,7 @@ export const moveCommand = defineCommand({
     }
 
     const result = await move(
-      inputFromArgs(args, rawArgs, platformDir, id, targetKey),
+      inputFromArgs(args, platformDir, id, targetKey),
       cliFreshTags(platformDir),
     );
     if (!result.ok) exitOnFailure("spec move", result);

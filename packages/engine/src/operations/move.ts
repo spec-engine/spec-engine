@@ -40,9 +40,6 @@ export interface MoveInput {
   /** Absent: copied from the source. */
   statement?: string | undefined;
   why?: string | undefined;
-  livesIn?: string[] | undefined;
-  /** Replaces the source's `verifiedIn`; an empty list clears it. Absent: copied. */
-  verifiedIn?: string[] | undefined;
   /** TERM domain only: keep the authored `specVersion`. A no-op elsewhere. */
   noBump?: boolean | undefined;
 }
@@ -104,15 +101,12 @@ async function locateMove(
 
 /**
  * The successor's fields: the input's, else the source's.
- * @spec REQ-057
- * @spec REQ-058
+ * @spec REQ-063
  */
 function successorFields(input: MoveInput, req: SpecRequirement): SuccessorFields {
   return {
     statement: (input.statement ?? req.statement).trim(),
     why: (input.why ?? req.why ?? "").trim(),
-    livesIn: input.livesIn ?? [...req.livesIn],
-    verifiedIn: input.verifiedIn ?? [...req.verifiedIn],
     relates: [...req.relates],
   };
 }
@@ -175,14 +169,7 @@ export async function move(
     const refusal = statementRulesRefusal(platformDir, targetKey, fields.statement);
     if (refusal !== null) return fail("usage", refusal);
   }
-  warnings.push(
-    ...unresolvableRefWarnings(platformDir, [
-      fields.statement,
-      fields.why,
-      ...fields.livesIn,
-      ...fields.verifiedIn,
-    ]),
-  );
+  warnings.push(...unresolvableRefWarnings(platformDir, [fields.statement, fields.why]));
 
   const newId = await nextRequirementId(platformDir, targetKey);
   const sourceCurrent = source.domain.specVersion ?? 1;

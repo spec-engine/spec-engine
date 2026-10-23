@@ -96,7 +96,6 @@ test("the engine's own book breaks the rules only in the known statements", asyn
   });
   expect([...new Set(rows.map((r) => r.req_id))].sort()).toEqual([
     "CHCK-031",
-    "CHCK-046",
     "DIST-007",
     "DIST-014",
     "DIST-015",
@@ -108,11 +107,9 @@ test("the engine's own book breaks the rules only in the known statements", asyn
     "INIT-041",
     "OWNER-002",
     "PROP-005",
-    "REQ-037",
     "REQ-050",
     "REQ-051",
     "SCHM-024",
     "SCHM-025",
-    "SCHM-036",
   ]);
 });

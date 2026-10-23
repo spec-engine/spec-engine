@@ -12,7 +12,6 @@ function mkReq(over: Partial<SpecRequirement> & { id: string }): SpecRequirement
     supersedes: null,
     supersededBy: null,
     relates: [],
-    livesIn: [],
     issues: [],
     ...over,
   } as SpecRequirement;

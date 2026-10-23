@@ -1,0 +1,4 @@
+{ "key": "CLEAN", "owner": null, "updated": "2026-01-01",
+  "requirements": [
+    { "id": "CLEAN-001", "status": "active", "statement": "The billing service shall refund on cancel.", "why": "Mentions \"verifiedIn\": only in prose." }
+  ] }

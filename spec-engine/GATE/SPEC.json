@@ -13,9 +13,6 @@
       "supersedes": null,
       "supersededBy": "PROOF-001",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/results/junit.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -28,9 +25,6 @@
       "supersedes": null,
       "supersededBy": "PROOF-002",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/check/proven.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -43,9 +37,6 @@
       "supersedes": null,
       "supersededBy": "PROOF-003",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/check.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -58,9 +49,6 @@
       "supersedes": null,
       "supersededBy": "PROOF-004",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/check.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -73,9 +61,6 @@
       "supersedes": null,
       "supersededBy": "PROOF-005",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/check.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -88,9 +73,6 @@
       "supersedes": null,
       "supersededBy": "GATE-008",
       "relates": [],
-      "livesIn": [
-        "@packages/engine/src/commands/gate.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 7,
@@ -105,9 +87,6 @@
       "supersedes": null,
       "supersededBy": "GATE-009",
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/gate/classify.ts"
-      ],
       "issues": [],
       "supersededAtVersion": 8,
       "aliases": [],
@@ -121,9 +100,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/gate.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -137,9 +113,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/gate/classify.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],

@@ -1,0 +1,21 @@
+{
+  "key": "LEGACY",
+  "owner": null,
+  "updated": "2026-01-01",
+  "requirements": [
+    {
+      "id": "LEGACY-001",
+      "status": "active",
+      "statement": "The billing service shall charge on renewal.",
+      "why": "The \"livesIn\": field name in prose is not a key.",
+      "relates": [],
+      "livesIn": [
+        "api/renew.ts"
+      ],
+      "issues": [],
+      "verifiedIn": [
+        "api/renew.test.ts"
+      ]
+    }
+  ]
+}

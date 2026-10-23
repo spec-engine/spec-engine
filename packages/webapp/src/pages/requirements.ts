@@ -1,4 +1,4 @@
-import type { CoverageRow, Requirement } from "@spec-engine/shared";
+import type { CoverageRow, Requirement, RequirementRecord } from "@spec-engine/shared";
 import type { Hono } from "hono";
 import { html, raw } from "hono/html";
 import { requirementStatusBadge, specId } from "./components";
@@ -393,7 +393,14 @@ export function mountRequirements(app: Hono): void {
 </html>`);
     }
 
-    const r = (await res.json()) as Requirement;
+    const r = (await res.json()) as RequirementRecord;
+    // @spec SCHM-040
+    const sites = (list: readonly { file: string; line: number }[]) =>
+      list.length === 0
+        ? "—"
+        : html`<ul>
+            ${list.map((s) => html`<li><code>${s.file}:${s.line}</code></li>`)}
+          </ul>`;
 
     const body = html`
       ${navBar("requirements")}
@@ -414,6 +421,8 @@ export function mountRequirements(app: Hono): void {
         <dt>line</dt><dd>${r.line}</dd>
         <dt>text</dt><dd>${r.text}</dd>
         <dt>why</dt><dd>${r.why ?? "—"}</dd>
+        <dt>implemented_in</dt><dd>${sites(r.implemented_in)}</dd>
+        <dt>verified_in</dt><dd>${sites(r.verified_in)}</dd>
       </dl>
     `;
 

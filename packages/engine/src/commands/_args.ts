@@ -30,19 +30,6 @@ export function resolvePlatformDir(args: { platformDir?: string | undefined }): 
   return resolve(args.platformDir ?? process.cwd());
 }
 
-export const livesArg = {
-  type: "string",
-  description:
-    "Lives in (livesIn) paths: repeat the flag or comma-separate; an empty value clears the list",
-} as const;
-
-// @spec REQ-056
-export const testsArg = {
-  type: "string",
-  description:
-    "Verified in (verifiedIn) test paths: repeat the flag or comma-separate; an empty value clears the list",
-} as const;
-
 export const relatesArg = {
   type: "string",
   description:
@@ -54,7 +41,7 @@ export const relatesArg = {
  * empties dropped. citty keeps only the last occurrence of a repeated flag, so
  * `rawArgs` is read first; `parsed` covers an in-process call that passes no
  * raw argv. Undefined when the flag is absent.
- * @spec REQ-042
+ * @spec REQ-050
  */
 export function listFlag(
   rawArgs: readonly string[],

@@ -41,7 +41,6 @@ describe("round-trip: mint writes JSON the index reads back", () => {
       key: "BILLING",
       statement: "Charge renewals at the current plan price.",
       why: "Revenue correctness",
-      livesIn: ["@api/src/renew.ts"],
     });
     expect(minted.ok).toBe(true);
     if (!minted.ok) return;
@@ -56,7 +55,6 @@ describe("round-trip: mint writes JSON the index reads back", () => {
     expect(added.status).toBe("active");
     expect(added.statement).toBe("Charge renewals at the current plan price.");
     expect(added.why).toBe("Revenue correctness");
-    expect(added.livesIn).toEqual(["@api/src/renew.ts"]);
     const raw = await Bun.file(join(tmp, "spec-engine", "BILLING", "SPEC.json")).text();
     expect(raw.endsWith("}\n")).toBe(true);
   });
@@ -69,7 +67,6 @@ describe("round-trip: mint writes JSON the index reads back", () => {
       key: "BILLING",
       statement: "Charge renewals at the current plan price.",
       why: "Revenue correctness",
-      livesIn: [],
     });
     expect(minted.ok && minted.id === id).toBe(true);
 

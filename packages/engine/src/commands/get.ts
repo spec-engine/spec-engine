@@ -4,7 +4,7 @@ import { formatNoRequirementsIndexed } from "../indexer/discover";
 import { maybePromptForOnboarding } from "../onboarding/prompt";
 import { getRecord } from "../operations/records";
 import { ID_RE } from "../parser/grammar";
-import { renderRecords } from "../records/format";
+import { renderRecord } from "../records/format";
 import {
   freshArg,
   jsonArg,
@@ -19,7 +19,7 @@ export const getCommand = defineCommand({
   meta: {
     name: "get",
     description:
-      "Print one requirement's full record (id, status, key, seq, versions, statement) from the derived index.",
+      "Print one requirement's full record (id, status, key, seq, versions, statement) and the file:line of every tag that implements or verifies it, from the derived index.",
   },
   args: {
     reqId: {
@@ -64,7 +64,7 @@ export const getCommand = defineCommand({
           console.log("[]");
           return;
         }
-        console.log(args.json ? JSON.stringify(result.row) : renderRecords([result.row], "text"));
+        console.log(args.json ? JSON.stringify(result.row) : renderRecord(result.row));
       },
     );
   },

@@ -13,9 +13,6 @@
       "supersedes": null,
       "supersededBy": "PROV-004",
       "relates": [],
-      "livesIn": [
-        "@packages/shared/src/schema.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "supersededAtVersion": 2,
@@ -30,9 +27,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/provenance/resolve.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -45,11 +39,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/engine/src/operations/amend.ts",
-        "packages/engine/src/operations/mint.ts",
-        "packages/engine/src/operations/supersede.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -62,9 +51,6 @@
       "supersedes": null,
       "supersededBy": "PROV-005",
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/schema.ts"
-      ],
       "issues": [],
       "changedAtVersion": 1,
       "aliases": [],
@@ -79,9 +65,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": [
-        "packages/shared/src/schema.ts"
-      ],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -95,9 +78,6 @@
       "supersededBy": null,
       "relates": [
         "PROV-005"
-      ],
-      "livesIn": [
-        "packages/shared/src/schema.ts"
       ],
       "issues": [],
       "aliases": [],

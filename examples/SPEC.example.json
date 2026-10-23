@@ -12,7 +12,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": [],
-      "livesIn": ["@lib-billing/renew.ts"],
       "issues": [{ "role": "created", "id": "ACME-412" }],
       "aliases": [],
       "cites": []
@@ -25,7 +24,6 @@
       "supersedes": null,
       "supersededBy": null,
       "relates": ["BILLING-001"],
-      "livesIn": ["@lib-billing/dunning.ts"],
       "issues": [],
       "aliases": [],
       "cites": []
@@ -38,7 +36,6 @@
       "supersedes": null,
       "supersededBy": "BILLING-007",
       "relates": [],
-      "livesIn": [],
       "issues": [],
       "supersededAtVersion": 2,
       "aliases": [],
@@ -52,7 +49,6 @@
       "supersedes": "BILLING-003",
       "supersededBy": null,
       "relates": [],
-      "livesIn": ["@lib-billing/tax.ts"],
       "issues": [{ "role": "created", "id": "ACME-588" }],
       "aliases": [],
       "cites": []

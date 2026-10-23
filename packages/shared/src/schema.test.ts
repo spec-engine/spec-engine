@@ -75,7 +75,7 @@ test("the version-columns comment block names every version column and the drift
   expect(text).toContain("Drift predicate");
 });
 
-test("DiagnosticCode carries the ten core codes", () => {
+test("DiagnosticCode carries the nine core codes", () => {
   expect(DiagnosticCode.DUP_ID).toBe("DUP_ID");
   expect(DiagnosticCode.BROKEN_SUPERSEDE).toBe("BROKEN_SUPERSEDE");
   expect(DiagnosticCode.BAD_STATUS).toBe("BAD_STATUS");
@@ -85,7 +85,6 @@ test("DiagnosticCode carries the ten core codes", () => {
   expect(DiagnosticCode.UNVERIFIED_REQ).toBe("UNVERIFIED_REQ");
   expect(DiagnosticCode.DRIFT).toBe("DRIFT");
   expect(DiagnosticCode.NO_SPEC_CONFIG).toBe("NO_SPEC_CONFIG");
-  expect(DiagnosticCode.BROKEN_FILE_REF).toBe("BROKEN_FILE_REF");
 });
 
 test("SpecConfigSchema accepts a spec-engine@N pin and rejects a malformed or missing one", () => {
