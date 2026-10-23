@@ -246,7 +246,7 @@
       "cites": []
     },
     {
-      "id": "DIST-019",
+      "id": "DIST-020",
       "status": "active",
       "statement": "The published npm package shall carry the agent reference, the req-author skill, an MCP server template, and a pre-commit hook template in an agent folder of its payload.",
       "why": "An adopter installing from npm gets only the CLI otherwise, and spec init has no bundled reference, skill, or templates to install into the repository.",

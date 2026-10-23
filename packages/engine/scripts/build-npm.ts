@@ -21,7 +21,7 @@
 //                  `spec docs` serves documentation fully offline.
 //   dist/agent/  — the agent surface `spec init` installs: AGENTS.md,
 //                  skills/req-author/, mcp.json, pre-commit.
-// @spec DIST-019
+// @spec DIST-020
 
 import { existsSync } from "node:fs";
 import { chmod, cp, rename, rm } from "node:fs/promises";
