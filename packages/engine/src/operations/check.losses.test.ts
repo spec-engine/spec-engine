@@ -7,6 +7,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Diagnostic } from "@spec-engine/shared";
+import { git } from "../testing/git";
 import { TestPlatform } from "../testing/platform";
 import { SPEC_TOKEN } from "../testing/specTag";
 import { withIndex } from "./_index";
@@ -14,19 +15,6 @@ import { check } from "./check";
 
 const tag = (id: string, level?: string): string =>
   `${SPEC_TOKEN} ${id}${level ? ` ${level}` : ""}`;
-
-const GIT_ENV = {
-  ...process.env,
-  GIT_AUTHOR_NAME: "t",
-  GIT_AUTHOR_EMAIL: "t@t",
-  GIT_COMMITTER_NAME: "t",
-  GIT_COMMITTER_EMAIL: "t@t",
-};
-
-function git(cwd: string, ...args: string[]): void {
-  const proc = Bun.spawnSync(["git", ...args], { cwd, env: GIT_ENV });
-  if (proc.exitCode !== 0) throw new Error(`git ${args.join(" ")}: ${proc.stderr.toString()}`);
-}
 
 let repo: string;
 

@@ -19,6 +19,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { nextRequirementId } from "../authoring/domains";
 import { localToday } from "../authoring/edit";
+import { gitTestEnv } from "../testing/git";
 import { plantEdit } from "../testing/plant";
 import { type DomainHandle, type RequirementInput, TestPlatform } from "../testing/platform";
 import { reqCommand } from "./req";
@@ -186,7 +187,11 @@ describe("spec req — next-id correctness", () => {
     // id must be 004, not a recycled 003 (ids are permanent).
     await seed(tmp, "FRESH", 3);
     const git = (...args: string[]) => {
-      const r = Bun.spawnSync(["git", "-C", tmp, ...args], { stdout: "pipe", stderr: "pipe" });
+      const r = Bun.spawnSync(["git", "-C", tmp, ...args], {
+        stdout: "pipe",
+        stderr: "pipe",
+        env: gitTestEnv(),
+      });
       expect(r.exitCode).toBe(0);
     };
     git("init", "-q");
