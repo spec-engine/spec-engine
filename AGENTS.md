@@ -241,17 +241,17 @@ A domain envelope may declare `grammar: "ears"` with `grammarSeverity: "warning"
 | Rule | Fails | Passes |
 | --- | --- | --- |
 | Semicolon clause | `; ` anywhere after the first `shall` | `When a; b holds, X shall …` |
-| Second subject | `, and <subject> shall` after the first `shall` | `X shall A, and shall B` |
 | Rationale | `because`, `so that`, `in order to` anywhere | a trailing `, so <observable consequence>` |
 
 - `spec check` reports a nonconforming Active or Draft statement as `STATEMENT_GRAMMAR` at the declared severity, one row per statement, the detail naming the first failed shape or rule.
 - `spec req`, `amend`, `supersede`, and `move` judge new text at write time: they warn and write under warning, and refuse (exit 2) under error.
+- A second `shall` is the `one-promise` statement rule's, reported on every domain as `STATEMENT_RULES`, never as `STATEMENT_GRAMMAR`.
 - The lint is a pattern, not a reading: a statement that passes can still chain two behaviors, and the reviewer still owns that call.
 - The TERM domain is exempt.
 
 ### The statement rules
 
-Every domain is judged by these rules, whatever its grammar. `spec req`, `amend`, `supersede`, `move` (with new text), and `accept` refuse a statement that breaks a rule graded `error` (the default): exit 2, one `<rule>: <detail> — <reason>` line per finding, rule 0 last. A rule graded `warning` writes the statement and prints the same finding lines on stderr. There is no override flag; the `statementRules` block of `check.json` grades a rule, tunes it, or turns it off. `spec check` reports an Active statement that breaks one as `STATEMENT_RULES`, one row per rule per statement. The TERM domain is never judged.
+Every domain is judged by these rules, whatever its grammar. `spec req`, `amend`, `supersede`, `move` (with new text), and `accept` refuse a statement that breaks a rule graded `error` (the default for every rule but `no-trailing-commentary`, which defaults to `warning`): exit 2, one `<rule>: <detail> — <reason>` line per finding, rule 0 last. A rule graded `warning` writes the statement and prints the same finding lines on stderr. There is no override flag; the `statementRules` block of `check.json` grades a rule, tunes it, or turns it off. `spec check` reports an Active statement that breaks one as `STATEMENT_RULES`, one row per rule per statement. The TERM domain is never judged.
 
 | Rule | Reports | Printed reason |
 | --- | --- | --- |
@@ -263,6 +263,12 @@ Every domain is judged by these rules, whatever its grammar. `spec req`, `amend`
 | `no-history` | how the requirement changed | a statement says what holds now, not how it got there |
 | `no-jargon` | a word from the jargon list | a reader without the codebase cannot parse project jargon |
 | `no-tool-statement` | which tool is in use | naming the tool in use is a decision record, not a requirement |
+| `one-promise` | a second `shall` after the first, `, and <verb>` chained onto the result, or `, and exit <N>` | a second promise is its own requirement |
+| `no-mechanism` | `via`, `by <verb>ing`, `through the`, `using`, or `by means of` in the result | how the product does it is design, not behaviour |
+| `no-contrast` | `instead of`, `rather than`, `never … but`, or `not <X>, <Y>` and `, not <X>` in the result | a behaviour is stated by what it does, not by what it is not |
+| `no-document-content` | `README` or `the document states` anywhere, or a document (`the table`, a section, the agent reference, `AGENTS.md`, `TAXONOMY.md`) as the subject | what a document contains is documentation, not behaviour |
+| `where-takes-a-feature` | a `Where` clause holding a `--flag` or an invocation (`runs`, `is given`, `is passed`) | a flag or an invocation is a trigger and takes When |
+| `no-trailing-commentary` | a trailing `, so …` clause over eight words or holding a second verb phrase | a trailing so-clause names one short consequence, not a second point |
 
 ## Authoring requirements (brief → mint)
 
@@ -277,6 +283,8 @@ The procedure for turning a brief or ticket into requirements. Each draft is wri
 5. **Mint.** `spec req <domain> --text "<statement>" --why "<what breaks>" [--issue <ticket>]`.
 6. **Provenance, not identity.** The ticket goes in `--issue`, never in an id or a tag.
 7. **Verify.** `spec index . && spec check . --ci` (exit 0) and `spec guard .` before the PR.
+
+Step 3 also runs at write time. `spec req --text`, `spec supersede`, `spec move`, and `spec amend --text` compare the written statement with the Active requirements `spec query` ranks highest for its words, print each one whose word overlap reaches the duplicate threshold as `possible duplicate of <ID> (<score>): <statement>` on stderr, and write anyway. The score is the Jaccard overlap of the two statements' word sets after lowercasing, dropping punctuation, English stopwords, and the EARS keywords, and folding plural and tense suffixes. The default threshold is 0.5. A hit is a prompt to fold or relate the two, never a refusal. Two statements that mean the same thing in different words score low; the check catches shared wording only.
 
 ## Command reference
 
@@ -298,6 +306,21 @@ bunx @spec-engine/spec-engine <command> [...]   # without a global install (requ
 - `spec-engine.member.json` adds one fact: the member's pin, `spec-engine@N`. `spec init <name>` declares and pins in one step.
 - A requirement domain's version is derived from its supersede history. The platform version is the max domain version. Drift compares a member's pin against each referenced requirement's `changed_at_version`. A stray `spec-engine.platform.json` is ignored with a warning.
 - A member's `dependsOn` (the platform's own package names in its manifest) orders `spec propagation`: providers before consumers.
+
+### Editor support
+
+The docs site publishes a JSON Schema for each file the engine reads, generated from the schemas the engine parses with:
+
+| File | Schema URL |
+| --- | --- |
+| `spec-engine/<KEY>/SPEC.json` | `https://docs.spec-engine.dev/schema/v1/spec.json` |
+| `spec-engine/check.json` | `https://docs.spec-engine.dev/schema/v1/check.json` |
+| `spec-engine.member.json` | `https://docs.spec-engine.dev/schema/v1/member.json` |
+
+- A file names its schema with a top-level `"$schema"` key, which editors read for completion and validation. Every other unknown top-level key still fails the schema.
+- `spec domain new` and `spec init` write the key first. `spec migrate` adds it to a file that lacks it, and `spec check` reports such a file as `MIGRATION_PENDING`.
+- A rewrite keeps an existing `$schema` key in place with its value.
+- The `v1` path only changes additively. A breaking shape is published under a new path.
 
 ### Tags
 
@@ -336,7 +359,7 @@ Branch on exit codes, not on output text.
 | `spec gate <repo> <KEY-NNN> [platformDir]` | Approval gate: pass iff Active and the pin covers it | yes (object) | 0 / 1 / 2 |
 | `spec init [repo]` | Declare a member through platform-map and write its `spec-engine.member.json` pin | yes (object) | 0 / 2 |
 | `spec domain new <KEY>` / `spec domain list` / `spec domain grammar <KEY>` | Scaffold / list `spec-engine/<KEY>/SPEC.json` / set its statement grammar and severity | `list`: yes (array); `grammar`: yes (object) | 0 / 2 |
-| `spec migrate [platformDir]` | Strip the retired `livesIn` and `verifiedIn` fields from every `SPEC.json` (idempotent) | yes (object) | 0 / 2 |
+| `spec migrate [platformDir]` | Strip the retired `livesIn` and `verifiedIn` fields from every `SPEC.json` and add a missing `$schema` key to every `SPEC.json`, `check.json`, and member config (idempotent) | yes (object) | 0 / 2 |
 | `spec req <domain-prefix> [platformDir]` | Piped: next unused id. `--text`: author non-interactively | yes (object) | 0 / 2 |
 | `spec term …` | Author, list, revise, and confirm glossary terms | yes | 0 / 2 |
 | `spec glossary [platformDir]` | Generate `GLOSSARY.md` from the TERM store; `--migrate`, `--check` | yes (object) | 0 / 1 / 2 |
@@ -405,6 +428,7 @@ Codes, in `DiagnosticCode` order:
 | `DEPRECATED_REFERENCED` | error | Code still tags a deprecated requirement |
 | `STATEMENT_GRAMMAR` | per domain, default warning | A statement fails its domain's declared grammar |
 | `STATEMENT_RULES` | error; per rule from `statementRules.severity` | An Active statement breaks a statement rule: one row per rule per statement, the detail `<rule>: <detail> — <reason>` |
+| `POSSIBLE_DUPLICATE` | warning | Two Active non-TERM statements reach the duplicate threshold: one row per pair, `req_id` the higher id, the detail `possible duplicate of <ID> (<score>)` |
 | `DRAFT_REFERENCED` | error on a verifying tag, warning on an implementing or documenting tag | A tag references a Draft requirement |
 | `GLOSSARY_DRIFT` | warning | The committed glossary differs from the one generated from the term store |
 | `ORPHAN_REQ` | error | An Active requirement has no implementing tag |
@@ -412,13 +436,13 @@ Codes, in `DiagnosticCode` order:
 | `DRIFT` | error | A member is pinned behind the version at which a requirement it references changed |
 | `NO_SPEC_CONFIG` | warning | A declared member is present on disk with no `spec-engine.member.json` |
 | `BROKEN_RELATES` | warning | A `relates` entry names a nonexistent requirement |
-| `RELATES_SUPERSEDED` | warning | A `relates` entry names a superseded requirement |
+| `RELATES_SUPERSEDED` | warning | An Active or Draft requirement's `relates` entry names a superseded requirement |
 | `CYCLIC_SUPERSEDE` | error | A circular supersession chain |
 | `SELF_RELATES` | warning | A `relates` entry names its own requirement (dropped, but surfaced) |
 | `UNKNOWN_ROLE` | warning | An `issues` entry uses a role outside `created` / `supersedes-via` / `amends-via` (surfaced and dropped, never stored) |
 | `UNSOURCED_CHANGE` | warning, only with `--unsourced-change` | A superseded requirement carries no `supersedes-via` issue |
 | `INVALID_DOMAIN_FILE` | error | A `SPEC.json` is not JSON or fails the shared schema; one row per failing field |
-| `MIGRATION_PENDING` | warning | A `SPEC.json` still carries the retired `livesIn` or `verifiedIn` fields; run `spec migrate` |
+| `MIGRATION_PENDING` | warning | A `SPEC.json` still carries the retired `livesIn` or `verifiedIn` fields, or a `SPEC.json`, `check.json`, or `spec-engine.member.json` has no `$schema` key; the detail names which and the schema URL (`https://docs.spec-engine.dev/schema/v1/<spec\|check\|member>.json`); run `spec migrate` |
 | `UNPROVEN_REQ` | error, only with `--results` | An Active requirement has verifying tags but no passing correlated test |
 | `PROOFS_UNCONFIRMED` | warning, only without `--results` | The proof gate fell back to presence-only mode |
 | `REQUIREMENT_REMOVED` | error | An Active requirement present at the base ref is gone with no same-change supersession |
@@ -477,14 +501,24 @@ The eight codes before them are platform-map's, surfaced with the platform-map c
     "maxLength": 280,
     "jargon": ["seam", "rung"],
     "exemptNames": ["SPEC.json", "spec-engine/"],
-    "severity": { "no-jargon": "off", "length": "error" }
+    "severity": { "no-jargon": "off", "length": "error", "no-trailing-commentary": "error" }
 } }
 ```
 
-- `maxLength` defaults to 280. `jargon` replaces the default list (`seam`, `seams`, `rung`, `rungs`, `residue`, `matrix entry`, `stage runner`, `the stage`).
+- `maxLength` defaults to 280. `jargon` replaces the default list (`seam`, `seams`, `rung`, `rungs`, `residue`, `matrix entry`, `stage runner`, `the stage`, `self-member`, `context walk`, `canonical row`, `layer`, `corpus`).
 - `exemptNames` are product names `no-file-path` never reports. A name ending in `/` exempts every path under it.
-- `severity` maps a rule to `error`, `warning`, or `off`. A rule with no entry is `error`. `error` refuses the write and grades the `STATEMENT_RULES` row error; `warning` writes, prints the finding on stderr, and grades the row warning; `off` turns the rule off everywhere. The `severity` array regrades by code after it.
-- The rules: `one-sentence`, `length`, `no-file-path`, `no-test-narration`, `no-toolchain-layout`, `no-history`, `no-jargon`, `no-tool-statement`. Unknown keys exit 2.
+- `severity` maps a rule to `error`, `warning`, or `off`. A rule with no entry is `error`, except `no-trailing-commentary`, which is `warning`. `error` refuses the write and grades the `STATEMENT_RULES` row error; `warning` writes, prints the finding on stderr, and grades the row warning; `off` turns the rule off everywhere. The `severity` array regrades by code after it.
+- The rules: `one-sentence`, `length`, `no-file-path`, `no-test-narration`, `no-toolchain-layout`, `no-history`, `no-jargon`, `no-tool-statement`, `one-promise`, `no-mechanism`, `no-contrast`, `no-document-content`, `where-takes-a-feature`, `no-trailing-commentary`. Unknown keys exit 2.
+
+`duplicates` tunes duplicate detection on every surface: the write-time warning and `POSSIBLE_DUPLICATE`.
+
+```json
+{ "severity": [], "duplicates": { "threshold": 0.6, "off": false, "ignore": ["REQ-069/REQ-060"] } }
+```
+
+- `threshold` is a score between 0 and 1; a pair at or above it is a possible duplicate. Absent means 0.5.
+- `off: true` turns detection off everywhere. A `severity` rule of `off` for `POSSIBLE_DUPLICATE` drops only the check rows.
+- `ignore` lists pairs reviewed as distinct, each two requirement ids joined by `/` in either order. A listed pair gets no `POSSIBLE_DUPLICATE` row and no write-time warning.
 
 ### spec guard
 
@@ -589,12 +623,12 @@ Exit: 0 pass / 1 fail / 2 unknown repo name or bad args.
 
 ### spec init
 
-Declares a member through platform-map and writes `spec-engine.member.json`.
+Declares a member through platform-map and writes `spec-engine.member.json`: `{ "$schema": "https://docs.spec-engine.dev/schema/v1/member.json", "specs": "spec-engine@N" }`, plus `ignore` when set. Init writes no `check.json`.
 
 | Flag | Effect |
 | --- | --- |
 | `--specs spec-engine@N` | Override the pin. |
-| `--force` | Rewrite an existing config, preserving `ignore`. Any other key refuses, as does a malformed `ignore`. |
+| `--force` | Rewrite an existing config, preserving `ignore` and `$schema`. Any other key refuses, as does a malformed `ignore`. |
 | `--platform <dir>` | The platform root, for a declared member checked out outside the platform folder. Its location is recorded in platform-map's per-user file first. |
 
 `--json`: `{ action: "wrote", path, pin, source, declared, linked, agent_surface }`, `{ action: "already-configured", path, pin, extra_fields, declared, linked, agent_surface }`, or, on a platform directory, `{ action: "surface-only", agent_surface }`. `declared` lists the platform-map files written (the platform file, the marker), empty when the member was already declared; `linked` is the per-user file written under `--platform`, else null; `agent_surface` lists the agent-surface files written or changed, `[]` on a re-run.
@@ -620,7 +654,7 @@ Exit: 0 wrote or already configured / 2. Branch on `action`, not the exit code.
 
 ### spec domain
 
-`spec domain new <KEY>` scaffolds `spec-engine/<KEY>/SPEC.json`. `spec domain list` prints one key per line; `--json` prints a sorted array of `{ key, scope }` (scope is the charter sentence or null), read from the filesystem.
+`spec domain new <KEY>` scaffolds `spec-engine/<KEY>/SPEC.json` with `"$schema": "https://docs.spec-engine.dev/schema/v1/spec.json"` as its first key. `spec domain list` prints one key per line; `--json` prints a sorted array of `{ key, scope }` (scope is the charter sentence or null), read from the filesystem.
 
 `spec domain grammar <KEY> [platformDir] [--grammar ears|freeform] [--severity warning|error]` sets the envelope's `grammar` and/or `grammarSeverity` through the validating write path; every other field is written back as read. `--json` prints `{ key, grammar, grammar_severity, file }` (an unset field is null). An unknown domain, neither flag, or a value outside the enums exits 2. CLI only: no MCP tool or HTTP route.
 
@@ -632,9 +666,11 @@ Exit: 0 / 2.
 
 ### spec migrate
 
-Rewrites every `SPEC.json` that still carries the retired `livesIn` or `verifiedIn` fields through the write seam, which drops them. A file without them is not touched, so a second run writes nothing. Until a file is migrated, the fields are read and ignored, and the next write of a file drops them.
+Rewrites every `SPEC.json` that still carries the retired `livesIn` or `verifiedIn` fields through the write seam, which drops them. Until a file is migrated, the fields are read and ignored, and the next write of a file drops them.
 
-`--json`: `{ files }`, the platform-relative paths rewritten.
+It also adds a `$schema` key as the first key of every `SPEC.json`, `spec-engine/check.json`, and member `spec-engine.member.json` that lacks one: `https://docs.spec-engine.dev/schema/v1/spec.json`, `…/check.json`, and `…/member.json`. A config is checked against its schema first and only gains the inserted line. A file needing neither change is not touched, so a second run writes nothing.
+
+`--json`: `{ files }`, the platform-relative paths rewritten: `SPEC.json` files in key order, then `check.json`, then member configs.
 
 Exit: 0 / 2.
 
@@ -648,13 +684,14 @@ Exit: 0 / 2.
 | `--draft` | Author the entry as Draft (with `--text`, or on a TTY). Off a TTY without `--text` it exits 2. |
 | TTY, no flags | Interactive authoring. |
 
-`--json` with `--text`: `{ id, file }`, plus `clauses: { pattern, condition, system, response }` when the statement parses as EARS.
+`--json` with `--text`: `{ id, file, possible_duplicates }`, plus `clauses: { pattern, condition, system, response }` when the statement parses as EARS. `possible_duplicates` is `[{ id, score }]`, empty when none.
 
 Exit: 0 / 2 (ambiguous prefix, unknown domain, grammar refusal, statement-rule refusal).
 
 - The domain prefix is case-insensitive: `bil` resolves to `BILLING`.
 - The resolved domain's charter is echoed to stderr on every authoring path.
 - Unresolvable `@<path>` refs warn on stderr and never block.
+- Each possible duplicate prints `possible duplicate of <ID> (<score>): <statement>` on stderr, and the entry is written anyway (see the authoring section).
 
 ### spec term
 
@@ -707,7 +744,7 @@ The successor copies the predecessor's `why`, `relates`, `cites`, `aliases`, `te
 | `--issue <ticket>` | Recorded as `supersedes-via` on the predecessor and `created` on the successor. |
 | `--no-bump` | TERM domain only: keep the authored `specVersion`. No-op elsewhere. |
 
-`--json`: `{ old_id, new_id, file, spec_version, retagged: [{ req_id, repo, file, line, kind, level }] }`, the rewritten sites (`req_id` is the old id). On a requirement domain `spec_version` is the derived domain version after the supersession, and the same number is stamped as the predecessor's `supersededAtVersion`.
+`--json`: `{ old_id, new_id, file, spec_version, retagged: [{ req_id, repo, file, line, kind, level }], possible_duplicates: [{ id, score }] }`, the rewritten sites (`req_id` is the old id). On a requirement domain `spec_version` is the derived domain version after the supersession, and the same number is stamped as the predecessor's `supersededAtVersion`.
 
 Exit: 0 / 2. All guards run before the first byte is written.
 
@@ -715,7 +752,7 @@ Exit: 0 / 2. All guards run before the first byte is written.
 
 Cross-domain supersede. Mints the successor as the next id in `<NEW-DOMAIN>` (which must exist), copies `statement`, `why`, `relates`, `cites`, `aliases`, `term`, and `section` (`--text` and `--why` override), flips the source to superseded with a cross-domain `supersededBy`, and rewrites every tag of the source to the successor as `spec supersede` does. The successor carries no `issues`.
 
-`--json`: `{ old_id, new_id, from_file, to_file, source_spec_version, target_spec_version, retagged: [...] }`.
+`--json`: `{ old_id, new_id, from_file, to_file, source_spec_version, target_spec_version, retagged: [...], possible_duplicates: [...] }`.
 
 Exit: 0 / 2 (non-Active source, or the target is the source's own domain).
 
@@ -732,7 +769,7 @@ Revise an Active or Draft entry in place. Same id, no version change.
 | `--issue <ticket>` | Append `amends-via` provenance. |
 | `--term`, `--aliases` | TERM ids only. |
 
-`--json`: `{ id, file, fields_changed }`.
+`--json`: `{ id, file, fields_changed, possible_duplicates }`. `possible_duplicates` is empty unless `--text` changed the statement.
 
 A released requirement is an Active entry present in its domain file at the newest `v*` tag merged into HEAD. Its promise does not change in place: a `--text`, `--why`, `--term`, or `--aliases` amend refuses with exit 2, naming the tag. Two paths stay open: `spec supersede` changes the promise, and an amend of only `--relates` or `--issue` writes in place. With no `v*` tag merged into HEAD, or outside git, every entry is unreleased. A Draft entry always amends.
 
@@ -770,6 +807,8 @@ Binds one address: `127.0.0.1`, or `--host <ip>` (a literal loopback, RFC 1918, 
 A non-loopback `--host` is LAN mode: stdout prints `http://<ip>:<port>/?token=…`; every request needs that token (the query parameter is exchanged for an `HttpOnly; SameSite=Strict` cookie, then a 302 drops it), else 401. A `Host` other than loopback or the bound address is 403. Read-only unless `--allow-writes`: non-GET requests, `/provenance`, and `/api/provenance?resolve=1` answer 403. `--token` / `SPEC_SERVE_TOKEN` pin the token (≥ 16 of `A-Z a-z 0-9 _ -`); otherwise it is 256 random bits.
 
 When the reindex after a write refuses on an invalid `SPEC.json` elsewhere on the platform, the route answers 422 `{ error: "invalid_domain_file", diagnostics: [...] }`, the rows in the `check --json` shape (the CLI exits 2 with the same rows).
+
+The create, amend, supersede, and move routes add `possible_duplicates: [{ id, score }]` to their success body, as the matching CLI `--json` does, and the editor page lists each one under the saved id.
 
 Always-on routes: `/`, `/requirements[/:id]`, `/propagation/:id`, `/api/coverage`, `/api/report`, `/api/repos`, `/api/platform`, `/api/requirements[/:id]`, `/api/propagation/:id`, `/api/resolve?files=…`.
 
@@ -810,12 +849,12 @@ MCP server over stdio. Register it as `{ "command": "spec", "args": ["mcp", "<pl
 | `spec_next_id` | `{ domain, next_id }`, nothing written |
 | `spec_get` | one `Requirement` row with `implemented_in` and `verified_in`, or `[]` for an unknown id; the `spec get --json` shape |
 | `spec_list` | `Requirement` rows in (key, seq) order, `domain` and `status` filters; the `spec list --json` shape |
-| `spec_supersede` | `{ old_id, new_id, file, spec_version, retagged }`, the `spec supersede --json` shape; optional `why`, `relates`, `issue` arguments |
+| `spec_supersede` | `{ old_id, new_id, file, spec_version, retagged, possible_duplicates }`, the `spec supersede --json` shape; optional `why`, `relates`, `issue` arguments |
 | `spec_deprecate` | `{ id, file, reason, removed }`, the `spec deprecate --json` shape |
 | `spec_accept` | `{ id, file }`, the `spec accept --json` shape |
-| `spec_req` | `{ id, file, clauses? }`, the `spec req --text --json` shape; `domain` (key or prefix) and `text` required, optional `why`, `relates`, `issue`, `draft` |
-| `spec_amend` | `{ id, file, fields_changed }`, the `spec amend --json` shape; `id` required, optional `text`, `why`, `relates`, `issue` |
-| `spec_move` | `{ old_id, new_id, from_file, to_file, source_spec_version, target_spec_version, retagged }`, the `spec move --json` shape; `id` and `newDomain` required, optional `text`, `why` |
+| `spec_req` | `{ id, file, clauses?, possible_duplicates }`, the `spec req --text --json` shape; `domain` (key or prefix) and `text` required, optional `why`, `relates`, `issue`, `draft` |
+| `spec_amend` | `{ id, file, fields_changed, possible_duplicates }`, the `spec amend --json` shape; `id` required, optional `text`, `why`, `relates`, `issue` |
+| `spec_move` | `{ old_id, new_id, from_file, to_file, source_spec_version, target_spec_version, retagged, possible_duplicates }`, the `spec move --json` shape; `id` and `newDomain` required, optional `text`, `why` |
 
 Every tool call reindexes fresh. stdout is the protocol channel; chrome goes to stderr. One prompt, `author_requirements` (`brief` required, `domain` optional), returns a static authoring playbook with the brief and the domain's charter substituted. The engine runs no model.
 
