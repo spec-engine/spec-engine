@@ -469,7 +469,7 @@ Exit: 0 wrote or already configured / 2. Branch on `action`, not the exit code.
   - a directory under no platform gets the `spec-engine@1` fallback pin;
   - a platform directory (holding `spec-engine/`) gets the agent surface and no pin.
 - Every action then installs the agent surface into the repository (the member; the monorepo root for a workspace package), bundled in the npm package under `dist/agent/`. Hints for anything left alone go to stderr.
-  - `AGENTS.md`: the agent reference between `<!-- spec-engine:agent-reference:begin -->` and `<!-- spec-engine:agent-reference:end -->`, appended or created, replaced in place when the markers exist; text outside them is never touched. A `CLAUDE.md` that does not mention `AGENTS.md` gets a hint only.
+  - `AGENTS.md`: the agent reference between a `spec-engine:agent-reference:begin` and a `spec-engine:agent-reference:end` HTML comment marker, appended or created, replaced in place when the markers exist; text outside them is never touched. A `CLAUDE.md` that does not mention `AGENTS.md` gets a hint only.
   - `.claude/skills/req-author/`: written when absent; a differing copy is replaced only under `--force`.
   - `.mcp.json`: a `spec` server entry (`spec mcp <platform>`) merged in; other keys and an existing `spec` entry are kept.
   - `pre-commit`: `spec guard <platform>`, written to `.githooks/` or else `.git/hooks/` when no hook exists there; an existing hook gets a hint.
