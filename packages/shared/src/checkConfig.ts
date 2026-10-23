@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { DiagnosticCode } from "./diagnostics";
 import { ID_RE, KEY_RE } from "./domain";
+import { STATEMENT_RULES } from "./statementRules";
 
 const CODES = Object.values(DiagnosticCode) as [DiagnosticCode, ...DiagnosticCode[]];
 
@@ -18,7 +19,24 @@ export const SeverityRuleSchema = z
   })
   .strict();
 
-export const CheckConfigSchema = z.object({ severity: z.array(SeverityRuleSchema) }).strict();
+// @spec CHCK-048
+export const StatementRulesConfigSchema = z
+  .object({
+    maxLength: z.number().int().positive().optional(),
+    jargon: z.array(z.string().min(1)).optional(),
+    exemptNames: z.array(z.string().min(1)).optional(),
+    severity: z
+      .partialRecord(z.enum(STATEMENT_RULES), z.enum(["error", "warning", "off"]))
+      .optional(),
+  })
+  .strict();
+
+export const CheckConfigSchema = z
+  .object({
+    severity: z.array(SeverityRuleSchema).default([]),
+    statementRules: StatementRulesConfigSchema.optional(),
+  })
+  .strict();
 
 export type SeverityRule = z.infer<typeof SeverityRuleSchema>;
 export type CheckConfig = z.infer<typeof CheckConfigSchema>;
