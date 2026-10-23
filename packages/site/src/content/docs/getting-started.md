@@ -79,12 +79,12 @@ BILLING  BILLING-009  Active      —         src+test  —       —
 
 ## Single repo (rung 1)
 
-One repo with an in-repo `spec-engine/<DOMAIN>/SPEC.json` and `@spec` tags in its own code is a complete platform. No members, no `spec init`. See the [Single Repo guide](/guides/single-repo/).
+One repo with an in-repo `spec-engine/<DOMAIN>/SPEC.json` and `@spec` tags in its own code is a complete platform. No members and no pin; `spec init .` there installs only the agent surface (the agent reference in `AGENTS.md`, the `req-author` skill, the `spec` MCP server, and a `spec guard` pre-commit hook). See the [Single Repo guide](/guides/single-repo/).
 
 ## Grow to a platform
 
 1. Add a member repo beside `spec-engine/` with `@spec ORDERS-001` tags in source and test files
-2. Pin the member: `spec init checkout` (the default pin is the derived platform version)
+2. Pin the member: `spec init checkout` (the default pin is the derived platform version; it also installs the agent surface into `checkout`)
 3. Index and check: `spec index && spec check`
 
 See the [Platform Setup guide](/guides/platform-setup/) for the full walkthrough.

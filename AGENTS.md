@@ -574,11 +574,13 @@ Declares a member through platform-map and writes `spec-engine.member.json`.
 | `--force` | Rewrite an existing config, preserving `ignore`. Any other key refuses, as does a malformed `ignore`. |
 | `--platform <dir>` | The platform root, for a declared member checked out outside the platform folder. Its location is recorded in platform-map's per-user file first. |
 
-`--json`: `{ action: "wrote", path, pin, source, declared, linked }` or
-`{ action: "already-configured", path, pin, extra_fields, declared, linked }`.
+`--json`: `{ action: "wrote", path, pin, source, declared, linked, agent_surface }`,
+`{ action: "already-configured", path, pin, extra_fields, declared, linked, agent_surface }`,
+or, on a platform directory, `{ action: "surface-only", agent_surface }`.
 `declared` lists the platform-map files written (the platform file, the
 marker), empty when the member was already declared; `linked` is the
-per-user file written under `--platform`, else null.
+per-user file written under `--platform`, else null; `agent_surface` lists
+the agent-surface files written or changed, `[]` on a re-run.
 
 Exit: 0 wrote or already configured / 2. Branch on `action`, not the exit code.
 
@@ -593,7 +595,24 @@ Exit: 0 wrote or already configured / 2. Branch on `action`, not the exit code.
   - a workspace package of a monorepo gets a nested pin and no declaration;
     a repository inside a lone monorepo that is not a workspace package is
     refused;
-  - a directory under no platform gets the `spec-engine@1` fallback pin.
+  - a directory under no platform gets the `spec-engine@1` fallback pin;
+  - a platform directory (holding `spec-engine/`) gets the agent surface
+    and no pin (INIT-043).
+- Every action then installs the agent surface into the repository (the
+  member; the monorepo root for a workspace package), bundled in the npm
+  package under `dist/agent/`. Hints for anything left alone go to stderr.
+  - `AGENTS.md`: the agent reference between
+    `<!-- spec-engine:agent-reference:begin -->` and
+    `<!-- spec-engine:agent-reference:end -->`, appended or created, replaced
+    in place when the markers exist; text outside them is never touched. A
+    `CLAUDE.md` that does not mention `AGENTS.md` gets a hint only.
+  - `.claude/skills/req-author/`: written when absent; a differing copy is
+    replaced only under `--force`.
+  - `.mcp.json`: a `spec` server entry (`spec mcp <platform>`) merged in;
+    other keys and an existing `spec` entry are kept.
+  - `pre-commit`: `spec guard <platform>`, written to `.githooks/` or else
+    `.git/hooks/` when no hook exists there; an existing hook gets a hint.
+  - With no platform located, the MCP entry and the hook are skipped.
 - The platform root is platform-map's `locate()` (INIT-034): the nearest
   `platform-map.json` or `.git` boundary, a marker resolved through the parent
   directory or the per-user file; the parent directory when it holds
