@@ -8,7 +8,7 @@ export const migrateCommand = defineCommand({
   meta: {
     name: "migrate",
     description:
-      "Remove the retired livesIn and verifiedIn fields from every SPEC.json, rewriting only the files that carry one",
+      "Remove the retired livesIn and verifiedIn fields from every SPEC.json and add a missing $schema key to every SPEC.json, check.json, and member config",
   },
   args: {
     platformDir: platformDirArg,

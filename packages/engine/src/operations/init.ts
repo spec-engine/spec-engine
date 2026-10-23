@@ -11,7 +11,7 @@ import {
   planInit,
   planLink,
 } from "@spec-engine/platform-map";
-import { SpecConfigSchema } from "@spec-engine/shared";
+import { SCHEMA_URLS, SpecConfigSchema } from "@spec-engine/shared";
 import packageJson from "../../package.json" with { type: "json" };
 import { CANONICAL_SPECS_DIR, isExistingDir, MEMBER_CONFIG_FILENAME } from "../constants";
 import {
@@ -198,7 +198,7 @@ function link(canonical: string, platformRoot: string): { ok: true; userFile: st
 }
 
 /**
- * @spec INIT-015
+ * @spec INIT-050
  * @spec INIT-016
  * @spec INIT-017
  * @spec INIT-050
@@ -344,12 +344,17 @@ function preservedIgnore(
   return { ok: true, ignore: raw.ignore };
 }
 
+/**
+ * @spec INIT-050
+ * @spec SCHM-043
+ */
 async function write(
   configPath: string,
   specs: string,
   ignore: string[] | undefined,
+  $schema: string = SCHEMA_URLS.member,
 ): Promise<void> {
-  const body: { specs: string; ignore?: string[] } = { specs };
+  const body: { $schema: string; specs: string; ignore?: string[] } = { $schema, specs };
   if (ignore !== undefined) body.ignore = ignore;
   await Bun.write(configPath, `${JSON.stringify(body, null, 2)}\n`);
 }
@@ -399,7 +404,8 @@ export async function writeMemberConfig(
   }
   const kept = preservedIgnore(configPath, rawRes.raw);
   if (!kept.ok) return kept;
-  await write(configPath, pin, kept.ignore);
+  const kept$schema = typeof rawRes.raw.$schema === "string" ? rawRes.raw.$schema : undefined;
+  await write(configPath, pin, kept.ignore, kept$schema);
   return { ok: true, action: "wrote", path: configPath, pin };
 }
 

@@ -43,8 +43,8 @@ export const SpecRequirementSchema = z
     supersedes: z.string().nullable().optional(),
     supersededBy: z.string().nullable().optional(),
     relates: z.array(z.string()).optional().default([]),
-    livesIn: z.unknown().optional(),
-    verifiedIn: z.unknown().optional(),
+    livesIn: z.unknown().optional().meta({ deprecated: true }),
+    verifiedIn: z.unknown().optional().meta({ deprecated: true }),
     issues: z.array(SpecIssueSchema).optional().default([]),
     changedAtVersion: z.number().int().optional(),
     // Stamped once at supersession and never recomputed, unlike
@@ -66,6 +66,8 @@ export const SpecRequirementSchema = z
 // `.strict()` on both objects: an unknown key (`__proto__`, a typo) rejects.
 export const SpecDomainSchema = z
   .object({
+    // @spec SCHM-042
+    $schema: z.string().optional(),
     key: z.string().regex(KEY_RE),
     owner: z.string().nullable().optional(),
     // Only the TERM domain authors a specVersion: a term revision adds no
@@ -164,6 +166,7 @@ export function parseDomainText(text: string, sourceFile: string): ParseDomainTe
  */
 function orderDomain(d: SpecDomain) {
   return {
+    $schema: d.$schema,
     key: d.key,
     owner: d.owner ?? null,
     specVersion: d.specVersion,
@@ -243,6 +246,7 @@ function shapeLike(template: JsonObject | undefined, next: JsonObject): JsonObje
  * The validated domain rendered onto the existing file's raw object, entries
  * in the validated order, matched to raw entries by id (duplicates in turn).
  * @spec SCHM-044
+ * @spec SCHM-043
  */
 function preserveShape(raw: JsonObject, rawDomain: SpecDomain, domain: SpecDomain): JsonObject {
   const before = orderDomain(rawDomain) as ProjectedDomain;
@@ -266,6 +270,11 @@ function preserveShape(raw: JsonObject, rawDomain: SpecDomain, domain: SpecDomai
     patchFields(rawEntry, before.requirements[idx] as JsonObject, entry);
     return rawEntry;
   });
+  // @spec SCHM-044
+  if (before.$schema === undefined && next.$schema !== undefined) {
+    const { $schema, ...rest } = raw;
+    return { $schema, ...rest };
+  }
   return raw;
 }
 

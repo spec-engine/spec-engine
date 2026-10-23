@@ -128,6 +128,15 @@ describe("spec domain new — normalization", () => {
 });
 
 describe("spec domain new — scaffold shape", () => {
+  // @spec DOMAIN-025 unit
+  test("the domain schema URL is the first key of a scaffolded SPEC.json", async () => {
+    await runDomainNew("FIRST", tmp);
+    const raw = await Bun.file(join(tmp, "spec-engine", "FIRST", "SPEC.json")).text();
+    expect(
+      raw.startsWith('{\n  "$schema": "https://docs.spec-engine.dev/schema/v1/spec.json",\n'),
+    ).toBe(true);
+  });
+
   // @spec DOMAIN-027
   test("scaffold is a JSON envelope with the canonical empty shape (no specVersion)", async () => {
     await runDomainNew("VALID", tmp);
@@ -136,6 +145,7 @@ describe("spec domain new — scaffold shape", () => {
     expect(raw.endsWith("}\n")).toBe(true);
     const obj = JSON.parse(raw);
     expect(obj).toEqual({
+      $schema: "https://docs.spec-engine.dev/schema/v1/spec.json",
       key: "VALID",
       owner: null,
       updated: localToday(),

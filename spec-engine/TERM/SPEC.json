@@ -1,4 +1,5 @@
 {
+  "$schema": "https://docs.spec-engine.dev/schema/v1/spec.json",
   "key": "TERM",
   "owner": null,
   "specVersion": 8,

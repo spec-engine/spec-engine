@@ -33,6 +33,8 @@ export const StatementRulesConfigSchema = z
 
 export const CheckConfigSchema = z
   .object({
+    // @spec SCHM-042
+    $schema: z.string().optional(),
     severity: z.array(SeverityRuleSchema).default([]),
     statementRules: StatementRulesConfigSchema.optional(),
   })

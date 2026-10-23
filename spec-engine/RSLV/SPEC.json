@@ -1,4 +1,5 @@
 {
+  "$schema": "https://docs.spec-engine.dev/schema/v1/spec.json",
   "key": "RSLV",
   "owner": null,
   "updated": "2026-10-21",
