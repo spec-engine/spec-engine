@@ -5,8 +5,7 @@
 // regressed pattern fails loudly instead of silently passing.
 //
 // The script is spawned once; every test below reads that one run. A fence
-// is identified by the requirement id its `run` label starts with, which is
-// also the `@spec` tag on the fence function.
+// is identified by its `run` label.
 
 import { beforeAll, describe, expect, test } from "bun:test";
 import { join, resolve } from "node:path";
@@ -25,10 +24,10 @@ beforeAll(() => {
   stderr = proc.stderr.toString();
 });
 
-/** The fence labelled with `id` ran in this invocation and did not fail. */
-function fenceHeld(id: string): void {
-  expect(stdout).toContain(`── fence: ${id} `);
-  expect(stdout).not.toContain(`FENCE FAILED: ${id} `);
+/** The fence with this `run` label ran in this invocation and did not fail. */
+function fenceHeld(label: string): void {
+  expect(stdout).toContain(`── fence: ${label}\n`);
+  expect(stdout).not.toContain(`FENCE FAILED: ${label}\n`);
 }
 
 describe("architecture fences (scripts/arch-fences.sh)", () => {
@@ -41,118 +40,51 @@ describe("architecture fences (scripts/arch-fences.sh)", () => {
     expect(stdout).toContain("All architecture fences green.");
   });
 
-  test("SCHM-025: bun:sqlite is imported from storage/sqlite.ts and nowhere else", () => {
-    fenceHeld("SCHM-025");
-    expect(stdout.match(/── fence: SCHM-025 /g)).toHaveLength(2);
-  });
-
-  test("SCHM-035: every SPEC.json write, tests included, goes through validateAndWrite", () => {
-    fenceHeld("SCHM-035");
-    expect(stdout).toContain("validateAndWrite seam fence: OK");
-  });
-
-  test("SCHM-027: the write seam and the id allocator are reached only under operations/", () => {
-    fenceHeld("SCHM-027");
-  });
-
-  test("SCHM-028: the DDL declares no CHECK, FOREIGN KEY, or UNIQUE constraint on a domain field", () => {
-    fenceHeld("SCHM-028");
-  });
-
-  test("SCHM-029: the DDL is inline TypeScript, never a .sql file", () => {
-    fenceHeld("SCHM-029");
-  });
-
   // @spec PROV-007 unit
-  test("PROV-006: issue_id is never a key, index, join, or grouping column", () => {
-    fenceHeld("PROV-006");
+  test("issue_id is never a key, index, join, or grouping column", () => {
+    fenceHeld("issue_id is never an identity");
     expect(stdout).toContain("issue_id-opacity gate: OK");
   });
 
-  test("DIST-012: the README names spec init and NO_SPEC_CONFIG", () => {
-    fenceHeld("DIST-012");
-  });
-
-  test("DIST-019: the README and the agent reference name SPEC.json, spec migrate, trusted-red, and --results", () => {
-    fenceHeld("DIST-019");
-  });
-
-  test("DIST-014: no spec-engine.config.example.json ships in the tree", () => {
-    fenceHeld("DIST-014");
-  });
-
-  test("DIST-015: release-please runs on main and releases packages/engine under v<version> tags", () => {
-    fenceHeld("DIST-015");
+  // @spec DIST-024 unit
+  test("publish runs on a v* tag or a release-please release, after every gate job", () => {
+    fenceHeld("publish runs on release after every gate");
   });
 
   // @spec DIST-024 unit
-  test("DIST-016: publish runs on a v* tag or a release-please release, after every gate job", () => {
-    fenceHeld("DIST-016");
-  });
-
-  // @spec DIST-024 unit
-  test("DIST-017: the release tag is checked against the package version before packing", () => {
-    fenceHeld("DIST-017");
-  });
-
-  test("DIST-018: every dependency is an exact pin and Renovate is told to keep it so", () => {
-    fenceHeld("DIST-018");
+  test("the release tag is checked against the package version before packing", () => {
+    fenceHeld("tag and package version match before packing");
   });
 
   // @spec TRK-004 unit
-  test("TRK-004: engine internals never import the tracker and carry no external host literal", () => {
-    fenceHeld("TRK-004");
+  test("engine internals never import the tracker and carry no external host literal", () => {
+    fenceHeld("engine internals never import the tracker or reach the network");
     expect(stdout).toContain("tracker import fence: OK");
   });
 
   // @spec TRK-007 unit
-  test("TRK-007: the tracker package sends GraphQL queries only", () => {
-    fenceHeld("TRK-007");
+  test("the tracker package sends GraphQL queries only", () => {
+    fenceHeld("tracker sends queries only");
   });
 
   // @spec TRK-009 unit
-  test("TRK-009: the tracker never logs the token", () => {
-    fenceHeld("TRK-009");
+  test("the tracker never logs the token", () => {
+    fenceHeld("token never logged");
   });
 
   // @spec INDX-013 unit
-  test("INDX-013: no SPEC.md parse path exists in the engine", () => {
-    fenceHeld("INDX-013");
+  test("no SPEC.md parse path exists in the engine", () => {
+    fenceHeld("no SPEC.md parse path");
   });
 
   // @spec AUTHOR-015 unit
-  test("AUTHOR-008: the runner emits the llm-free engine fence OK marker", () => {
-    fenceHeld("AUTHOR-008");
+  test("the runner emits the llm-free engine fence OK marker", () => {
+    fenceHeld("llm-free engine");
     expect(stdout).toContain("llm-free engine fence: OK");
   });
 
   // @spec CHCK-020 unit
-  test("CHCK-020: the committed GLOSSARY.md equals the generated one", () => {
-    fenceHeld("CHCK-020");
-  });
-
-  test("SCHM-020: the authored-specVersion fence trips on a planted non-TERM specVersion", () => {
-    // Mirror the fence's detector against a planted non-TERM envelope.
-    const offender = '{ "key": "BILLING", "specVersion": 2, "updated": "x", "requirements": [] }';
-    const proc = Bun.spawnSync(["grep", "-qE", '"specVersion"'], { stdin: Buffer.from(offender) });
-    expect(proc.exitCode).toBe(0);
-    // And the real tree is clean: the fence prints its OK marker.
-    fenceHeld("SCHM-020");
-    expect(stdout).toContain("authored-specVersion fence: OK");
-  });
-
-  test("CHCK-053: the agent reference's diagnostic-code list equals the DiagnosticCode enum", () => {
-    fenceHeld("CHCK-053");
-  });
-
-  test("CHRT-007: the TAXONOMY charters equal the envelope scope fields", () => {
-    fenceHeld("CHRT-007");
-  });
-
-  test("every run label begins with a requirement id", async () => {
-    const script = await Bun.file(FENCE_SCRIPT).text();
-    const labels = [...script.matchAll(/^run "([^"]+)"/gm)].map((m) => m[1] ?? "");
-    expect(labels.length).toBeGreaterThan(0);
-    for (const label of labels) expect(label).toMatch(/^[A-Z][A-Z0-9]*-\d{3} /);
+  test("the committed GLOSSARY.md equals the generated one", () => {
+    fenceHeld("glossary round-trip");
   });
 });

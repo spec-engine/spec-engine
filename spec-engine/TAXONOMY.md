@@ -281,15 +281,13 @@ title and URL.
 
 ## Six invariants worth knowing
 
-<!-- @spec CHRT-013 -->
-
 Six promises the whole system leans on, each a real requirement in its domain:
 
 | # | Domain | Requirement | Invariant |
 |---|--------|-------------|-----------|
 | 1 | INDX | INDX-007 | Cold-rebuild identity: deleting `.spec-engine/` and rebuilding yields an identical result. |
 | 2 | CHCK | CHCK-014 | `spec check --ci` builds fresh. Correctness never trusts a cached or warm index. |
-| 3 | SCHM | SCHM-013 | One shared schema. Every read and write surface validates the same envelope. |
-| 4 | INDX | INDX-008 | Spec defects become diagnostics. A duplicate id or broken supersede never crashes the index build. |
-| 5 | SCHM | SCHM-012 | One model, one storage seam. CLI, webapp, and MCP can never disagree. |
+| 3 | INDX | INDX-016 | One shared schema. Every read and write surface validates the same envelope. |
+| 4 | INDX | INDX-022 | Spec defects become diagnostics. A duplicate id or broken supersede never crashes the index build. |
+| 5 | SCHM | SCHM-041 | One model, one storage seam. CLI, webapp, and MCP can never disagree. |
 | 6 | PROP | PROP-004 | The drift definition is the propagation contract, computed by a SQL view. |

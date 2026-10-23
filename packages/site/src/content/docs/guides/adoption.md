@@ -28,5 +28,5 @@ This repo is its own platform (a lone monorepo): the root `spec-engine/` holds t
 ```shell
 $ spec map .                     # the requirement × package coverage matrix
 $ spec check . --ci              # the self-gate; CI runs this on every push
-$ spec query "approval gate" .   # ranked hits — the Gate term + GATE-008
+$ spec query "approval gate" .   # ranked hits — the Gate term + GATE-010
 ```
