@@ -19,6 +19,7 @@ import { provenDetermination } from "../check/proven";
 import { requirementRemoved } from "../check/removed";
 import { applySeverity, readCheckConfig } from "../check/severity";
 import { collectDiagnostics } from "../check/sqlDiagnostics";
+import { statementRulesDiagnostics } from "../check/statementRules";
 import { unapprovedStatusFlip } from "../check/statusflip";
 import { supersedesPointerDiagnostics } from "../check/supersedes";
 import { unsourcedChanges } from "../check/unsourced";
@@ -249,6 +250,9 @@ export async function check(input: CheckInput, storage: Storage): Promise<CheckR
   }
   // @spec CHCK-008
   diagnostics.push(...(await statementGrammarDiagnostics(platformDir)));
+  diagnostics.push(
+    ...(await statementRulesDiagnostics(platformDir, checkConfig.config.statementRules)),
+  );
   // @spec CHCK-045
   diagnostics.push(...(await brokenFileRefDiagnostics(platformDir)));
   diagnostics.push(...(await inFileTagDiagnostics(platformDir, storage.listTags())));

@@ -1,1 +1,25 @@
-{ "severity": [{ "code": "UNVERIFIED_REQ", "severity": "error" }] }
+{
+  "severity": [{ "code": "UNVERIFIED_REQ", "severity": "error" }],
+  "statementRules": {
+    "exemptNames": [
+      "SPEC.json",
+      "spec-engine.member.json",
+      "spec-engine.platform.json",
+      "platform-map.json",
+      "check.json",
+      "package.json",
+      "GLOSSARY.md",
+      "TAXONOMY.md",
+      "AGENTS.md",
+      "SPEC.md",
+      "index.sqlite",
+      "doctor.md",
+      "results.xml",
+      "CODEOWNERS",
+      "spec-engine/",
+      ".spec-engine/",
+      ".github/"
+    ],
+    "severity": { "no-toolchain-layout": "off", "no-jargon": "off" }
+  }
+}
