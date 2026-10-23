@@ -16,12 +16,14 @@
 import { createInterface } from "node:readline";
 import { defineCommand, type ParsedArgs } from "citty";
 import { domainScope } from "../authoring/domains";
+import { duplicateRefs } from "../check/duplicates";
 import { EXIT } from "../constants";
 import { assertSpecPlatform } from "../indexer/discover";
+import { coldDuplicateScan } from "../operations/_index";
 import { mint } from "../operations/mint";
 import { nextId } from "../operations/nextId";
 import { jsonArg, listFlag, platformDirArg, relatesArg, resolvePlatformDir } from "./_args";
-import { exitOnFailure, handleNotAPlatform, printWarnings } from "./_shared";
+import { exitOnFailure, handleNotAPlatform, printDuplicates, printWarnings } from "./_shared";
 
 const reqArgs = {
   domainPrefix: {
@@ -170,15 +172,17 @@ async function mintAndReport(
     json: boolean;
   },
 ): Promise<void> {
-  const result = await mint({ platformDir, key, ...fields });
+  const result = await mint({ platformDir, key, ...fields }, coldDuplicateScan(platformDir));
   if (!result.ok) exitOnFailure("spec req", result);
   printWarnings("spec req", result.warnings);
+  printDuplicates(result.possibleDuplicates);
   if (fields.json) {
+    const possible_duplicates = duplicateRefs(result.possibleDuplicates);
     console.log(
       JSON.stringify(
         result.clauses
-          ? { id: result.id, file: result.file, clauses: result.clauses }
-          : { id: result.id, file: result.file },
+          ? { id: result.id, file: result.file, clauses: result.clauses, possible_duplicates }
+          : { id: result.id, file: result.file, possible_duplicates },
       ),
     );
   } else {

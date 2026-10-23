@@ -9,6 +9,7 @@ import {
   judgeStatementGrammar,
 } from "../authoring/grammar";
 import { statementRulesVerdict } from "../authoring/statementRules";
+import type { PossibleDuplicate } from "../check/duplicates";
 import { deriveDomainVersion } from "../parser/domainJson";
 import type { ReqTagRow } from "../resolve/format";
 import {
@@ -19,7 +20,7 @@ import {
   splitList,
   successorEntry,
 } from "./_envelope";
-import type { FreshTags } from "./_index";
+import type { DuplicateScan, FreshTags } from "./_index";
 import { fail, type OpFailure, type OpWarning } from "./_result";
 import { applyRetag } from "./_retag";
 import { unresolvableRefWarnings } from "./mint";
@@ -52,6 +53,7 @@ export interface SupersedeResult {
   specVersion: number | null;
   /** The predecessor's tag sites, rewritten to the successor. */
   retagged: ReqTagRow[];
+  possibleDuplicates: PossibleDuplicate[];
   warnings: OpWarning[];
 }
 
@@ -148,12 +150,16 @@ function applyVersionStage(
  * @param freshTags how this surface derives current tags for the retag
  *   after the write: the CLI and MCP cold-rebuild a throwaway index,
  *   the API re-indexes into its long-lived handle.
+ * @param scan how this surface finds the successor's possible duplicates
+ *   after the retag.
  * @spec REQ-075
  * @spec SCHM-043
+ * @spec REQ-070
  */
 export async function supersede(
   input: SupersedeInput,
   freshTags: FreshTags,
+  scan: DuplicateScan,
 ): Promise<SupersedeResult | OpFailure> {
   const { platformDir, id } = input;
   const target = await supersedeTarget(platformDir, id);
@@ -197,5 +203,15 @@ export async function supersede(
     });
   }
   const retagged = await applyRetag(platformDir, id, newId, freshTags);
-  return { ok: true, oldId: id, newId, file: relFile, specVersion, retagged, warnings };
+  const possibleDuplicates = await scan(input.statement, [id, newId]);
+  return {
+    ok: true,
+    oldId: id,
+    newId,
+    file: relFile,
+    specVersion,
+    retagged,
+    possibleDuplicates,
+    warnings,
+  };
 }

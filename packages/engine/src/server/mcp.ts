@@ -7,7 +7,8 @@ import { DEFAULT_QUERY_LIMIT, LIMIT_MAX } from "@spec-engine/shared";
 import { z } from "zod";
 import packageJson from "../../package.json" with { type: "json" };
 import { domainScope, listDomainKeys, normalizeDomainKey } from "../authoring/domains";
-import { coldFreshTags, withIndex } from "../operations/_index";
+import { duplicateRefs } from "../check/duplicates";
+import { coldDuplicateScan, coldFreshTags, withIndex } from "../operations/_index";
 import { accept } from "../operations/accept";
 import { type AmendFields, amend } from "../operations/amend";
 import { check } from "../operations/check";
@@ -260,6 +261,7 @@ export function buildMcpServer(platformDir: string): McpServer {
           issue,
         },
         coldFreshTags(platformDir),
+        coldDuplicateScan(platformDir, "never"),
       );
       if (!r.ok) return errorResult(r.detail);
       for (const w of r.warnings) console.error(`spec_supersede: ${w.text}`);
@@ -269,6 +271,7 @@ export function buildMcpServer(platformDir: string): McpServer {
         file: r.file,
         spec_version: r.specVersion,
         retagged: r.retagged,
+        possible_duplicates: duplicateRefs(r.possibleDuplicates),
       });
     },
   );
@@ -343,19 +346,25 @@ export function buildMcpServer(platformDir: string): McpServer {
     async ({ domain, text, why, relates, issue, draft }) => {
       const allocated = await nextId(platformDir, domain);
       if (!allocated.ok) return errorResult(allocated.detail);
-      const r = await mint({
-        platformDir,
-        key: allocated.key,
-        statement: text,
-        why,
-        relates,
-        issue: issue || undefined,
-        status: draft ? "draft" : "active",
-      });
+      const r = await mint(
+        {
+          platformDir,
+          key: allocated.key,
+          statement: text,
+          why,
+          relates,
+          issue: issue || undefined,
+          status: draft ? "draft" : "active",
+        },
+        coldDuplicateScan(platformDir),
+      );
       if (!r.ok) return errorResult(r.detail);
       for (const w of r.warnings) console.error(`spec_req: ${w.text}`);
+      const possible_duplicates = duplicateRefs(r.possibleDuplicates);
       return jsonResult(
-        r.clauses ? { id: r.id, file: r.file, clauses: r.clauses } : { id: r.id, file: r.file },
+        r.clauses
+          ? { id: r.id, file: r.file, clauses: r.clauses, possible_duplicates }
+          : { id: r.id, file: r.file, possible_duplicates },
       );
     },
   );
@@ -384,10 +393,15 @@ export function buildMcpServer(platformDir: string): McpServer {
       if (Object.keys(fields).length === 0) {
         return errorResult("nothing to amend — pass at least one of text, why, relates, issue");
       }
-      const r = await amend({ platformDir, id, fields });
+      const r = await amend({ platformDir, id, fields }, coldDuplicateScan(platformDir));
       if (!r.ok) return errorResult(r.detail);
       for (const w of r.warnings) console.error(`spec_amend: ${w.text}`);
-      return jsonResult({ id, file: r.file, fields_changed: r.fieldsChanged });
+      return jsonResult({
+        id,
+        file: r.file,
+        fields_changed: r.fieldsChanged,
+        possible_duplicates: duplicateRefs(r.possibleDuplicates),
+      });
     },
   );
 
@@ -418,6 +432,7 @@ export function buildMcpServer(platformDir: string): McpServer {
           why,
         },
         coldFreshTags(platformDir),
+        coldDuplicateScan(platformDir, "never"),
       );
       if (!r.ok) return errorResult(r.detail);
       for (const w of r.warnings) console.error(`spec_move: ${w.text}`);
@@ -429,6 +444,7 @@ export function buildMcpServer(platformDir: string): McpServer {
         source_spec_version: r.sourceSpecVersion,
         target_spec_version: r.targetSpecVersion,
         retagged: r.retagged,
+        possible_duplicates: duplicateRefs(r.possibleDuplicates),
       });
     },
   );

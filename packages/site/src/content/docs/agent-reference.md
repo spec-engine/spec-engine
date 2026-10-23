@@ -142,6 +142,10 @@ The procedure for turning a brief or ticket into requirements. Each draft is wri
 6. **Provenance, not identity.** The ticket goes in `--issue`, never in an id or a tag.
 7. **Verify.** `spec index . && spec check . --ci` (exit 0) and `spec guard .` before the PR.
 
+<!-- @spec REQ-070 -->
+
+Step 3 also runs at write time. `spec req --text`, `spec supersede`, `spec move`, and `spec amend --text` compare the written statement with the Active requirements `spec query` ranks highest for its words, print each one whose word overlap reaches the duplicate threshold as `possible duplicate of <ID> (<score>): <statement>` on stderr, and write anyway. The score is the Jaccard overlap of the two statements' word sets after lowercasing, dropping punctuation, English stopwords, and the EARS keywords, and folding plural and tense suffixes. The default threshold is 0.5. A hit is a prompt to fold or relate the two, never a refusal. Two statements that mean the same thing in different words score low; the check catches shared wording only.
+
 ## Command reference
 
 ### Invocation
@@ -284,6 +288,7 @@ Codes, in `DiagnosticCode` order:
 | `DEPRECATED_REFERENCED` | error | Code still tags a deprecated requirement |
 | `STATEMENT_GRAMMAR` | per domain, default warning | A statement fails its domain's declared grammar |
 | `STATEMENT_RULES` | error; per rule from `statementRules.severity` | An Active statement breaks a statement rule: one row per rule per statement, the detail `<rule>: <detail> — <reason>` |
+| `POSSIBLE_DUPLICATE` | warning | Two Active non-TERM statements reach the duplicate threshold: one row per pair, `req_id` the higher id, the detail `possible duplicate of <ID> (<score>)` |
 | `DRAFT_REFERENCED` | error on a verifying tag, warning on an implementing or documenting tag | A tag references a Draft requirement |
 | `GLOSSARY_DRIFT` | warning | The committed glossary differs from the one generated from the term store |
 | `ORPHAN_REQ` | error | An Active requirement has no implementing tag |
@@ -364,6 +369,18 @@ The eight codes before them are platform-map's, surfaced with the platform-map c
 - `exemptNames` are product names `no-file-path` never reports. A name ending in `/` exempts every path under it.
 - `severity` maps a rule to `error`, `warning`, or `off`. A rule with no entry is `error`, except `no-trailing-commentary`, which is `warning`. `error` refuses the write and grades the `STATEMENT_RULES` row error; `warning` writes, prints the finding on stderr, and grades the row warning; `off` turns the rule off everywhere. The `severity` array regrades by code after it.
 - The rules: `one-sentence`, `length`, `no-file-path`, `no-test-narration`, `no-toolchain-layout`, `no-history`, `no-jargon`, `no-tool-statement`, `one-promise`, `no-mechanism`, `no-contrast`, `no-document-content`, `where-takes-a-feature`, `no-trailing-commentary`. Unknown keys exit 2.
+
+<!-- @spec CHCK-056 -->
+<!-- @spec CHCK-057 -->
+
+`duplicates` tunes duplicate detection on every surface: the write-time warning and `POSSIBLE_DUPLICATE`.
+
+```json
+{ "severity": [], "duplicates": { "threshold": 0.6, "off": false } }
+```
+
+- `threshold` is a score between 0 and 1; a pair at or above it is a possible duplicate. Absent means 0.5.
+- `off: true` turns detection off everywhere. A `severity` rule of `off` for `POSSIBLE_DUPLICATE` drops only the check rows.
 
 ### spec guard
 
@@ -529,13 +546,14 @@ Exit: 0 / 2.
 | `--draft` | Author the entry as Draft (with `--text`, or on a TTY). Off a TTY without `--text` it exits 2. |
 | TTY, no flags | Interactive authoring. |
 
-`--json` with `--text`: `{ id, file }`, plus `clauses: { pattern, condition, system, response }` when the statement parses as EARS.
+`--json` with `--text`: `{ id, file, possible_duplicates }`, plus `clauses: { pattern, condition, system, response }` when the statement parses as EARS. `possible_duplicates` is `[{ id, score }]`, empty when none. <!-- @spec REQ-071 -->
 
 Exit: 0 / 2 (ambiguous prefix, unknown domain, grammar refusal, statement-rule refusal).
 
 - The domain prefix is case-insensitive: `bil` resolves to `BILLING`.
 - The resolved domain's charter is echoed to stderr on every authoring path.
 - Unresolvable `@<path>` refs warn on stderr and never block.
+- Each possible duplicate prints `possible duplicate of <ID> (<score>): <statement>` on stderr, and the entry is written anyway (see the authoring section).
 
 ### spec term
 
@@ -588,7 +606,7 @@ The successor copies the predecessor's `why`, `relates`, `cites`, `aliases`, `te
 | `--issue <ticket>` | Recorded as `supersedes-via` on the predecessor and `created` on the successor. |
 | `--no-bump` | TERM domain only: keep the authored `specVersion`. No-op elsewhere. |
 
-`--json`: `{ old_id, new_id, file, spec_version, retagged: [{ req_id, repo, file, line, kind, level }] }`, the rewritten sites (`req_id` is the old id). On a requirement domain `spec_version` is the derived domain version after the supersession, and the same number is stamped as the predecessor's `supersededAtVersion`.
+`--json`: `{ old_id, new_id, file, spec_version, retagged: [{ req_id, repo, file, line, kind, level }], possible_duplicates: [{ id, score }] }`, the rewritten sites (`req_id` is the old id). On a requirement domain `spec_version` is the derived domain version after the supersession, and the same number is stamped as the predecessor's `supersededAtVersion`.
 
 Exit: 0 / 2. All guards run before the first byte is written.
 
@@ -596,7 +614,7 @@ Exit: 0 / 2. All guards run before the first byte is written.
 
 Cross-domain supersede. Mints the successor as the next id in `<NEW-DOMAIN>` (which must exist), copies `statement`, `why`, `relates`, `cites`, `aliases`, `term`, and `section` (`--text` and `--why` override), flips the source to superseded with a cross-domain `supersededBy`, and rewrites every tag of the source to the successor as `spec supersede` does. The successor carries no `issues`.
 
-`--json`: `{ old_id, new_id, from_file, to_file, source_spec_version, target_spec_version, retagged: [...] }`.
+`--json`: `{ old_id, new_id, from_file, to_file, source_spec_version, target_spec_version, retagged: [...], possible_duplicates: [...] }`.
 
 Exit: 0 / 2 (non-Active source, or the target is the source's own domain).
 
@@ -613,7 +631,7 @@ Revise an Active or Draft entry in place. Same id, no version change.
 | `--issue <ticket>` | Append `amends-via` provenance. |
 | `--term`, `--aliases` | TERM ids only. |
 
-`--json`: `{ id, file, fields_changed }`.
+`--json`: `{ id, file, fields_changed, possible_duplicates }`. `possible_duplicates` is empty unless `--text` changed the statement.
 
 A released requirement is an Active entry present in its domain file at the newest `v*` tag merged into HEAD. Its promise does not change in place: a `--text`, `--why`, `--term`, or `--aliases` amend refuses with exit 2, naming the tag. Two paths stay open: `spec supersede` changes the promise, and an amend of only `--relates` or `--issue` writes in place. With no `v*` tag merged into HEAD, or outside git, every entry is unreleased. A Draft entry always amends.
 
@@ -651,6 +669,8 @@ Binds one address: `127.0.0.1`, or `--host <ip>` (a literal loopback, RFC 1918, 
 A non-loopback `--host` is LAN mode: stdout prints `http://<ip>:<port>/?token=…`; every request needs that token (the query parameter is exchanged for an `HttpOnly; SameSite=Strict` cookie, then a 302 drops it), else 401. A `Host` other than loopback or the bound address is 403. Read-only unless `--allow-writes`: non-GET requests, `/provenance`, and `/api/provenance?resolve=1` answer 403. `--token` / `SPEC_SERVE_TOKEN` pin the token (≥ 16 of `A-Z a-z 0-9 _ -`); otherwise it is 256 random bits.
 
 When the reindex after a write refuses on an invalid `SPEC.json` elsewhere on the platform, the route answers 422 `{ error: "invalid_domain_file", diagnostics: [...] }`, the rows in the `check --json` shape (the CLI exits 2 with the same rows).
+
+The create, amend, supersede, and move routes add `possible_duplicates: [{ id, score }]` to their success body, as the matching CLI `--json` does, and the editor page lists each one under the saved id.
 
 Always-on routes: `/`, `/requirements[/:id]`, `/propagation/:id`, `/api/coverage`, `/api/report`, `/api/repos`, `/api/platform`, `/api/requirements[/:id]`, `/api/propagation/:id`, `/api/resolve?files=…`.
 
@@ -691,12 +711,12 @@ MCP server over stdio. Register it as `{ "command": "spec", "args": ["mcp", "<pl
 | `spec_next_id` | `{ domain, next_id }`, nothing written |
 | `spec_get` | one `Requirement` row with `implemented_in` and `verified_in`, or `[]` for an unknown id; the `spec get --json` shape |
 | `spec_list` | `Requirement` rows in (key, seq) order, `domain` and `status` filters; the `spec list --json` shape |
-| `spec_supersede` | `{ old_id, new_id, file, spec_version, retagged }`, the `spec supersede --json` shape; optional `why`, `relates`, `issue` arguments |
+| `spec_supersede` | `{ old_id, new_id, file, spec_version, retagged, possible_duplicates }`, the `spec supersede --json` shape; optional `why`, `relates`, `issue` arguments |
 | `spec_deprecate` | `{ id, file, reason, removed }`, the `spec deprecate --json` shape |
 | `spec_accept` | `{ id, file }`, the `spec accept --json` shape |
-| `spec_req` | `{ id, file, clauses? }`, the `spec req --text --json` shape; `domain` (key or prefix) and `text` required, optional `why`, `relates`, `issue`, `draft` |
-| `spec_amend` | `{ id, file, fields_changed }`, the `spec amend --json` shape; `id` required, optional `text`, `why`, `relates`, `issue` |
-| `spec_move` | `{ old_id, new_id, from_file, to_file, source_spec_version, target_spec_version, retagged }`, the `spec move --json` shape; `id` and `newDomain` required, optional `text`, `why` |
+| `spec_req` | `{ id, file, clauses?, possible_duplicates }`, the `spec req --text --json` shape; `domain` (key or prefix) and `text` required, optional `why`, `relates`, `issue`, `draft` |
+| `spec_amend` | `{ id, file, fields_changed, possible_duplicates }`, the `spec amend --json` shape; `id` required, optional `text`, `why`, `relates`, `issue` |
+| `spec_move` | `{ old_id, new_id, from_file, to_file, source_spec_version, target_spec_version, retagged, possible_duplicates }`, the `spec move --json` shape; `id` and `newDomain` required, optional `text`, `why` |
 
 Every tool call reindexes fresh. stdout is the protocol channel; chrome goes to stderr. One prompt, `author_requirements` (`brief` required, `domain` optional), returns a static authoring playbook with the brief and the domain's charter substituted. The engine runs no model.
 
