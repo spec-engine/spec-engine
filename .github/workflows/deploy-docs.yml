@@ -39,10 +39,10 @@ jobs:
     if: vars.DEPLOY_DOCS == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.4.0
 
       - name: setup Bun (reads .bun-version)
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@v2.2.0
         with:
           bun-version-file: ".bun-version"
 
@@ -53,7 +53,7 @@ jobs:
         run: bun run build:site
 
       - name: upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v3.0.1
         with:
           path: packages/site/dist
 
@@ -68,4 +68,4 @@ jobs:
     steps:
       - name: deploy
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v4.0.5
