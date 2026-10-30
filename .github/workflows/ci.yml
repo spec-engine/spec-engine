@@ -20,7 +20,7 @@ concurrency:
 jobs:
   build-and-smoke:
     name: build & smoke (darwin-arm64)
-    runs-on: macos-14  # Apple Silicon runner — matches D-13 target
+    runs-on: macos-26  # Apple Silicon runner — matches D-13 target
     timeout-minutes: 20  # 2.2: cap a hung background `spec serve` smoke (default is 6h)
     # 2.1 / 2.2: this job now does ONLY what needs the darwin-arm64 compiled
     # binary — build:cli + the compiled-binary smokes + secret-scan. Lint,
@@ -29,10 +29,10 @@ jobs:
     # platform-independent and run once on the ubuntu `test-linux` job.
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5.1.0
 
       - name: setup Bun (reads .bun-version)
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@v2.2.0
         with:
           bun-version-file: '.bun-version'
 
@@ -55,7 +55,7 @@ jobs:
 
       - name: upload compiled binary (2.2 — reproduce a red smoke against the exact artifact)
         if: always()  # upload even when a later smoke fails — that's when you need it
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: spec-darwin-arm64
           path: dist/spec
@@ -172,10 +172,10 @@ jobs:
     timeout-minutes: 20  # 2.2
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5.1.0
 
       - name: setup Bun (reads .bun-version)
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@v2.2.0
         with:
           bun-version-file: '.bun-version'
 
@@ -207,10 +207,10 @@ jobs:
     # from the ROOT lockfile like every other package.
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5.1.0
 
       - name: setup Bun (reads .bun-version)
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@v2.2.0
         with:
           bun-version-file: '.bun-version'
 
@@ -235,7 +235,7 @@ jobs:
 
     steps:
       - id: release
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@v4.4.1
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
@@ -280,10 +280,10 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5.1.0
 
       - name: setup Bun (reads .bun-version)
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@v2.2.0
         with:
           bun-version-file: '.bun-version'
 
@@ -318,9 +318,9 @@ jobs:
           test -z "$BAD" || { echo "FAIL: unexpected files in tarball:"; echo "$BAD"; exit 1; }
           echo "tarball rehearsal OK: $TARBALL"
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4.4.0
         with:
-          node-version: 22
+          node-version: 22.23.4
           registry-url: https://registry.npmjs.org
 
       - name: upgrade npm for OIDC (>= 11.5.1)

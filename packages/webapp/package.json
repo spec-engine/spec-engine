@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "@spec-engine/shared": "workspace:*",
-    "hono": "4.13.11"
+    "hono": "4.13.14"
   },
   "devDependencies": {
     "@spec-engine/spec-engine": "workspace:*"
